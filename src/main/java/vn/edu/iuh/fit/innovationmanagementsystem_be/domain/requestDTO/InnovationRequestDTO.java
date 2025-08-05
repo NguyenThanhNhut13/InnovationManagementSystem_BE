@@ -18,6 +18,8 @@ public class InnovationRequestDTO {
 
     private UUID departmentId;
 
+    private UUID innovationRoundId;
+
     private Boolean isScore;
 
     private Innovation.InnovationStatus status;

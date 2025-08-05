@@ -28,6 +28,9 @@ public interface InnovationRepository extends JpaRepository<Innovation, UUID> {
     // Find by department ID with pagination
     Page<Innovation> findByDepartmentId(UUID departmentId, Pageable pageable);
 
+    // Find by innovation round ID with pagination
+    Page<Innovation> findByInnovationRoundId(UUID innovationRoundId, Pageable pageable);
+
     // Find by status with pagination
     Page<Innovation> findByStatus(Innovation.InnovationStatus status, Pageable pageable);
 
@@ -55,4 +58,6 @@ public interface InnovationRepository extends JpaRepository<Innovation, UUID> {
     long countByUserId(UUID userId);
 
     long countByDepartmentId(UUID departmentId);
+
+    long countByInnovationRoundId(UUID innovationRoundId);
 }

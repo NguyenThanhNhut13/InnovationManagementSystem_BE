@@ -29,6 +29,9 @@ public class InnovationResponseDTO {
     private String departmentName;
     private String departmentCode;
 
+    private UUID innovationRoundId;
+    private String innovationRoundName;
+
     private Innovation.InnovationStatus status;
 
     private LocalDateTime createdAt;
@@ -65,6 +68,12 @@ public class InnovationResponseDTO {
             this.departmentId = innovation.getDepartment().getId();
             this.departmentName = innovation.getDepartment().getDepartmentName();
             this.departmentCode = innovation.getDepartment().getDepartmentCode();
+        }
+
+        // Set innovation round information if available
+        if (innovation.getInnovationRound() != null) {
+            this.innovationRoundId = innovation.getInnovationRound().getId();
+            this.innovationRoundName = innovation.getInnovationRound().getName();
         }
 
         // Convert attachments if they exist

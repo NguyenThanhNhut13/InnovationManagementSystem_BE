@@ -38,6 +38,10 @@ public class Innovation {
     @JoinColumn(name = "department_id")
     private Department department;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "innovation_round_id")
+    private InnovationRound innovationRound;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "status")
     private InnovationStatus status;
@@ -60,6 +64,9 @@ public class Innovation {
 
     @OneToMany(mappedBy = "innovation", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<CoInnovation> coInnovations;
+
+    @OneToMany(mappedBy = "innovation", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<FormData> formDataList;
 
     // Pre-persist and pre-update methods
     @PrePersist
