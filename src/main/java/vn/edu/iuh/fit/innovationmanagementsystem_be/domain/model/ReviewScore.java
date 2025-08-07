@@ -1,0 +1,71 @@
+package vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model;
+
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import org.hibernate.annotations.GenericGenerator;
+import org.hibernate.annotations.Type;
+
+import java.time.LocalDateTime;
+import java.util.UUID;
+
+@Entity
+@Table(name = "review_scores")
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class ReviewScore {
+
+    @Id
+    @GeneratedValue(generator = "uuid2")
+    @GenericGenerator(name = "uuid2", strategy = "uuid2")
+    @Column(name = "id", columnDefinition = "UUID")
+    private UUID id;
+
+    @Column(name = "content", columnDefinition = "JSON")
+    private String content;
+
+    @Column(name = "score_level")
+    private String scoreLevel;
+
+    @Column(name = "actual_score")
+    private Integer actualScore;
+
+    // Foreign key relationships
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "council_members_id", nullable = false)
+    private CouncilMember councilMember;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "innovation_id", nullable = false)
+    private Innovation innovation;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "decision_id")
+    private InnovationDecision innovationDecision;
+
+    @Column(name = "created_at")
+    private LocalDateTime createdAt;
+
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
+
+    @Column(name = "created_by")
+    private String createdBy;
+
+    @Column(name = "updated_by")
+    private String updatedBy;
+
+    // Pre-persist and pre-update methods
+    @PrePersist
+    protected void onCreate() {
+        createdAt = LocalDateTime.now();
+        updatedAt = LocalDateTime.now();
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = LocalDateTime.now();
+    }
+}

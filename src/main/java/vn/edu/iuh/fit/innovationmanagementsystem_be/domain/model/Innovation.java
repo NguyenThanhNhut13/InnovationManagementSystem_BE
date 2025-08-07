@@ -68,6 +68,12 @@ public class Innovation {
     @OneToMany(mappedBy = "innovation", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<FormData> formDataList;
 
+    @OneToMany(mappedBy = "innovation", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<ReviewScore> reviewScores;
+
+    @OneToMany(mappedBy = "innovation", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<ReviewComment> reviewComments;
+
     // Pre-persist and pre-update methods
     @PrePersist
     protected void onCreate() {

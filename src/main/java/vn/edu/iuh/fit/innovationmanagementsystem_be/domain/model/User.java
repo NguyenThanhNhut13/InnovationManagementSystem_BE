@@ -60,6 +60,9 @@ public class User {
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<UserRole> userRoles;
 
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<CouncilMember> councilMembers;
+
     // Timestamps
     @Column(name = "created_at")
     private LocalDateTime createdAt;
