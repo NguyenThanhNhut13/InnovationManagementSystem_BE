@@ -4,11 +4,9 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.GenericGenerator;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.UUID;
 
 @Entity
 @Table(name = "form_template")
@@ -18,10 +16,9 @@ import java.util.UUID;
 public class FormTemplate {
 
     @Id
-    @GeneratedValue(generator = "uuid2")
-    @GenericGenerator(name = "uuid2", strategy = "uuid2")
-    @Column(name = "id", columnDefinition = "UUID")
-    private UUID id;
+    @GeneratedValue(strategy = GenerationType.UUID)
+    @Column(name = "id")
+    private String id;
 
     @Column(name = "name", nullable = false)
     private String name;
@@ -32,11 +29,11 @@ public class FormTemplate {
     @Column(name = "template_content", columnDefinition = "JSON")
     private String templateContent;
 
-    @Column(name = "create_at")
-    private LocalDateTime createAt;
+    @Column(name = "created_at")
+    private LocalDateTime createdAt;
 
-    @Column(name = "update_at")
-    private LocalDateTime updateAt;
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
 
     @Column(name = "created_by")
     private String createdBy;
@@ -55,12 +52,21 @@ public class FormTemplate {
     // Pre-persist and pre-update methods
     @PrePersist
     protected void onCreate() {
-        createAt = LocalDateTime.now();
-        updateAt = LocalDateTime.now();
+        createdAt = LocalDateTime.now();
+        updatedAt = LocalDateTime.now();
+        if (createdBy == null) {
+            createdBy = "system";
+        }
+        if (updatedBy == null) {
+            updatedBy = "system";
+        }
     }
 
     @PreUpdate
     protected void onUpdate() {
-        updateAt = LocalDateTime.now();
+        updatedAt = LocalDateTime.now();
+        if (updatedBy == null) {
+            updatedBy = "system";
+        }
     }
 }

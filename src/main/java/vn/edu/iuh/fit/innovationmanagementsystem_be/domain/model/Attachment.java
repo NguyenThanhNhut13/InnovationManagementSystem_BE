@@ -4,10 +4,9 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.GenericGenerator;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.AttachmentTypeEnum;
 
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 @Entity
 @Table(name = "attachments")
@@ -17,29 +16,22 @@ import java.util.UUID;
 public class Attachment {
 
     @Id
-    @GeneratedValue(generator = "uuid2")
-    @GenericGenerator(name = "uuid2", strategy = "uuid2")
-    @Column(name = "id", columnDefinition = "UUID")
-    private UUID id;
-
-    @Column(name = "initiative_id", nullable = false)
-    private UUID initiativeId; // This is actually innovation_id
+    @GeneratedValue(strategy = GenerationType.UUID)
+    @Column(name = "id")
+    private String id;
 
     @Column(name = "path_url", nullable = false)
     private String pathUrl;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "type")
-    private AttachmentType type;
+    private AttachmentTypeEnum type;
 
     @Column(name = "file_name")
     private String fileName;
 
     @Column(name = "file_size")
     private Long fileSize;
-
-    @Column(name = "mime_type")
-    private String mimeType;
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;
@@ -53,9 +45,10 @@ public class Attachment {
     @Column(name = "updated_by")
     private String updatedBy;
 
-    // Relationship
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "initiative_id", insertable = false, updatable = false)
+    // Relationship - ManyToOne with Innovation (1 Innovation can have 0 or N
+    // Attachments, but 1 Attachment must belong to 1 Innovation)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false, targetEntity = Innovation.class)
+    @JoinColumn(name = "innovation_id", nullable = false, referencedColumnName = "id")
     private Innovation innovation;
 
     // Pre-persist and pre-update methods
@@ -63,22 +56,19 @@ public class Attachment {
     protected void onCreate() {
         createdAt = LocalDateTime.now();
         updatedAt = LocalDateTime.now();
+        if (createdBy == null) {
+            createdBy = "system";
+        }
+        if (updatedBy == null) {
+            updatedBy = "system";
+        }
     }
 
     @PreUpdate
     protected void onUpdate() {
         updatedAt = LocalDateTime.now();
-    }
-
-    // Enum for Attachment Type
-    public enum AttachmentType {
-        DOCUMENT,
-        IMAGE,
-        VIDEO,
-        AUDIO,
-        PDF,
-        SPREADSHEET,
-        PRESENTATION,
-        OTHER
+        if (updatedBy == null) {
+            updatedBy = "system";
+        }
     }
 }

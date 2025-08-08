@@ -4,11 +4,11 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.GenericGenerator;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationStatusEnum;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.UUID;
+import java.util.ArrayList;
 
 @Entity
 @Table(name = "innovations")
@@ -18,16 +18,19 @@ import java.util.UUID;
 public class Innovation {
 
     @Id
-    @GeneratedValue(generator = "uuid2")
-    @GenericGenerator(name = "uuid2", strategy = "uuid2")
-    @Column(name = "id", columnDefinition = "UUID")
-    private UUID id;
-
-    @Column(name = "is_score")
-    private Boolean isScore;
+    @GeneratedValue(strategy = GenerationType.UUID)
+    @Column(name = "id")
+    private String id;
 
     @Column(name = "innovation_name", nullable = false)
     private String innovationName;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status")
+    private InnovationStatusEnum status;
+
+    @Column(name = "is_score")
+    private Boolean isScore;
 
     // Foreign key relationships
     @ManyToOne(fetch = FetchType.LAZY)
@@ -42,10 +45,6 @@ public class Innovation {
     @JoinColumn(name = "innovation_round_id")
     private InnovationRound innovationRound;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "status")
-    private InnovationStatus status;
-
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
@@ -59,8 +58,8 @@ public class Innovation {
     private String updatedBy;
 
     // Relationships
-    @OneToMany(mappedBy = "innovation", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<Attachment> attachments;
+    @OneToMany(mappedBy = "innovation", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true, targetEntity = Attachment.class)
+    private List<Attachment> attachments = new ArrayList<>();
 
     @OneToMany(mappedBy = "innovation", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<CoInnovation> coInnovations;
@@ -74,34 +73,33 @@ public class Innovation {
     @OneToMany(mappedBy = "innovation", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<ReviewComment> reviewComments;
 
+    @OneToMany(mappedBy = "innovation", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<ReportInnovationDetail> reportInnovationDetails;
+
+    @OneToMany(mappedBy = "innovation", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<DigitalSignature> digitalSignatures;
+
     // Pre-persist and pre-update methods
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
         updatedAt = LocalDateTime.now();
         if (status == null) {
-            status = InnovationStatus.DRAFT;
+            status = InnovationStatusEnum.DRAFT;
+        }
+        if (createdBy == null) {
+            createdBy = "system";
+        }
+        if (updatedBy == null) {
+            updatedBy = "system";
         }
     }
 
     @PreUpdate
     protected void onUpdate() {
         updatedAt = LocalDateTime.now();
-    }
-
-    // Enum for Innovation Status - Updated according to UML diagram
-    public enum InnovationStatus {
-        DRAFT, // Bản nháp
-        SUBMITTED, // Đã nộp
-        PENDING_KHOA_REVIEW, // Chờ Khoa duyệt
-        RETURNED_TO_SUBMITTER, // Trả về người nộp
-        KHOA_REVIEWED, // Khoa đã duyệt
-        KHOA_APPROVED, // Khoa phê duyệt
-        KHOA_REJECTED, // Khoa từ chối
-        PENDING_TRUONG_REVIEW, // Chờ Trường duyệt
-        TRUONG_REVIEWED, // Trường đã duyệt
-        TRUONG_APPROVED, // Trường phê duyệt
-        TRUONG_REJECTED, // Trường từ chối
-        FINAL_APPROVED // Phê duyệt cuối cùng
+        if (updatedBy == null) {
+            updatedBy = "system";
+        }
     }
 }

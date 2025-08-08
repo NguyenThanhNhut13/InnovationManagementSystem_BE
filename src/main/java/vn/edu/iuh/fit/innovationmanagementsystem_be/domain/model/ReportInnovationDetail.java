@@ -6,29 +6,34 @@ import java.time.LocalDateTime;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-
-
+import org.hibernate.annotations.Type;
 
 @Entity
-@Table(name = "user_role")
+@Table(name = "report_innovation_details")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class UserRole {
+public class ReportInnovationDetail {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     @Column(name = "id")
     private String id;
 
+    @Column(name = "display_order")
+    private Integer displayOrder;
+
+    @Column(name = "data_fields", columnDefinition = "JSON")
+    private String dataFields;
+
     // Foreign key relationships
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
-    private User user;
+    @JoinColumn(name = "innovation_id")
+    private Innovation innovation;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "role_id", nullable = false)
-    private Role role;
+    @JoinColumn(name = "report_id")
+    private Report report;
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;
@@ -62,4 +67,4 @@ public class UserRole {
             updatedBy = "system";
         }
     }
-    }
+}

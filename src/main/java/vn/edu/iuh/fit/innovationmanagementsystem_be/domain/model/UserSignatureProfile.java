@@ -7,59 +7,56 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 
+import java.time.LocalDateTime;
+import java.util.List;
 
 
 @Entity
-@Table(name = "user_role")
+@Table(name = "user_signature_profiles")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class UserRole {
+public class UserSignatureProfile {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     @Column(name = "id")
     private String id;
 
+    @Column(name = "path_url")
+    private String pathUrl;
+
+    @Column(name = "private_key")
+    private String privateKey;
+
+    @Column(name = "public_key")
+    private String publicKey;
+
     // Foreign key relationships
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
+    @JoinColumn(name = "user_id")
     private User user;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "role_id", nullable = false)
-    private Role role;
+    // Relationships
+    @OneToMany(mappedBy = "userSignatureProfile", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<DigitalSignature> digitalSignatures;
 
+    // Timestamps
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-    @Column(name = "created_by")
-    private String createdBy;
-
-    @Column(name = "updated_by")
-    private String updatedBy;
-
     // Pre-persist and pre-update methods
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
         updatedAt = LocalDateTime.now();
-        if (createdBy == null) {
-            createdBy = "system";
-        }
-        if (updatedBy == null) {
-            updatedBy = "system";
-        }
     }
 
     @PreUpdate
     protected void onUpdate() {
         updatedAt = LocalDateTime.now();
-        if (updatedBy == null) {
-            updatedBy = "system";
-        }
     }
-    }
+}
