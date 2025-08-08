@@ -5,12 +5,8 @@ import lombok.AllArgsConstructor;
 import java.time.LocalDateTime;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-
-import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.List;
-
+import java.util.ArrayList;
 
 @Entity
 @Table(name = "innovation_decision")
@@ -37,9 +33,8 @@ public class InnovationDecision {
     private LocalDateTime updateAt;
 
     // Relationships
-    @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "innovation_round_id")
-    private InnovationRound innovationRound;
+    @OneToMany(mappedBy = "innovationDecision", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
+    private List<InnovationRound> innovationRounds = new ArrayList<>();
 
     @OneToMany(mappedBy = "innovationDecision", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Regulation> regulations;

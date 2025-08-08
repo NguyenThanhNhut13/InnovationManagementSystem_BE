@@ -49,7 +49,8 @@ public class InnovationRound {
     private String updatedBy;
 
     // Relationships
-    @OneToOne(mappedBy = "innovationRound", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "innovation_decision_id", nullable = false)
     private InnovationDecision innovationDecision;
 
     @OneToMany(mappedBy = "innovationRound", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
