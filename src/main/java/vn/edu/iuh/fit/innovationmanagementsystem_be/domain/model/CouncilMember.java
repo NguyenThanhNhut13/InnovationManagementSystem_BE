@@ -22,7 +22,7 @@ public class CouncilMember {
     private String id;
 
     // Foreign key relationships
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "council_id", nullable = false)
     private Council council;
 

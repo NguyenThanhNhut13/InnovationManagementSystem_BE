@@ -8,6 +8,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.ReviewLev
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.ArrayList;
 
 @Entity
 @Table(name = "councils")
@@ -35,8 +36,8 @@ public class Council {
     private LocalDateTime updatedAt;
 
     // Relationships
-    @OneToMany(mappedBy = "council", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<CouncilMember> councilMembers;
+    @OneToMany(mappedBy = "council", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
+    private List<CouncilMember> councilMembers = new ArrayList<>();
 
     @Column(name = "created_by")
     private String createdBy;
