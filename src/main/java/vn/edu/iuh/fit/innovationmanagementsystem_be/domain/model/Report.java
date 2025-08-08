@@ -9,6 +9,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.DocumentT
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.ArrayList;
 
 @Entity
 @Table(name = "reports")
@@ -47,8 +48,8 @@ public class Report {
     @OneToMany(mappedBy = "report", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<ReportInnovationDetail> reportInnovationDetails;
 
-    @OneToMany(mappedBy = "report", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<DigitalSignature> digitalSignatures;
+    @OneToMany(mappedBy = "report", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = false)
+    private List<DigitalSignature> digitalSignatures = new ArrayList<>();
 
     // Timestamps
     @Column(name = "created_at")

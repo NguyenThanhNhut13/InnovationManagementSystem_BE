@@ -56,8 +56,8 @@ public class DigitalSignature {
     @JoinColumn(name = "user_signature_profile_id", nullable = false)
     private UserSignatureProfile userSignatureProfile;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "report_id")
+    @ManyToOne(fetch = FetchType.LAZY, optional = true)
+    @JoinColumn(name = "report_id", nullable = true)
     private Report report;
 
     // Timestamps
