@@ -67,8 +67,8 @@ public class Innovation {
     @OneToMany(mappedBy = "innovation", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
     private List<FormData> formDataList = new ArrayList<>();
 
-    @OneToMany(mappedBy = "innovation", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<ReviewScore> reviewScores;
+    @OneToMany(mappedBy = "innovation", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
+    private List<ReviewScore> reviewScores = new ArrayList<>();
 
     @OneToMany(mappedBy = "innovation", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<ReviewComment> reviewComments;

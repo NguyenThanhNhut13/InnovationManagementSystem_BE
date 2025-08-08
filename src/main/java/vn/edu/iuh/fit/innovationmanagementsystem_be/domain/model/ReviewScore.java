@@ -36,7 +36,7 @@ public class ReviewScore {
     @JoinColumn(name = "council_members_id", nullable = false)
     private CouncilMember councilMember;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "innovation_id", nullable = false)
     private Innovation innovation;
 
