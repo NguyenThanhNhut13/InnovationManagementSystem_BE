@@ -28,7 +28,7 @@ public class ReviewComment {
     private ReviewLevelEnum reviewsLevel;
 
     // Foreign key relationships
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "innovation_id", nullable = false)
     private Innovation innovation;
 
