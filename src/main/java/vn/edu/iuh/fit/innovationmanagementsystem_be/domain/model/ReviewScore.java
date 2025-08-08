@@ -10,7 +10,6 @@ import org.hibernate.annotations.Type;
 
 import java.time.LocalDateTime;
 
-
 @Entity
 @Table(name = "review_scores")
 @Data
@@ -41,8 +40,8 @@ public class ReviewScore {
     @JoinColumn(name = "innovation_id", nullable = false)
     private Innovation innovation;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "decision_id")
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "decision_id", nullable = false)
     private InnovationDecision innovationDecision;
 
     @Column(name = "created_at")

@@ -39,8 +39,8 @@ public class InnovationDecision {
     @OneToMany(mappedBy = "innovationDecision", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
     private List<Regulation> regulations = new ArrayList<>();
 
-    @OneToMany(mappedBy = "innovationDecision", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<ReviewScore> reviewScores;
+    @OneToMany(mappedBy = "innovationDecision", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
+    private List<ReviewScore> reviewScores = new ArrayList<>();
 
     // Pre-persist and pre-update methods
     @PrePersist
