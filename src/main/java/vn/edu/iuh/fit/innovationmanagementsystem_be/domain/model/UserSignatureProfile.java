@@ -30,9 +30,21 @@ public class UserSignatureProfile {
     @Column(name = "public_key")
     private String publicKey;
 
+    @Column(name = "certificate_serial", nullable = false)
+    private String certificateSerial; // Số serial của chứng chỉ
+
+    @Column(name = "certificate_issuer")
+    private String certificateIssuer; // Tổ chức phát hành chứng chỉ
+
+    @Column(name = "certificate_valid_from")
+    private LocalDateTime certificateValidFrom; // Thời gian có hiệu lực
+
+    @Column(name = "certificate_valid_to")
+    private LocalDateTime certificateValidTo; // Thời gian hết hạn
+
     // Foreign key relationships
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id")
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
     // Relationships
