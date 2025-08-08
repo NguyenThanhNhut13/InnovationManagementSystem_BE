@@ -8,6 +8,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.FieldType
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.ArrayList;
 
 @Entity
 @Table(name = "form_field")
@@ -42,7 +43,7 @@ public class FormField {
     @JoinColumn(name = "form_template_id", nullable = false)
     private FormTemplate formTemplate;
 
-    @OneToMany(mappedBy = "formField", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<FormData> formDataList;
+    @OneToMany(mappedBy = "formField", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
+    private List<FormData> formDataList = new ArrayList<>();
 
 }

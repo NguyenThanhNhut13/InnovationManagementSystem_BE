@@ -22,12 +22,12 @@ public class FormData {
     private String value;
 
     // Relationships
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "form_field_id")
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "form_field_id", nullable = false)
     private FormField formField;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "innovation_id")
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "innovation_id", nullable = false)
     private Innovation innovation;
 
 }
