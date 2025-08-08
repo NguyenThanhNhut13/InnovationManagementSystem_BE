@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.ArrayList;
 
 @Entity
 @Table(name = "user_signature_profiles")
@@ -48,8 +49,8 @@ public class UserSignatureProfile {
     private User user;
 
     // Relationships
-    @OneToMany(mappedBy = "userSignatureProfile", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<DigitalSignature> digitalSignatures;
+    @OneToMany(mappedBy = "userSignatureProfile", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = false)
+    private List<DigitalSignature> digitalSignatures = new ArrayList<>();
 
     // Timestamps
     @Column(name = "created_at")

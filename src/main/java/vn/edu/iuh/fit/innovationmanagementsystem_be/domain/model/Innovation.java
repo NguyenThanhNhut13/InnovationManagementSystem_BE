@@ -76,8 +76,8 @@ public class Innovation {
     @OneToMany(mappedBy = "innovation", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<ReportInnovationDetail> reportInnovationDetails;
 
-    @OneToMany(mappedBy = "innovation", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<DigitalSignature> digitalSignatures;
+    @OneToMany(mappedBy = "innovation", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = false)
+    private List<DigitalSignature> digitalSignatures = new ArrayList<>();
 
     // Pre-persist and pre-update methods
     @PrePersist
