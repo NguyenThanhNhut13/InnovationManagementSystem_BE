@@ -6,10 +6,6 @@ import java.time.LocalDateTime;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-
-import java.time.LocalDateTime;
-
-
 @Entity
 @Table(name = "regulation")
 @Data
@@ -38,8 +34,8 @@ public class Regulation {
     private LocalDateTime updateAt;
 
     // Relationships
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "decision_id")
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "decision_id", nullable = false)
     private InnovationDecision innovationDecision;
 
     // Pre-persist and pre-update methods

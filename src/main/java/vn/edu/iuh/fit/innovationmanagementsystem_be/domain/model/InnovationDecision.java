@@ -36,8 +36,8 @@ public class InnovationDecision {
     @OneToMany(mappedBy = "innovationDecision", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
     private List<InnovationRound> innovationRounds = new ArrayList<>();
 
-    @OneToMany(mappedBy = "innovationDecision", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<Regulation> regulations;
+    @OneToMany(mappedBy = "innovationDecision", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
+    private List<Regulation> regulations = new ArrayList<>();
 
     @OneToMany(mappedBy = "innovationDecision", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<ReviewScore> reviewScores;
