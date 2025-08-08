@@ -21,6 +21,9 @@ public class User {
     @Column(name = "id")
     private String id;
 
+    @Column(name = "personnel_id", unique = true)
+    private String personnelId;
+
     @Column(name = "user_name", nullable = false, unique = true)
     private String userName;
 
@@ -37,15 +40,12 @@ public class User {
     private String password;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "role", nullable = false)
+    @Column(name = "user_role", nullable = false)
     private UserRoleEnum role;
 
-    @Column(name = "personnel_id", unique = true)
-    private String personnelId;
-
     // Foreign key relationships
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "department_id")
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "department_id", nullable = false)
     private Department department;
 
     // Relationships
