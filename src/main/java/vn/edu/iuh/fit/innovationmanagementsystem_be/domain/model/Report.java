@@ -45,8 +45,8 @@ public class Report {
     private User user;
 
     // Relationships
-    @OneToMany(mappedBy = "report", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<ReportInnovationDetail> reportInnovationDetails;
+    @OneToMany(mappedBy = "report", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
+    private List<ReportInnovationDetail> reportInnovationDetails = new ArrayList<>();
 
     @OneToMany(mappedBy = "report", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = false)
     private List<DigitalSignature> digitalSignatures = new ArrayList<>();
