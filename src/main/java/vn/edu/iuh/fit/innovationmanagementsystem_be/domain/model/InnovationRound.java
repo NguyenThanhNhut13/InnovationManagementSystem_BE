@@ -9,6 +9,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.Innovatio
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.ArrayList;
 
 @Entity
 @Table(name = "innovation_rounds")
@@ -54,8 +55,8 @@ public class InnovationRound {
     @OneToMany(mappedBy = "innovationRound", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<FormTemplate> formTemplates;
 
-    @OneToMany(mappedBy = "innovationRound", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<Innovation> innovations;
+    @OneToMany(mappedBy = "innovationRound", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
+    private List<Innovation> innovations = new ArrayList<>();
 
     // Pre-persist and pre-update methods
     @PrePersist

@@ -41,8 +41,8 @@ public class Innovation {
     @JoinColumn(name = "department_id", nullable = false)
     private Department department;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "innovation_round_id")
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "innovation_round_id", nullable = false)
     private InnovationRound innovationRound;
 
     @Column(name = "created_at")
