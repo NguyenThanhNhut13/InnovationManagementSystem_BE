@@ -6,9 +6,6 @@ import java.time.LocalDateTime;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-
-
-
 @Entity
 @Table(name = "user_role")
 @Data
@@ -30,36 +27,4 @@ public class UserRole {
     @JoinColumn(name = "role_id", nullable = false)
     private Role role;
 
-    @Column(name = "created_at")
-    private LocalDateTime createdAt;
-
-    @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
-
-    @Column(name = "created_by")
-    private String createdBy;
-
-    @Column(name = "updated_by")
-    private String updatedBy;
-
-    // Pre-persist and pre-update methods
-    @PrePersist
-    protected void onCreate() {
-        createdAt = LocalDateTime.now();
-        updatedAt = LocalDateTime.now();
-        if (createdBy == null) {
-            createdBy = "system";
-        }
-        if (updatedBy == null) {
-            updatedBy = "system";
-        }
-    }
-
-    @PreUpdate
-    protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
-        if (updatedBy == null) {
-            updatedBy = "system";
-        }
-    }
-    }
+}
