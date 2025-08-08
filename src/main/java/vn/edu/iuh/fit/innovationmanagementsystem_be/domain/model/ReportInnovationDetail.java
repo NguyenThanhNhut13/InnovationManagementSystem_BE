@@ -25,8 +25,8 @@ public class ReportInnovationDetail {
     private String dataFields;
 
     // Foreign key relationships
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "innovation_id")
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "innovation_id", nullable = false)
     private Innovation innovation;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
