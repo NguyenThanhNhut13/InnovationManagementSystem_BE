@@ -9,7 +9,6 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.RoleEnum;
 
 import java.time.LocalDateTime;
 
-
 @Entity
 @Table(name = "digital_signatures")
 @Data
