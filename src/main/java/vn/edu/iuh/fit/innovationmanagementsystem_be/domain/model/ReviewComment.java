@@ -32,7 +32,7 @@ public class ReviewComment {
     @JoinColumn(name = "innovation_id", nullable = false)
     private Innovation innovation;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "review_council_members_id", nullable = false)
     private CouncilMember councilMember;
 

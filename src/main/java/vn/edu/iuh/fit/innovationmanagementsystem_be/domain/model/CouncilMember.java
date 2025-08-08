@@ -34,7 +34,7 @@ public class CouncilMember {
     @OneToMany(mappedBy = "councilMember", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = false)
     private List<ReviewScore> reviewScores = new ArrayList<>();
 
-    @OneToMany(mappedBy = "councilMember", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<ReviewComment> reviewComments;
+    @OneToMany(mappedBy = "councilMember", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = false)
+    private List<ReviewComment> reviewComments = new ArrayList<>();
 
 }
