@@ -32,6 +32,12 @@ public class InnovationDecision {
     @Column(name = "update_at")
     private LocalDateTime updateAt;
 
+    @Column(name = "created_by")
+    private String createdBy;
+
+    @Column(name = "updated_by")
+    private String updatedBy;
+
     // Relationships
     @OneToMany(mappedBy = "innovationDecision", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
     private List<InnovationRound> innovationRounds = new ArrayList<>();
