@@ -8,6 +8,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.UserRoleE
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.ArrayList;
 
 @Entity
 @Table(name = "users")
@@ -49,8 +50,8 @@ public class User {
     private Department department;
 
     // Relationships
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<Innovation> innovations;
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
+    private List<Innovation> innovations = new ArrayList<>();
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<CoInnovation> coInnovations;
