@@ -61,8 +61,8 @@ public class Innovation {
     @OneToMany(mappedBy = "innovation", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true, targetEntity = Attachment.class)
     private List<Attachment> attachments = new ArrayList<>();
 
-    @OneToMany(mappedBy = "innovation", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<CoInnovation> coInnovations;
+    @OneToMany(mappedBy = "innovation", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
+    private List<CoInnovation> coInnovations = new ArrayList<>();
 
     @OneToMany(mappedBy = "innovation", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<FormData> formDataList;
