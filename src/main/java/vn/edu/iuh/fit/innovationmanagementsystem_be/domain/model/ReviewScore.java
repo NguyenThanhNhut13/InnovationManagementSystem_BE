@@ -32,7 +32,7 @@ public class ReviewScore {
     private Integer actualScore;
 
     // Foreign key relationships
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "council_members_id", nullable = false)
     private CouncilMember councilMember;
 

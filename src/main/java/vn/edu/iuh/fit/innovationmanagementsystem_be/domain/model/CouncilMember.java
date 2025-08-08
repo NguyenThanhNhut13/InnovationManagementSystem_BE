@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.ArrayList;
 
 @Entity
 @Table(name = "council_members")
@@ -30,8 +31,8 @@ public class CouncilMember {
     private User user;
 
     // Relationships
-    @OneToMany(mappedBy = "councilMember", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<ReviewScore> reviewScores;
+    @OneToMany(mappedBy = "councilMember", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = false)
+    private List<ReviewScore> reviewScores = new ArrayList<>();
 
     @OneToMany(mappedBy = "councilMember", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<ReviewComment> reviewComments;
