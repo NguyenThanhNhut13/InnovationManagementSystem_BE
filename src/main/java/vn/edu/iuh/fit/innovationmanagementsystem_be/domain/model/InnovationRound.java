@@ -52,8 +52,8 @@ public class InnovationRound {
     @OneToOne(mappedBy = "innovationRound", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private InnovationDecision innovationDecision;
 
-    @OneToMany(mappedBy = "innovationRound", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<FormTemplate> formTemplates;
+    @OneToMany(mappedBy = "innovationRound", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
+    private List<FormTemplate> formTemplates = new ArrayList<>();
 
     @OneToMany(mappedBy = "innovationRound", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
     private List<Innovation> innovations = new ArrayList<>();

@@ -45,8 +45,8 @@ public class FormTemplate {
     @OneToMany(mappedBy = "formTemplate", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<FormField> formFields;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "innovation_round_id")
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "innovation_round_id", nullable = false)
     private InnovationRound innovationRound;
 
     // Pre-persist and pre-update methods
