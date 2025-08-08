@@ -38,43 +38,11 @@ public class FormField {
     private String fieldKey;
 
     // Relationships
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "form_template_id")
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "form_template_id", nullable = false)
     private FormTemplate formTemplate;
 
     @OneToMany(mappedBy = "formField", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<FormData> formDataList;
 
-    @Column(name = "created_at")
-    private LocalDateTime createdAt;
-
-    @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
-
-    @Column(name = "created_by")
-    private String createdBy;
-
-    @Column(name = "updated_by")
-    private String updatedBy;
-
-    // Pre-persist and pre-update methods
-    @PrePersist
-    protected void onCreate() {
-        createdAt = LocalDateTime.now();
-        updatedAt = LocalDateTime.now();
-        if (createdBy == null) {
-            createdBy = "system";
-        }
-        if (updatedBy == null) {
-            updatedBy = "system";
-        }
-    }
-
-    @PreUpdate
-    protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
-        if (updatedBy == null) {
-            updatedBy = "system";
-        }
-    }
 }
