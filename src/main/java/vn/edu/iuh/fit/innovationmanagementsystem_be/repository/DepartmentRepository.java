@@ -13,20 +13,19 @@ import java.util.Optional;
 public interface DepartmentRepository extends JpaRepository<Department, String> {
 
     // Tìm department theo tên
-    Optional<Department> findByName(String name);
+    Optional<Department> findByDepartmentName(String departmentName);
 
     // Tìm department theo mã
-    Optional<Department> findByCode(String code);
+    Optional<Department> findByDepartmentCode(String departmentCode);
 
     // Kiểm tra tên department đã tồn tại chưa
-    boolean existsByName(String name);
+    boolean existsByDepartmentName(String departmentName);
 
     // Kiểm tra mã department đã tồn tại chưa
-    boolean existsByCode(String code);
+    boolean existsByDepartmentCode(String departmentCode);
 
     // Tìm department theo tên (tìm kiếm mờ)
-    @Query("SELECT d FROM Department d WHERE d.name LIKE %:name%")
-    List<Department> findByNameContaining(@Param("name") String name);
+    List<Department> findByDepartmentNameContainingIgnoreCase(String departmentName);
 
     // Đếm số user trong department
     @Query("SELECT COUNT(u) FROM User u WHERE u.department.id = :departmentId")
@@ -36,4 +35,3 @@ public interface DepartmentRepository extends JpaRepository<Department, String> 
     @Query("SELECT COUNT(i) FROM Innovation i WHERE i.department.id = :departmentId")
     long countInnovationsByDepartmentId(@Param("departmentId") String departmentId);
 }
-

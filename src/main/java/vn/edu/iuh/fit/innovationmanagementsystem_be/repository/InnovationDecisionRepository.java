@@ -12,25 +12,22 @@ import java.util.List;
 @Repository
 public interface InnovationDecisionRepository extends JpaRepository<InnovationDecision, String> {
 
-        // Tìm decision theo tên
-        List<InnovationDecision> findByDecisionNameContaining(String decisionName);
+        // Tìm decision theo decision number
+        List<InnovationDecision> findByDecisionNumberContaining(String decisionNumber);
+
+        // Tìm decision theo năm
+        List<InnovationDecision> findByYearDecision(Integer yearDecision);
 
         // Tìm decision theo thời gian tạo
         @Query("SELECT id FROM InnovationDecision id WHERE id.createdAt BETWEEN :startDate AND :endDate")
         List<InnovationDecision> findByCreatedAtBetween(@Param("startDate") LocalDateTime startDate,
                         @Param("endDate") LocalDateTime endDate);
 
-        // Tìm decision theo thời gian hiệu lực
-        @Query("SELECT id FROM InnovationDecision id WHERE id.effectiveDate BETWEEN :startDate AND :endDate")
-        List<InnovationDecision> findByEffectiveDateBetween(@Param("startDate") LocalDateTime startDate,
-                        @Param("endDate") LocalDateTime endDate);
+        // Kiểm tra decision number đã tồn tại chưa
+        boolean existsByDecisionNumber(String decisionNumber);
 
-        // Tìm decision đang hiệu lực
-        @Query("SELECT id FROM InnovationDecision id WHERE id.effectiveDate <= :currentDate AND (id.expiryDate IS NULL OR id.expiryDate >= :currentDate)")
-        List<InnovationDecision> findActiveDecisions(@Param("currentDate") LocalDateTime currentDate);
-
-        // Kiểm tra decision name đã tồn tại chưa
-        boolean existsByDecisionName(String decisionName);
+        // Đếm decision theo năm
+        long countByYearDecision(Integer yearDecision);
 
         // Tìm decision theo innovation round (thông qua quan hệ)
         @Query("SELECT id FROM InnovationDecision id JOIN id.innovationRounds ir WHERE ir.id = :roundId")

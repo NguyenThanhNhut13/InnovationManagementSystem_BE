@@ -12,7 +12,13 @@ import java.util.List;
 public interface FormTemplateRepository extends JpaRepository<FormTemplate, String> {
 
         // Tìm template theo tên
-        List<FormTemplate> findByTemplateNameContaining(String templateName);
+        List<FormTemplate> findByNameContaining(String name);
+
+        // Tìm template theo description
+        List<FormTemplate> findByDescriptionContaining(String description);
+
+        // Kiểm tra tên template đã tồn tại chưa
+        boolean existsByName(String name);
 
         // Tìm template theo innovation round
         @Query("SELECT ft FROM FormTemplate ft WHERE ft.innovationRound.id = :roundId")

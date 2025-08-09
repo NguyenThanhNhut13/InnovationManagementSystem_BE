@@ -12,11 +12,24 @@ import java.util.List;
 @Repository
 public interface FormFieldRepository extends JpaRepository<FormField, String> {
 
-        // Tìm field theo tên
-        List<FormField> findByFieldNameContaining(String fieldName);
+        // Tìm field theo label
+        List<FormField> findByLabelContaining(String label);
+
+        // Tìm field theo fieldKey
+        List<FormField> findByFieldKeyContaining(String fieldKey);
+
+        // Tìm field theo form template
+        @Query("SELECT ff FROM FormField ff WHERE ff.formTemplate.id = :templateId ORDER BY ff.orderIndex")
+        List<FormField> findByFormTemplateId(@Param("templateId") String templateId);
 
         // Đếm field theo form template
         @Query("SELECT COUNT(ff) FROM FormField ff WHERE ff.formTemplate.id = :templateId")
         long countByFormTemplateId(@Param("templateId") String templateId);
+
+        // Tìm field theo fieldType
+        List<FormField> findByFieldType(FieldTypeEnum fieldType);
+
+        // Tìm field required
+        List<FormField> findByRequiredTrue();
 
 }

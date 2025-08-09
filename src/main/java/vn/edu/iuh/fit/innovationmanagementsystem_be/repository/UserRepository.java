@@ -16,9 +16,6 @@ public interface UserRepository extends JpaRepository<User, String> {
     // Tìm user theo email
     Optional<User> findByEmail(String email);
 
-    // Tìm user theo username
-    Optional<User> findByUserName(String userName);
-
     // Tìm user theo personnelId
     Optional<User> findByPersonnelId(String personnelId);
 
@@ -35,14 +32,17 @@ public interface UserRepository extends JpaRepository<User, String> {
     // Kiểm tra email đã tồn tại chưa
     boolean existsByEmail(String email);
 
-    // Kiểm tra username đã tồn tại chưa
-    boolean existsByUserName(String userName);
-
     // Kiểm tra personnelId đã tồn tại chưa
     boolean existsByPersonnelId(String personnelId);
 
     // Tìm user theo tên đầy đủ (tìm kiếm mờ)
     @Query("SELECT u FROM User u WHERE u.fullName LIKE %:fullName%")
     List<User> findByFullNameContaining(@Param("fullName") String fullName);
-}
 
+    // Tìm user theo tên đầy đủ (tìm kiếm mờ, không phân biệt hoa thường)
+    List<User> findByFullNameContainingIgnoreCase(String fullName);
+
+    // Tìm user theo email hoặc mã nhân viên
+    @Query("SELECT u FROM User u WHERE u.email = :emailOrPersonnelId OR u.personnelId = :emailOrPersonnelId")
+    Optional<User> findByEmailOrPersonnelId(@Param("emailOrPersonnelId") String emailOrPersonnelId);
+}

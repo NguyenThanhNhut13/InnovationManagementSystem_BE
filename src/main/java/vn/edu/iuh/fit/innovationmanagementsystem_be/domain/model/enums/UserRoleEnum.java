@@ -8,5 +8,6 @@ public enum UserRoleEnum {
     THU_KY_QLKH_HTQT, // Thư ký quản lý khoa học và hợp tác quốc tế
     TV_HOI_DONG_TRUONG, // Thành viên hội đồng trường
     CHU_TICH_HD_TRUONG, // Chủ tịch hội đồng trường
-    QUAN_TRI_VIEN // Quản trị viên
+    QUAN_TRI_VIEN, // Quản trị viên
+    ADMIN
 }

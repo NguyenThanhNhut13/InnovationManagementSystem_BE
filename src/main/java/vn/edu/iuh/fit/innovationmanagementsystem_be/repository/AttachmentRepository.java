@@ -17,7 +17,7 @@ public interface AttachmentRepository extends JpaRepository<Attachment, String> 
     List<Attachment> findByInnovationId(@Param("innovationId") String innovationId);
 
     // Tìm attachment theo loại
-    List<Attachment> findByAttachmentType(AttachmentTypeEnum attachmentType);
+    List<Attachment> findByType(AttachmentTypeEnum type);
 
     // Tìm attachment theo tên file
     List<Attachment> findByFileNameContaining(String fileName);
@@ -27,8 +27,12 @@ public interface AttachmentRepository extends JpaRepository<Attachment, String> 
     long countByInnovationId(@Param("innovationId") String innovationId);
 
     // Đếm attachment theo loại
-    long countByAttachmentType(AttachmentTypeEnum attachmentType);
+    long countByType(AttachmentTypeEnum type);
 
-    // Kiểm tra file path đã tồn tại chưa
-    boolean existsByFilePath(String filePath);
+    // Kiểm tra path URL đã tồn tại chưa
+    boolean existsByPathUrl(String pathUrl);
+
+    // Tìm attachment theo file size range
+    @Query("SELECT a FROM Attachment a WHERE a.fileSize BETWEEN :minSize AND :maxSize")
+    List<Attachment> findByFileSizeBetween(@Param("minSize") Long minSize, @Param("maxSize") Long maxSize);
 }
