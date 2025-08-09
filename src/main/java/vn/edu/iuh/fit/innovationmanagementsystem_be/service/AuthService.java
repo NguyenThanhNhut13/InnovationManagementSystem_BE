@@ -17,6 +17,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.RegisterRe
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.TokenRefreshRequest;
 
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.LoginResponse;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.RegisterResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.TokenRefreshResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.UserResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.DepartmentRepository;
@@ -75,13 +76,16 @@ public class AuthService {
                 String refreshToken = refreshTokenService.createRefreshToken(user.getId());
 
                 return new LoginResponse(
-                        accessToken,
-                        refreshToken,
                         user.getId(),
+                        user.getPersonnelId(),
                         user.getFullName(),
                         user.getEmail(),
+                        user.getPhoneNumber(),
                         primaryRole,
+                        user.getDepartment().getId(),
                         user.getDepartment().getDepartmentName(),
+                        accessToken,
+                        refreshToken,
                         jwtExpiration / 1000 // Convert milliseconds to seconds
                 );
             } else {
@@ -92,7 +96,7 @@ public class AuthService {
         }
     }
 
-    public LoginResponse register(RegisterRequest request) {
+    public RegisterResponse register(RegisterRequest request) {
         // Kiểm tra email đã tồn tại
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new RuntimeException("Email đã tồn tại");
@@ -109,13 +113,8 @@ public class AuthService {
             throw new RuntimeException("Khoa/Viện không tồn tại");
         }
 
-        // Chuyển đổi role string thành enum
-        UserRoleEnum roleEnum;
-        try {
-            roleEnum = UserRoleEnum.valueOf(request.getRole());
-        } catch (IllegalArgumentException e) {
-            throw new RuntimeException("Vai trò không hợp lệ");
-        }
+        // Sử dụng GIANG_VIEN làm role mặc định cho tất cả user đăng ký
+        UserRoleEnum roleEnum = UserRoleEnum.GIANG_VIEN;
 
         // Lấy role từ database
         Role role = roleRepository.findByRoleName(roleEnum)
@@ -138,20 +137,15 @@ public class AuthService {
         userRole.setRole(role);
         userRoleRepository.save(userRole);
 
-        // Tạo token
-        String accessToken = jwtUtil.generateAccessToken(savedUser.getId(), savedUser.getEmail(), roleEnum);
-        String refreshToken = refreshTokenService.createRefreshToken(savedUser.getId());
-
-        return new LoginResponse(
-                accessToken,
-                refreshToken,
+        return new RegisterResponse(
                 savedUser.getId(),
+                savedUser.getPersonnelId(),
                 savedUser.getFullName(),
                 savedUser.getEmail(),
+                savedUser.getPhoneNumber(),
                 roleEnum,
-                savedUser.getDepartment().getDepartmentName(),
-                jwtExpiration / 1000 // Convert milliseconds to seconds
-        );
+                savedUser.getDepartment().getId(),
+                savedUser.getDepartment().getDepartmentName());
     }
 
     public String changePassword(String userId, ChangePasswordRequest request) {

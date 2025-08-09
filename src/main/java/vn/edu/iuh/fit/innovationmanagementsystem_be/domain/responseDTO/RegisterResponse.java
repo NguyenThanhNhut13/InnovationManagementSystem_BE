@@ -8,8 +8,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.UserRoleE
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class LoginResponse {
-
+public class RegisterResponse {
     private String userId;
     private String personnelId;
     private String fullName;
@@ -18,7 +17,4 @@ public class LoginResponse {
     private UserRoleEnum role;
     private String departmentId;
     private String departmentName;
-    private String accessToken;
-    private String refreshToken;
-    private long expiresIn; // Access token expiration in seconds
 }

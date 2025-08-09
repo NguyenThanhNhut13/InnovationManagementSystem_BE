@@ -79,7 +79,7 @@
                         ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\n    \"personnelId\": \"NV001\",\n    \"fullName\": \"Nguyễn Văn A\",\n    \"email\": \"nguyenvana@example.com\",\n    \"phoneNumber\": \"0123456789\",\n    \"password\": \"password123\",\n    \"role\": \"GIANG_VIEN\",\n    \"departmentId\": \"department_id_here\"\n}"
+                            "raw": "{\n    \"personnelId\": \"NV001\",\n    \"fullName\": \"Nguyễn Văn A\",\n    \"email\": \"nguyenvana@example.com\",\n    \"phoneNumber\": \"0123456789\",\n    \"password\": \"password123\",\n    \"departmentId\": \"department_id_here\"\n}"
                         },
                         "url": {
                             "raw": "{{base_url}}/api/v1/auth/register",

@@ -12,6 +12,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.TokenRefre
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.ApiResponse;
 
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.LoginResponse;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.RegisterResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.TokenRefreshResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.UserResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.service.AuthService;
@@ -35,9 +36,9 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<ApiResponse<LoginResponse>> register(@Valid @RequestBody RegisterRequest request) {
+    public ResponseEntity<ApiResponse<RegisterResponse>> register(@Valid @RequestBody RegisterRequest request) {
         try {
-            LoginResponse response = authService.register(request);
+            RegisterResponse response = authService.register(request);
             return ResponseEntity.ok(ApiResponse.success(response, "Đăng ký thành công"));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));

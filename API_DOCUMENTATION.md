@@ -37,9 +37,12 @@ Authorization: Bearer <token>
         "accessToken": "jwt_access_token_here",
         "refreshToken": "refresh_token_here",
         "userId": "user_id",
+        "personnelId": "NV001",
         "fullName": "Họ và tên",
         "email": "user@example.com",
+        "phoneNumber": "0123456789",
         "role": "GIANG_VIEN",
+        "departmentId": "dept_id",
         "departmentName": "Tên khoa",
         "expiresIn": 86400
     },
@@ -49,7 +52,7 @@ Authorization: Bearer <token>
 
 #### 1.2 Đăng ký
 - **URL:** `POST /api/v1/auth/register`
-- **Description:** Đăng ký tài khoản mới
+- **Description:** Đăng ký tài khoản mới (role mặc định: GIANG_VIEN)
 - **Request Body:**
 ```json
 {
@@ -58,11 +61,30 @@ Authorization: Bearer <token>
     "email": "user@example.com",
     "phoneNumber": "0123456789",
     "password": "password123",
-    "role": "GIANG_VIEN",
     "departmentId": "dept_id"
 }
 ```
-- **Response:** Tương tự như đăng nhập
+- **Response:** 
+```json
+{
+    "success": true,
+    "message": "Đăng ký thành công",
+    "data": {
+        "userId": "user_id",
+        "personnelId": "NV001",
+        "fullName": "Họ và tên",
+        "email": "user@example.com",
+        "phoneNumber": "0123456789",
+        "role": "GIANG_VIEN",
+        "departmentId": "dept_id",
+        "departmentName": "Tên khoa"
+    },
+    "statusCode": 200
+}
+```
+- **Note:** 
+  - Tất cả user đăng ký sẽ được gán role GIANG_VIEN mặc định. Admin có thể thay đổi role sau khi tạo.
+  - Đăng ký chỉ tạo tài khoản, không tự động đăng nhập. User cần đăng nhập riêng để nhận token.
 
 #### 1.3 Làm mới token
 - **URL:** `POST /api/v1/auth/refresh`
@@ -361,6 +383,10 @@ mvn spring-boot:run
 - Email và mã nhân viên phải unique trong hệ thống
 - Password được mã hóa bằng BCrypt
 - Cập nhật user không thay đổi personnelId và password
+- Đăng ký user mặc định sẽ được gán role GIANG_VIEN
+- Chỉ admin có thể tạo user với role khác thông qua User Management API
+- Đăng ký chỉ tạo tài khoản, không tự động đăng nhập (không trả về token)
+- User phải đăng nhập riêng sau khi đăng ký để nhận access/refresh token
 
 ### Department Management
 - Không thể xóa department nếu còn user hoặc innovation

@@ -30,9 +30,6 @@ public class RegisterRequest {
     @Size(min = 6, message = "Mật khẩu phải có ít nhất 6 ký tự")
     private String password;
 
-    @NotBlank(message = "Vai trò không được để trống")
-    private String role;
-
     @NotBlank(message = "Mã Khoa/Viện không được để trống")
     private String departmentId;
 }

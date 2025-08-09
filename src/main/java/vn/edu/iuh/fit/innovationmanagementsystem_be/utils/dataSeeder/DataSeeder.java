@@ -1,4 +1,4 @@
-package vn.edu.iuh.fit.innovationmanagementsystem_be.config;
+package vn.edu.iuh.fit.innovationmanagementsystem_be.utils.dataSeeder;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
