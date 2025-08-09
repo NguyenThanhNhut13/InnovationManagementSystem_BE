@@ -9,5 +9,4 @@ public enum UserRoleEnum {
     TV_HOI_DONG_TRUONG, // Thành viên hội đồng trường
     CHU_TICH_HD_TRUONG, // Chủ tịch hội đồng trường
     QUAN_TRI_VIEN, // Quản trị viên
-    ADMIN
 }

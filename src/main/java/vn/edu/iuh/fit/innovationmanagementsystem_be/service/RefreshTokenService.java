@@ -4,8 +4,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.JwtUtil;
 
-import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 @Service
@@ -13,6 +13,7 @@ import java.util.concurrent.TimeUnit;
 public class RefreshTokenService {
 
     private final RedisTemplate<String, Object> redisTemplate;
+    private final JwtUtil jwtUtil;
 
     @Value("${jwt.refresh-expiration}")
     private long refreshExpiration;
@@ -21,13 +22,13 @@ public class RefreshTokenService {
     private static final String USER_REFRESH_TOKENS_PREFIX = "user_refresh_tokens:";
 
     /**
-     * Tạo refresh token mới và lưu vào Redis
+     * Tạo refresh token mới (JWT) và lưu vào Redis để tracking
      */
     public String createRefreshToken(String userId) {
-        String refreshToken = UUID.randomUUID().toString();
+        String refreshToken = jwtUtil.generateRefreshToken(userId);
         String key = REFRESH_TOKEN_PREFIX + refreshToken;
 
-        // Lưu refresh token với userId
+        // Lưu refresh token vào whitelist với userId
         redisTemplate.opsForValue().set(key, userId, refreshExpiration, TimeUnit.MILLISECONDS);
 
         // Lưu refresh token vào set của user (để có thể logout tất cả thiết bị)
@@ -39,12 +40,33 @@ public class RefreshTokenService {
     }
 
     /**
-     * Xác thực refresh token và trả về userId
+     * Xác thực refresh token (JWT + Redis whitelist) và trả về userId
      */
     public String validateRefreshToken(String refreshToken) {
-        String key = REFRESH_TOKEN_PREFIX + refreshToken;
-        Object userId = redisTemplate.opsForValue().get(key);
-        return userId != null ? userId.toString() : null;
+        try {
+            // 1. Validate JWT signature and expiration
+            if (!jwtUtil.validateRefreshToken(refreshToken)) {
+                return null;
+            }
+
+            // 2. Check if token exists in Redis whitelist (not revoked)
+            String key = REFRESH_TOKEN_PREFIX + refreshToken;
+            Object userId = redisTemplate.opsForValue().get(key);
+
+            if (userId == null) {
+                return null; // Token was revoked
+            }
+
+            // 3. Verify userId from JWT matches Redis
+            String jwtUserId = jwtUtil.extractUserId(refreshToken);
+            if (!jwtUserId.equals(userId.toString())) {
+                return null; // Mismatch, potential security issue
+            }
+
+            return jwtUserId;
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     /**
@@ -88,25 +110,35 @@ public class RefreshTokenService {
     }
 
     /**
-     * Rotate refresh token (tạo mới và xóa cũ)
+     * Rotate refresh token (tạo JWT mới và revoke cũ)
      */
     public String rotateRefreshToken(String oldRefreshToken) {
         String userId = validateRefreshToken(oldRefreshToken);
         if (userId != null) {
-            // Xóa token cũ
+            // Xóa token cũ khỏi whitelist (revoke)
             deleteRefreshToken(oldRefreshToken);
-            // Tạo token mới
+            // Tạo JWT token mới
             return createRefreshToken(userId);
         }
         return null;
     }
 
     /**
-     * Kiểm tra refresh token có tồn tại không
+     * Kiểm tra refresh token có hợp lệ và tồn tại trong whitelist không
      */
     public boolean existsRefreshToken(String refreshToken) {
-        String key = REFRESH_TOKEN_PREFIX + refreshToken;
-        return Boolean.TRUE.equals(redisTemplate.hasKey(key));
+        try {
+            // Validate JWT first
+            if (!jwtUtil.validateRefreshToken(refreshToken)) {
+                return false;
+            }
+
+            // Check Redis whitelist
+            String key = REFRESH_TOKEN_PREFIX + refreshToken;
+            return Boolean.TRUE.equals(redisTemplate.hasKey(key));
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     /**

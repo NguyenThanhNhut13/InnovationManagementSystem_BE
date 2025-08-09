@@ -43,7 +43,14 @@ public class JwtUtil {
         return createToken(claims, userId, expiration);
     }
 
-    // Không tạo JWT refresh token nữa, chỉ tạo access token
+    public String generateRefreshToken(String userId) {
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("userId", userId);
+        claims.put("type", "refresh");
+
+        return createToken(claims, userId, refreshExpiration);
+    }
+
     private String createToken(Map<String, Object> claims, String subject, long expiration) {
         return Jwts.builder()
                 .setClaims(claims)
@@ -100,6 +107,23 @@ public class JwtUtil {
         try {
             String type = extractClaim(token, claims -> claims.get("type", String.class));
             return "access".equals(type);
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    public Boolean isRefreshToken(String token) {
+        try {
+            String type = extractClaim(token, claims -> claims.get("type", String.class));
+            return "refresh".equals(type);
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    public Boolean validateRefreshToken(String token) {
+        try {
+            return validateToken(token) && isRefreshToken(token);
         } catch (Exception e) {
             return false;
         }

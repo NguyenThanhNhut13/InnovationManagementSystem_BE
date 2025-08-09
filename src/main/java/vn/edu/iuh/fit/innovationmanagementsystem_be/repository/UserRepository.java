@@ -19,9 +19,6 @@ public interface UserRepository extends JpaRepository<User, String> {
     // Tìm user theo personnelId
     Optional<User> findByPersonnelId(String personnelId);
 
-    // Tìm tất cả user theo role
-    List<User> findByRole(UserRoleEnum role);
-
     // Tìm tất cả user theo department
     @Query("SELECT u FROM User u WHERE u.department.id = :departmentId")
     List<User> findByDepartmentId(@Param("departmentId") String departmentId);

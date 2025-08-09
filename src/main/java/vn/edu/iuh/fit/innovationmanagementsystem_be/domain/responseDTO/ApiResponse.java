@@ -8,24 +8,24 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ApiResponse<T> {
+    private int statusCode;
     private boolean success;
     private String message;
     private T data;
-    private int statusCode;
 
     public static <T> ApiResponse<T> success(T data, String message) {
-        return new ApiResponse<>(true, message, data, 200);
+        return new ApiResponse<>(200, true, message, data);
     }
 
     public static <T> ApiResponse<T> success(T data) {
-        return new ApiResponse<>(true, "Thành công", data, 200);
+        return new ApiResponse<>(200, true, "Thành công", data);
     }
 
     public static <T> ApiResponse<T> error(String message, int statusCode) {
-        return new ApiResponse<>(false, message, null, statusCode);
+        return new ApiResponse<>(statusCode, false, message, null);
     }
 
     public static <T> ApiResponse<T> error(String message) {
-        return new ApiResponse<>(false, message, null, 400);
+        return new ApiResponse<>(400, false, message, null);
     }
 }

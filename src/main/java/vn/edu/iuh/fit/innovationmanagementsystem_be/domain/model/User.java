@@ -37,10 +37,6 @@ public class User {
     @Column(name = "password", nullable = false)
     private String password;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "user_role", nullable = false)
-    private UserRoleEnum role;
-
     // Foreign key relationships
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "department_id", nullable = false)

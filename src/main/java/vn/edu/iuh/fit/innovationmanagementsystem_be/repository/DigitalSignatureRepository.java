@@ -6,8 +6,8 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.DigitalSignature;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.DocumentTypeEnum;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.RoleEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.SignatureStatusEnum;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.UserRoleEnum;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -35,7 +35,7 @@ public interface DigitalSignatureRepository extends JpaRepository<DigitalSignatu
         List<DigitalSignature> findByDocumentType(DocumentTypeEnum documentType);
 
         // Tìm signature theo vai trò ký
-        List<DigitalSignature> findBySignedAsRole(RoleEnum signedAsRole);
+        List<DigitalSignature> findBySignedAsRole(UserRoleEnum signedAsRole);
 
         // Tìm signature theo thời gian ký
         @Query("SELECT ds FROM DigitalSignature ds WHERE ds.signAt BETWEEN :startDate AND :endDate")

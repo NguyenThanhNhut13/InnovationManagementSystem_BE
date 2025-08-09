@@ -7,7 +7,9 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.Department;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.Role;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.User;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.UserRole;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.UserRoleEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.ChangePasswordRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.LoginRequest;
@@ -18,7 +20,9 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.LoginResp
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.TokenRefreshResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.UserResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.DepartmentRepository;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.RoleRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.UserRepository;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.UserRoleRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.JwtUtil;
 
 import java.util.Optional;
@@ -29,6 +33,8 @@ public class AuthService {
 
     private final UserRepository userRepository;
     private final DepartmentRepository departmentRepository;
+    private final RoleRepository roleRepository;
+    private final UserRoleRepository userRoleRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
     private final AuthenticationManager authenticationManager;
@@ -36,6 +42,17 @@ public class AuthService {
 
     @Value("${jwt.expiration}")
     private long jwtExpiration;
+
+    /**
+     * Lấy role chính (primary role) của user
+     */
+    private UserRoleEnum getPrimaryRole(String userId) {
+        return userRoleRepository.findPrimaryRoleByUserId(userId)
+                .stream()
+                .findFirst()
+                .map(ur -> ur.getRole().getRoleName())
+                .orElseThrow(() -> new RuntimeException("User không có role nào"));
+    }
 
     public LoginResponse login(LoginRequest request) {
         try {
@@ -48,10 +65,13 @@ public class AuthService {
             if (userOpt.isPresent()) {
                 User user = userOpt.get();
 
-                // Tạo access token (JWT với RSA-256)
-                String accessToken = jwtUtil.generateAccessToken(user.getId(), user.getEmail(), user.getRole());
+                // Lấy primary role từ UserRole table
+                UserRoleEnum primaryRole = getPrimaryRole(user.getId());
 
-                // Tạo refresh token (UUID lưu trong Redis)
+                // Tạo access token (JWT với RSA-256)
+                String accessToken = jwtUtil.generateAccessToken(user.getId(), user.getEmail(), primaryRole);
+
+                // Tạo refresh token (JWT lưu trong Redis whitelist)
                 String refreshToken = refreshTokenService.createRefreshToken(user.getId());
 
                 return new LoginResponse(
@@ -60,7 +80,7 @@ public class AuthService {
                         user.getId(),
                         user.getFullName(),
                         user.getEmail(),
-                        user.getRole(),
+                        primaryRole,
                         user.getDepartment().getDepartmentName(),
                         jwtExpiration / 1000 // Convert milliseconds to seconds
                 );
@@ -90,12 +110,16 @@ public class AuthService {
         }
 
         // Chuyển đổi role string thành enum
-        UserRoleEnum role;
+        UserRoleEnum roleEnum;
         try {
-            role = UserRoleEnum.valueOf(request.getRole());
+            roleEnum = UserRoleEnum.valueOf(request.getRole());
         } catch (IllegalArgumentException e) {
             throw new RuntimeException("Vai trò không hợp lệ");
         }
+
+        // Lấy role từ database
+        Role role = roleRepository.findByRoleName(roleEnum)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy role: " + roleEnum));
 
         // Tạo user mới
         User user = new User();
@@ -104,13 +128,18 @@ public class AuthService {
         user.setEmail(request.getEmail());
         user.setPhoneNumber(request.getPhoneNumber());
         user.setPassword(passwordEncoder.encode(request.getPassword()));
-        user.setRole(role);
         user.setDepartment(departmentOpt.get());
 
         User savedUser = userRepository.save(user);
 
+        // Tạo UserRole relationship
+        UserRole userRole = new UserRole();
+        userRole.setUser(savedUser);
+        userRole.setRole(role);
+        userRoleRepository.save(userRole);
+
         // Tạo token
-        String accessToken = jwtUtil.generateAccessToken(savedUser.getId(), savedUser.getEmail(), savedUser.getRole());
+        String accessToken = jwtUtil.generateAccessToken(savedUser.getId(), savedUser.getEmail(), roleEnum);
         String refreshToken = refreshTokenService.createRefreshToken(savedUser.getId());
 
         return new LoginResponse(
@@ -119,7 +148,7 @@ public class AuthService {
                 savedUser.getId(),
                 savedUser.getFullName(),
                 savedUser.getEmail(),
-                savedUser.getRole(),
+                roleEnum,
                 savedUser.getDepartment().getDepartmentName(),
                 jwtExpiration / 1000 // Convert milliseconds to seconds
         );
@@ -154,13 +183,14 @@ public class AuthService {
         Optional<User> userOpt = userRepository.findById(userId);
         if (userOpt.isPresent()) {
             User user = userOpt.get();
+            UserRoleEnum primaryRole = getPrimaryRole(user.getId());
             return new UserResponse(
                     user.getId(),
                     user.getPersonnelId(),
                     user.getFullName(),
                     user.getEmail(),
                     user.getPhoneNumber(),
-                    user.getRole(),
+                    primaryRole,
                     user.getDepartment().getId(),
                     user.getDepartment().getDepartmentName(),
                     user.getCreatedAt(),
@@ -186,8 +216,11 @@ public class AuthService {
 
         User user = userOpt.get();
 
+        // Get primary role from UserRole table
+        UserRoleEnum primaryRole = getPrimaryRole(user.getId());
+
         // Create new access token
-        String newAccessToken = jwtUtil.generateAccessToken(user.getId(), user.getEmail(), user.getRole());
+        String newAccessToken = jwtUtil.generateAccessToken(user.getId(), user.getEmail(), primaryRole);
 
         // Rotate refresh token (create new, delete old)
         String newRefreshToken = refreshTokenService.rotateRefreshToken(refreshToken);

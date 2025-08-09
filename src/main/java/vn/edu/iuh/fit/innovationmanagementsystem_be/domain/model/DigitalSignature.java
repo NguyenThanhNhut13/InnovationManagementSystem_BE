@@ -5,8 +5,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.DocumentTypeEnum;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.RoleEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.SignatureStatusEnum;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.UserRoleEnum;
 
 import java.time.LocalDateTime;
 
@@ -28,7 +28,7 @@ public class DigitalSignature {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "signed_as_role")
-    private RoleEnum signedAsRole;
+    private UserRoleEnum signedAsRole;
 
     @Column(name = "sign_at")
     private LocalDateTime signAt;

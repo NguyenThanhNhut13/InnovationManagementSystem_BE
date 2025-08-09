@@ -6,10 +6,14 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.Department;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.Role;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.User;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.UserRole;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.UserRoleEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.DepartmentRepository;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.RoleRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.UserRepository;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.UserRoleRepository;
 
 import java.util.Arrays;
 import java.util.List;
@@ -21,13 +25,38 @@ public class DataSeeder implements CommandLineRunner {
 
     private final DepartmentRepository departmentRepository;
     private final UserRepository userRepository;
+    private final RoleRepository roleRepository;
+    private final UserRoleRepository userRoleRepository;
     private final PasswordEncoder passwordEncoder;
 
     @Override
     public void run(String... args) throws Exception {
+        seedRoles();
         seedDepartments();
         seedAdminUser();
         seedSampleUsers();
+    }
+
+    private void seedRoles() {
+        // Kiểm tra xem đã có dữ liệu roles chưa
+        if (roleRepository.count() > 0) {
+            log.info("Roles already exist. Skipping role seeding.");
+            return;
+        }
+
+        log.info("Seeding initial role data...");
+
+        // Tạo tất cả roles từ enum
+        UserRoleEnum[] allRoles = UserRoleEnum.values();
+
+        for (UserRoleEnum roleEnum : allRoles) {
+            Role role = new Role();
+            role.setRoleName(roleEnum);
+            roleRepository.save(role);
+            log.info("Created role: {}", roleEnum.name());
+        }
+
+        log.info("Role data seeding completed. Total roles created: {}", allRoles.length);
     }
 
     private void seedDepartments() {
@@ -84,17 +113,29 @@ public class DataSeeder implements CommandLineRunner {
                 .orElseThrow(
                         () -> new RuntimeException("CNTT department not found. Please run department seeding first."));
 
+        // Lấy role QUAN_TRI_VIEN
+        Role adminRole = roleRepository.findByRoleName(UserRoleEnum.QUAN_TRI_VIEN)
+                .orElseThrow(
+                        () -> new RuntimeException("QUAN_TRI_VIEN role not found. Please run role seeding first."));
+
         User adminUser = new User();
         adminUser.setPersonnelId("ADMIN001");
         adminUser.setFullName("Quản trị viên Hệ thống");
         adminUser.setEmail("admin@iuh.edu.vn");
         adminUser.setPhoneNumber("0123456789");
         adminUser.setPassword(passwordEncoder.encode("admin123"));
-        adminUser.setRole(UserRoleEnum.QUAN_TRI_VIEN);
         adminUser.setDepartment(cnttDepartment);
 
-        userRepository.save(adminUser);
-        log.info("Created admin user: {} - {}", adminUser.getPersonnelId(), adminUser.getEmail());
+        User savedAdminUser = userRepository.save(adminUser);
+
+        // Tạo UserRole relationship
+        UserRole userRole = new UserRole();
+        userRole.setUser(savedAdminUser);
+        userRole.setRole(adminRole);
+        userRoleRepository.save(userRole);
+
+        log.info("Created admin user: {} - {}", savedAdminUser.getPersonnelId(), savedAdminUser.getEmail());
+        log.info("Assigned role: {} to admin user", UserRoleEnum.QUAN_TRI_VIEN.name());
         log.info("Default admin credentials: admin@iuh.edu.vn / admin123");
     }
 
@@ -132,16 +173,27 @@ public class DataSeeder implements CommandLineRunner {
                         ktktDept));
 
         for (UserData userData : sampleUsers) {
+            // Lấy role từ database
+            Role role = roleRepository.findByRoleName(userData.role)
+                    .orElseThrow(() -> new RuntimeException(
+                            "Role " + userData.role + " not found. Please run role seeding first."));
+
             User user = new User();
             user.setPersonnelId(userData.personnelId);
             user.setFullName(userData.fullName);
             user.setEmail(userData.email);
             user.setPhoneNumber(userData.phoneNumber);
             user.setPassword(passwordEncoder.encode("123456")); // Default password
-            user.setRole(userData.role);
             user.setDepartment(userData.department);
 
-            userRepository.save(user);
+            User savedUser = userRepository.save(user);
+
+            // Tạo UserRole relationship
+            UserRole userRole = new UserRole();
+            userRole.setUser(savedUser);
+            userRole.setRole(role);
+            userRoleRepository.save(userRole);
+
             log.info("Created user: {} - {} ({})", userData.personnelId, userData.fullName, userData.role);
         }
 
