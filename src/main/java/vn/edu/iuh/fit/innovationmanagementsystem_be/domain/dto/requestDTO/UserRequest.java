@@ -7,6 +7,7 @@ import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.UserStatusEnum;
 
 @Data
 @NoArgsConstructor
@@ -34,4 +35,6 @@ public class UserRequest {
 
     @NotBlank(message = "ID phòng ban không được để trống")
     private String departmentId;
+
+    private UserStatusEnum status = UserStatusEnum.ACTIVE;
 }

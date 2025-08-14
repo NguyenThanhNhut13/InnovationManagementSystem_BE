@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.UserRoleEnum;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.UserStatusEnum;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -36,6 +37,10 @@ public class User {
 
     @Column(name = "password", nullable = false)
     private String password;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false)
+    private UserStatusEnum status = UserStatusEnum.ACTIVE;
 
     // Foreign key relationships
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
@@ -76,6 +81,9 @@ public class User {
     protected void onCreate() {
         createdAt = LocalDateTime.now();
         updatedAt = LocalDateTime.now();
+        if (status == null) {
+            status = UserStatusEnum.ACTIVE;
+        }
     }
 
     @PreUpdate

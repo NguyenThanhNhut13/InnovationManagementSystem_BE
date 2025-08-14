@@ -7,6 +7,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.User;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.UserStatusEnum;
 
 import java.util.List;
 import java.util.Optional;
@@ -39,4 +40,7 @@ public interface UserRepository extends JpaRepository<User, String>, JpaSpecific
     // Đếm số user theo department
     @Query("SELECT COUNT(u) FROM User u WHERE u.department.id = :departmentId")
     long countByDepartmentId(@Param("departmentId") String departmentId);
+
+    // Tìm user theo status
+    List<User> findByStatus(UserStatusEnum status);
 }

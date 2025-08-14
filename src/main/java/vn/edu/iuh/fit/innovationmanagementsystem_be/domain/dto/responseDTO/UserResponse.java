@@ -3,6 +3,7 @@ package vn.edu.iuh.fit.innovationmanagementsystem_be.domain.dto.responseDTO;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.UserStatusEnum;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -16,6 +17,7 @@ public class UserResponse {
     private String fullName;
     private String email;
     private String phoneNumber;
+    private UserStatusEnum status;
     private String departmentId;
     private String departmentName;
     private String departmentCode;
