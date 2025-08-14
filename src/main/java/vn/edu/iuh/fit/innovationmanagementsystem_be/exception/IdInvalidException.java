@@ -1,4 +1,4 @@
-package vn.edu.iuh.fit.innovationmanagementsystem_be.utils.error;
+package vn.edu.iuh.fit.innovationmanagementsystem_be.exception;
 
 public class IdInvalidException extends RuntimeException {
     public IdInvalidException(String message) {

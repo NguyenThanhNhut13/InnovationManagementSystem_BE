@@ -1,4 +1,4 @@
-package vn.edu.iuh.fit.innovationmanagementsystem_be.utils.error;
+package vn.edu.iuh.fit.innovationmanagementsystem_be.exception;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
