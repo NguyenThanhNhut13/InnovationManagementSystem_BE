@@ -2,7 +2,6 @@ package vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
-import java.time.LocalDateTime;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 

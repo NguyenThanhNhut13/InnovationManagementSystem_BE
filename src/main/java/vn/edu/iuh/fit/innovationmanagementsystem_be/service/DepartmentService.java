@@ -12,6 +12,9 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.DepartmentReposit
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.ResultPaginationDTO;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.Utils;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
 @Service
 public class DepartmentService {
 
@@ -21,7 +24,7 @@ public class DepartmentService {
         this.departmentRepository = departmentRepository;
     }
 
-    // Create Department
+    // 1. Create Department
     public DepartmentResponse createDepartment(DepartmentRequest departmentRequest) {
         if (departmentRepository.existsByDepartmentCode(departmentRequest.getDepartmentCode())) {
             throw new IdInvalidException("Mã phòng ban đã tồn tại");
@@ -33,7 +36,7 @@ public class DepartmentService {
         return toDepartmentResponse(department);
     }
 
-    // Get All Departments
+    // 2. Get All Departments
     public ResultPaginationDTO getAllDepartments(Specification<Department> specification, Pageable pageable) {
         Page<Department> departments = departmentRepository.findAll(specification, pageable);
 
@@ -41,19 +44,18 @@ public class DepartmentService {
         return Utils.toResultPaginationDTO(departmentResponses, pageable);
     }
 
-    // Get Department by Id
+    // 3. Get Department by Id
     public DepartmentResponse getDepartmentById(String id) {
         Department department = departmentRepository.findById(id)
                 .orElseThrow(() -> new IdInvalidException("Phòng ban không tồn tại"));
         return toDepartmentResponse(department);
     }
 
-    // Update Department
+    // 4. Update Department
     public DepartmentResponse updateDepartment(String id, DepartmentRequest departmentRequest) {
         Department department = departmentRepository.findById(id)
                 .orElseThrow(() -> new IdInvalidException("Không tim thấy phòng ban có ID: " + id));
 
-        // chỉ cập nhập các trường được cập nhập
         if (departmentRequest.getDepartmentName() != null) {
             department.setDepartmentName(departmentRequest.getDepartmentName());
         }
@@ -68,13 +70,41 @@ public class DepartmentService {
         return toDepartmentResponse(department);
     }
 
+    // 5. Get Department User Statistics
+    public List<DepartmentResponse> getDepartmentUserStatistics() {
+        List<Department> departments = departmentRepository.findAll();
+
+        return departments.stream()
+                .map(this::toDepartmentResponse)
+                .collect(Collectors.toList());
+    }
+
+    // 6. Get Department User Statistics by Department ID
+    public DepartmentResponse getDepartmentUserStatisticsById(String departmentId) {
+        Department department = departmentRepository.findById(departmentId)
+                .orElseThrow(() -> new IdInvalidException("Phòng ban không tồn tại"));
+        return toDepartmentResponse(department);
+    }
+
     // Mapper
     private DepartmentResponse toDepartmentResponse(Department department) {
         return new DepartmentResponse(
                 department.getId(),
                 department.getDepartmentName(),
                 department.getDepartmentCode(),
-                department.getUsers() != null ? department.getUsers().size() : 0,
+                department.getUsers() != null ? (long) department.getUsers().size() : 0L,
+                department.getUsers() != null ? department.getUsers().stream()
+                        .filter(user -> user.getStatus() != null && user.getStatus().name().equalsIgnoreCase("ACTIVE"))
+                        .count() : 0L,
+                department.getUsers() != null ? department.getUsers().stream()
+                        .filter(user -> user.getStatus() != null
+                                && user.getStatus().name().equalsIgnoreCase("INACTIVE"))
+                        .count() : 0L,
+                department.getUsers() != null ? department.getUsers().stream()
+                        .filter(user -> user.getStatus() != null
+                                && user.getStatus().name().equalsIgnoreCase("SUSPENDED"))
+                        .count() : 0L,
                 department.getInnovations() != null ? department.getInnovations().size() : 0);
     }
+
 }

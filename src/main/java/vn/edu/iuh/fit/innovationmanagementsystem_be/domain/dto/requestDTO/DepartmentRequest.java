@@ -3,7 +3,6 @@ package vn.edu.iuh.fit.innovationmanagementsystem_be.domain.dto.requestDTO;
 import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Data

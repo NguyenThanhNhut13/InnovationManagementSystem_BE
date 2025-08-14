@@ -8,9 +8,13 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class DepartmentResponse {
-    private String id;
+    private String departmentId;
     private String departmentName;
     private String departmentCode;
-    private int userCount;
+    private Long totalUsers;
+    private Long activeUsers;
+    private Long inactiveUsers;
+    private Long suspendedUsers;
     private int innovationCount;
+
 }

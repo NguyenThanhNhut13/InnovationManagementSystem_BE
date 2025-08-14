@@ -6,10 +6,6 @@ import java.time.LocalDateTime;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import org.hibernate.annotations.Type;
-
-import java.time.LocalDateTime;
-
 @Entity
 @Table(name = "review_scores")
 @Data

@@ -14,9 +14,7 @@ import org.springframework.web.servlet.resource.NoResourceFoundException;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.RestResponse;
 
 import java.nio.file.AccessDeniedException;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {

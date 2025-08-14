@@ -19,6 +19,8 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.service.DepartmentService;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.ResultPaginationDTO;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.annotation.ApiMessage;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/v1")
 public class DepartmentController {
@@ -58,5 +60,21 @@ public class DepartmentController {
     public ResponseEntity<DepartmentResponse> updateDepartment(@PathVariable String id,
             @Valid @RequestBody DepartmentRequest departmentRequest) {
         return ResponseEntity.ok(departmentService.updateDepartment(id, departmentRequest));
+    }
+
+    // 5. Get Department User Statistics (All Departments)
+    @GetMapping("/departments/users/statistics")
+    @ApiMessage("Lấy thống kê users theo department thành công")
+    public ResponseEntity<List<DepartmentResponse>> getDepartmentUserStatistics() {
+        List<DepartmentResponse> statistics = departmentService.getDepartmentUserStatistics();
+        return ResponseEntity.ok(statistics);
+    }
+
+    // 6. Get Department User Statistics by Department ID
+    @GetMapping("/departments/{id}/users/statistics")
+    @ApiMessage("Lấy thống kê users của phòng ban thành công")
+    public ResponseEntity<DepartmentResponse> getDepartmentUserStatisticsById(@PathVariable String id) {
+        DepartmentResponse statistics = departmentService.getDepartmentUserStatisticsById(id);
+        return ResponseEntity.ok(statistics);
     }
 }

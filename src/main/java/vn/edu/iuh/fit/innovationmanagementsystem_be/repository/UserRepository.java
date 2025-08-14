@@ -1,5 +1,7 @@
 package vn.edu.iuh.fit.innovationmanagementsystem_be.repository;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
@@ -7,40 +9,25 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.User;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.UserStatusEnum;
-
-import java.util.List;
-import java.util.Optional;
 
 @Repository
 public interface UserRepository extends JpaRepository<User, String>, JpaSpecificationExecutor<User> {
 
-    // Tìm user theo personnel ID
-    Optional<User> findByPersonnelId(String personnelId);
+        // Kiểm tra personnel ID có tồn tại không
+        boolean existsByPersonnelId(String personnelId);
 
-    // Kiểm tra personnel ID có tồn tại không
-    boolean existsByPersonnelId(String personnelId);
+        // Kiểm tra email có tồn tại không
+        boolean existsByEmail(String email);
 
-    // Tìm user theo email
-    Optional<User> findByEmail(String email);
+        // Tìm user theo department
+        @Query("SELECT u FROM User u WHERE u.department.id = :departmentId")
+        Page<User> findByDepartmentId(@Param("departmentId") String departmentId, Pageable pageable);
 
-    // Kiểm tra email có tồn tại không
-    boolean existsByEmail(String email);
+        // Tìm kiếm user theo tên, email hoặc personnel_id
+        @Query("SELECT u FROM User u WHERE " +
+                        "LOWER(u.fullName) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
+                        "LOWER(u.email) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
+                        "LOWER(u.personnelId) LIKE LOWER(CONCAT('%', :searchTerm, '%'))")
+        Page<User> searchUsersByFullNameOrEmailOrPersonnelId(@Param("searchTerm") String searchTerm, Pageable pageable);
 
-    // Tìm user theo tên
-    List<User> findByFullNameContainingIgnoreCase(String fullName);
-
-    // Tìm user theo department
-    List<User> findByDepartmentId(String departmentId);
-
-    // Tìm user theo personnel ID hoặc tên hoặc email
-    @Query("SELECT u FROM User u WHERE u.personnelId LIKE %:keyword% OR u.fullName LIKE %:keyword% OR u.email LIKE %:keyword%")
-    List<User> findByPersonnelIdOrFullNameOrEmailContaining(@Param("keyword") String keyword);
-
-    // Đếm số user theo department
-    @Query("SELECT COUNT(u) FROM User u WHERE u.department.id = :departmentId")
-    long countByDepartmentId(@Param("departmentId") String departmentId);
-
-    // Tìm user theo status
-    List<User> findByStatus(UserStatusEnum status);
 }
