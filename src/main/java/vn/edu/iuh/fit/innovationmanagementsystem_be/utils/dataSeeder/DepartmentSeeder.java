@@ -2,7 +2,6 @@ package vn.edu.iuh.fit.innovationmanagementsystem_be.utils.dataSeeder;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.Department;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.DepartmentRepository;
@@ -17,27 +16,21 @@ public class DepartmentSeeder implements DatabaseSeeder {
 
     private final DepartmentRepository departmentRepository;
 
-    @Value("${app.seeding.department.enabled:true}")
-    private boolean enabled;
-
-    @Value("${app.seeding.department.force:false}")
-    private boolean force;
-
     @Override
     public void seed() {
-        if (!enabled) {
-            log.info("Department seeding bị tắt.");
+        if (!isEnabled()) {
+            log.info("{} seeding bị tắt.", getSeederName());
             return;
         }
 
-        log.info("Bắt đầu seed dữ liệu khoa viện...");
+        log.info("Bắt đầu seed dữ liệu {}...", getConfigPrefix());
 
-        if (!force && isDataExists()) {
-            log.info("Dữ liệu khoa viện đã tồn tại, bỏ qua seeding.");
+        if (!isForce() && isDataExists()) {
+            log.info("Dữ liệu {} đã tồn tại, bỏ qua seeding.", getConfigPrefix());
             return;
         }
 
-        if (force) {
+        if (isForce()) {
             log.info("Force seeding: Xóa dữ liệu cũ và tạo mới...");
             departmentRepository.deleteAll();
         }
@@ -45,7 +38,7 @@ public class DepartmentSeeder implements DatabaseSeeder {
         List<Department> departments = createDefaultDepartments();
         departmentRepository.saveAll(departments);
 
-        log.info("Đã seed thành công {} khoa viện.", departments.size());
+        log.info("Đã seed thành công {} {}.", departments.size(), getConfigPrefix());
     }
 
     @Override
