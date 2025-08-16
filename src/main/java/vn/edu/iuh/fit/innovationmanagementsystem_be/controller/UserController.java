@@ -50,7 +50,7 @@ public class UserController {
     @ApiMessage("Lấy danh sách người dùng thành công")
     public ResponseEntity<ResultPaginationDTO> getAllUsers(
             @Filter Specification<User> spec, Pageable pageable) {
-        return ResponseEntity.ok(userService.getAllUsers(spec, pageable));
+        return ResponseEntity.ok(userService.getUsersWithPagination(spec, pageable));
     }
 
     // 3. Get User By Id

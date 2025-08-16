@@ -69,8 +69,8 @@ public class UserService {
         return toUserResponse(user);
     }
 
-    // 2. Get All Users
-    public ResultPaginationDTO getAllUsers(Specification<User> specification, Pageable pageable) {
+    // 2. Get All Users With Pagination
+    public ResultPaginationDTO getUsersWithPagination(Specification<User> specification, Pageable pageable) {
         Page<User> users = userRepository.findAll(specification, pageable);
 
         Page<UserResponse> userResponses = users.map(this::toUserResponse);
@@ -256,18 +256,6 @@ public class UserService {
                 userRole.getRole().getRoleName().name(),
                 userRole.getUser().getId(),
                 userRole.getUser().getFullName());
-    }
-
-    private DepartmentResponse toDepartmentResponse(Object[] result) {
-        DepartmentResponse departmentResponse = new DepartmentResponse();
-        departmentResponse.setDepartmentId((String) result[0]);
-        departmentResponse.setDepartmentName((String) result[1]);
-        departmentResponse.setDepartmentCode((String) result[2]);
-        departmentResponse.setTotalUsers((Long) result[3]);
-        departmentResponse.setActiveUsers((Long) result[4]);
-        departmentResponse.setInactiveUsers((Long) result[5]);
-        departmentResponse.setSuspendedUsers((Long) result[6]);
-        return departmentResponse;
     }
 
 }

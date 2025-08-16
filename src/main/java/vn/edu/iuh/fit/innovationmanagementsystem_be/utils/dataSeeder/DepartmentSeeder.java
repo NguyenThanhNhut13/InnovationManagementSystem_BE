@@ -94,6 +94,7 @@ public class DepartmentSeeder implements DatabaseSeeder {
         Department department = new Department();
         department.setDepartmentName(name);
         department.setDepartmentCode(code);
+        department.setIsActive(true);
         return department;
     }
 }
