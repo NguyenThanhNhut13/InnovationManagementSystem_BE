@@ -22,7 +22,6 @@ public class GlobalExceptionHandler {
     // 0. Bắt lỗi liên quan đến ID không hợp lệ hoặc không tìm thấy người dùng
     @ExceptionHandler(value = {
             UsernameNotFoundException.class,
-            BadCredentialsException.class,
             IdInvalidException.class,
     })
     public ResponseEntity<RestResponse<Object>> handleIdException(Exception ex) {
@@ -93,5 +92,18 @@ public class GlobalExceptionHandler {
         response.setMessage("Bạn không có quyền truy cập tài nguyên này !");
 
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
+    }
+
+    // 6. Bắt lỗi authentication
+    @ExceptionHandler(value = {
+            BadCredentialsException.class,
+            AuthenticationException.class,
+    })
+    public ResponseEntity<RestResponse<Object>> handleAuthenticationException(Exception ex) {
+        RestResponse<Object> res = new RestResponse<Object>();
+        res.setStatusCode(HttpStatus.UNAUTHORIZED.value());
+        res.setError("UNAUTHORIZED");
+        res.setMessage(ex.getMessage());
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(res);
     }
 }

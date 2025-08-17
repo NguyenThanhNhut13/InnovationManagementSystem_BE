@@ -31,3 +31,11 @@ build/
 
 ### VS Code ###
 .vscode/
+
+# RSA Keys - không commit keys lên git
+src/main/resources/keys/
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx

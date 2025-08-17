@@ -1,5 +1,7 @@
 package vn.edu.iuh.fit.innovationmanagementsystem_be.repository;
 
+import java.util.Optional;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -29,5 +31,11 @@ public interface UserRepository extends JpaRepository<User, String>, JpaSpecific
                         "LOWER(u.email) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
                         "LOWER(u.personnelId) LIKE LOWER(CONCAT('%', :searchTerm, '%'))")
         Page<User> searchUsersByFullNameOrEmailOrPersonnelId(@Param("searchTerm") String searchTerm, Pageable pageable);
+
+        // Thêm method để tìm user theo personnelId
+        Optional<User> findByPersonnelId(String personnelId);
+
+        // Thêm method để tìm user theo email
+        Optional<User> findByEmail(String email);
 
 }
