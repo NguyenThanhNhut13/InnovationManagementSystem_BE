@@ -6,13 +6,17 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.dto.requestDTO.LoginRequest;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.dto.requestDTO.ChangePasswordRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.dto.responseDTO.LoginResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.dto.responseDTO.TokenResponse;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.dto.responseDTO.ChangePasswordResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.User;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.UserRoleEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.UserRepository;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.JwtTokenUtil;
 import java.util.Collections;
 import java.util.List;
@@ -27,6 +31,7 @@ public class AuthenticationService {
     private final UserRepository userRepository;
     private final RedisTokenService redisTokenService;
     private final RefreshTokenValidationService refreshTokenValidationService;
+    private final PasswordEncoder passwordEncoder;
 
     public LoginResponse authenticate(LoginRequest loginRequest) {
         try {
@@ -162,5 +167,51 @@ public class AuthenticationService {
                 user.getUpdatedAt(),
                 accessToken,
                 refreshToken);
+    }
+
+    // Đổi mật khẩu
+    public ChangePasswordResponse changePassword(ChangePasswordRequest request) {
+        String currentUsername = getCurrentUsername();
+        if (currentUsername == null) {
+            throw new RuntimeException("Không thể xác thực người dùng");
+        }
+        if (request.getNewPassword().equals(request.getOldPassword())) {
+            throw new RuntimeException("Mật khẩu mới không được giống mật khẩu cũ");
+        }
+        if (!request.getNewPassword().equals(request.getConfirmNewPassword())) {
+            throw new RuntimeException("Mật khẩu mới và xác nhận mật khẩu không khớp");
+        }
+        User currentUser = userRepository.findByPersonnelId(currentUsername)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy tài khoản"));
+        if (!passwordEncoder.matches(request.getOldPassword(), currentUser.getPassword())) {
+            throw new RuntimeException("Mật khẩu cũ không đúng");
+        }
+
+        String encodedNewPassword = passwordEncoder.encode(request.getNewPassword());
+        currentUser.setPassword(encodedNewPassword);
+
+        userRepository.save(currentUser);
+
+        return new ChangePasswordResponse(
+                "Đổi mật khẩu thành công",
+                currentUser.getId(),
+                currentUser.getPersonnelId(),
+                currentUser.getEmail(),
+                java.time.LocalDateTime.now().toString());
+    }
+
+    /**
+     * Lấy username hiện tại từ SecurityContext
+     */
+    private String getCurrentUsername() {
+        try {
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            if (authentication != null && authentication.isAuthenticated()) {
+                return authentication.getName();
+            }
+            return null;
+        } catch (Exception e) {
+            return null;
+        }
     }
 }

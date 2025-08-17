@@ -6,8 +6,10 @@ import org.springframework.web.bind.annotation.*;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.dto.requestDTO.LoginRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.dto.requestDTO.LogoutRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.dto.requestDTO.RefreshTokenRequest;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.dto.requestDTO.ChangePasswordRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.dto.responseDTO.LoginResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.dto.responseDTO.TokenResponse;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.dto.responseDTO.ChangePasswordResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.service.AuthenticationService;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.annotation.ApiMessage;
 
@@ -53,6 +55,15 @@ public class AuthenticationController {
 
         authenticationService.logout(accessToken, refreshToken);
         return ResponseEntity.ok().build();
+    }
+
+    // 4. Change Password
+    @PostMapping("/change-password")
+    @ApiMessage("Đổi mật khẩu thành công")
+    public ResponseEntity<ChangePasswordResponse> changePassword(
+            @Valid @RequestBody ChangePasswordRequest changePasswordRequest) {
+        ChangePasswordResponse response = authenticationService.changePassword(changePasswordRequest);
+        return ResponseEntity.ok(response);
     }
 
 }
