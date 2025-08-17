@@ -64,21 +64,44 @@ public class FileConversionService {
             htmlBuilder.append("    font-family: 'Times New Roman', serif;");
             htmlBuilder.append("    font-size: 12pt;");
             htmlBuilder.append("    line-height: 1.15;");
-            htmlBuilder.append("    margin: 0.5in;");
+            htmlBuilder.append("    margin: 0;");
+            htmlBuilder.append("    padding: 0;");
             htmlBuilder.append("    color: #000;");
-            htmlBuilder.append("    background: white;");
-            htmlBuilder.append("    max-width: 8.5in;");
-            htmlBuilder.append("    margin-left: auto;");
-            htmlBuilder.append("    margin-right: auto;");
+            htmlBuilder.append("    background: #f0f0f0;");
             htmlBuilder.append("    text-rendering: optimizeLegibility;");
             htmlBuilder.append("    -webkit-font-smoothing: antialiased;");
+            htmlBuilder.append("    min-height: 100vh;");
+            htmlBuilder.append("    display: flex;");
+            htmlBuilder.append("    justify-content: center;");
+            htmlBuilder.append("    align-items: flex-start;");
+            htmlBuilder.append("    padding: 20px;");
+            htmlBuilder.append("}");
+            htmlBuilder.append(".page-container {");
+            htmlBuilder.append("    width: 210mm;");
+            htmlBuilder.append("    height: 297mm;");
+            htmlBuilder.append("    background: white;");
+            htmlBuilder.append("    box-shadow: 0 0 10px rgba(0,0,0,0.3);");
+            htmlBuilder.append("    margin: 0 auto;");
+            htmlBuilder.append("    padding: 20mm;");
+            htmlBuilder.append("    box-sizing: border-box;");
+            htmlBuilder.append("    position: relative;");
+            htmlBuilder.append("    overflow: hidden;");
+            htmlBuilder.append("}");
+            htmlBuilder.append(".page-content {");
+            htmlBuilder.append("    width: 100%;");
+            htmlBuilder.append("    height: 100%;");
+            htmlBuilder.append("    overflow: hidden;");
+            htmlBuilder.append("    position: relative;");
             htmlBuilder.append("}");
             htmlBuilder.append(".header-text {");
-            htmlBuilder.append("    font-size: 11pt;");
+            htmlBuilder.append("    font-size: 13pt;");
             htmlBuilder.append("    line-height: 1.3;");
             htmlBuilder.append("    margin: 0;");
             htmlBuilder.append("    padding: 0;");
             htmlBuilder.append("    display: block;");
+            htmlBuilder.append("    clear: both;");
+            htmlBuilder.append("    page-break-inside: avoid;");
+            htmlBuilder.append("    margin-bottom: 2mm;");
             htmlBuilder.append("}");
             htmlBuilder.append(".header-text.underline {");
             htmlBuilder.append("    text-decoration: underline;");
@@ -92,7 +115,7 @@ public class FileConversionService {
             htmlBuilder.append("    page-break-inside: avoid;");
             htmlBuilder.append("}");
             htmlBuilder.append(".header-text + br + .header-text {");
-            htmlBuilder.append("    margin-top: 4pt;");
+            htmlBuilder.append("    margin-top: 3mm;");
             htmlBuilder.append("}");
             htmlBuilder.append("br {");
             htmlBuilder.append("    display: block;");
@@ -102,11 +125,14 @@ public class FileConversionService {
             htmlBuilder.append("    height: 0;");
             htmlBuilder.append("    line-height: 0;");
             htmlBuilder.append("}");
+            htmlBuilder.append("br + .header-text {");
+            htmlBuilder.append("    margin-top: 2mm;");
+            htmlBuilder.append("}");
             htmlBuilder.append("p {");
             htmlBuilder.append("    margin: 0 0 6pt 0;");
             htmlBuilder.append("    padding: 0;");
             htmlBuilder.append("    text-align: justify;");
-            htmlBuilder.append("    text-indent: 0.5in;");
+            htmlBuilder.append("    text-indent: 15mm;");
             htmlBuilder.append("    line-height: 1.15;");
             htmlBuilder.append("    font-size: 12pt;");
             htmlBuilder.append("    orphans: 2;");
@@ -138,11 +164,13 @@ public class FileConversionService {
             htmlBuilder.append("    border-collapse: collapse;");
             htmlBuilder.append("    width: 100%;");
             htmlBuilder.append("    margin: 12pt 0;");
-            htmlBuilder.append("    border: none;");
+            htmlBuilder.append("    border: 1px solid #000;");
             htmlBuilder.append("    font-size: 12pt;");
+            htmlBuilder.append("    table-layout: fixed;");
+            htmlBuilder.append("    word-wrap: break-word;");
             htmlBuilder.append("}");
             htmlBuilder.append("td, th {");
-            htmlBuilder.append("    border: none;");
+            htmlBuilder.append("    border: 1px solid #000;");
             htmlBuilder.append("    padding: 6pt;");
             htmlBuilder.append("    text-align: left;");
             htmlBuilder.append("    vertical-align: top;");
@@ -164,12 +192,29 @@ public class FileConversionService {
             htmlBuilder.append("}");
             htmlBuilder.append("ul, ol {");
             htmlBuilder.append("    margin: 12pt 0;");
-            htmlBuilder.append("    padding-left: 0.5in;");
+            htmlBuilder.append("    padding-left: 15mm;");
+            htmlBuilder.append("    list-style: none;");
+            htmlBuilder.append("    counter-reset: list-item;");
             htmlBuilder.append("}");
             htmlBuilder.append("li {");
             htmlBuilder.append("    margin: 6pt 0;");
             htmlBuilder.append("    text-indent: 0;");
             htmlBuilder.append("    font-size: 12pt;");
+            htmlBuilder.append("    position: relative;");
+            htmlBuilder.append("}");
+            htmlBuilder.append("li:before {");
+            htmlBuilder.append("    content: \"- \";");
+            htmlBuilder.append("    position: absolute;");
+            htmlBuilder.append("    left: 0;");
+            htmlBuilder.append("    font-weight: bold;");
+            htmlBuilder.append("    color: #000;");
+            htmlBuilder.append("}");
+            htmlBuilder.append("ul li:before {");
+            htmlBuilder.append("    content: \"- \";");
+            htmlBuilder.append("}");
+            htmlBuilder.append("ol li:before {");
+            htmlBuilder.append("    content: counter(list-item) \". \";");
+            htmlBuilder.append("    counter-increment: list-item;");
             htmlBuilder.append("}");
             htmlBuilder.append(".underline { text-decoration: underline; }");
             htmlBuilder.append(".strike { text-decoration: line-through; }");
@@ -180,12 +225,21 @@ public class FileConversionService {
             htmlBuilder.append("    font-size: 8pt;");
             htmlBuilder.append("    color: #666;");
             htmlBuilder.append("    font-weight: bold;");
+            htmlBuilder.append("    line-height: 1;");
+            htmlBuilder.append("}");
+            htmlBuilder.append(".footnote-reference {");
+            htmlBuilder.append("    vertical-align: super;");
+            htmlBuilder.append("    font-size: 10pt;");
+            htmlBuilder.append("    color: #000;");
+            htmlBuilder.append("    font-weight: bold;");
+            htmlBuilder.append("    line-height: 1;");
             htmlBuilder.append("}");
             htmlBuilder.append(".page-break { page-break-before: always; }");
             htmlBuilder.append(".header {");
             htmlBuilder.append("    position: relative;");
-            htmlBuilder.append("    margin-bottom: 24pt;");
-            htmlBuilder.append("    height: 72pt;");
+            htmlBuilder.append("    margin-bottom: 20mm;");
+            htmlBuilder.append("    height: auto;");
+            htmlBuilder.append("    min-height: 25mm;");
             htmlBuilder.append("    border: none;");
             htmlBuilder.append("    background: transparent;");
             htmlBuilder.append("    display: flex;");
@@ -195,7 +249,7 @@ public class FileConversionService {
             htmlBuilder.append(".header-left {");
             htmlBuilder.append("    position: relative;");
             htmlBuilder.append("    text-align: left;");
-            htmlBuilder.append("    font-size: 11pt;");
+            htmlBuilder.append("    font-size: 13pt;");
             htmlBuilder.append("    width: 48%;");
             htmlBuilder.append("    line-height: 1.3;");
             htmlBuilder.append("    color: #000;");
@@ -204,12 +258,11 @@ public class FileConversionService {
             htmlBuilder.append("    padding: 0;");
             htmlBuilder.append("    margin: 0;");
             htmlBuilder.append("    display: block;");
-            htmlBuilder.append("    margin-bottom: 8pt;");
             htmlBuilder.append("}");
             htmlBuilder.append(".header-right {");
             htmlBuilder.append("    position: relative;");
             htmlBuilder.append("    text-align: right;");
-            htmlBuilder.append("    font-size: 11pt;");
+            htmlBuilder.append("    font-size: 13pt;");
             htmlBuilder.append("    width: 48%;");
             htmlBuilder.append("    line-height: 1.3;");
             htmlBuilder.append("    color: #000;");
@@ -218,12 +271,11 @@ public class FileConversionService {
             htmlBuilder.append("    padding: 0;");
             htmlBuilder.append("    margin: 0;");
             htmlBuilder.append("    display: block;");
-            htmlBuilder.append("    margin-bottom: 8pt;");
             htmlBuilder.append("}");
             htmlBuilder.append(".header-right small {");
             htmlBuilder.append("    font-size: 9pt;");
             htmlBuilder.append("    color: #000;");
-            htmlBuilder.append("    margin-top: 5pt;");
+            htmlBuilder.append("    margin-top: 2mm;");
             htmlBuilder.append("    display: block;");
             htmlBuilder.append("    border: none;");
             htmlBuilder.append("    background: transparent;");
@@ -243,7 +295,7 @@ public class FileConversionService {
             htmlBuilder.append("    outline: none !important;");
             htmlBuilder.append("    box-shadow: none !important;");
             htmlBuilder.append("}");
-            htmlBuilder.append("table, tr, td, th, div, p, span, h1, h2, h3, h4, h5, h6 {");
+            htmlBuilder.append("div, p, span, h1, h2, h3, h4, h5, h6 {");
             htmlBuilder.append("    border: none !important;");
             htmlBuilder.append("    outline: none !important;");
             htmlBuilder.append("    box-shadow: none !important;");
@@ -251,9 +303,9 @@ public class FileConversionService {
             htmlBuilder.append("}");
             htmlBuilder.append(".title {");
             htmlBuilder.append("    text-align: center;");
-            htmlBuilder.append("    font-size: 18pt;");
+            htmlBuilder.append("    font-size: 14pt;");
             htmlBuilder.append("    font-weight: bold;");
-            htmlBuilder.append("    margin: 24pt auto;");
+            htmlBuilder.append("    margin: 20mm auto;");
             htmlBuilder.append("    text-indent: 0;");
             htmlBuilder.append("    text-transform: uppercase;");
             htmlBuilder.append("    letter-spacing: 1pt;");
@@ -262,15 +314,13 @@ public class FileConversionService {
             htmlBuilder.append("    display: block;");
             htmlBuilder.append("    page-break-after: avoid;");
             htmlBuilder.append("    page-break-inside: avoid;");
-            htmlBuilder.append("    position: relative;");
-            htmlBuilder.append("    left: 50%;");
-            htmlBuilder.append("    transform: translateX(-50%);");
+            htmlBuilder.append("    max-width: 150mm;");
             htmlBuilder.append("}");
             htmlBuilder.append(".main-title {");
             htmlBuilder.append("    text-align: center;");
-            htmlBuilder.append("    font-size: 18pt;");
+            htmlBuilder.append("    font-size: 14pt;");
             htmlBuilder.append("    font-weight: bold;");
-            htmlBuilder.append("    margin: 24pt auto;");
+            htmlBuilder.append("    margin: 20mm auto;");
             htmlBuilder.append("    text-indent: 0;");
             htmlBuilder.append("    text-transform: uppercase;");
             htmlBuilder.append("    letter-spacing: 1pt;");
@@ -279,57 +329,100 @@ public class FileConversionService {
             htmlBuilder.append("    display: block;");
             htmlBuilder.append("    page-break-after: avoid;");
             htmlBuilder.append("    page-break-inside: avoid;");
-            htmlBuilder.append("    position: relative;");
-            htmlBuilder.append("    left: 50%;");
-            htmlBuilder.append("    transform: translateX(-50%);");
-            htmlBuilder.append("    max-width: 80%;");
+            htmlBuilder.append("    max-width: 150mm;");
             htmlBuilder.append("    word-wrap: break-word;");
             htmlBuilder.append("    hyphens: auto;");
             htmlBuilder.append("}");
             htmlBuilder.append(".form-field {");
             htmlBuilder.append("    border-bottom: 2px dotted #000;");
             htmlBuilder.append("    display: inline-block;");
-            htmlBuilder.append("    min-width: 250pt;");
-            htmlBuilder.append("    height: 18pt;");
-            htmlBuilder.append("    margin: 0 4pt;");
+            htmlBuilder.append("    min-width: 88mm;");
+            htmlBuilder.append("    height: 6mm;");
+            htmlBuilder.append("    margin: 0 1.5mm;");
             htmlBuilder.append("    vertical-align: bottom;");
             htmlBuilder.append("}");
             htmlBuilder.append(".field-with-dots {");
             htmlBuilder.append("    position: relative;");
             htmlBuilder.append("    display: inline-block;");
+            htmlBuilder.append("    margin-right: 0;");
             htmlBuilder.append("}");
             htmlBuilder.append(".field-with-dots:after {");
-            htmlBuilder.append("    content: \"...\";");
+            htmlBuilder.append("    content: \"---\";");
             htmlBuilder.append("    position: absolute;");
-            htmlBuilder.append("    right: -20pt;");
+            htmlBuilder.append("    left: 100%;");
             htmlBuilder.append("    top: 0;");
             htmlBuilder.append("    font-size: 12pt;");
             htmlBuilder.append("    color: #000;");
+            htmlBuilder.append("    font-weight: normal;");
+            htmlBuilder.append("    white-space: nowrap;");
+            htmlBuilder.append("    width: calc(100vw - 100% - 40mm);");
+            htmlBuilder.append("    overflow: hidden;");
+            htmlBuilder.append("    letter-spacing: 1px;");
             htmlBuilder.append("}");
             htmlBuilder.append(".bullet-point {");
-            htmlBuilder.append("    margin: 8pt 0;");
+            htmlBuilder.append("    margin: 3mm 0;");
             htmlBuilder.append("    text-indent: 0;");
             htmlBuilder.append("    line-height: 1.4;");
+            htmlBuilder.append("    padding-left: 15mm;");
+            htmlBuilder.append("    position: relative;");
             htmlBuilder.append("}");
             htmlBuilder.append(".bullet-point:before {");
-            htmlBuilder.append("    content: \"• \";");
-            htmlBuilder.append("    margin-right: 10pt;");
+            htmlBuilder.append("    content: \"- \";");
+            htmlBuilder.append("    position: absolute;");
+            htmlBuilder.append("    left: 0;");
             htmlBuilder.append("    font-weight: bold;");
+            htmlBuilder.append("    color: #000;");
+            htmlBuilder.append("}");
+            htmlBuilder.append(".special-field {");
+            htmlBuilder.append("    font-weight: bold;");
+            htmlBuilder.append("    margin: 3mm 0;");
+            htmlBuilder.append("    text-indent: 0;");
+            htmlBuilder.append("}");
+            htmlBuilder.append(".signature-line {");
+            htmlBuilder.append("    border-bottom: 1px solid #000;");
+            htmlBuilder.append("    display: inline-block;");
+            htmlBuilder.append("    min-width: 70mm;");
+            htmlBuilder.append("    height: 7mm;");
+            htmlBuilder.append("    margin: 0 1.5mm;");
+            htmlBuilder.append("    vertical-align: bottom;");
+            htmlBuilder.append("}");
+            htmlBuilder.append(".signature-section {");
+            htmlBuilder.append("    text-align: center;");
+            htmlBuilder.append("    margin: 20mm 0;");
+            htmlBuilder.append("}");
+            htmlBuilder.append(".signature-title {");
+            htmlBuilder.append("    font-weight: bold;");
+            htmlBuilder.append("    margin: 10mm 0 5mm 0;");
             htmlBuilder.append("}");
             htmlBuilder.append("@media print {");
-            htmlBuilder.append("    body { margin: 0.5in; }");
+            htmlBuilder.append("    body { margin: 0; padding: 0; background: white; }");
+            htmlBuilder.append("    .page-container { box-shadow: none; margin: 0; padding: 20mm; }");
             htmlBuilder.append("    .page-break { page-break-before: always; }");
-            htmlBuilder.append("    table { page-break-inside: avoid; }");
+            htmlBuilder.append("    table { page-break-inside: avoid; border: 1px solid #000; }");
+            htmlBuilder.append("    td, th { border: 1px solid #000; }");
             htmlBuilder.append("    h1, h2, h3, h4, h5, h6 { page-break-after: avoid; }");
             htmlBuilder.append("    .header { page-break-inside: avoid; }");
             htmlBuilder.append("    .title { page-break-inside: avoid; }");
             htmlBuilder.append("    .main-title { page-break-inside: avoid; }");
             htmlBuilder.append("}");
             htmlBuilder.append("@media screen and (max-width: 768px) {");
+            htmlBuilder.append("    body { padding: 10px; }");
+            htmlBuilder.append("    .page-container {");
+            htmlBuilder.append("        width: 100%;");
+            htmlBuilder.append("        height: auto;");
+            htmlBuilder.append("        min-height: 297mm;");
+            htmlBuilder.append("        padding: 15mm;");
+            htmlBuilder.append("    }");
             htmlBuilder.append("    .main-title {");
-            htmlBuilder.append("        font-size: 16pt;");
+            htmlBuilder.append("        font-size: 12pt;");
             htmlBuilder.append("        max-width: 95%;");
-            htmlBuilder.append("        margin: 16pt auto;");
+            htmlBuilder.append("        margin: 15mm auto;");
+            htmlBuilder.append("    }");
+            htmlBuilder.append("    .header-text {");
+            htmlBuilder.append("        font-size: 11pt;");
+            htmlBuilder.append("    }");
+            htmlBuilder.append("    .header-left, .header-right {");
+            htmlBuilder.append("        font-size: 11pt;");
             htmlBuilder.append("    }");
             htmlBuilder.append("}");
             htmlBuilder.append(".word-like-spacing {");
@@ -337,12 +430,14 @@ public class FileConversionService {
             htmlBuilder.append("    padding: 0;");
             htmlBuilder.append("    line-height: 1.15;");
             htmlBuilder.append("    text-align: justify;");
+            htmlBuilder.append("    margin-bottom: 2mm;");
             htmlBuilder.append("}");
             htmlBuilder.append(".header-line-break {");
             htmlBuilder.append("    display: block;");
             htmlBuilder.append("    margin: 0;");
             htmlBuilder.append("    padding: 0;");
             htmlBuilder.append("    line-height: 1.3;");
+            htmlBuilder.append("    margin-top: 1mm;");
             htmlBuilder.append("}");
             htmlBuilder.append(".header-line-break:after {");
             htmlBuilder.append("    content: \"\";");
@@ -356,19 +451,21 @@ public class FileConversionService {
             htmlBuilder.append("    padding: 0;");
             htmlBuilder.append("    line-height: 1.3;");
             htmlBuilder.append("    page-break-inside: avoid;");
+            htmlBuilder.append("    margin-bottom: 1mm;");
             htmlBuilder.append("}");
             htmlBuilder.append(".header-left p, .header-left div {");
             htmlBuilder.append("    text-align: left;");
-            htmlBuilder.append("    margin-bottom: 2pt;");
+            htmlBuilder.append("    margin-bottom: 1mm;");
             htmlBuilder.append("}");
             htmlBuilder.append(".header-right p, .header-right div {");
             htmlBuilder.append("    text-align: right;");
-            htmlBuilder.append("    margin-bottom: 2pt;");
+            htmlBuilder.append("    margin-bottom: 1mm;");
             htmlBuilder.append("}");
             htmlBuilder.append(".force-line-break {");
             htmlBuilder.append("    display: block;");
             htmlBuilder.append("    clear: both;");
             htmlBuilder.append("    page-break-inside: avoid;");
+            htmlBuilder.append("    margin-top: 1mm;");
             htmlBuilder.append("}");
             htmlBuilder.append(".header-text-separator {");
             htmlBuilder.append("    display: block;");
@@ -378,6 +475,7 @@ public class FileConversionService {
             htmlBuilder.append("    page-break-inside: avoid;");
             htmlBuilder.append("    height: 0;");
             htmlBuilder.append("    clear: both;");
+            htmlBuilder.append("    margin-top: 1mm;");
             htmlBuilder.append("}");
             htmlBuilder.append("br.header-text-separator {");
             htmlBuilder.append("    display: block;");
@@ -390,10 +488,14 @@ public class FileConversionService {
             htmlBuilder.append("}");
             htmlBuilder.append("</style>");
             htmlBuilder.append("</head><body>");
+            htmlBuilder.append("<div class=\"page-container\">");
+            htmlBuilder.append("<div class=\"page-content\">");
 
             // Process document body
             processDocumentBody(document, htmlBuilder);
 
+            htmlBuilder.append("</div>");
+            htmlBuilder.append("</div>");
             htmlBuilder.append("</body></html>");
             return htmlBuilder.toString();
         }
@@ -471,7 +573,7 @@ public class FileConversionService {
             tag = headingTag;
             classes.append("title");
         } else if (paragraphText != null && isMainTitle(paragraphText)) {
-            tag = "h2";
+            tag = "h3";
             classes.append("main-title");
         } else if (!isList) {
             // Add alignment classes for non-list paragraphs
@@ -514,8 +616,22 @@ public class FileConversionService {
                     paragraphText.trim().endsWith("5:") ||
                     paragraphText.contains("KHOA/VIỆN") ||
                     paragraphText.contains("Kính gửi") ||
-                    paragraphText.contains("ghi tên dưới đây"))) {
+                    paragraphText.contains("ghi tên dưới đây") ||
+                    paragraphText.contains("Là tác giả") ||
+                    paragraphText.contains("Chủ đầu tư") ||
+                    paragraphText.contains("Lĩnh vựa áp dụng") ||
+                    paragraphText.contains("Những thông tin cần được bảo mật") ||
+                    paragraphText.contains("Các điều kiện cần thiết") ||
+                    paragraphText.contains("Đánh giá lợi ích"))) {
                 classes.append(" field-with-dots");
+            }
+
+            // Check if it's a special field (signature, date, etc.)
+            if (paragraphText != null && (paragraphText.contains("Ký và ghi rõ họ tên") ||
+                    paragraphText.contains("ngày") && paragraphText.contains("tháng") && paragraphText.contains("năm")
+                    ||
+                    paragraphText.contains("Tác giả sáng kiến"))) {
+                classes.append(" special-field");
             }
 
             // Check if it needs line break (specific phrases that should be on new lines)
@@ -679,16 +795,29 @@ public class FileConversionService {
             }
 
             // Process header text line by line - EXACTLY as in the template
-            if (text.contains("TRƯỜNG ĐẠI HỌC CÔNG NGHIỆP")) {
+            if (text.contains("TRƯỜNG ĐẠI HỌC CÔNG NGHIỆP") && !htmlBuilder.toString().contains("header-left")) {
+                htmlBuilder.append("<div class=\"header-left\">");
                 htmlBuilder.append("<span class=\"header-text\">TRƯỜNG ĐẠI HỌC CÔNG NGHIỆP</span>");
-            } else if (text.contains("THÀNH PHỐ HỒ CHÍ MINH")) {
                 htmlBuilder.append("<br><span class=\"header-text\">THÀNH PHỐ HỒ CHÍ MINH</span>");
-            } else if (text.contains("KHOA/VIỆN")) {
-                htmlBuilder.append("<br><span class=\"header-text underline\">KHOA/VIỆN : …</span>");
-            } else if (text.contains("CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM")) {
+                htmlBuilder.append("<br><span class=\"header-text underline\">KHOA/VIỆN : ---</span>");
+                htmlBuilder.append("</div>");
+            } else if (text.contains("CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM")
+                    && !htmlBuilder.toString().contains("header-right")) {
+                htmlBuilder.append("<div class=\"header-right\">");
                 htmlBuilder.append("<span class=\"header-text\">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</span>");
-            } else if (text.contains("Độc lập - Tự do - Hạnh phúc")) {
                 htmlBuilder.append("<br><span class=\"header-text underline\">Độc lập - Tự do - Hạnh phúc</span>");
+                htmlBuilder.append("</div>");
+            } else if (text.contains("Tác giả sáng kiến")) {
+                htmlBuilder.append("<div class=\"signature-section\">");
+                htmlBuilder.append("<div class=\"signature-title\">" + text + "</div>");
+                htmlBuilder.append("<div>(Ký và ghi rõ họ tên)</div>");
+                htmlBuilder.append("<div><span class=\"signature-line\"></span></div>");
+                htmlBuilder.append("</div>");
+            } else if (text.contains("Ký và ghi rõ họ tên")) {
+                htmlBuilder.append(text + " <span class=\"signature-line\"></span>");
+            } else if (text.contains("ngày") && text.contains("tháng") && text.contains("năm")) {
+                htmlBuilder.append(text.replace("ngày ... tháng ... năm",
+                        "ngày <span class=\"signature-line\"></span> tháng <span class=\"signature-line\"></span> năm"));
             } else {
                 htmlBuilder.append(text);
             }
@@ -794,10 +923,10 @@ public class FileConversionService {
                     }
                 }
 
-                // Cell borders - NO BORDERS
+                // Cell borders - Keep borders for tables
                 if (ctTc != null && ctTc.getTcPr() != null) {
-                    // No borders - completely transparent
-                    cellStyles.append("border: none; ");
+                    // Keep default borders for table cells
+                    // cellStyles.append("border: 1px solid #000; ");
                 }
 
                 if (cellStyles.length() > 0) {
