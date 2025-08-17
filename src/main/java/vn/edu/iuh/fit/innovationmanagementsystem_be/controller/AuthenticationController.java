@@ -7,9 +7,12 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.dto.requestDTO.LoginR
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.dto.requestDTO.LogoutRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.dto.requestDTO.RefreshTokenRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.dto.requestDTO.ChangePasswordRequest;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.dto.requestDTO.OtpRequest;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.dto.requestDTO.ResetPasswordWithOtpRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.dto.responseDTO.LoginResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.dto.responseDTO.TokenResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.dto.responseDTO.ChangePasswordResponse;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.dto.responseDTO.OtpResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.service.AuthenticationService;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.annotation.ApiMessage;
 
@@ -63,6 +66,26 @@ public class AuthenticationController {
     public ResponseEntity<ChangePasswordResponse> changePassword(
             @Valid @RequestBody ChangePasswordRequest changePasswordRequest) {
         ChangePasswordResponse response = authenticationService.changePassword(changePasswordRequest);
+        return ResponseEntity.ok(response);
+    }
+
+    // 5. Quên mật khẩu - Gửi OTP (Public API)
+    @PostMapping("/forgot-password")
+    @ApiMessage("OTP đã được gửi đến email của bạn")
+    public ResponseEntity<OtpResponse> forgotPassword(
+            @Valid @RequestBody OtpRequest otpRequest) {
+
+        OtpResponse response = authenticationService.forgotPassword(otpRequest);
+        return ResponseEntity.ok(response);
+    }
+
+    // 6. Reset mật khẩu với OTP (Public API)
+    @PostMapping("/reset-password")
+    @ApiMessage("Đặt lại mật khẩu thành công")
+    public ResponseEntity<ChangePasswordResponse> resetPassword(
+            @Valid @RequestBody ResetPasswordWithOtpRequest resetPasswordRequest) {
+
+        ChangePasswordResponse response = authenticationService.resetPassword(resetPasswordRequest);
         return ResponseEntity.ok(response);
     }
 

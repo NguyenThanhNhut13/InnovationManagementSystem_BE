@@ -96,6 +96,12 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-data-redis</artifactId>
 		</dependency>
+		
+		<!-- Spring Boot Starter Mail -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-mail</artifactId>
+		</dependency>
 		<dependency>
   <groupId>com.turkraft.springfilter</groupId>
   <artifactId>jpa</artifactId>

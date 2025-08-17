@@ -71,6 +71,8 @@ public class JwtBlacklistFilter extends OncePerRequestFilter {
         // Không filter các endpoint public
         return path.startsWith("/api/v1/auth/login") ||
                 path.startsWith("/api/v1/auth/refresh") ||
-                path.startsWith("/api/v1/auth/logout");
+                path.startsWith("/api/v1/auth/logout") ||
+                path.startsWith("/api/v1/auth/forgot-password") ||
+                path.startsWith("/api/v1/auth/reset-password");
     }
 }

@@ -33,7 +33,7 @@ build/
 .vscode/
 
 # RSA Keys - không commit keys lên git
-src/main/resources/keys/
+src/main/resources/
 *.pem
 *.key
 *.crt
