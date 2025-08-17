@@ -1,17 +1,18 @@
 package vn.edu.iuh.fit.innovationmanagementsystem_be.service;
 
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.concurrent.TimeUnit;
 
 @Service
-@RequiredArgsConstructor
 public class OtpService {
 
     private final RedisTemplate<String, Object> redisTemplate;
+
+    public OtpService(RedisTemplate<String, Object> redisTemplate) {
+        this.redisTemplate = redisTemplate;
+    }
 
     private static final String OTP_PREFIX = "otp:";
     private static final int OTP_LENGTH = 6;

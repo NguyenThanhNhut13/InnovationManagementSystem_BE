@@ -12,10 +12,13 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.annotation.ApiMessage;
 
 @RestController
 @RequestMapping("/api/v1/file-conversion")
-@RequiredArgsConstructor
 public class FileConversionController {
 
     private final FileConversionService fileConversionService;
+
+    public FileConversionController(FileConversionService fileConversionService) {
+        this.fileConversionService = fileConversionService;
+    }
 
     @PostMapping(value = "/docx-to-html", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @ApiMessage("Chuyển đổi file thành công")

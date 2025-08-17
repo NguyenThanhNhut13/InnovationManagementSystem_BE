@@ -14,7 +14,6 @@ import java.math.BigInteger;
 import java.util.List;
 
 @Service
-@Slf4j
 public class FileConversionService {
 
     public FileConversionResponse convertDocxToHtml(MultipartFile file) {
@@ -40,7 +39,6 @@ public class FileConversionService {
                     .build();
 
         } catch (Exception e) {
-            log.error("Lỗi khi chuyển đổi file: {}", e.getMessage(), e);
             return FileConversionResponse.builder()
                     .htmlContent(null)
                     .originalFileName(file.getOriginalFilename())
