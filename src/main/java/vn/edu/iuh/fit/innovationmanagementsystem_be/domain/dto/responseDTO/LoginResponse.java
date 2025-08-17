@@ -27,5 +27,4 @@ public class LoginResponse {
     private LocalDateTime updatedAt;
     private String accessToken;
     private String refreshToken;
-    private Long expiresIn;
 }
