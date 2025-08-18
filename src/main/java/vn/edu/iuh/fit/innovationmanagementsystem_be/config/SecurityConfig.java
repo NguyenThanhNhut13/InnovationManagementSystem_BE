@@ -58,14 +58,6 @@ public class SecurityConfig {
         }
 
         @Bean
-        public AuthenticationProvider authenticationProvider() {
-                DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
-                authProvider.setUserDetailsService(userDetailsService);
-                authProvider.setPasswordEncoder(passwordEncoder());
-                return authProvider;
-        }
-
-        @Bean
         public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
                 return config.getAuthenticationManager();
         }

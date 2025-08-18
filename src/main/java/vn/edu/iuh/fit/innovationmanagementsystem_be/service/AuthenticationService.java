@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
-@RequiredArgsConstructor
 public class AuthenticationService {
 
     private final AuthenticationManager authenticationManager;
@@ -38,6 +37,21 @@ public class AuthenticationService {
     private final EmailService emailService;
     private final RateLimitingService rateLimitingService;
     private final OtpService otpService;
+
+    public AuthenticationService(AuthenticationManager authenticationManager, JwtTokenUtil jwtTokenUtil,
+            UserRepository userRepository, RedisTokenService redisTokenService,
+            RefreshTokenValidationService refreshTokenValidationService, PasswordEncoder passwordEncoder,
+            EmailService emailService, RateLimitingService rateLimitingService, OtpService otpService) {
+        this.authenticationManager = authenticationManager;
+        this.jwtTokenUtil = jwtTokenUtil;
+        this.userRepository = userRepository;
+        this.redisTokenService = redisTokenService;
+        this.refreshTokenValidationService = refreshTokenValidationService;
+        this.passwordEncoder = passwordEncoder;
+        this.emailService = emailService;
+        this.rateLimitingService = rateLimitingService;
+        this.otpService = otpService;
+    }
 
     // 1. Login
     public LoginResponse authenticate(LoginRequest loginRequest) {
