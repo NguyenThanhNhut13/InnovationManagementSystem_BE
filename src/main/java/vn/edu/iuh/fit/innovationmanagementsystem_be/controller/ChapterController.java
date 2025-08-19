@@ -55,36 +55,11 @@ public class ChapterController {
         return ResponseEntity.ok(chapterService.updateChapter(id, request));
     }
 
-    // 5. Delete Chapter
-    @DeleteMapping("/chapters/{id}")
-    @ApiMessage("Xóa chương thành công")
-    public ResponseEntity<Void> deleteChapter(@PathVariable String id) {
-        chapterService.deleteChapter(id);
-        return ResponseEntity.ok().build();
-    }
-
-    // 6. Get Chapters by InnovationDecision
+    // 5. Get Chapters by InnovationDecision
     @GetMapping("/innovation-decisions/{innovationDecisionId}/chapters")
     @ApiMessage("Lấy danh sách chương theo quyết định thành công")
     public ResponseEntity<ResultPaginationDTO> getChaptersByInnovationDecision(
             @PathVariable String innovationDecisionId, Pageable pageable) {
         return ResponseEntity.ok(chapterService.getChaptersByInnovationDecision(innovationDecisionId, pageable));
-    }
-
-    // 7. Search Chapters by keyword
-    @GetMapping("/chapters/search")
-    @ApiMessage("Tìm kiếm chương thành công")
-    public ResponseEntity<ResultPaginationDTO> searchChapters(
-            @RequestParam String keyword, Pageable pageable) {
-        return ResponseEntity.ok(chapterService.searchChapters(keyword, pageable));
-    }
-
-    // 8. Search Chapters by InnovationDecision and keyword
-    @GetMapping("/innovation-decisions/{innovationDecisionId}/chapters/search")
-    @ApiMessage("Tìm kiếm chương theo quyết định thành công")
-    public ResponseEntity<ResultPaginationDTO> searchChaptersByInnovationDecision(
-            @PathVariable String innovationDecisionId, @RequestParam String keyword, Pageable pageable) {
-        return ResponseEntity
-                .ok(chapterService.searchChaptersByInnovationDecision(innovationDecisionId, keyword, pageable));
     }
 }

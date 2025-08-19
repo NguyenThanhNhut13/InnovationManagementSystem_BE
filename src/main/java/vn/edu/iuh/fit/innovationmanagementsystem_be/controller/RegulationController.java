@@ -55,15 +55,7 @@ public class RegulationController {
         return ResponseEntity.ok(regulationService.updateRegulation(id, request));
     }
 
-    // 5. Delete Regulation
-    @DeleteMapping("/regulations/{id}")
-    @ApiMessage("Xóa điều thành công")
-    public ResponseEntity<Void> deleteRegulation(@PathVariable String id) {
-        regulationService.deleteRegulation(id);
-        return ResponseEntity.ok().build();
-    }
-
-    // 6. Get Regulations by InnovationDecision
+    // 5. Get Regulations by InnovationDecision
     @GetMapping("/innovation-decisions/{innovationDecisionId}/regulations")
     @ApiMessage("Lấy danh sách điều theo quyết định thành công")
     public ResponseEntity<ResultPaginationDTO> getRegulationsByInnovationDecision(
@@ -71,7 +63,7 @@ public class RegulationController {
         return ResponseEntity.ok(regulationService.getRegulationsByInnovationDecision(innovationDecisionId, pageable));
     }
 
-    // 7. Get Regulations by Chapter
+    // 6. Get Regulations by Chapter
     @GetMapping("/chapters/{chapterId}/regulations")
     @ApiMessage("Lấy danh sách điều theo chương thành công")
     public ResponseEntity<ResultPaginationDTO> getRegulationsByChapter(
@@ -79,35 +71,11 @@ public class RegulationController {
         return ResponseEntity.ok(regulationService.getRegulationsByChapter(chapterId, pageable));
     }
 
-    // 8. Get Regulations not in any Chapter
+    // 7. Get Regulations not in any Chapter
     @GetMapping("/regulations/not-in-chapter")
     @ApiMessage("Lấy danh sách điều không thuộc chương nào thành công")
     public ResponseEntity<ResultPaginationDTO> getRegulationsNotInChapter(Pageable pageable) {
         return ResponseEntity.ok(regulationService.getRegulationsNotInChapter(pageable));
     }
 
-    // 9. Search Regulations by keyword
-    @GetMapping("/regulations/search")
-    @ApiMessage("Tìm kiếm điều thành công")
-    public ResponseEntity<ResultPaginationDTO> searchRegulations(
-            @RequestParam String keyword, Pageable pageable) {
-        return ResponseEntity.ok(regulationService.searchRegulations(keyword, pageable));
-    }
-
-    // 10. Search Regulations by InnovationDecision and keyword
-    @GetMapping("/innovation-decisions/{innovationDecisionId}/regulations/search")
-    @ApiMessage("Tìm kiếm điều theo quyết định thành công")
-    public ResponseEntity<ResultPaginationDTO> searchRegulationsByInnovationDecision(
-            @PathVariable String innovationDecisionId, @RequestParam String keyword, Pageable pageable) {
-        return ResponseEntity
-                .ok(regulationService.searchRegulationsByInnovationDecision(innovationDecisionId, keyword, pageable));
-    }
-
-    // 11. Search Regulations by Chapter and keyword
-    @GetMapping("/chapters/{chapterId}/regulations/search")
-    @ApiMessage("Tìm kiếm điều theo chương thành công")
-    public ResponseEntity<ResultPaginationDTO> searchRegulationsByChapter(
-            @PathVariable String chapterId, @RequestParam String keyword, Pageable pageable) {
-        return ResponseEntity.ok(regulationService.searchRegulationsByChapter(chapterId, keyword, pageable));
-    }
 }

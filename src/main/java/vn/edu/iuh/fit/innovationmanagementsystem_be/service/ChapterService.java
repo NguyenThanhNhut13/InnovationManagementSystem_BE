@@ -89,33 +89,9 @@ public class ChapterService {
         return toChapterResponse(chapter);
     }
 
-    // 5. Delete Chapter
-    @Transactional
-    public void deleteChapter(String id) {
-        Chapter chapter = chapterRepository.findById(id)
-                .orElseThrow(() -> new IdInvalidException("Không tìm thấy chương có ID: " + id));
-        chapterRepository.delete(chapter);
-    }
-
-    // 6. Get Chapters by InnovationDecision
+    // 5. Get Chapters by InnovationDecision
     public ResultPaginationDTO getChaptersByInnovationDecision(String innovationDecisionId, Pageable pageable) {
         Page<Chapter> chapters = chapterRepository.findByInnovationDecisionId(innovationDecisionId, pageable);
-        Page<ChapterResponse> responses = chapters.map(this::toChapterResponse);
-        return Utils.toResultPaginationDTO(responses, pageable);
-    }
-
-    // 7. Search Chapters by keyword
-    public ResultPaginationDTO searchChapters(String keyword, Pageable pageable) {
-        Page<Chapter> chapters = chapterRepository.findByTitleContaining(keyword, pageable);
-        Page<ChapterResponse> responses = chapters.map(this::toChapterResponse);
-        return Utils.toResultPaginationDTO(responses, pageable);
-    }
-
-    // 8. Search Chapters by InnovationDecision and keyword
-    public ResultPaginationDTO searchChaptersByInnovationDecision(String innovationDecisionId, String keyword,
-            Pageable pageable) {
-        Page<Chapter> chapters = chapterRepository.findByInnovationDecisionIdAndTitleContaining(innovationDecisionId,
-                keyword, pageable);
         Page<ChapterResponse> responses = chapters.map(this::toChapterResponse);
         return Utils.toResultPaginationDTO(responses, pageable);
     }

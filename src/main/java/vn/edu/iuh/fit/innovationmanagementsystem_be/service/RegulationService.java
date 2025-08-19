@@ -128,55 +128,23 @@ public class RegulationService {
         return toRegulationResponse(regulation);
     }
 
-    // 5. Delete Regulation
-    @Transactional
-    public void deleteRegulation(String id) {
-        Regulation regulation = regulationRepository.findById(id)
-                .orElseThrow(() -> new IdInvalidException("Không tìm thấy điều có ID: " + id));
-        regulationRepository.delete(regulation);
-    }
-
-    // 6. Get Regulations by InnovationDecision
+    // 5. Get Regulations by InnovationDecision
     public ResultPaginationDTO getRegulationsByInnovationDecision(String innovationDecisionId, Pageable pageable) {
         Page<Regulation> regulations = regulationRepository.findByInnovationDecisionId(innovationDecisionId, pageable);
         Page<RegulationResponse> responses = regulations.map(this::toRegulationResponse);
         return Utils.toResultPaginationDTO(responses, pageable);
     }
 
-    // 7. Get Regulations by Chapter
+    // 6. Get Regulations by Chapter
     public ResultPaginationDTO getRegulationsByChapter(String chapterId, Pageable pageable) {
         Page<Regulation> regulations = regulationRepository.findByChapterId(chapterId, pageable);
         Page<RegulationResponse> responses = regulations.map(this::toRegulationResponse);
         return Utils.toResultPaginationDTO(responses, pageable);
     }
 
-    // 8. Get Regulations not in any Chapter
+    // 7. Get Regulations not in any Chapter
     public ResultPaginationDTO getRegulationsNotInChapter(Pageable pageable) {
         Page<Regulation> regulations = regulationRepository.findByChapterIdIsNull(pageable);
-        Page<RegulationResponse> responses = regulations.map(this::toRegulationResponse);
-        return Utils.toResultPaginationDTO(responses, pageable);
-    }
-
-    // 9. Search Regulations by keyword
-    public ResultPaginationDTO searchRegulations(String keyword, Pageable pageable) {
-        Page<Regulation> regulations = regulationRepository.findByTitleContaining(keyword, pageable);
-        Page<RegulationResponse> responses = regulations.map(this::toRegulationResponse);
-        return Utils.toResultPaginationDTO(responses, pageable);
-    }
-
-    // 10. Search Regulations by InnovationDecision and keyword
-    public ResultPaginationDTO searchRegulationsByInnovationDecision(String innovationDecisionId, String keyword,
-            Pageable pageable) {
-        Page<Regulation> regulations = regulationRepository
-                .findByInnovationDecisionIdAndTitleContaining(innovationDecisionId, keyword, pageable);
-        Page<RegulationResponse> responses = regulations.map(this::toRegulationResponse);
-        return Utils.toResultPaginationDTO(responses, pageable);
-    }
-
-    // 11. Search Regulations by Chapter and keyword
-    public ResultPaginationDTO searchRegulationsByChapter(String chapterId, String keyword, Pageable pageable) {
-        Page<Regulation> regulations = regulationRepository.findByChapterIdAndTitleContaining(chapterId, keyword,
-                pageable);
         Page<RegulationResponse> responses = regulations.map(this::toRegulationResponse);
         return Utils.toResultPaginationDTO(responses, pageable);
     }
