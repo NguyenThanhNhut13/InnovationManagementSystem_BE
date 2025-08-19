@@ -65,19 +65,49 @@ public class UserSeeder implements DatabaseSeeder {
     private List<User> createDefaultUsers() {
         List<User> users = new ArrayList<>();
 
-        // Tạo admin user
-        User adminUser = createAdminUser();
-        users.add(adminUser);
+        // Lấy phòng ban mặc định để gán cho các user
+        Department defaultDept = departmentRepository.findByDepartmentCode("CNTT")
+                .orElseThrow(() -> new IdInvalidException("Không tìm thấy department CNTT"));
+
+        // Lấy toàn bộ role và tạo 1 user cho mỗi role
+        List<Role> allRoles = roleRepository.findAll();
+        int index = 1;
+        for (Role role : allRoles) {
+            users.add(createUserForRole(role, defaultDept, index));
+            index++;
+        }
 
         return users;
     }
 
+    private User createUserForRole(Role role, Department department, int index) {
+        UserRoleEnum roleEnum = role.getRoleName();
+
+        User user = new User();
+        user.setPersonnelId("USR_" + roleEnum.name());
+        user.setFullName("User " + roleEnum.name().replace('_', ' '));
+        user.setEmail(roleEnum.name().toLowerCase() + "@iuh.edu.vn");
+        user.setPhoneNumber(String.format("090%07d", index));
+        user.setPassword(passwordEncoder.encode("password123"));
+        user.setDepartment(department);
+        user.setCreatedAt(LocalDateTime.now());
+        user.setUpdatedAt(LocalDateTime.now());
+
+        List<UserRole> userRoles = new ArrayList<>();
+        UserRole userRole = new UserRole();
+        userRole.setUser(user);
+        userRole.setRole(role);
+        userRoles.add(userRole);
+        user.setUserRoles(userRoles);
+
+        return user;
+    }
+
+    // Giữ lại phương thức cũ làm tham khảo (không sử dụng)
+    @SuppressWarnings("unused")
     private User createAdminUser() {
-        // Tìm department CNTT
         Department cnttDept = departmentRepository.findByDepartmentCode("CNTT")
                 .orElseThrow(() -> new IdInvalidException("Không tìm thấy department CNTT"));
-
-        // Tìm role QUAN_TRI_VIEN
         Role adminRole = roleRepository.findByRoleName(UserRoleEnum.QUAN_TRI_VIEN)
                 .orElseThrow(() -> new IdInvalidException("Không tìm thấy role QUAN_TRI_VIEN"));
 
@@ -91,7 +121,6 @@ public class UserSeeder implements DatabaseSeeder {
         adminUser.setCreatedAt(LocalDateTime.now());
         adminUser.setUpdatedAt(LocalDateTime.now());
 
-        // Tạo UserRole relationship
         List<UserRole> userRoles = new ArrayList<>();
         UserRole userRole = new UserRole();
         userRole.setUser(adminUser);
@@ -101,5 +130,4 @@ public class UserSeeder implements DatabaseSeeder {
 
         return adminUser;
     }
-
 }

@@ -1,0 +1,821 @@
+{
+    "info": {
+        "_postman_id": "8d2a2f3a-6c3e-4f1e-9f3b-0a7c0d2b9b11",
+        "name": "Innovation Management System API",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "variable": [
+        {
+            "key": "base_url",
+            "value": "http://localhost:8080"
+        },
+        {
+            "key": "decision_id",
+            "value": "{{decision_id}}"
+        },
+        {
+            "key": "chapter_id",
+            "value": "{{chapter_id}}"
+        },
+        {
+            "key": "regulation_id",
+            "value": "{{regulation_id}}"
+        },
+        {
+            "key": "keyword",
+            "value": "quy định"
+        },
+        {
+            "key": "start_date",
+            "value": "2024-07-01"
+        },
+        {
+            "key": "end_date",
+            "value": "2024-08-01"
+        }
+    ],
+    "item": [
+        {
+            "name": "Innovation Decisions",
+            "item": [
+                {
+                    "name": "1. Create Innovation Decision",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/innovation-decisions",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "innovation-decisions"
+                            ]
+                        },
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"decisionNumber\": \"1724/QĐ-ĐHCN\",\n  \"title\": \"Về việc ban hành Quy định về tiêu chuẩn sáng kiến và quy trình xét công nhận sáng kiến của Trường Đại học Công nghiệp Thành phố Hồ Chí Minh\",\n  \"promulgatedDate\": \"2024-07-22\",\n  \"signedBy\": \"TS. Phan Hồng Hải\",\n  \"bases\": \"Căn cứ Quyết định số 214/2004/QĐ-TTg... Theo đề nghị của Trưởng phòng...\",\n  \"yearDecision\": 2024\n}"
+                        }
+                    }
+                },
+                {
+                    "name": "2. Get All Innovation Decisions",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/innovation-decisions?page=0&size=10",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "innovation-decisions"
+                            ],
+                            "query": [
+                                {
+                                    "key": "page",
+                                    "value": "0"
+                                },
+                                {
+                                    "key": "size",
+                                    "value": "10"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "3. Get Innovation Decision By ID",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/innovation-decisions/{{decision_id}}",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "innovation-decisions",
+                                "{{decision_id}}"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "4. Update Innovation Decision",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/innovation-decisions/{{decision_id}}",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "innovation-decisions",
+                                "{{decision_id}}"
+                            ]
+                        },
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"decisionNumber\": \"1724/QĐ-ĐHCN\",\n  \"title\": \"[UPDATE] Tiêu đề\",\n  \"promulgatedDate\": \"2024-07-22\",\n  \"signedBy\": \"TS. Phan Hồng Hải\",\n  \"bases\": \"[UPDATE] Nội dung căn cứ...\",\n  \"yearDecision\": 2024\n}"
+                        }
+                    }
+                },
+                {
+                    "name": "5. Delete Innovation Decision",
+                    "request": {
+                        "method": "DELETE",
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/innovation-decisions/{{decision_id}}",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "innovation-decisions",
+                                "{{decision_id}}"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "6. Search Innovation Decisions",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/innovation-decisions/search?keyword={{keyword}}&page=0&size=10",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "innovation-decisions",
+                                "search"
+                            ],
+                            "query": [
+                                {
+                                    "key": "keyword",
+                                    "value": "{{keyword}}"
+                                },
+                                {
+                                    "key": "page",
+                                    "value": "0"
+                                },
+                                {
+                                    "key": "size",
+                                    "value": "10"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "7. Get Innovation Decisions By Signed By",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/innovation-decisions/signed-by?signedBy=TS. Phan Hồng Hải&page=0&size=10",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "innovation-decisions",
+                                "signed-by"
+                            ],
+                            "query": [
+                                {
+                                    "key": "signedBy",
+                                    "value": "TS. Phan Hồng Hải"
+                                },
+                                {
+                                    "key": "page",
+                                    "value": "0"
+                                },
+                                {
+                                    "key": "size",
+                                    "value": "10"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "8. Get Innovation Decisions By Year",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/innovation-decisions/year?year=2024&page=0&size=10",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "innovation-decisions",
+                                "year"
+                            ],
+                            "query": [
+                                {
+                                    "key": "year",
+                                    "value": "2024"
+                                },
+                                {
+                                    "key": "page",
+                                    "value": "0"
+                                },
+                                {
+                                    "key": "size",
+                                    "value": "10"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "9. Get Innovation Decisions By Date Range",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/innovation-decisions/date-range?startDate={{start_date}}&endDate={{end_date}}&page=0&size=10",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "innovation-decisions",
+                                "date-range"
+                            ],
+                            "query": [
+                                {
+                                    "key": "startDate",
+                                    "value": "{{start_date}}"
+                                },
+                                {
+                                    "key": "endDate",
+                                    "value": "{{end_date}}"
+                                },
+                                {
+                                    "key": "page",
+                                    "value": "0"
+                                },
+                                {
+                                    "key": "size",
+                                    "value": "10"
+                                }
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Chapters",
+            "item": [
+                {
+                    "name": "1. Create Chapter",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/chapters",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "chapters"
+                            ]
+                        },
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"chapterNumber\": \"Chương I\",\n  \"title\": \"QUY ĐỊNH CHUNG\",\n  \"innovationDecisionId\": \"{{decision_id}}\"\n}"
+                        }
+                    }
+                },
+                {
+                    "name": "2. Get All Chapters",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/chapters?page=0&size=10",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "chapters"
+                            ],
+                            "query": [
+                                {
+                                    "key": "page",
+                                    "value": "0"
+                                },
+                                {
+                                    "key": "size",
+                                    "value": "10"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "3. Get Chapter By ID",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/chapters/{{chapter_id}}",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "chapters",
+                                "{{chapter_id}}"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "4. Update Chapter",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/chapters/{{chapter_id}}",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "chapters",
+                                "{{chapter_id}}"
+                            ]
+                        },
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"chapterNumber\": \"Chương II\",\n  \"title\": \"[UPDATE] Tiêu đề chương\"\n}"
+                        }
+                    }
+                },
+                {
+                    "name": "5. Delete Chapter",
+                    "request": {
+                        "method": "DELETE",
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/chapters/{{chapter_id}}",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "chapters",
+                                "{{chapter_id}}"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "6. Get Chapters By Innovation Decision",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/innovation-decisions/{{decision_id}}/chapters?page=0&size=10",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "innovation-decisions",
+                                "{{decision_id}}",
+                                "chapters"
+                            ],
+                            "query": [
+                                {
+                                    "key": "page",
+                                    "value": "0"
+                                },
+                                {
+                                    "key": "size",
+                                    "value": "10"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "7. Search Chapters",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/chapters/search?keyword={{keyword}}&page=0&size=10",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "chapters",
+                                "search"
+                            ],
+                            "query": [
+                                {
+                                    "key": "keyword",
+                                    "value": "{{keyword}}"
+                                },
+                                {
+                                    "key": "page",
+                                    "value": "0"
+                                },
+                                {
+                                    "key": "size",
+                                    "value": "10"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "8. Search Chapters By Innovation Decision",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/innovation-decisions/{{decision_id}}/chapters/search?keyword={{keyword}}&page=0&size=10",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "innovation-decisions",
+                                "{{decision_id}}",
+                                "chapters",
+                                "search"
+                            ],
+                            "query": [
+                                {
+                                    "key": "keyword",
+                                    "value": "{{keyword}}"
+                                },
+                                {
+                                    "key": "page",
+                                    "value": "0"
+                                },
+                                {
+                                    "key": "size",
+                                    "value": "10"
+                                }
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Regulations",
+            "item": [
+                {
+                    "name": "1. Create Regulation",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/regulations",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "regulations"
+                            ]
+                        },
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"clauseNumber\": \"Điều 1\",\n  \"title\": \"Phạm vi điều chỉnh và đối tượng áp dụng\",\n  \"content\": \"{\\\"sections\\\":[{\\\"number\\\":\\\"1.\\\",\\\"title\\\":\\\"Phạm vi điều chỉnh\\\",\\\"text\\\":\\\"Văn bản này quy định chi tiết...\\\"}]}\",\n  \"innovationDecisionId\": \"{{decision_id}}\",\n  \"chapterId\": \"{{chapter_id}}\"\n}"
+                        }
+                    }
+                },
+                {
+                    "name": "2. Get All Regulations",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/regulations?page=0&size=10",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "regulations"
+                            ],
+                            "query": [
+                                {
+                                    "key": "page",
+                                    "value": "0"
+                                },
+                                {
+                                    "key": "size",
+                                    "value": "10"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "3. Get Regulation By ID",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/regulations/{{regulation_id}}",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "regulations",
+                                "{{regulation_id}}"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "4. Update Regulation",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/regulations/{{regulation_id}}",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "regulations",
+                                "{{regulation_id}}"
+                            ]
+                        },
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"clauseNumber\": \"Điều 1\",\n  \"title\": \"[UPDATE] Tiêu đề điều\",\n  \"content\": \"{\\\"text\\\":\\\"Nội dung cập nhật...\\\"}\",\n  \"innovationDecisionId\": \"{{decision_id}}\",\n  \"chapterId\": \"{{chapter_id}}\"\n}"
+                        }
+                    }
+                },
+                {
+                    "name": "5. Delete Regulation",
+                    "request": {
+                        "method": "DELETE",
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/regulations/{{regulation_id}}",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "regulations",
+                                "{{regulation_id}}"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "6. Get Regulations By Innovation Decision",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/innovation-decisions/{{decision_id}}/regulations?page=0&size=10",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "innovation-decisions",
+                                "{{decision_id}}",
+                                "regulations"
+                            ],
+                            "query": [
+                                {
+                                    "key": "page",
+                                    "value": "0"
+                                },
+                                {
+                                    "key": "size",
+                                    "value": "10"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "7. Get Regulations By Chapter",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/chapters/{{chapter_id}}/regulations?page=0&size=10",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "chapters",
+                                "{{chapter_id}}",
+                                "regulations"
+                            ],
+                            "query": [
+                                {
+                                    "key": "page",
+                                    "value": "0"
+                                },
+                                {
+                                    "key": "size",
+                                    "value": "10"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "8. Get Regulations Not In Chapter",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/regulations/not-in-chapter?page=0&size=10",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "regulations",
+                                "not-in-chapter"
+                            ],
+                            "query": [
+                                {
+                                    "key": "page",
+                                    "value": "0"
+                                },
+                                {
+                                    "key": "size",
+                                    "value": "10"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "9. Search Regulations",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/regulations/search?keyword={{keyword}}&page=0&size=10",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "regulations",
+                                "search"
+                            ],
+                            "query": [
+                                {
+                                    "key": "keyword",
+                                    "value": "{{keyword}}"
+                                },
+                                {
+                                    "key": "page",
+                                    "value": "0"
+                                },
+                                {
+                                    "key": "size",
+                                    "value": "10"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "10. Search Regulations By Innovation Decision",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/innovation-decisions/{{decision_id}}/regulations/search?keyword={{keyword}}&page=0&size=10",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "innovation-decisions",
+                                "{{decision_id}}",
+                                "regulations",
+                                "search"
+                            ],
+                            "query": [
+                                {
+                                    "key": "keyword",
+                                    "value": "{{keyword}}"
+                                },
+                                {
+                                    "key": "page",
+                                    "value": "0"
+                                },
+                                {
+                                    "key": "size",
+                                    "value": "10"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "11. Search Regulations By Chapter",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/chapters/{{chapter_id}}/regulations/search?keyword={{keyword}}&page=0&size=10",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "chapters",
+                                "{{chapter_id}}",
+                                "regulations",
+                                "search"
+                            ],
+                            "query": [
+                                {
+                                    "key": "keyword",
+                                    "value": "{{keyword}}"
+                                },
+                                {
+                                    "key": "page",
+                                    "value": "0"
+                                },
+                                {
+                                    "key": "size",
+                                    "value": "10"
+                                }
+                            ]
+                        }
+                    }
+                }
+            ]
+        }
+    ]
+}
