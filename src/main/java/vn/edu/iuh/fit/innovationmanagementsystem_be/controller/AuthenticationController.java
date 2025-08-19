@@ -17,7 +17,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.service.AuthenticationServic
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.annotation.ApiMessage;
 
 @RestController
-@RequestMapping("/api/v1/auth")
+@RequestMapping("/api/v1")
 public class AuthenticationController {
 
     private final AuthenticationService authenticationService;
@@ -27,7 +27,7 @@ public class AuthenticationController {
     }
 
     // 1. Login
-    @PostMapping("/login")
+    @PostMapping("/auth/login")
     @ApiMessage("Đăng nhập thành công")
     public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest loginRequest) {
         LoginResponse loginResponse = authenticationService.authenticate(loginRequest);
@@ -35,7 +35,7 @@ public class AuthenticationController {
     }
 
     // 2. Refresh Token
-    @PostMapping("/refresh")
+    @PostMapping("/auth/refresh")
     @ApiMessage("Refresh token thành công")
     public ResponseEntity<TokenResponse> refreshToken(
             @Valid @RequestBody RefreshTokenRequest refreshTokenRequest) {
@@ -44,7 +44,7 @@ public class AuthenticationController {
     }
 
     // 3. Logout
-    @PostMapping("/logout")
+    @PostMapping("/auth/logout")
     @ApiMessage("Đăng xuất thành công")
     public ResponseEntity<Void> logout(
             @RequestHeader("Authorization") String authorizationHeader,
@@ -61,7 +61,7 @@ public class AuthenticationController {
     }
 
     // 4. Change Password
-    @PostMapping("/change-password")
+    @PostMapping("/auth/change-password")
     @ApiMessage("Đổi mật khẩu thành công")
     public ResponseEntity<ChangePasswordResponse> changePassword(
             @Valid @RequestBody ChangePasswordRequest changePasswordRequest) {
@@ -70,7 +70,7 @@ public class AuthenticationController {
     }
 
     // 5. Quên mật khẩu - Gửi OTP (Public API)
-    @PostMapping("/forgot-password")
+    @PostMapping("/auth/forgot-password")
     @ApiMessage("OTP đã được gửi đến email của bạn")
     public ResponseEntity<OtpResponse> forgotPassword(
             @Valid @RequestBody OtpRequest otpRequest) {
@@ -80,7 +80,7 @@ public class AuthenticationController {
     }
 
     // 6. Reset mật khẩu với OTP (Public API)
-    @PostMapping("/reset-password")
+    @PostMapping("/auth/reset-password")
     @ApiMessage("Đặt lại mật khẩu thành công")
     public ResponseEntity<ChangePasswordResponse> resetPassword(
             @Valid @RequestBody ResetPasswordWithOtpRequest resetPasswordRequest) {

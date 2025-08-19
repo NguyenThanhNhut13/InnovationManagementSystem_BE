@@ -11,7 +11,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.service.FileConversionServic
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.annotation.ApiMessage;
 
 @RestController
-@RequestMapping("/api/v1/file-conversion")
+@RequestMapping("/api/v1")
 public class FileConversionController {
 
     private final FileConversionService fileConversionService;
@@ -20,7 +20,7 @@ public class FileConversionController {
         this.fileConversionService = fileConversionService;
     }
 
-    @PostMapping(value = "/docx-to-html", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PostMapping(value = "/file-conversion/docx-to-html", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @ApiMessage("Chuyển đổi file thành công")
     public ResponseEntity<FileConversionResponse> convertDocxToHtml(
             @RequestParam("file") MultipartFile file) {
