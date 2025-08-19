@@ -27,5 +27,4 @@ public class InnovationDecisionRequest {
 
     private String bases;
 
-    private Integer yearDecision;
 }

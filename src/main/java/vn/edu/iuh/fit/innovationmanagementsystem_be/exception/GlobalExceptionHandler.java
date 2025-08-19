@@ -13,7 +13,7 @@ import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.RestResponse;
 
-import java.nio.file.AccessDeniedException;
+import org.springframework.security.access.AccessDeniedException;
 import java.util.List;
 
 @RestControllerAdvice
@@ -83,18 +83,7 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED).body(response);
     }
 
-    // 5. Bắt lỗi 403 Forbidden (không đủ quyền truy cập)
-    @ExceptionHandler(AccessDeniedException.class)
-    public ResponseEntity<RestResponse<Object>> handleAccessDeniedException(AccessDeniedException ex) {
-        RestResponse<Object> response = new RestResponse<>();
-        response.setStatusCode(HttpStatus.FORBIDDEN.value());
-        response.setError("Forbidden Error");
-        response.setMessage("Bạn không có quyền truy cập tài nguyên này !");
-
-        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
-    }
-
-    // 6. Bắt lỗi authentication
+    // 5. Bắt lỗi authentication
     @ExceptionHandler(value = {
             BadCredentialsException.class,
             AuthenticationException.class,

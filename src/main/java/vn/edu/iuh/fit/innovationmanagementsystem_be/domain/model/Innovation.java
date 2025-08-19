@@ -6,7 +6,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationStatusEnum;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.ArrayList;
 
@@ -15,7 +14,7 @@ import java.util.ArrayList;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class Innovation {
+public class Innovation extends Auditable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -45,18 +44,6 @@ public class Innovation {
     @JoinColumn(name = "innovation_round_id", nullable = false)
     private InnovationRound innovationRound;
 
-    @Column(name = "created_at")
-    private LocalDateTime createdAt;
-
-    @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
-
-    @Column(name = "created_by")
-    private String createdBy;
-
-    @Column(name = "updated_by")
-    private String updatedBy;
-
     // Relationships
     @OneToMany(mappedBy = "innovation", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true, targetEntity = Attachment.class)
     private List<Attachment> attachments = new ArrayList<>();
@@ -73,33 +60,13 @@ public class Innovation {
     @OneToMany(mappedBy = "innovation", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
     private List<ReviewComment> reviewComments = new ArrayList<>();
 
-    @OneToMany(mappedBy = "innovation", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
-    private List<ReportInnovationDetail> reportInnovationDetails = new ArrayList<>();
-
     @OneToMany(mappedBy = "innovation", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = false)
     private List<DigitalSignature> digitalSignatures = new ArrayList<>();
 
-    // Pre-persist and pre-update methods
     @PrePersist
-    protected void onCreate() {
-        createdAt = LocalDateTime.now();
-        updatedAt = LocalDateTime.now();
+    protected void ensureDefaults() {
         if (status == null) {
             status = InnovationStatusEnum.DRAFT;
-        }
-        if (createdBy == null) {
-            createdBy = "system";
-        }
-        if (updatedBy == null) {
-            updatedBy = "system";
-        }
-    }
-
-    @PreUpdate
-    protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
-        if (updatedBy == null) {
-            updatedBy = "system";
         }
     }
 }

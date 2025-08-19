@@ -16,7 +16,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.annotation.ApiMessage;
 import java.time.LocalDate;
 
 @RestController
-@RequestMapping("/api/v1")
+@RequestMapping("/api/v1/innovation-decisions")
 public class InnovationDecisionController {
 
     private final InnovationDecisionService innovationDecisionService;
@@ -26,7 +26,7 @@ public class InnovationDecisionController {
     }
 
     // 1. Create InnovationDecision
-    @PostMapping("/innovation-decisions")
+    @PostMapping
     @ApiMessage("Tạo quyết định thành công")
     public ResponseEntity<InnovationDecisionResponse> createInnovationDecision(
             @Valid @RequestBody InnovationDecisionRequest request) {
@@ -35,7 +35,7 @@ public class InnovationDecisionController {
     }
 
     // 2. Get All InnovationDecisions
-    @GetMapping("/innovation-decisions")
+    @GetMapping
     @ApiMessage("Lấy danh sách quyết định thành công")
     public ResponseEntity<ResultPaginationDTO> getAllInnovationDecisions(
             @Filter Specification<InnovationDecision> specification, Pageable pageable) {
@@ -43,54 +43,30 @@ public class InnovationDecisionController {
     }
 
     // 3. Get InnovationDecision by Id
-    @GetMapping("/innovation-decisions/{id}")
+    @GetMapping("/{id}")
     @ApiMessage("Lấy quyết định thành công")
     public ResponseEntity<InnovationDecisionResponse> getInnovationDecisionById(@PathVariable String id) {
         return ResponseEntity.ok(innovationDecisionService.getInnovationDecisionById(id));
     }
 
     // 4. Update InnovationDecision
-    @PutMapping("/innovation-decisions/{id}")
+    @PutMapping("/{id}")
     @ApiMessage("Cập nhật quyết định thành công")
     public ResponseEntity<InnovationDecisionResponse> updateInnovationDecision(
             @PathVariable String id, @Valid @RequestBody InnovationDecisionRequest request) {
         return ResponseEntity.ok(innovationDecisionService.updateInnovationDecision(id, request));
     }
 
-    // 5. Delete InnovationDecision
-    @DeleteMapping("/innovation-decisions/{id}")
-    @ApiMessage("Xóa quyết định thành công")
-    public ResponseEntity<Void> deleteInnovationDecision(@PathVariable String id) {
-        innovationDecisionService.deleteInnovationDecision(id);
-        return ResponseEntity.ok().build();
-    }
-
-    // 6. Search InnovationDecisions by keyword
-    @GetMapping("/innovation-decisions/search")
-    @ApiMessage("Tìm kiếm quyết định thành công")
-    public ResponseEntity<ResultPaginationDTO> searchInnovationDecisions(
-            @RequestParam String keyword, Pageable pageable) {
-        return ResponseEntity.ok(innovationDecisionService.searchInnovationDecisions(keyword, pageable));
-    }
-
-    // 7. Get InnovationDecisions by signed by
-    @GetMapping("/innovation-decisions/signed-by")
+    // 5. Get InnovationDecisions by signed by
+    @GetMapping("/signed-by")
     @ApiMessage("Lấy quyết định theo người ký thành công")
     public ResponseEntity<ResultPaginationDTO> getInnovationDecisionsBySignedBy(
             @RequestParam String signedBy, Pageable pageable) {
         return ResponseEntity.ok(innovationDecisionService.getInnovationDecisionsBySignedBy(signedBy, pageable));
     }
 
-    // 8. Get InnovationDecisions by year
-    @GetMapping("/innovation-decisions/year")
-    @ApiMessage("Lấy quyết định theo năm thành công")
-    public ResponseEntity<ResultPaginationDTO> getInnovationDecisionsByYear(
-            @RequestParam Integer year, Pageable pageable) {
-        return ResponseEntity.ok(innovationDecisionService.getInnovationDecisionsByYear(year, pageable));
-    }
-
-    // 9. Get InnovationDecisions by date range
-    @GetMapping("/innovation-decisions/date-range")
+    // 6. Get InnovationDecisions by date range
+    @GetMapping("/date-range")
     @ApiMessage("Lấy quyết định theo khoảng thời gian thành công")
     public ResponseEntity<ResultPaginationDTO> getInnovationDecisionsByDateRange(
             @RequestParam LocalDate startDate, @RequestParam LocalDate endDate, Pageable pageable) {

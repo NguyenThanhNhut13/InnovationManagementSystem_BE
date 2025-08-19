@@ -6,14 +6,12 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.ReviewLevelEnum;
 
-import java.time.LocalDateTime;
-
 @Entity
 @Table(name = "review_comments")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class ReviewComment {
+public class ReviewComment extends Auditable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -35,37 +33,4 @@ public class ReviewComment {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "review_council_members_id", nullable = false)
     private CouncilMember councilMember;
-
-    @Column(name = "created_at")
-    private LocalDateTime createdAt;
-
-    @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
-
-    @Column(name = "created_by")
-    private String createdBy;
-
-    @Column(name = "updated_by")
-    private String updatedBy;
-
-    // Pre-persist and pre-update methods
-    @PrePersist
-    protected void onCreate() {
-        createdAt = LocalDateTime.now();
-        updatedAt = LocalDateTime.now();
-        if (createdBy == null) {
-            createdBy = "system";
-        }
-        if (updatedBy == null) {
-            updatedBy = "system";
-        }
-    }
-
-    @PreUpdate
-    protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
-        if (updatedBy == null) {
-            updatedBy = "system";
-        }
-    }
 }

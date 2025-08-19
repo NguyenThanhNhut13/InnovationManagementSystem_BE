@@ -11,7 +11,7 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class ReviewScore {
+public class ReviewScore extends Auditable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -39,28 +39,4 @@ public class ReviewScore {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "decision_id", nullable = false)
     private InnovationDecision innovationDecision;
-
-    @Column(name = "created_at")
-    private LocalDateTime createdAt;
-
-    @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
-
-    @Column(name = "created_by")
-    private String createdBy;
-
-    @Column(name = "updated_by")
-    private String updatedBy;
-
-    // Pre-persist and pre-update methods
-    @PrePersist
-    protected void onCreate() {
-        createdAt = LocalDateTime.now();
-        updatedAt = LocalDateTime.now();
-    }
-
-    @PreUpdate
-    protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
-    }
 }

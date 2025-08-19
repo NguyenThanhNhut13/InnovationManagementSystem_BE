@@ -19,7 +19,6 @@ public class InnovationDecisionResponse {
     private LocalDate promulgatedDate;
     private String signedBy;
     private String bases;
-    private Integer yearDecision;
     private LocalDateTime createdAt;
     private LocalDateTime updateAt;
     private String createdBy;

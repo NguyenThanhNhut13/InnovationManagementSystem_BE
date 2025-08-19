@@ -15,7 +15,6 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.ResultPaginationDTO;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.Utils;
 
 import java.time.LocalDate;
-import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
@@ -40,7 +39,6 @@ public class InnovationDecisionService {
         innovationDecision.setPromulgatedDate(request.getPromulgatedDate());
         innovationDecision.setSignedBy(request.getSignedBy());
         innovationDecision.setBases(request.getBases());
-        innovationDecision.setYearDecision(request.getYearDecision());
 
         innovationDecisionRepository.save(innovationDecision);
         return toInnovationDecisionResponse(innovationDecision);
@@ -87,31 +85,12 @@ public class InnovationDecisionService {
         if (request.getBases() != null) {
             innovationDecision.setBases(request.getBases());
         }
-        if (request.getYearDecision() != null) {
-            innovationDecision.setYearDecision(request.getYearDecision());
-        }
 
         innovationDecisionRepository.save(innovationDecision);
         return toInnovationDecisionResponse(innovationDecision);
     }
 
-    // 5. Delete InnovationDecision
-    @Transactional
-    public void deleteInnovationDecision(String id) {
-        InnovationDecision innovationDecision = innovationDecisionRepository.findById(id)
-                .orElseThrow(() -> new IdInvalidException("Không tìm thấy quyết định có ID: " + id));
-        innovationDecisionRepository.delete(innovationDecision);
-    }
-
-    // 6. Search by keyword
-    public ResultPaginationDTO searchInnovationDecisions(String keyword, Pageable pageable) {
-        Page<InnovationDecision> innovationDecisions = innovationDecisionRepository
-                .findByTitleOrDecisionNumberContaining(keyword, pageable);
-        Page<InnovationDecisionResponse> responses = innovationDecisions.map(this::toInnovationDecisionResponse);
-        return Utils.toResultPaginationDTO(responses, pageable);
-    }
-
-    // 7. Get by signed by
+    // 5. Get by signed by
     public ResultPaginationDTO getInnovationDecisionsBySignedBy(String signedBy, Pageable pageable) {
         Page<InnovationDecision> innovationDecisions = innovationDecisionRepository
                 .findBySignedBy(signedBy, pageable);
@@ -119,15 +98,7 @@ public class InnovationDecisionService {
         return Utils.toResultPaginationDTO(responses, pageable);
     }
 
-    // 8. Get by year
-    public ResultPaginationDTO getInnovationDecisionsByYear(Integer year, Pageable pageable) {
-        Page<InnovationDecision> innovationDecisions = innovationDecisionRepository
-                .findByYearDecision(year, pageable);
-        Page<InnovationDecisionResponse> responses = innovationDecisions.map(this::toInnovationDecisionResponse);
-        return Utils.toResultPaginationDTO(responses, pageable);
-    }
-
-    // 9. Get by date range
+    // 6. Get by date range
     public ResultPaginationDTO getInnovationDecisionsByDateRange(LocalDate startDate, LocalDate endDate,
             Pageable pageable) {
         Page<InnovationDecision> innovationDecisions = innovationDecisionRepository
@@ -145,13 +116,11 @@ public class InnovationDecisionService {
         response.setPromulgatedDate(innovationDecision.getPromulgatedDate());
         response.setSignedBy(innovationDecision.getSignedBy());
         response.setBases(innovationDecision.getBases());
-        response.setYearDecision(innovationDecision.getYearDecision());
         response.setCreatedAt(innovationDecision.getCreatedAt());
         response.setUpdateAt(innovationDecision.getUpdateAt());
         response.setCreatedBy(innovationDecision.getCreatedBy());
         response.setUpdatedBy(innovationDecision.getUpdatedBy());
 
-        // Set related IDs
         if (innovationDecision.getChapters() != null) {
             response.setChapterIds(innovationDecision.getChapters().stream()
                     .map(chapter -> chapter.getId())

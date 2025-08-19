@@ -1,11 +1,12 @@
 package vn.edu.iuh.fit.innovationmanagementsystem_be.config;
 
 import lombok.RequiredArgsConstructor;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.UserRoleEnum;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.exception.CustomAccessDeniedHandler;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.AuthenticationProvider;
-import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -19,38 +20,42 @@ import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import org.springframework.security.web.SecurityFilterChain;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.service.CustomUserDetailsService;
 
 import java.security.interfaces.RSAPublicKey;
 
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
-@RequiredArgsConstructor
 public class SecurityConfig {
 
-        private final CustomUserDetailsService userDetailsService;
+        private final String THU_KY_QLKH_HTQT = UserRoleEnum.THU_KY_QLKH_HTQT.name();
         private final JwtBlacklistFilter jwtBlacklistFilter;
+
+        public SecurityConfig(JwtBlacklistFilter jwtBlacklistFilter) {
+                this.jwtBlacklistFilter = jwtBlacklistFilter;
+        }
 
         @Bean
         public SecurityFilterChain filterChain(HttpSecurity http,
-                        CustomAuthenticationEntryPoint customAuthenticationEntryPoint) throws Exception {
+                        CustomAuthenticationEntryPoint customAuthenticationEntryPoint,
+                        CustomAccessDeniedHandler customAccessDeniedHandler) throws Exception {
+
                 http
                                 .csrf(csrf -> csrf.disable())
                                 .cors(Customizer.withDefaults())
-                                .authorizeHttpRequests(
-                                                authorize -> authorize
-                                                                .requestMatchers("/api/v1/auth/**").permitAll()
-                                                                .anyRequest().authenticated())
-                                .oauth2ResourceServer((oauth2) -> oauth2
+                                .authorizeHttpRequests(auth -> auth
+                                                .requestMatchers("/api/v1/auth/**").permitAll()
+                                                .requestMatchers("/api/v1/innovation-decisions/**")
+                                                .hasRole(THU_KY_QLKH_HTQT)
+                                                .anyRequest().authenticated())
+                                .oauth2ResourceServer(oauth2 -> oauth2
                                                 .jwt(jwt -> jwt
                                                                 .jwtAuthenticationConverter(
                                                                                 jwtAuthenticationConverter())
                                                                 .decoder(jwtDecoder()))
-                                                .authenticationEntryPoint(customAuthenticationEntryPoint))
-                                .formLogin(formLogin -> formLogin.disable())
-                                .sessionManagement(session -> session
-                                                .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                                                .authenticationEntryPoint(customAuthenticationEntryPoint)
+                                                .accessDeniedHandler(customAccessDeniedHandler))
+                                .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                                 .addFilterBefore(jwtBlacklistFilter,
                                                 org.springframework.security.oauth2.server.resource.web.authentication.BearerTokenAuthenticationFilter.class);
 
