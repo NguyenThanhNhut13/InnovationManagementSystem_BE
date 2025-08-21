@@ -7,6 +7,7 @@ import java.util.stream.Collectors;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.lang.NonNull;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -47,7 +48,7 @@ public class UserService {
     }
 
     // 1. Cretae User
-    public UserResponse createUser(UserRequest userRequest) {
+    public UserResponse createUser(@NonNull UserRequest userRequest) {
         if (userRepository.existsByPersonnelId(userRequest.getPersonnelId())) {
             throw new IdInvalidException("Mã nhân viên đã tồn tại");
         }
@@ -68,7 +69,8 @@ public class UserService {
     }
 
     // 2. Get All Users With Pagination
-    public ResultPaginationDTO getUsersWithPagination(Specification<User> specification, Pageable pageable) {
+    public ResultPaginationDTO getUsersWithPagination(@NonNull Specification<User> specification,
+            @NonNull Pageable pageable) {
         Page<User> users = userRepository.findAll(specification, pageable);
 
         Page<UserResponse> userResponses = users.map(this::toUserResponse);
@@ -77,14 +79,14 @@ public class UserService {
     }
 
     // 3. Get User By Id
-    public UserResponse getUserById(String id) {
+    public UserResponse getUserById(@NonNull String id) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new IdInvalidException("Người dùng không tồn tại với ID: " + id));
         return toUserResponse(user);
     }
 
     // 4. Update User
-    public UserResponse updateUser(String id, UserRequest userRequest) {
+    public UserResponse updateUser(@NonNull String id, @NonNull UserRequest userRequest) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new IdInvalidException("Người dùng không tồn tại với ID: " + id));
 
@@ -116,7 +118,8 @@ public class UserService {
     }
 
     // 5. Get Users By Status With Pagination
-    public ResultPaginationDTO getUsersByStatusWithPagination(UserStatusEnum status, Pageable pageable) {
+    public ResultPaginationDTO getUsersByStatusWithPagination(@NonNull UserStatusEnum status,
+            @NonNull Pageable pageable) {
         Specification<User> statusSpec = (root, query, criteriaBuilder) -> criteriaBuilder.equal(root.get("status"),
                 status);
 
@@ -127,7 +130,7 @@ public class UserService {
     }
 
     // 6. Assign Role To User
-    public UserRoleResponse assignRoleToUser(String userId, String roleId) {
+    public UserRoleResponse assignRoleToUser(@NonNull String userId, @NonNull String roleId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IdInvalidException("Người dùng không tồn tại với ID: " + userId));
         Role role = roleRepository.findById(roleId)
@@ -145,12 +148,16 @@ public class UserService {
     }
 
     // 7. Delete Role From User
-    public void removeRoleFromUser(String userId, String roleId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IdInvalidException("User không tồn tại với ID: " + userId));
+    public void removeRoleFromUser(@NonNull String userId, @NonNull String roleId) {
+        // Check if user exists
+        if (!userRepository.existsById(userId)) {
+            throw new IdInvalidException("User không tồn tại với ID: " + userId);
+        }
 
-        Role role = roleRepository.findById(roleId)
-                .orElseThrow(() -> new IdInvalidException("Role không tồn tại với ID: " + roleId));
+        // Check if role exists
+        if (!roleRepository.existsById(roleId)) {
+            throw new IdInvalidException("Role không tồn tại với ID: " + roleId);
+        }
 
         if (!userRoleRepository.existsByUserIdAndRoleId(userId, roleId)) {
             throw new IdInvalidException("User không có role này nên không thể xóa");
@@ -160,7 +167,7 @@ public class UserService {
     }
 
     // 8. Get Users By Role With Pagination
-    public ResultPaginationDTO getUsersByRoleWithPagination(String roleId, Pageable pageable) {
+    public ResultPaginationDTO getUsersByRoleWithPagination(@NonNull String roleId, @NonNull Pageable pageable) {
         Page<UserRole> userRolePage = userRoleRepository.findByRoleId(roleId, pageable);
 
         Page<User> userPage = userRolePage.map(UserRole::getUser);
@@ -189,9 +196,12 @@ public class UserService {
     }
 
     // 9. Get Users By Department With Pagination
-    public ResultPaginationDTO getUsersByDepartmentWithPagination(String departmentId, Pageable pageable) {
-        Department department = departmentRepository.findById(departmentId)
-                .orElseThrow(() -> new IdInvalidException("Phòng ban không tồn tại với ID: " + departmentId));
+    public ResultPaginationDTO getUsersByDepartmentWithPagination(@NonNull String departmentId,
+            @NonNull Pageable pageable) {
+        // Check if department exists
+        if (!departmentRepository.existsById(departmentId)) {
+            throw new IdInvalidException("Phòng ban không tồn tại với ID: " + departmentId);
+        }
 
         Page<User> userPage = userRepository.findByDepartmentId(departmentId, pageable);
         Page<UserResponse> userResponsePage = userPage.map(this::toUserResponse);
@@ -199,7 +209,8 @@ public class UserService {
     }
 
     // 10. Search Users By Full Name, Email or Personnel ID
-    public ResultPaginationDTO searchUsersByFullNameOrEmailOrPersonnelId(String searchTerm, Pageable pageable) {
+    public ResultPaginationDTO searchUsersByFullNameOrEmailOrPersonnelId(@NonNull String searchTerm,
+            @NonNull Pageable pageable) {
         if (searchTerm == null || searchTerm.trim().isEmpty()) {
             throw new IdInvalidException("Từ khóa tìm kiếm không được để trống");
         }
