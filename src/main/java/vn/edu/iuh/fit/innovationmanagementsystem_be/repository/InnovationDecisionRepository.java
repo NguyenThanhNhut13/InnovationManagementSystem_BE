@@ -10,8 +10,6 @@ import org.springframework.stereotype.Repository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.InnovationDecision;
 
 import java.time.LocalDate;
-import java.util.List;
-import java.util.Optional;
 
 @Repository
 public interface InnovationDecisionRepository

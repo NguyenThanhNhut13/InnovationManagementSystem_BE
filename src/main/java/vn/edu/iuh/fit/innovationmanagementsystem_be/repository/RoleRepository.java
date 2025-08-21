@@ -18,9 +18,6 @@ public interface RoleRepository extends JpaRepository<Role, String>, JpaSpecific
     // Kiểm tra role name có tồn tại không
     boolean existsByRoleName(UserRoleEnum roleName);
 
-    // Tìm tất cả roles
-    List<Role> findAll();
-
     // Tìm roles theo danh sách role names
     List<Role> findByRoleNameIn(List<UserRoleEnum> roleNames);
 }
