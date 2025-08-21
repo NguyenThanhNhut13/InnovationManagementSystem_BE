@@ -5,9 +5,8 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
+import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -16,16 +15,20 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.RestResponse;
 
 import java.io.IOException;
 
-@Slf4j
 @Component
-@RequiredArgsConstructor
 public class JwtBlacklistFilter extends OncePerRequestFilter {
 
     private final RedisTokenService redisTokenService;
     private final ObjectMapper objectMapper;
 
+    public JwtBlacklistFilter(RedisTokenService redisTokenService, ObjectMapper objectMapper) {
+        this.redisTokenService = redisTokenService;
+        this.objectMapper = objectMapper;
+    }
+
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
+    protected void doFilterInternal(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response,
+            @NonNull FilterChain filterChain)
             throws ServletException, IOException {
 
         try {
@@ -68,7 +71,7 @@ public class JwtBlacklistFilter extends OncePerRequestFilter {
     }
 
     @Override
-    protected boolean shouldNotFilter(HttpServletRequest request) {
+    protected boolean shouldNotFilter(@NonNull HttpServletRequest request) {
         String path = request.getRequestURI();
         // Không filter các endpoint public
         return path.startsWith("/api/v1/auth/login") ||
