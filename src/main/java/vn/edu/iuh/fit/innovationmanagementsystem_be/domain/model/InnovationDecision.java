@@ -3,6 +3,7 @@ package vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import java.time.LocalDate;
 import java.util.List;
@@ -11,6 +12,7 @@ import java.util.ArrayList;
 @Entity
 @Table(name = "innovation_decision")
 @Data
+@EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor
 @AllArgsConstructor
 public class InnovationDecision extends Auditable {

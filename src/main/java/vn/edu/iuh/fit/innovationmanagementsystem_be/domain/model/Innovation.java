@@ -3,6 +3,7 @@ package vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationStatusEnum;
 
@@ -12,6 +13,7 @@ import java.util.ArrayList;
 @Entity
 @Table(name = "innovations")
 @Data
+@EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor
 @AllArgsConstructor
 public class Innovation extends Auditable {
