@@ -13,7 +13,6 @@ import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.RestResponse;
 
-import org.springframework.security.access.AccessDeniedException;
 import java.util.List;
 
 @RestControllerAdvice
