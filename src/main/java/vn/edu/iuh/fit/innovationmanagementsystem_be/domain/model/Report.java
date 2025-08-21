@@ -3,7 +3,6 @@ package vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import java.time.LocalDateTime;
-import lombok.Data;
 import lombok.NoArgsConstructor;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.DocumentTypeEnum;
 import java.util.List;
@@ -11,7 +10,6 @@ import java.util.ArrayList;
 
 @Entity
 @Table(name = "reports")
-@Data
 @NoArgsConstructor
 @AllArgsConstructor
 public class Report extends Auditable {

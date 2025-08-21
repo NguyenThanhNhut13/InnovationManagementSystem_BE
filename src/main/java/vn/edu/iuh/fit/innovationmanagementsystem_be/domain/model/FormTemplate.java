@@ -2,7 +2,6 @@ package vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
-import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.util.List;
@@ -10,7 +9,6 @@ import java.util.ArrayList;
 
 @Entity
 @Table(name = "form_template")
-@Data
 @NoArgsConstructor
 @AllArgsConstructor
 public class FormTemplate extends Auditable {
