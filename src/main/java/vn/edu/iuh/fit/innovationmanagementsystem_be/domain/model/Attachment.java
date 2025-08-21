@@ -15,24 +15,22 @@ public class Attachment extends Auditable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
-    @Column(name = "id")
+    @Column(name = "id", columnDefinition = "VARCHAR(36)")
     private String id;
 
-    @Column(name = "path_url", nullable = false)
+    @Column(name = "path_url", nullable = false, columnDefinition = "TEXT")
     private String pathUrl;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "type")
+    @Column(name = "type", columnDefinition = "VARCHAR(50)")
     private AttachmentTypeEnum type;
 
-    @Column(name = "file_name")
+    @Column(name = "file_name", columnDefinition = "VARCHAR(255)")
     private String fileName;
 
-    @Column(name = "file_size")
+    @Column(name = "file_size", columnDefinition = "BIGINT")
     private Long fileSize;
 
-    // Relationship - ManyToOne with Innovation (1 Innovation can have 0 or N
-    // Attachments, but 1 Attachment must belong to 1 Innovation)
     @ManyToOne(fetch = FetchType.LAZY, optional = false, targetEntity = Innovation.class)
     @JoinColumn(name = "innovation_id", nullable = false, referencedColumnName = "id")
     private Innovation innovation;

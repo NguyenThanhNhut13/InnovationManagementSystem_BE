@@ -18,17 +18,17 @@ public class Innovation extends Auditable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
-    @Column(name = "id")
+    @Column(name = "id", columnDefinition = "VARCHAR(36)")
     private String id;
 
-    @Column(name = "innovation_name", nullable = false)
+    @Column(name = "innovation_name", nullable = false, columnDefinition = "VARCHAR(255)")
     private String innovationName;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "status")
+    @Column(name = "status", columnDefinition = "VARCHAR(50)")
     private InnovationStatusEnum status;
 
-    @Column(name = "is_score")
+    @Column(name = "is_score", columnDefinition = "BOOLEAN")
     private Boolean isScore;
 
     // Foreign key relationships
@@ -43,6 +43,11 @@ public class Innovation extends Auditable {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "innovation_round_id", nullable = false)
     private InnovationRound innovationRound;
+
+    // Thêm relationship với InnovationDecision
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "innovation_decision_id")
+    private InnovationDecision innovationDecision;
 
     // Relationships
     @OneToMany(mappedBy = "innovation", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true, targetEntity = Attachment.class)

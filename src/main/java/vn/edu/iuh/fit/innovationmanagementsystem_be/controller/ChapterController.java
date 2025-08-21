@@ -7,7 +7,9 @@ import org.springframework.web.bind.annotation.*;
 import com.turkraft.springfilter.boot.Filter;
 import jakarta.validation.Valid;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.dto.requestDTO.ChapterRequest;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.dto.requestDTO.CreateMultipleChaptersRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.dto.responseDTO.ChapterResponse;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.dto.responseDTO.CreateMultipleChaptersResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.Chapter;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.service.ChapterService;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.ResultPaginationDTO;
@@ -32,7 +34,16 @@ public class ChapterController {
         return ResponseEntity.ok(response);
     }
 
-    // 2. Get All Chapters
+    // 2. Create Multiple Chapters
+    @PostMapping("/chapters/bulk")
+    @ApiMessage("Tạo nhiều chương thành công")
+    public ResponseEntity<CreateMultipleChaptersResponse> createMultipleChapters(
+            @Valid @RequestBody CreateMultipleChaptersRequest request) {
+        CreateMultipleChaptersResponse response = chapterService.createMultipleChapters(request);
+        return ResponseEntity.ok(response);
+    }
+
+    // 3. Get All Chapters
     @GetMapping("/chapters")
     @ApiMessage("Lấy danh sách chương thành công")
     public ResponseEntity<ResultPaginationDTO> getAllChapters(
@@ -40,14 +51,14 @@ public class ChapterController {
         return ResponseEntity.ok(chapterService.getAllChapters(specification, pageable));
     }
 
-    // 3. Get Chapter by Id
+    // 4. Get Chapter by Id
     @GetMapping("/chapters/{id}")
     @ApiMessage("Lấy chương thành công")
     public ResponseEntity<ChapterResponse> getChapterById(@PathVariable String id) {
         return ResponseEntity.ok(chapterService.getChapterById(id));
     }
 
-    // 4. Update Chapter
+    // 5. Update Chapter
     @PutMapping("/chapters/{id}")
     @ApiMessage("Cập nhật chương thành công")
     public ResponseEntity<ChapterResponse> updateChapter(
@@ -55,7 +66,7 @@ public class ChapterController {
         return ResponseEntity.ok(chapterService.updateChapter(id, request));
     }
 
-    // 5. Get Chapters by InnovationDecision
+    // 6. Get Chapters by InnovationDecision
     @GetMapping("/innovation-decisions/{innovationDecisionId}/chapters")
     @ApiMessage("Lấy danh sách chương theo quyết định thành công")
     public ResponseEntity<ResultPaginationDTO> getChaptersByInnovationDecision(

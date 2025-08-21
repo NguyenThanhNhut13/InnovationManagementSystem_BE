@@ -20,7 +20,7 @@ public class InnovationDecisionResponse {
     private String signedBy;
     private String bases;
     private LocalDateTime createdAt;
-    private LocalDateTime updateAt;
+    private LocalDateTime updatedAt;
     private String createdBy;
     private String updatedBy;
 

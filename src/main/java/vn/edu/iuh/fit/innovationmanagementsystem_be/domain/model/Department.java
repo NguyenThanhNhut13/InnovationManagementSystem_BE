@@ -17,25 +17,25 @@ public class Department {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
-    @Column(name = "id")
+    @Column(name = "id", columnDefinition = "VARCHAR(36)")
     private String id;
 
-    @Column(name = "department_name", nullable = false)
+    @Column(name = "department_name", nullable = false, columnDefinition = "VARCHAR(255)")
     private String departmentName;
 
-    @Column(name = "department_code", nullable = false, unique = true)
+    @Column(name = "department_code", nullable = false, unique = true, columnDefinition = "VARCHAR(50)")
     private String departmentCode;
 
-    @Column(name = "is_active", nullable = false)
+    @Column(name = "is_active", nullable = false, columnDefinition = "BOOLEAN")
     private Boolean isActive = true;
 
-    @Column(name = "deleted_at")
+    @Column(name = "deleted_at", columnDefinition = "TIMESTAMP")
     private LocalDateTime deletedAt;
 
-    @Column(name = "deleted_by")
+    @Column(name = "deleted_by", columnDefinition = "VARCHAR(255)")
     private String deletedBy;
 
-    @Column(name = "deletion_reason")
+    @Column(name = "deletion_reason", columnDefinition = "TEXT")
     private String deletionReason;
 
     // Relationships

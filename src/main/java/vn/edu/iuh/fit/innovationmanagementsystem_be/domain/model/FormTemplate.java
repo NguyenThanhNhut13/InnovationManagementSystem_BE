@@ -17,17 +17,22 @@ public class FormTemplate extends Auditable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
-    @Column(name = "id")
+    @Column(name = "id", columnDefinition = "VARCHAR(36)")
     private String id;
 
-    @Column(name = "name", nullable = false)
+    @Column(name = "name", nullable = false, columnDefinition = "VARCHAR(255)")
     private String name;
 
-    @Column(name = "description")
+    @Column(name = "description", columnDefinition = "TEXT")
     private String description;
 
     @Column(name = "template_content", columnDefinition = "JSON")
     private String templateContent;
+
+    // Thêm relationship với InnovationDecision
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "innovation_decision_id")
+    private InnovationDecision innovationDecision;
 
     // Relationships
     @OneToMany(mappedBy = "formTemplate", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)

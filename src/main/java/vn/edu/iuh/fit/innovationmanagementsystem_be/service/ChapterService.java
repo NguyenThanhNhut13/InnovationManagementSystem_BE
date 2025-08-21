@@ -7,7 +7,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.dto.requestDTO.ChapterRequest;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.dto.requestDTO.CreateMultipleChaptersRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.dto.responseDTO.ChapterResponse;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.dto.responseDTO.CreateMultipleChaptersResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.Chapter;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.InnovationDecision;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.exception.IdInvalidException;
@@ -53,21 +55,73 @@ public class ChapterService {
         return toChapterResponse(chapter);
     }
 
-    // 2. Get All Chapters
+    // 2. Create Multiple Chapters
+    @Transactional
+    public CreateMultipleChaptersResponse createMultipleChapters(CreateMultipleChaptersRequest request) {
+        // Kiểm tra InnovationDecision tồn tại
+        InnovationDecision innovationDecision = innovationDecisionRepository.findById(request.getInnovationDecisionId())
+                .orElseThrow(() -> new IdInvalidException("Quyết định không tồn tại"));
+
+        // Kiểm tra danh sách chương không được rỗng
+        if (request.getChapters() == null || request.getChapters().isEmpty()) {
+            throw new IdInvalidException("Danh sách chương không được để trống");
+        }
+
+        // Kiểm tra trùng lặp số hiệu chương trong request
+        List<String> chapterNumbers = request.getChapters().stream()
+                .map(CreateMultipleChaptersRequest.ChapterData::getChapterNumber)
+                .collect(Collectors.toList());
+
+        if (chapterNumbers.size() != chapterNumbers.stream().distinct().count()) {
+            throw new IdInvalidException("Danh sách chương có số hiệu trùng lặp");
+        }
+
+        // Kiểm tra số hiệu chương đã tồn tại trong database
+        for (CreateMultipleChaptersRequest.ChapterData chapterData : request.getChapters()) {
+            if (chapterRepository.existsByChapterNumberAndInnovationDecisionId(
+                    chapterData.getChapterNumber(), request.getInnovationDecisionId())) {
+                throw new IdInvalidException("Số hiệu chương '" + chapterData.getChapterNumber() +
+                        "' đã tồn tại trong quyết định này");
+            }
+        }
+
+        // Tạo danh sách chương
+        List<Chapter> chapters = request.getChapters().stream()
+                .map(chapterData -> {
+                    Chapter chapter = new Chapter();
+                    chapter.setChapterNumber(chapterData.getChapterNumber());
+                    chapter.setTitle(chapterData.getTitle());
+                    chapter.setInnovationDecision(innovationDecision);
+                    return chapter;
+                })
+                .collect(Collectors.toList());
+
+        // Lưu tất cả chương
+        List<Chapter> savedChapters = chapterRepository.saveAll(chapters);
+
+        // Chuyển đổi sang response
+        List<ChapterResponse> chapterResponses = savedChapters.stream()
+                .map(this::toChapterResponse)
+                .collect(Collectors.toList());
+
+        return new CreateMultipleChaptersResponse(request.getInnovationDecisionId(), chapterResponses);
+    }
+
+    // 3. Get All Chapters
     public ResultPaginationDTO getAllChapters(Specification<Chapter> specification, Pageable pageable) {
         Page<Chapter> chapters = chapterRepository.findAll(specification, pageable);
         Page<ChapterResponse> responses = chapters.map(this::toChapterResponse);
         return Utils.toResultPaginationDTO(responses, pageable);
     }
 
-    // 3. Get Chapter by Id
+    // 4. Get Chapter by Id
     public ChapterResponse getChapterById(String id) {
         Chapter chapter = chapterRepository.findById(id)
                 .orElseThrow(() -> new IdInvalidException("Chương không tồn tại"));
         return toChapterResponse(chapter);
     }
 
-    // 4. Update Chapter
+    // 5. Update Chapter
     @Transactional
     public ChapterResponse updateChapter(String id, ChapterRequest request) {
         Chapter chapter = chapterRepository.findById(id)
@@ -89,7 +143,7 @@ public class ChapterService {
         return toChapterResponse(chapter);
     }
 
-    // 5. Get Chapters by InnovationDecision
+    // 6. Get Chapters by InnovationDecision
     public ResultPaginationDTO getChaptersByInnovationDecision(String innovationDecisionId, Pageable pageable) {
         Page<Chapter> chapters = chapterRepository.findByInnovationDecisionId(innovationDecisionId, pageable);
         Page<ChapterResponse> responses = chapters.map(this::toChapterResponse);

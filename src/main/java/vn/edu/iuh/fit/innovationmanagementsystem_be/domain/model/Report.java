@@ -14,28 +14,33 @@ import java.util.ArrayList;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class Report {
+public class Report extends Auditable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
-    @Column(name = "id")
+    @Column(name = "id", columnDefinition = "VARCHAR(36)")
     private String id;
 
-    @Column(name = "applicable_year")
+    @Column(name = "applicable_year", columnDefinition = "INTEGER")
     private Integer applicableYear;
 
-    @Column(name = "generated_date")
+    @Column(name = "generated_date", columnDefinition = "TIMESTAMP")
     private LocalDateTime generatedDate;
 
-    @Column(name = "generated_pdf_path")
+    @Column(name = "generated_pdf_path", columnDefinition = "TEXT")
     private String generatedPdfPath;
 
-    @Column(name = "meeting_details")
+    @Column(name = "meeting_details", columnDefinition = "TEXT")
     private String meetingDetails;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "report_type")
+    @Column(name = "report_type", columnDefinition = "VARCHAR(50)")
     private DocumentTypeEnum reportType;
+
+    // Thêm relationship với InnovationDecision
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "innovation_decision_id")
+    private InnovationDecision innovationDecision;
 
     // Foreign key relationships
     @ManyToOne(fetch = FetchType.LAZY)
@@ -48,26 +53,4 @@ public class Report {
 
     @OneToMany(mappedBy = "report", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = false)
     private List<DigitalSignature> digitalSignatures = new ArrayList<>();
-
-    // Timestamps
-    @Column(name = "created_at")
-    private LocalDateTime createdAt;
-
-    @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
-
-    // Pre-persist and pre-update methods
-    @PrePersist
-    protected void onCreate() {
-        createdAt = LocalDateTime.now();
-        updatedAt = LocalDateTime.now();
-        if (generatedDate == null) {
-            generatedDate = LocalDateTime.now();
-        }
-    }
-
-    @PreUpdate
-    protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
-    }
 }

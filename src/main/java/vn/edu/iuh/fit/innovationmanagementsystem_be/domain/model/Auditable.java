@@ -20,18 +20,18 @@ import java.time.LocalDateTime;
 public abstract class Auditable {
 
     @CreatedDate
-    @Column(name = "created_at", updatable = false)
+    @Column(name = "created_at", updatable = false, columnDefinition = "TIMESTAMP")
     private LocalDateTime createdAt;
 
     @LastModifiedDate
-    @Column(name = "update_at")
-    private LocalDateTime updateAt;
+    @Column(name = "updated_at", columnDefinition = "TIMESTAMP")
+    private LocalDateTime updatedAt;
 
     @CreatedBy
-    @Column(name = "created_by", updatable = false)
+    @Column(name = "created_by", updatable = false, columnDefinition = "VARCHAR(255)")
     private String createdBy;
 
     @LastModifiedBy
-    @Column(name = "updated_by")
+    @Column(name = "updated_by", columnDefinition = "VARCHAR(255)")
     private String updatedBy;
 }

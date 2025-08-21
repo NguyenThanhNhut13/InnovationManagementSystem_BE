@@ -16,13 +16,13 @@ public class Chapter {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
-    @Column(name = "id")
+    @Column(name = "id", columnDefinition = "VARCHAR(36)")
     private String id;
 
-    @Column(name = "chapter_number", nullable = false)
+    @Column(name = "chapter_number", nullable = false, columnDefinition = "VARCHAR(100)")
     private String chapterNumber;
 
-    @Column(name = "title", nullable = false)
+    @Column(name = "title", nullable = false, columnDefinition = "TEXT")
     private String title;
 
     // Relationships

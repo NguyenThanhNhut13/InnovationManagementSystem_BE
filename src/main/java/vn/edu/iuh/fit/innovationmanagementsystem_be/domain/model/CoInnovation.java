@@ -14,16 +14,16 @@ public class CoInnovation {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
-    @Column(name = "id")
+    @Column(name = "id", columnDefinition = "VARCHAR(36)")
     private String id;
 
-    @Column(name = "coInnovator_full_name", nullable = false)
+    @Column(name = "coInnovator_full_name", nullable = false, columnDefinition = "VARCHAR(255)")
     private String coInnovatorFullName;
 
-    @Column(name = "coInnovator_department_name", nullable = false)
+    @Column(name = "coInnovator_department_name", nullable = false, columnDefinition = "VARCHAR(255)")
     private String coInnovatorDepartmentName;
 
-    @Column(name = "contact_info", nullable = false)
+    @Column(name = "contact_info", nullable = false, columnDefinition = "VARCHAR(500)")
     private String contactInfo;
 
     // Foreign key relationships
@@ -34,5 +34,4 @@ public class CoInnovation {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "innovation_id", nullable = false)
     private Innovation innovation;
-
 }

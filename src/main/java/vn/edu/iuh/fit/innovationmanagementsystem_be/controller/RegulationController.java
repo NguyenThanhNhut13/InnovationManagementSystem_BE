@@ -7,7 +7,11 @@ import org.springframework.web.bind.annotation.*;
 import com.turkraft.springfilter.boot.Filter;
 import jakarta.validation.Valid;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.dto.requestDTO.RegulationRequest;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.dto.requestDTO.ImportMultipleRegulationsRequest;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.dto.requestDTO.ImportRegulationsToMultipleChaptersRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.dto.responseDTO.RegulationResponse;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.dto.responseDTO.ImportMultipleRegulationsResponse;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.dto.responseDTO.ImportRegulationsToMultipleChaptersResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.Regulation;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.service.RegulationService;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.ResultPaginationDTO;
@@ -76,6 +80,27 @@ public class RegulationController {
     @ApiMessage("Lấy danh sách điều không thuộc chương nào thành công")
     public ResponseEntity<ResultPaginationDTO> getRegulationsNotInChapter(Pageable pageable) {
         return ResponseEntity.ok(regulationService.getRegulationsNotInChapter(pageable));
+    }
+
+    // 8. Import Multiple Regulations to Chapter
+    @PostMapping("/chapters/{chapterId}/regulations/import")
+    @ApiMessage("Import danh sách điều khoản vào chương thành công")
+    public ResponseEntity<ImportMultipleRegulationsResponse> importMultipleRegulationsToChapter(
+            @PathVariable String chapterId,
+            @Valid @RequestBody ImportMultipleRegulationsRequest request) {
+        request.setChapterId(chapterId);
+        ImportMultipleRegulationsResponse response = regulationService.importMultipleRegulationsToChapter(request);
+        return ResponseEntity.ok(response);
+    }
+
+    // 9. Import Regulations to Multiple Chapters
+    @PostMapping("/innovation-decisions/chapters/regulations/import")
+    @ApiMessage("Import danh sách điều khoản vào nhiều chương thành công")
+    public ResponseEntity<ImportRegulationsToMultipleChaptersResponse> importRegulationsToMultipleChapters(
+            @Valid @RequestBody ImportRegulationsToMultipleChaptersRequest request) {
+        ImportRegulationsToMultipleChaptersResponse response = regulationService
+                .importRegulationsToMultipleChapters(request);
+        return ResponseEntity.ok(response);
     }
 
 }

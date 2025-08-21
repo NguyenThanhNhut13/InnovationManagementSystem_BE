@@ -117,7 +117,7 @@ public class InnovationDecisionService {
         response.setSignedBy(innovationDecision.getSignedBy());
         response.setBases(innovationDecision.getBases());
         response.setCreatedAt(innovationDecision.getCreatedAt());
-        response.setUpdateAt(innovationDecision.getUpdateAt());
+        response.setUpdatedAt(innovationDecision.getUpdatedAt());
         response.setCreatedBy(innovationDecision.getCreatedBy());
         response.setUpdatedBy(innovationDecision.getUpdatedBy());
 

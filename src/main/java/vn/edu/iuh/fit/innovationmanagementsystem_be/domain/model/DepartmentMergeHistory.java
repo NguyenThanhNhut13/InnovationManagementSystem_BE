@@ -17,38 +17,39 @@ public class DepartmentMergeHistory {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
+    @Column(name = "id", columnDefinition = "VARCHAR(36)")
     private String id;
 
-    @Column(name = "merged_department_id", nullable = false)
+    @Column(name = "merged_department_id", nullable = false, columnDefinition = "VARCHAR(36)")
     private String mergedDepartmentId;
 
-    @Column(name = "merged_department_name", nullable = false)
+    @Column(name = "merged_department_name", nullable = false, columnDefinition = "VARCHAR(255)")
     private String mergedDepartmentName;
 
-    @Column(name = "merged_department_code", nullable = false)
+    @Column(name = "merged_department_code", nullable = false, columnDefinition = "VARCHAR(50)")
     private String mergedDepartmentCode;
 
     @ElementCollection
     @CollectionTable(name = "department_merge_source_ids", joinColumns = @JoinColumn(name = "merge_history_id"))
-    @Column(name = "source_department_id")
+    @Column(name = "source_department_id", columnDefinition = "VARCHAR(36)")
     private List<String> sourceDepartmentIds;
 
-    @Column(name = "merge_reason")
+    @Column(name = "merge_reason", columnDefinition = "TEXT")
     private String mergeReason;
 
-    @Column(name = "merged_by", nullable = false)
+    @Column(name = "merged_by", nullable = false, columnDefinition = "VARCHAR(255)")
     private String mergedBy;
 
-    @Column(name = "merged_at", nullable = false)
+    @Column(name = "merged_at", nullable = false, columnDefinition = "TIMESTAMP")
     private LocalDateTime mergedAt;
 
-    @Column(name = "is_active", nullable = false)
+    @Column(name = "is_active", nullable = false, columnDefinition = "BOOLEAN")
     private Boolean isActive = true;
 
-    @Column(name = "rollback_at")
+    @Column(name = "rollback_at", columnDefinition = "TIMESTAMP")
     private LocalDateTime rollbackAt;
 
-    @Column(name = "rollback_by")
+    @Column(name = "rollback_by", columnDefinition = "VARCHAR(255)")
     private String rollbackBy;
 
     @PrePersist

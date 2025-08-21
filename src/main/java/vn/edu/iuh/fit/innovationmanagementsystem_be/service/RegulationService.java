@@ -5,9 +5,14 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.dto.requestDTO.RegulationRequest;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.dto.requestDTO.ImportMultipleRegulationsRequest;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.dto.requestDTO.ImportRegulationsToMultipleChaptersRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.dto.responseDTO.RegulationResponse;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.dto.responseDTO.ImportMultipleRegulationsResponse;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.dto.responseDTO.ImportRegulationsToMultipleChaptersResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.Regulation;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.InnovationDecision;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.Chapter;
@@ -18,6 +23,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.ChapterRepository
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.ResultPaginationDTO;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.Utils;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -27,35 +33,32 @@ public class RegulationService {
     private final RegulationRepository regulationRepository;
     private final InnovationDecisionRepository innovationDecisionRepository;
     private final ChapterRepository chapterRepository;
+    private final ObjectMapper objectMapper;
 
     public RegulationService(RegulationRepository regulationRepository,
             InnovationDecisionRepository innovationDecisionRepository,
-            ChapterRepository chapterRepository) {
+            ChapterRepository chapterRepository,
+            ObjectMapper objectMapper) {
         this.regulationRepository = regulationRepository;
         this.innovationDecisionRepository = innovationDecisionRepository;
         this.chapterRepository = chapterRepository;
+        this.objectMapper = objectMapper;
     }
 
     // 1. Create Regulation
     @Transactional
     public RegulationResponse createRegulation(RegulationRequest request) {
-        // Kiểm tra InnovationDecision tồn tại
         InnovationDecision innovationDecision = innovationDecisionRepository.findById(request.getInnovationDecisionId())
                 .orElseThrow(() -> new IdInvalidException("Quyết định không tồn tại"));
-
-        // Kiểm tra Chapter tồn tại nếu có
         Chapter chapter = null;
         if (request.getChapterId() != null && !request.getChapterId().isEmpty()) {
             chapter = chapterRepository.findById(request.getChapterId())
                     .orElseThrow(() -> new IdInvalidException("Chương không tồn tại"));
-
-            // Kiểm tra Chapter có thuộc InnovationDecision không
             if (!chapter.getInnovationDecision().getId().equals(request.getInnovationDecisionId())) {
                 throw new IdInvalidException("Chương không thuộc quyết định này");
             }
         }
 
-        // Kiểm tra Regulation number đã tồn tại trong InnovationDecision
         if (regulationRepository.existsByClauseNumberAndInnovationDecisionId(request.getClauseNumber(),
                 request.getInnovationDecisionId())) {
             throw new IdInvalidException("Số hiệu điều đã tồn tại trong quyết định này");
@@ -116,7 +119,6 @@ public class RegulationService {
                 Chapter chapter = chapterRepository.findById(request.getChapterId())
                         .orElseThrow(() -> new IdInvalidException("Chương không tồn tại"));
 
-                // Kiểm tra Chapter có thuộc InnovationDecision không
                 if (!chapter.getInnovationDecision().getId().equals(regulation.getInnovationDecision().getId())) {
                     throw new IdInvalidException("Chương không thuộc quyết định này");
                 }
@@ -149,13 +151,175 @@ public class RegulationService {
         return Utils.toResultPaginationDTO(responses, pageable);
     }
 
+    // 8. Import Multiple Regulations to Chapter
+    @Transactional
+    public ImportMultipleRegulationsResponse importMultipleRegulationsToChapter(
+            ImportMultipleRegulationsRequest request) {
+        Chapter chapter = chapterRepository.findById(request.getChapterId())
+                .orElseThrow(() -> new IdInvalidException("Chương không tồn tại"));
+        if (request.getRegulations() == null || request.getRegulations().isEmpty()) {
+            throw new IdInvalidException("Danh sách điều khoản không được để trống");
+        }
+        List<String> clauseNumbers = request.getRegulations().stream()
+                .map(ImportMultipleRegulationsRequest.RegulationData::getClauseNumber)
+                .collect(Collectors.toList());
+
+        if (clauseNumbers.size() != clauseNumbers.stream().distinct().count()) {
+            throw new IdInvalidException("Danh sách điều khoản có số hiệu trùng lặp");
+        }
+        String innovationDecisionId = chapter.getInnovationDecision().getId();
+        for (ImportMultipleRegulationsRequest.RegulationData regulationData : request.getRegulations()) {
+            if (regulationRepository.existsByClauseNumberAndInnovationDecisionId(
+                    regulationData.getClauseNumber(), innovationDecisionId)) {
+                throw new IdInvalidException("Số hiệu điều khoản '" + regulationData.getClauseNumber() +
+                        "' đã tồn tại trong quyết định này");
+            }
+        }
+
+        List<Regulation> regulations = request.getRegulations().stream()
+                .map(regulationData -> {
+                    Regulation regulation = new Regulation();
+                    regulation.setClauseNumber(regulationData.getClauseNumber());
+                    regulation.setTitle(regulationData.getTitle());
+                    regulation.setContent(regulationData.getContent());
+                    regulation.setInnovationDecision(chapter.getInnovationDecision());
+                    regulation.setChapter(chapter);
+                    return regulation;
+                })
+                .collect(Collectors.toList());
+
+        List<Regulation> savedRegulations = regulationRepository.saveAll(regulations);
+
+        List<RegulationResponse> regulationResponses = savedRegulations.stream()
+                .map(this::toRegulationResponse)
+                .collect(Collectors.toList());
+
+        return new ImportMultipleRegulationsResponse(
+                request.getChapterId(),
+                chapter.getTitle(),
+                regulationResponses);
+    }
+
+    // 9. Import Regulations to Multiple Chapters
+    @Transactional
+    public ImportRegulationsToMultipleChaptersResponse importRegulationsToMultipleChapters(
+            ImportRegulationsToMultipleChaptersRequest request) {
+
+        InnovationDecision innovationDecision = innovationDecisionRepository.findById(request.getInnovationDecisionId())
+                .orElseThrow(() -> new IdInvalidException("Quyết định không tồn tại"));
+
+        if (request.getChapterRegulations() == null || request.getChapterRegulations().isEmpty()) {
+            throw new IdInvalidException("Danh sách chương và điều khoản không được để trống");
+        }
+
+        List<String> chapterIds = request.getChapterRegulations().stream()
+                .map(ImportRegulationsToMultipleChaptersRequest.ChapterRegulations::getChapterId)
+                .collect(Collectors.toList());
+
+        if (chapterIds.size() != chapterIds.stream().distinct().count()) {
+            throw new IdInvalidException("Danh sách chương có ID trùng lặp");
+        }
+
+        List<String> allClauseNumbers = new ArrayList<>();
+        for (ImportRegulationsToMultipleChaptersRequest.ChapterRegulations chapterReg : request
+                .getChapterRegulations()) {
+            if (chapterReg.getRegulations() == null || chapterReg.getRegulations().isEmpty()) {
+                throw new IdInvalidException("Chương " + chapterReg.getChapterId() + " không có điều khoản nào");
+            }
+
+            // Kiểm tra trùng lặp số hiệu điều khoản trong từng chương
+            List<String> chapterClauseNumbers = chapterReg.getRegulations().stream()
+                    .map(ImportRegulationsToMultipleChaptersRequest.RegulationData::getClauseNumber)
+                    .collect(Collectors.toList());
+
+            if (chapterClauseNumbers.size() != chapterClauseNumbers.stream().distinct().count()) {
+                throw new IdInvalidException(
+                        "Chương " + chapterReg.getChapterId() + " có số hiệu điều khoản trùng lặp");
+            }
+
+            allClauseNumbers.addAll(chapterClauseNumbers);
+        }
+
+        if (allClauseNumbers.size() != allClauseNumbers.stream().distinct().count()) {
+            throw new IdInvalidException("Có số hiệu điều khoản trùng lặp giữa các chương");
+        }
+
+        for (String clauseNumber : allClauseNumbers) {
+            if (regulationRepository.existsByClauseNumberAndInnovationDecisionId(clauseNumber,
+                    request.getInnovationDecisionId())) {
+                throw new IdInvalidException(
+                        "Số điều khoản '" + clauseNumber + "' đã tồn tại trong quyết định này");
+            }
+        }
+
+        // Xử lý import từng chương
+        List<ImportRegulationsToMultipleChaptersResponse.ChapterImportResult> chapterResults = new ArrayList<>();
+
+        for (ImportRegulationsToMultipleChaptersRequest.ChapterRegulations chapterReg : request
+                .getChapterRegulations()) {
+            // Kiểm tra Chapter tồn tại và thuộc InnovationDecision
+            Chapter chapter = chapterRepository.findById(chapterReg.getChapterId())
+                    .orElseThrow(
+                            () -> new IdInvalidException("Chương " + chapterReg.getChapterId() + " không tồn tại"));
+
+            if (!chapter.getInnovationDecision().getId().equals(request.getInnovationDecisionId())) {
+                throw new IdInvalidException("Chương " + chapterReg.getChapterId() + " không thuộc quyết định này");
+            }
+
+            // Tạo danh sách điều khoản cho chương này
+            List<Regulation> regulations = chapterReg.getRegulations().stream()
+                    .map(regulationData -> {
+                        Regulation regulation = new Regulation();
+                        regulation.setClauseNumber(regulationData.getClauseNumber());
+                        regulation.setTitle(regulationData.getTitle());
+                        regulation.setContent(regulationData.getContent());
+                        regulation.setInnovationDecision(innovationDecision);
+                        regulation.setChapter(chapter);
+                        return regulation;
+                    })
+                    .collect(Collectors.toList());
+
+            // Lưu tất cả điều khoản của chương này
+            List<Regulation> savedRegulations = regulationRepository.saveAll(regulations);
+
+            // Chuyển đổi sang response
+            List<RegulationResponse> regulationResponses = savedRegulations.stream()
+                    .map(this::toRegulationResponse)
+                    .collect(Collectors.toList());
+
+            // Tạo kết quả cho chương này
+            ImportRegulationsToMultipleChaptersResponse.ChapterImportResult chapterResult = new ImportRegulationsToMultipleChaptersResponse.ChapterImportResult(
+                    chapterReg.getChapterId(),
+                    chapter.getTitle(),
+                    regulationResponses);
+
+            chapterResults.add(chapterResult);
+        }
+
+        return new ImportRegulationsToMultipleChaptersResponse(
+                request.getInnovationDecisionId(),
+                chapterResults);
+    }
+
     // Convert to Response DTO
     private RegulationResponse toRegulationResponse(Regulation regulation) {
         RegulationResponse response = new RegulationResponse();
         response.setId(regulation.getId());
         response.setClauseNumber(regulation.getClauseNumber());
         response.setTitle(regulation.getTitle());
-        response.setContent(regulation.getContent());
+
+        // Parse content từ JSON string thành Object
+        try {
+            if (regulation.getContent() != null && !regulation.getContent().isEmpty()) {
+                response.setContent(objectMapper.readValue(regulation.getContent(), Object.class));
+            } else {
+                response.setContent(null);
+            }
+        } catch (Exception e) {
+            // Nếu parse lỗi, giữ nguyên content gốc
+            response.setContent(regulation.getContent());
+        }
+
         response.setInnovationDecisionId(regulation.getInnovationDecision().getId());
         response.setChapterId(regulation.getChapter() != null ? regulation.getChapter().getId() : null);
         return response;

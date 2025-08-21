@@ -19,22 +19,22 @@ public class User {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
-    @Column(name = "id")
+    @Column(name = "id", columnDefinition = "VARCHAR(36)")
     private String id;
 
-    @Column(name = "personnel_id", unique = true)
+    @Column(name = "personnel_id", unique = true, columnDefinition = "VARCHAR(50)")
     private String personnelId;
 
-    @Column(name = "full_name", nullable = false)
+    @Column(name = "full_name", nullable = false, columnDefinition = "VARCHAR(255)")
     private String fullName;
 
-    @Column(name = "email", nullable = false, unique = true)
+    @Column(name = "email", nullable = false, unique = true, columnDefinition = "VARCHAR(255)")
     private String email;
 
-    @Column(name = "phone_number")
+    @Column(name = "phone_number", columnDefinition = "VARCHAR(20)")
     private String phoneNumber;
 
-    @Column(name = "password", nullable = false)
+    @Column(name = "password", nullable = false, columnDefinition = "VARCHAR(255)")
     private String password;
 
     @Enumerated(EnumType.STRING)
