@@ -3,6 +3,7 @@ package vn.edu.iuh.fit.innovationmanagementsystem_be.service;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,9 +28,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.ResultPaginationDTO;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.Utils;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -53,7 +52,7 @@ public class DepartmentService {
     }
 
     // 1. Create Department
-    public DepartmentResponse createDepartment(DepartmentRequest departmentRequest) {
+    public DepartmentResponse createDepartment(@NonNull DepartmentRequest departmentRequest) {
         if (departmentRepository.existsByDepartmentCode(departmentRequest.getDepartmentCode())) {
             throw new IdInvalidException("Mã phòng ban đã tồn tại");
         }
@@ -65,7 +64,8 @@ public class DepartmentService {
     }
 
     // 2. Get All Departments
-    public ResultPaginationDTO getAllDepartments(Specification<Department> specification, Pageable pageable) {
+    public ResultPaginationDTO getAllDepartments(@NonNull Specification<Department> specification,
+            @NonNull Pageable pageable) {
         Page<Department> departments = departmentRepository.findAll(specification, pageable);
 
         Page<DepartmentResponse> departmentResponses = departments.map(department -> toDepartmentResponse(department));
@@ -73,14 +73,14 @@ public class DepartmentService {
     }
 
     // 3. Get Department by Id
-    public DepartmentResponse getDepartmentById(String id) {
+    public DepartmentResponse getDepartmentById(@NonNull String id) {
         Department department = departmentRepository.findById(id)
                 .orElseThrow(() -> new IdInvalidException("Phòng ban không tồn tại"));
         return toDepartmentResponse(department);
     }
 
     // 4. Update Department
-    public DepartmentResponse updateDepartment(String id, DepartmentRequest departmentRequest) {
+    public DepartmentResponse updateDepartment(@NonNull String id, @NonNull DepartmentRequest departmentRequest) {
         Department department = departmentRepository.findById(id)
                 .orElseThrow(() -> new IdInvalidException("Không tim thấy phòng ban có ID: " + id));
 
@@ -108,14 +108,15 @@ public class DepartmentService {
     }
 
     // 6. Get Department User Statistics by Department ID
-    public DepartmentResponse getDepartmentUserStatisticsById(String departmentId) {
+    public DepartmentResponse getDepartmentUserStatisticsById(@NonNull String departmentId) {
         Department department = departmentRepository.findById(departmentId)
                 .orElseThrow(() -> new IdInvalidException("Phòng ban không tồn tại"));
         return toDepartmentResponse(department);
     }
 
     // 7. Search Department
-    public ResultPaginationDTO searchDepartmentsByKeywordWithPagination(String keyword, Pageable pageable) {
+    public ResultPaginationDTO searchDepartmentsByKeywordWithPagination(@NonNull String keyword,
+            @NonNull Pageable pageable) {
 
         Page<Department> departments = departmentRepository.findByCodeOrNameContainingWithPagination(keyword, pageable);
         Page<DepartmentResponse> departmentResponses = departments.map(this::toDepartmentResponse);
@@ -123,9 +124,11 @@ public class DepartmentService {
     }
 
     // 8. Get all User in Department
-    public ResultPaginationDTO getAllUserInDepartment(String departmentId, Pageable pageable) {
-        Department department = departmentRepository.findById(departmentId)
-                .orElseThrow(() -> new IdInvalidException("Phòng ban không tồn tại"));
+    public ResultPaginationDTO getAllUserInDepartment(@NonNull String departmentId, @NonNull Pageable pageable) {
+        // Check if department exists
+        if (!departmentRepository.existsById(departmentId)) {
+            throw new IdInvalidException("Phòng ban không tồn tại");
+        }
 
         Page<User> users = departmentRepository.findUsersByDepartmentId(departmentId, pageable);
         Page<UserDepartmentResponse> userResponses = users.map(this::toUserDepartmentResponse);
@@ -133,27 +136,33 @@ public class DepartmentService {
     }
 
     // 9. Get Active User in Department
-    public ResultPaginationDTO getActiveUserInDepartment(String departmentId, Pageable pageable) {
-        Department department = departmentRepository.findById(departmentId)
-                .orElseThrow(() -> new IdInvalidException("Phòng ban không tồn tại"));
+    public ResultPaginationDTO getActiveUserInDepartment(@NonNull String departmentId, @NonNull Pageable pageable) {
+        // Check if department exists
+        if (!departmentRepository.existsById(departmentId)) {
+            throw new IdInvalidException("Phòng ban không tồn tại");
+        }
         Page<User> users = departmentRepository.findActiveUsersByDepartmentId(departmentId, pageable);
         Page<UserDepartmentResponse> userResponses = users.map(this::toUserDepartmentResponse);
         return Utils.toResultPaginationDTO(userResponses, pageable);
     }
 
     // 10. Get Inactive User in Department
-    public ResultPaginationDTO getInactiveUserInDepartment(String departmentId, Pageable pageable) {
-        Department department = departmentRepository.findById(departmentId)
-                .orElseThrow(() -> new IdInvalidException("Phòng ban không tồn tại"));
+    public ResultPaginationDTO getInactiveUserInDepartment(@NonNull String departmentId, @NonNull Pageable pageable) {
+        // Check if department exists
+        if (!departmentRepository.existsById(departmentId)) {
+            throw new IdInvalidException("Phòng ban không tồn tại");
+        }
         Page<User> users = departmentRepository.findInactiveUsersByDepartmentId(departmentId, pageable);
         Page<UserDepartmentResponse> userResponses = users.map(this::toUserDepartmentResponse);
         return Utils.toResultPaginationDTO(userResponses, pageable);
     }
 
     // 11 Remove User from Department
-    public void removeUserFromDepartment(String departmentId, String userId) {
-        Department department = departmentRepository.findById(departmentId)
-                .orElseThrow(() -> new IdInvalidException("Phòng ban không tồn tại"));
+    public void removeUserFromDepartment(@NonNull String departmentId, @NonNull String userId) {
+        // Check if department exists
+        if (!departmentRepository.existsById(departmentId)) {
+            throw new IdInvalidException("Phòng ban không tồn tại");
+        }
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IdInvalidException("User không tồn tại"));
@@ -315,12 +324,12 @@ public class DepartmentService {
     }
 
     // Lấy lịch sử gộp department
-    public List<DepartmentMergeHistory> getDepartmentMergeHistory(String departmentId) {
+    public List<DepartmentMergeHistory> getDepartmentMergeHistory(@NonNull String departmentId) {
         return departmentMergeHistoryRepository.findByMergedDepartmentId(departmentId);
     }
 
     // Lấy lịch sử tách department
-    public List<DepartmentSplitHistory> getDepartmentSplitHistory(String departmentId) {
+    public List<DepartmentSplitHistory> getDepartmentSplitHistory(@NonNull String departmentId) {
         List<DepartmentSplitHistory> asSource = departmentSplitHistoryRepository.findBySourceDepartmentId(departmentId);
         List<DepartmentSplitHistory> asNew = departmentSplitHistoryRepository
                 .findByNewDepartmentIdsContaining(departmentId);
@@ -332,147 +341,9 @@ public class DepartmentService {
         return allHistory;
     }
 
-    // Validation cho source department
-    private Department validateAndGetSourceDepartment(String sourceDepartmentId) {
-        Department department = departmentRepository.findById(sourceDepartmentId)
-                .orElseThrow(() -> new IdInvalidException("Department cần tách không tồn tại"));
-
-        if (!department.getIsActive()) {
-            throw new IdInvalidException("Department " + department.getDepartmentName() + " đã bị xóa");
-        }
-
-        return department;
-    }
-
-    // Validation cho new department codes
-    private void validateNewDepartmentCodes(List<SplitDepartmentRequest.NewDepartmentInfo> newDepartments) {
-        // Kiểm tra codes không trùng lặp
-        List<String> codes = newDepartments.stream()
-                .map(SplitDepartmentRequest.NewDepartmentInfo::getDepartmentCode)
-                .collect(Collectors.toList());
-
-        Set<String> uniqueCodes = new HashSet<>(codes);
-        if (uniqueCodes.size() != codes.size()) {
-            throw new IdInvalidException("Các mã department mới không được trùng lặp");
-        }
-
-        // Kiểm tra codes không tồn tại trong database
-        newDepartments.forEach(newDept -> {
-            if (departmentRepository.existsByDepartmentCode(newDept.getDepartmentCode())) {
-                throw new IdInvalidException("Mã phòng ban " + newDept.getDepartmentCode() + " đã tồn tại");
-            }
-        });
-    }
-
-    // Validation cho users có thể tách được
-    private void validateUsersCanBeSplit(Department sourceDepartment,
-            List<SplitDepartmentRequest.NewDepartmentInfo> newDepartments) {
-        // Lấy tất cả userIds từ request
-        Set<String> allRequestedUserIds = newDepartments.stream()
-                .flatMap(newDept -> newDept.getUserIds().stream())
-                .collect(Collectors.toSet());
-
-        // Lấy tất cả userIds trong source department
-        Set<String> sourceUserIds = sourceDepartment.getUsers().stream()
-                .map(User::getId)
-                .collect(Collectors.toSet());
-
-        // Kiểm tra tất cả users được yêu cầu có thuộc source department không
-        if (!sourceUserIds.containsAll(allRequestedUserIds)) {
-            throw new IdInvalidException("Một số users không thuộc department cần tách");
-        }
-
-        // Kiểm tra không có user nào bị bỏ sót
-        if (allRequestedUserIds.size() != sourceUserIds.size()) {
-            throw new IdInvalidException("Phải chuyển tất cả users trong department cần tách");
-        }
-    }
-
-    // Tạo new departments
-    private List<Department> createNewDepartments(List<SplitDepartmentRequest.NewDepartmentInfo> newDepartmentsInfo) {
-        List<Department> newDepartments = new ArrayList<>();
-
-        for (SplitDepartmentRequest.NewDepartmentInfo newDeptInfo : newDepartmentsInfo) {
-            Department newDepartment = new Department();
-            newDepartment.setDepartmentName(newDeptInfo.getDepartmentName());
-            newDepartment.setDepartmentCode(newDeptInfo.getDepartmentCode());
-            newDepartment.setIsActive(true);
-
-            newDepartment = departmentRepository.save(newDepartment);
-            newDepartments.add(newDepartment);
-        }
-
-        return newDepartments;
-    }
-
-    // Di chuyển users đến new departments
-    private void moveUsersToNewDepartments(Department sourceDepartment, List<Department> newDepartments,
-            List<SplitDepartmentRequest.NewDepartmentInfo> newDepartmentsInfo) {
-
-        for (int i = 0; i < newDepartments.size(); i++) {
-            Department newDepartment = newDepartments.get(i);
-            SplitDepartmentRequest.NewDepartmentInfo newDeptInfo = newDepartmentsInfo.get(i);
-
-            List<User> usersToMove = userRepository.findAllById(newDeptInfo.getUserIds());
-
-            if (usersToMove.size() != newDeptInfo.getUserIds().size()) {
-                throw new IdInvalidException("Một số users không tồn tại");
-            }
-
-            usersToMove.forEach(user -> {
-                user.setDepartment(newDepartment);
-            });
-
-            userRepository.saveAll(usersToMove);
-
-            // Verify transfer
-            verifyUserTransfer(usersToMove, newDepartment.getId());
-        }
-    }
-
-    // Di chuyển innovations đến new departments
-    private void moveInnovationsToNewDepartments(Department sourceDepartment, List<Department> newDepartments,
-            List<SplitDepartmentRequest.NewDepartmentInfo> newDepartmentsInfo) {
-
-        // Lấy tất cả innovations của source department
-        List<Innovation> sourceInnovations = sourceDepartment.getInnovations();
-
-        if (!sourceInnovations.isEmpty()) {
-            // Phân bổ innovations theo tỷ lệ users hoặc theo logic business
-            // Ở đây sẽ phân bổ đều cho các new departments
-
-            int innovationsPerDept = sourceInnovations.size() / newDepartments.size();
-            int remainder = sourceInnovations.size() % newDepartments.size();
-
-            int startIndex = 0;
-            for (int i = 0; i < newDepartments.size(); i++) {
-                Department newDepartment = newDepartments.get(i);
-
-                // Tính số innovations cho department này
-                int deptInnovationCount = innovationsPerDept + (i < remainder ? 1 : 0);
-
-                if (deptInnovationCount > 0) {
-                    List<Innovation> innovationsToMove = sourceInnovations.subList(startIndex,
-                            startIndex + deptInnovationCount);
-
-                    innovationsToMove.forEach(innovation -> {
-                        innovation.setDepartment(newDepartment);
-                    });
-
-                    innovationRepository.saveAll(innovationsToMove);
-
-                    // Verify transfer
-                    verifyInnovationTransfer(innovationsToMove, newDepartment.getId());
-
-                    startIndex += deptInnovationCount;
-                }
-            }
-        }
-    }
-
     // 12. Merge departments với Transaction Management và Data Consistency
     @Transactional(rollbackFor = Exception.class)
-    public DepartmentResponse mergeDepartments(MergeDepartmentsRequest request) {
+    public DepartmentResponse mergeDepartments(@NonNull MergeDepartmentsRequest request) {
         try {
             // Validation bước 1: Kiểm tra source departments
             List<Department> sourceDepartments = validateAndGetSourceDepartments(request.getSourceDepartmentIds());
@@ -508,7 +379,7 @@ public class DepartmentService {
 
     // 13. Split department với Transaction Management và Data Consistency
     @Transactional(rollbackFor = Exception.class)
-    public List<DepartmentResponse> splitDepartment(SplitDepartmentRequest request) {
+    public List<DepartmentResponse> splitDepartment(@NonNull SplitDepartmentRequest request) {
         try {
             // Validation bước 1: Kiểm tra source department
             Department sourceDepartment = departmentRepository.findById(request.getSourceDepartmentId())

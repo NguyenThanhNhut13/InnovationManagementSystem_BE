@@ -1,6 +1,5 @@
 package vn.edu.iuh.fit.innovationmanagementsystem_be.service;
 
-import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;

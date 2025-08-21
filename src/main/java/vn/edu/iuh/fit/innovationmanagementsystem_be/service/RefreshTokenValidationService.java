@@ -1,7 +1,5 @@
 package vn.edu.iuh.fit.innovationmanagementsystem_be.service;
 
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.User;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.UserStatusEnum;
@@ -59,7 +57,6 @@ public class RefreshTokenValidationService {
             if (user.getStatus() != null && user.getStatus() != UserStatusEnum.ACTIVE) {
                 return ValidationResult.invalid("Tài khoản đã bị vô hiệu hóa");
             }
-            Long remainingTTL = redisTokenService.getRefreshTokenTTL(refreshToken);
             return ValidationResult.valid(username, user);
 
         } catch (Exception e) {
