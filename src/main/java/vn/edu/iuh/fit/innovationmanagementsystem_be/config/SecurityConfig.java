@@ -45,7 +45,8 @@ public class SecurityConfig {
                                 .authorizeHttpRequests(auth -> auth
                                                 .requestMatchers("/api/v1/auth/**").permitAll()
                                                 .requestMatchers("/api/v1/innovation-decisions/**",
-                                                                "/api/v1/regulations/**", "/api/v1/chapters/**")
+                                                                "/api/v1/regulations/**", "/api/v1/chapters/**",
+                                                                "/api/v1/innovation-rounds/**")
                                                 .hasRole(THU_KY_QLKH_HTQT)
                                                 .anyRequest().authenticated())
                                 .oauth2ResourceServer(oauth2 -> oauth2
