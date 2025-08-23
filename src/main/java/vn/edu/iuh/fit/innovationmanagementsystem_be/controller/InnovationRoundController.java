@@ -16,6 +16,7 @@ import jakarta.validation.Valid;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.dto.requestDTO.InnovationRoundRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.dto.responseDTO.InnovationRoundResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.InnovationRound;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationRoundStatusEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.service.InnovationRoundService;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.ResultPaginationDTO;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.annotation.ApiMessage;
@@ -64,5 +65,22 @@ public class InnovationRoundController {
             @Valid @RequestBody InnovationRoundRequest request) {
         InnovationRoundResponse response = innovationRoundService.updateInnovationRound(id, request);
         return ResponseEntity.ok(response);
+    }
+
+    // 5. Change Status InnovationRound
+    @PostMapping("/{id}/status")
+    @ApiMessage("Thay đổi trạng thái đợt sáng kiến thành công")
+    public ResponseEntity<InnovationRoundResponse> changeStatusInnovationRound(@PathVariable String id,
+            @Valid @RequestBody InnovationRoundStatusEnum newStatus) {
+        InnovationRoundResponse response = innovationRoundService.changeStatusInnovationRound(id, newStatus);
+        return ResponseEntity.ok(response);
+    }
+
+    // 6. Get InnovationRound by Status
+    @GetMapping("/innovation-rounds/status/{status}")
+    @ApiMessage("Lấy danh sách vòng đổi mới theo trạng thái thành công")
+    public ResponseEntity<ResultPaginationDTO> getInnovationRoundsByStatus(
+            @PathVariable InnovationRoundStatusEnum status, Pageable pageable) {
+        return ResponseEntity.ok(innovationRoundService.getInnovationRoundByStatus(status, pageable));
     }
 }

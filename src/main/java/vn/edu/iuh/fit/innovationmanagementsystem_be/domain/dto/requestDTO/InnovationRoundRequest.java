@@ -8,7 +8,7 @@ import jakarta.validation.constraints.FutureOrPresent;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationStatusEnum;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationRoundStatusEnum;
 
 @Data
 public class InnovationRoundRequest {
@@ -25,7 +25,7 @@ public class InnovationRoundRequest {
     @DateTimeFormat(pattern = "dd/MM/yyyy")
     private LocalDate endDate;
 
-    private InnovationStatusEnum status;
+    private InnovationRoundStatusEnum status;
 
     @NotBlank(message = "ID của quyết định sáng tạo không được để trống")
     private String innovationDecisionId;

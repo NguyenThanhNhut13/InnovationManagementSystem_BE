@@ -3,6 +3,7 @@ package vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationRoundStatusEnum;
 
@@ -16,7 +17,8 @@ import java.util.ArrayList;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class InnovationRound {
+@EqualsAndHashCode(callSuper = true)
+public class InnovationRound extends Auditable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -36,18 +38,6 @@ public class InnovationRound {
     @Column(name = "status")
     private InnovationRoundStatusEnum status;
 
-    @Column(name = "created_at")
-    private LocalDateTime createdAt;
-
-    @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
-
-    @Column(name = "created_by")
-    private String createdBy;
-
-    @Column(name = "updated_by")
-    private String updatedBy;
-
     // Relationships
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "innovation_decision_id", nullable = false)
@@ -59,19 +49,11 @@ public class InnovationRound {
     @OneToMany(mappedBy = "innovationRound", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
     private List<Innovation> innovations = new ArrayList<>();
 
-    // Pre-persist and pre-update methods
     @PrePersist
     protected void onCreate() {
-        createdAt = LocalDateTime.now();
-        updatedAt = LocalDateTime.now();
         if (status == null) {
             status = InnovationRoundStatusEnum.ACTIVE;
         }
-    }
-
-    @PreUpdate
-    protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
     }
 
 }

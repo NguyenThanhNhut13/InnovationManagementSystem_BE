@@ -86,6 +86,30 @@ public class InnovationRoundService {
         return toInnovationRoundResponse(innovationRound);
     }
 
+    // 5. Change Status InnovationRound
+    @Transactional
+    public InnovationRoundResponse changeStatusInnovationRound(String id, InnovationRoundStatusEnum newStatus) {
+        InnovationRound innovationRound = innovationRoundRepository.findById(id)
+                .orElseThrow(() -> new IdInvalidException("ID đợt sáng kiến không tồn tại"));
+        if (newStatus == null) {
+            throw new IdInvalidException("Trạng thái đợt sáng kiến không được để trống");
+        }
+        innovationRound.setStatus(newStatus);
+        innovationRoundRepository.save(innovationRound);
+        return toInnovationRoundResponse(innovationRound);
+    }
+
+    // 6. Get InnovationRound by Status
+    public ResultPaginationDTO getInnovationRoundByStatus(InnovationRoundStatusEnum status, Pageable pageable) {
+
+        Page<InnovationRound> pageInnovationRound = innovationRoundRepository.findByStatus(status, pageable);
+
+        Page<InnovationRoundResponse> innovationRoundResponses = pageInnovationRound
+                .map(this::toInnovationRoundResponse);
+
+        return Utils.toResultPaginationDTO(innovationRoundResponses, pageable);
+    }
+
     // Mapper
     private InnovationRoundResponse toInnovationRoundResponse(InnovationRound innovationRound) {
         InnovationRoundResponse response = new InnovationRoundResponse();
