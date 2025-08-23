@@ -157,7 +157,7 @@ public class DepartmentService {
         return Utils.toResultPaginationDTO(userResponses, pageable);
     }
 
-    // 11 Remove User from Department
+    // 11. Remove User from Department
     public void removeUserFromDepartment(@NonNull String departmentId, @NonNull String userId) {
         // Check if department exists
         if (!departmentRepository.existsById(departmentId)) {
