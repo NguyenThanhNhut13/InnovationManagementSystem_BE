@@ -17,8 +17,8 @@ public class FormData {
     @Column(name = "id")
     private String id;
 
-    @Column(name = "value")
-    private String value;
+    @Column(name = "field_value", columnDefinition = "TEXT")
+    private String fieldValue;
 
     // Relationships
     @ManyToOne(fetch = FetchType.LAZY, optional = false)

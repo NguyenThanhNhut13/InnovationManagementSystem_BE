@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.ArrayList;
 
 @Entity
-@Table(name = "form_field")
+@Table(name = "form_fields")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -28,14 +28,11 @@ public class FormField {
     @Column(name = "field_type")
     private FieldTypeEnum fieldType;
 
-    @Column(name = "required")
-    private Boolean required;
+    @Column(name = "is_required", nullable = false)
+    private Boolean isRequired = false;
 
-    @Column(name = "order_index")
-    private Integer orderIndex;
-
-    @Column(name = "field_key")
-    private String fieldKey;
+    @Column(name = "order_in_template", nullable = false)
+    private Integer orderInTemplate; // Thứ tự hiển thị trong template
 
     // Relationships
     @ManyToOne(fetch = FetchType.LAZY, optional = false)

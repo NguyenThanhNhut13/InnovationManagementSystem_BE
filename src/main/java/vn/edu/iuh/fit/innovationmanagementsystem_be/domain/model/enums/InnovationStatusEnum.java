@@ -4,13 +4,14 @@ public enum InnovationStatusEnum {
     DRAFT, // Bản nháp
     SUBMITTED, // Đã nộp
     PENDING_KHOA_REVIEW, // Chờ Khoa duyệt
-    RETURNED_TO_SUBMITTER, // Trả về người nộp
-    KHOA_REVIEWED, // Khoa đã duyệt
+    KHOA_RETURNED_TO_SUBMITTER, // Khoa trả về người nộp để chỉnh sửa
     KHOA_APPROVED, // Khoa phê duyệt
     KHOA_REJECTED, // Khoa từ chối
+
     PENDING_TRUONG_REVIEW, // Chờ Trường duyệt
-    TRUONG_REVIEWED, // Trường đã duyệt
+    TRUONG_RETURNED_TO_SUBMITTER, // Trường trả về người nộp để chỉnh sửa
     TRUONG_APPROVED, // Trường phê duyệt
     TRUONG_REJECTED, // Trường từ chối
+
     FINAL_APPROVED // Phê duyệt cuối cùng
 }

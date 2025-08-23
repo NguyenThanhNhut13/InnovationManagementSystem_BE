@@ -46,12 +46,11 @@ public class Innovation extends Auditable {
     @JoinColumn(name = "innovation_round_id", nullable = false)
     private InnovationRound innovationRound;
 
-    // Thêm relationship với InnovationDecision
+    // Relationships
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "innovation_decision_id")
     private InnovationDecision innovationDecision;
 
-    // Relationships
     @OneToMany(mappedBy = "innovation", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true, targetEntity = Attachment.class)
     private List<Attachment> attachments = new ArrayList<>();
 
