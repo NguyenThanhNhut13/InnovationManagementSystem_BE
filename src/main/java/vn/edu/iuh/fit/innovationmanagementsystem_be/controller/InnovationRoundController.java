@@ -22,7 +22,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.ResultPaginationDTO;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.annotation.ApiMessage;
 
 @RestController
-@RequestMapping("/api/v1/innovation-rounds")
+@RequestMapping("/api/v1")
 public class InnovationRoundController {
 
     private final InnovationRoundService innovationRoundService;
@@ -32,7 +32,7 @@ public class InnovationRoundController {
     }
 
     // 1. Create Innovation Round
-    @PostMapping
+    @PostMapping("/innovation-rounds")
     @ApiMessage("Tạo đợt sáng kiến thành công")
     public ResponseEntity<InnovationRoundResponse> createInnovationRound(
             @Valid @RequestBody InnovationRoundRequest request) {
@@ -41,7 +41,7 @@ public class InnovationRoundController {
     }
 
     // 2. Get All InnovationRounds with pagination and filter
-    @GetMapping
+    @GetMapping("/innovation-rounds")
     @ApiMessage("Lấy danh sách đợt sáng kiến thành công")
     public ResponseEntity<ResultPaginationDTO> getAllInnovationRounds(
             @Filter Specification<InnovationRound> specification,
@@ -51,7 +51,7 @@ public class InnovationRoundController {
     }
 
     // 3. Get InnovationRound by Id
-    @GetMapping("/{id}")
+    @GetMapping("/innovation-rounds/{id}")
     @ApiMessage("Lấy đợt sáng kiến theo ID thành công")
     public ResponseEntity<InnovationRoundResponse> getInnovationRoundById(@PathVariable String id) {
         InnovationRoundResponse response = innovationRoundService.getInnovationRoundById(id);
@@ -59,7 +59,7 @@ public class InnovationRoundController {
     }
 
     // 4. Update InnovationRound
-    @PostMapping("/{id}")
+    @PostMapping("/innovation-rounds/{id}")
     @ApiMessage("Cập nhật đợt sáng kiến thành công")
     public ResponseEntity<InnovationRoundResponse> updateInnovationRound(@PathVariable String id,
             @Valid @RequestBody InnovationRoundRequest request) {
@@ -68,7 +68,7 @@ public class InnovationRoundController {
     }
 
     // 5. Change Status InnovationRound
-    @PostMapping("/{id}/status")
+    @PostMapping("/innovation-rounds/{id}/status")
     @ApiMessage("Thay đổi trạng thái đợt sáng kiến thành công")
     public ResponseEntity<InnovationRoundResponse> changeStatusInnovationRound(@PathVariable String id,
             @Valid @RequestBody InnovationRoundStatusEnum newStatus) {

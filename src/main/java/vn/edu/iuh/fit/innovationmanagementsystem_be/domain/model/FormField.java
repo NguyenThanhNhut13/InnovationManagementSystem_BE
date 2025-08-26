@@ -34,6 +34,9 @@ public class FormField {
     @Column(name = "order_in_template", nullable = false)
     private Integer orderInTemplate; // Thứ tự hiển thị trong template
 
+    @Column(name = "field_key", nullable = false)
+    private String fieldKey;
+
     // Relationships
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "form_template_id", nullable = false)

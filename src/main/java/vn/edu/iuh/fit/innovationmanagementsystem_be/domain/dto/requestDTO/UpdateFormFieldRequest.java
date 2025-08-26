@@ -1,4 +1,4 @@
-package vn.edu.iuh.fit.innovationmanagementsystem_be.domain.dto.responseDTO;
+package vn.edu.iuh.fit.innovationmanagementsystem_be.domain.dto.requestDTO;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -8,18 +8,18 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.FieldType
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class FormFieldResponse {
+public class UpdateFormFieldRequest {
 
-    // Basic field info
     private String id;
-    private String label;
-    private String fieldKey;
-    private FieldTypeEnum fieldType;
-    private Boolean isRequired;
-    private Integer orderInTemplate;
 
-    // Template info
-    private String formTemplateId;
-    private String formTemplateName;
+    private String label;
+
+    private String fieldKey;
+
+    private FieldTypeEnum fieldType;
+
+    private Boolean isRequired;
+
+    private Integer orderInTemplate;
 
 }
