@@ -5,6 +5,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.dto.requestDTO.RegulationRequest;
@@ -111,7 +113,7 @@ public class RegulationService {
             regulation.setContent(request.getContent());
         }
 
-        // Cập nhật Chapter nếu có thay đổi
+        // Update Chapter if changed
         if (request.getChapterId() != null) {
             if (request.getChapterId().isEmpty()) {
                 regulation.setChapter(null);
@@ -181,7 +183,17 @@ public class RegulationService {
                     Regulation regulation = new Regulation();
                     regulation.setClauseNumber(regulationData.getClauseNumber());
                     regulation.setTitle(regulationData.getTitle());
-                    regulation.setContent(regulationData.getContent());
+
+                    Object content = regulationData.getContent();
+                    if (content instanceof JsonNode) {
+                        regulation.setContent((JsonNode) content);
+                    } else if (content != null) {
+                        // Nếu content là Object khác, convert thành JsonNode
+                        regulation.setContent(objectMapper.valueToTree(content));
+                    } else {
+                        regulation.setContent(null);
+                    }
+
                     regulation.setInnovationDecision(chapter.getInnovationDecision());
                     regulation.setChapter(chapter);
                     return regulation;
@@ -227,7 +239,6 @@ public class RegulationService {
                 throw new IdInvalidException("Chương " + chapterReg.getChapterId() + " không có điều khoản nào");
             }
 
-            // Kiểm tra trùng lặp số hiệu điều khoản trong từng chương
             List<String> chapterClauseNumbers = chapterReg.getRegulations().stream()
                     .map(ImportRegulationsToMultipleChaptersRequest.RegulationData::getClauseNumber)
                     .collect(Collectors.toList());
@@ -257,7 +268,7 @@ public class RegulationService {
 
         for (ImportRegulationsToMultipleChaptersRequest.ChapterRegulations chapterReg : request
                 .getChapterRegulations()) {
-            // Kiểm tra Chapter tồn tại và thuộc InnovationDecision
+
             Chapter chapter = chapterRepository.findById(chapterReg.getChapterId())
                     .orElseThrow(
                             () -> new IdInvalidException("Chương " + chapterReg.getChapterId() + " không tồn tại"));
@@ -272,14 +283,24 @@ public class RegulationService {
                         Regulation regulation = new Regulation();
                         regulation.setClauseNumber(regulationData.getClauseNumber());
                         regulation.setTitle(regulationData.getTitle());
-                        regulation.setContent(regulationData.getContent());
+
+                        // Xử lý content an toàn - convert thành JsonNode
+                        Object content = regulationData.getContent();
+                        if (content instanceof JsonNode) {
+                            regulation.setContent((JsonNode) content);
+                        } else if (content != null) {
+                            // Nếu content là Object khác, convert thành JsonNode
+                            regulation.setContent(objectMapper.valueToTree(content));
+                        } else {
+                            regulation.setContent(null);
+                        }
+
                         regulation.setInnovationDecision(innovationDecision);
                         regulation.setChapter(chapter);
                         return regulation;
                     })
                     .collect(Collectors.toList());
 
-            // Lưu tất cả điều khoản của chương này
             List<Regulation> savedRegulations = regulationRepository.saveAll(regulations);
 
             // Chuyển đổi sang response
@@ -308,17 +329,7 @@ public class RegulationService {
         response.setClauseNumber(regulation.getClauseNumber());
         response.setTitle(regulation.getTitle());
 
-        // Parse content từ JSON string thành Object
-        try {
-            if (regulation.getContent() != null && !regulation.getContent().isEmpty()) {
-                response.setContent(objectMapper.readValue(regulation.getContent(), Object.class));
-            } else {
-                response.setContent(null);
-            }
-        } catch (Exception e) {
-            // Nếu parse lỗi, giữ nguyên content gốc
-            response.setContent(regulation.getContent());
-        }
+        response.setContent(regulation.getContent());
 
         response.setInnovationDecisionId(regulation.getInnovationDecision().getId());
         response.setChapterId(regulation.getChapter() != null ? regulation.getChapter().getId() : null);

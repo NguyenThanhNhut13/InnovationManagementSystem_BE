@@ -1,10 +1,14 @@
 package vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 @Entity
 @Table(name = "regulation")
@@ -25,8 +29,9 @@ public class Regulation extends Auditable {
     @Column(name = "title", nullable = false, columnDefinition = "TEXT")
     private String title;
 
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "content", columnDefinition = "JSON")
-    private String content;
+    private JsonNode content;
 
     // Relationships
     @ManyToOne(fetch = FetchType.LAZY, optional = false)

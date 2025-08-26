@@ -6,7 +6,7 @@ import jakarta.validation.constraints.NotEmpty;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
+import com.fasterxml.jackson.databind.JsonNode;
 import java.util.List;
 
 @Data
@@ -31,6 +31,6 @@ public class ImportMultipleRegulationsRequest {
         @NotBlank(message = "Tiêu đề điều khoản không được để trống")
         private String title;
 
-        private String content;
+        private JsonNode content; 
     }
 }

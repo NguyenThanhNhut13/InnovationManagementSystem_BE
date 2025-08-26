@@ -4,6 +4,9 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+
 @Entity
 @Table(name = "review_scores")
 @NoArgsConstructor
@@ -15,6 +18,7 @@ public class ReviewScore extends Auditable {
     @Column(name = "id")
     private String id;
 
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "content", columnDefinition = "JSON")
     private String content;
 
@@ -24,7 +28,7 @@ public class ReviewScore extends Auditable {
     @Column(name = "actual_score")
     private Integer actualScore;
 
-    // Foreign key relationships
+    // Relationships
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "council_members_id", nullable = false)
     private CouncilMember councilMember;

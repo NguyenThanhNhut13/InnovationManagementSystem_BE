@@ -6,6 +6,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import com.fasterxml.jackson.databind.JsonNode;
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -17,8 +19,7 @@ public class RegulationRequest {
     @NotBlank(message = "Tiêu đề điều không được để trống")
     private String title;
 
-    @NotBlank(message = "Nội dung điều không được để trống")
-    private String content;
+    private JsonNode content;
 
     @NotNull(message = "ID quyết định không được để trống")
     private String innovationDecisionId;
