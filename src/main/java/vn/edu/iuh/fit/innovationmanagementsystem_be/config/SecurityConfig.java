@@ -72,14 +72,23 @@ public class SecurityConfig {
                                                                 "/api/v1/departments",
                                                                 "/api/v1/departments/merge",
                                                                 "/api/v1/departments/split",
-                                                                "/api/v1/departments/{id}/merge-history")
+                                                                "/api/v1/departments/{id}/merge-history",
+                                                                // Form Field
+                                                                "/api/v1/form-fields",
+                                                                "/api/v1/form-fields/bulk")
                                                 .hasAnyRole(QUAN_TRI_VIEN, THU_KY_QLKH_HTQT)
 
-                                                .requestMatchers(HttpMethod.PUT, "/api/v1/departments/{id}")
+                                                .requestMatchers(HttpMethod.PUT,
+                                                                "/api/v1/departments/{id}",
+                                                                // Form Field
+                                                                "/api/v1/form-fields/{id}",
+                                                                "/api/v1/form-fields/{id}/reorder")
                                                 .hasAnyRole(QUAN_TRI_VIEN, THU_KY_QLKH_HTQT)
 
                                                 .requestMatchers(HttpMethod.DELETE,
-                                                                "/api/v1/departments/{departmentId}/users/{userId}")
+                                                                "/api/v1/departments/{departmentId}/users/{userId}",
+                                                                // Form Field
+                                                                "/api/v1/form-fields/{id}")
                                                 .hasAnyRole(QUAN_TRI_VIEN, THU_KY_QLKH_HTQT)
 
                                                 .anyRequest().authenticated())
