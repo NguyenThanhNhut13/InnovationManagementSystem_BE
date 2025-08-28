@@ -7,7 +7,7 @@ public class Utils {
 
     public static <T> ResultPaginationDTO toResultPaginationDTO(Page<T> page, Pageable pageable) {
         ResultPaginationDTO resultPaginationDTO = new ResultPaginationDTO();
-        Meta meta = new Meta();
+        ResultPaginationDTO.Meta meta = resultPaginationDTO.new Meta();
 
         meta.setPage(pageable.getPageNumber() + 1);
         meta.setPageSize(pageable.getPageSize());
