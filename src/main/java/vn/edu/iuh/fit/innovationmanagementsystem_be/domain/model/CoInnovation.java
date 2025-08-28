@@ -26,7 +26,7 @@ public class CoInnovation {
     @Column(name = "contact_info", nullable = false, columnDefinition = "VARCHAR(500)")
     private String contactInfo;
 
-    // Foreign key relationships
+    // Relationships
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;

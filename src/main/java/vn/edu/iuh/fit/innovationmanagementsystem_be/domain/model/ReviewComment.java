@@ -23,7 +23,7 @@ public class ReviewComment extends Auditable {
     @Column(name = "reviews_level", nullable = false)
     private ReviewLevelEnum reviewsLevel;
 
-    // Foreign key relationships
+    // Relationships
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "innovation_id", nullable = false)
     private Innovation innovation;

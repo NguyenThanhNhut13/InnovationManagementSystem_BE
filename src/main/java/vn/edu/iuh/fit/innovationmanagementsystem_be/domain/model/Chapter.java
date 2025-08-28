@@ -19,10 +19,10 @@ public class Chapter {
     @Column(name = "id", columnDefinition = "VARCHAR(36)")
     private String id;
 
-    @Column(name = "chapter_number", nullable = false, columnDefinition = "VARCHAR(100)")
+    @Column(name = "chapter_number", columnDefinition = "VARCHAR(100)")
     private String chapterNumber;
 
-    @Column(name = "title", nullable = false, columnDefinition = "TEXT")
+    @Column(name = "title", columnDefinition = "TEXT")
     private String title;
 
     // Relationships

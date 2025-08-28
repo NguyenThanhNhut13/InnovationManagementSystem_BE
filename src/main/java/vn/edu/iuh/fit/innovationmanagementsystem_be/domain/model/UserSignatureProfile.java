@@ -2,18 +2,20 @@ package vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
-import java.time.LocalDateTime;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import java.util.List;
 import java.util.ArrayList;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "user_signature_profiles")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class UserSignatureProfile {
+@EqualsAndHashCode(callSuper = true)
+public class UserSignatureProfile extends Auditable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -41,31 +43,11 @@ public class UserSignatureProfile {
     @Column(name = "certificate_valid_to")
     private LocalDateTime certificateValidTo; // Thời gian hết hạn
 
-    // Foreign key relationships
+    // Relationships
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    // Relationships
     @OneToMany(mappedBy = "userSignatureProfile", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = false)
     private List<DigitalSignature> digitalSignatures = new ArrayList<>();
-
-    // Timestamps
-    @Column(name = "created_at")
-    private LocalDateTime createdAt;
-
-    @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
-
-    // Pre-persist and pre-update methods
-    @PrePersist
-    protected void onCreate() {
-        createdAt = LocalDateTime.now();
-        updatedAt = LocalDateTime.now();
-    }
-
-    @PreUpdate
-    protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
-    }
 }

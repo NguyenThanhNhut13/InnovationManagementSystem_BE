@@ -27,14 +27,14 @@ public class InnovationRound extends Auditable {
     @Column(name = "name", nullable = false)
     private String name;
 
-    @Column(name = "start_date")
+    @Column(name = "start_date", nullable = false)
     private LocalDate startDate;
 
-    @Column(name = "end_date")
+    @Column(name = "end_date", nullable = false)
     private LocalDate endDate;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "status")
+    @Column(name = "status", nullable = false)
     private InnovationRoundStatusEnum status;
 
     // Relationships

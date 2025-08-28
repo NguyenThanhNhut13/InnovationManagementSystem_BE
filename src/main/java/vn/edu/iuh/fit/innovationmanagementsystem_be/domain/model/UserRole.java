@@ -17,7 +17,7 @@ public class UserRole {
     @Column(name = "id")
     private String id;
 
-    // Foreign key relationships
+    // Relationships
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;

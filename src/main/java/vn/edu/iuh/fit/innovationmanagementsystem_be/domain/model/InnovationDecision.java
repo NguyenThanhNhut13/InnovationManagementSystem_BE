@@ -44,16 +44,9 @@ public class InnovationDecision extends Auditable {
     @OneToMany(mappedBy = "innovationDecision", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
     private List<Regulation> regulations = new ArrayList<>();
 
-    // Other relationships (if any)
-    @OneToMany(mappedBy = "innovationDecision", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
-    private List<Innovation> innovations = new ArrayList<>();
+    @OneToMany(mappedBy = "innovationDecision", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<InnovationRound> innovationRounds = new ArrayList<>();
 
-    @OneToMany(mappedBy = "innovationDecision", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
-    private List<Council> councils = new ArrayList<>();
-
-    @OneToMany(mappedBy = "innovationDecision", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
-    private List<Regulation> regulationList = new ArrayList<>();
-
-    @OneToMany(mappedBy = "innovationDecision", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
-    private List<Report> reports = new ArrayList<>();
+    @OneToMany(mappedBy = "innovationDecision", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<ReviewScore> reviewScores = new ArrayList<>();
 }

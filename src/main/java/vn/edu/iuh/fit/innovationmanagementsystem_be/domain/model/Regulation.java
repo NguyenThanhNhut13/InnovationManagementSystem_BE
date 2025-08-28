@@ -24,7 +24,7 @@ public class Regulation extends Auditable {
     private String id;
 
     @Column(name = "clause_number", nullable = false, columnDefinition = "VARCHAR(100)")
-    private String clauseNumber;
+    private String clauseNumber; // Số điều khoản
 
     @Column(name = "title", nullable = false, columnDefinition = "TEXT")
     private String title;

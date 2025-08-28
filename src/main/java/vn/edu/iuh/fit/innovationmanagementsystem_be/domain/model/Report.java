@@ -19,31 +19,21 @@ public class Report extends Auditable {
     @Column(name = "id", columnDefinition = "VARCHAR(36)")
     private String id;
 
-    @Column(name = "applicable_year", columnDefinition = "INTEGER")
+    @Column(name = "applicable_year", nullable = false, columnDefinition = "INTEGER")
     private Integer applicableYear;
 
-    @Column(name = "generated_date", columnDefinition = "TIMESTAMP")
+    @Column(name = "generated_date", nullable = false, columnDefinition = "TIMESTAMP")
     private LocalDateTime generatedDate;
 
     @Column(name = "generated_pdf_path", columnDefinition = "TEXT")
     private String generatedPdfPath;
 
-    @Column(name = "meeting_details", columnDefinition = "TEXT")
+    @Column(name = "meeting_details", nullable = false, columnDefinition = "TEXT")
     private String meetingDetails;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "report_type", columnDefinition = "VARCHAR(50)")
     private DocumentTypeEnum reportType;
-
-    // Thêm relationship với InnovationDecision
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "innovation_decision_id")
-    private InnovationDecision innovationDecision;
-
-    // Foreign key relationships
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id")
-    private User user;
 
     // Relationships
     @OneToMany(mappedBy = "report", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)

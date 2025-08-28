@@ -19,7 +19,7 @@ public class CouncilMember {
     @Column(name = "id")
     private String id;
 
-    // Foreign key relationships
+    // Relationships
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "council_id", nullable = false)
     private Council council;
@@ -28,7 +28,6 @@ public class CouncilMember {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    // Relationships
     @OneToMany(mappedBy = "councilMember", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = false)
     private List<ReviewScore> reviewScores = new ArrayList<>();
 

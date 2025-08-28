@@ -26,12 +26,7 @@ public class Council extends Auditable {
     @Column(name = "review_council_level", nullable = false, columnDefinition = "VARCHAR(50)")
     private ReviewLevelEnum reviewCouncilLevel;
 
-    // Thêm relationship với InnovationDecision
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "innovation_decision_id")
-    private InnovationDecision innovationDecision;
-
     // Relationships
-    @OneToMany(mappedBy = "council", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
+    @OneToMany(mappedBy = "council", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<CouncilMember> councilMembers = new ArrayList<>();
 }

@@ -16,7 +16,7 @@ public class Attachment extends Auditable {
     @Column(name = "id", columnDefinition = "VARCHAR(36)")
     private String id;
 
-    @Column(name = "path_url", nullable = false, columnDefinition = "TEXT")
+    @Column(name = "path_url", columnDefinition = "TEXT")
     private String pathUrl;
 
     @Enumerated(EnumType.STRING)

@@ -14,7 +14,6 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.DepartmentReposit
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.RoleRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.UserRepository;
 
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -90,8 +89,7 @@ public class UserSeeder implements DatabaseSeeder {
         user.setPhoneNumber(String.format("090%07d", index));
         user.setPassword(passwordEncoder.encode("password123"));
         user.setDepartment(department);
-        user.setCreatedAt(LocalDateTime.now());
-        user.setUpdatedAt(LocalDateTime.now());
+        // Không cần set createdAt và updatedAt nữa vì User đã kế thừa từ Auditable
 
         List<UserRole> userRoles = new ArrayList<>();
         UserRole userRole = new UserRole();
@@ -118,8 +116,7 @@ public class UserSeeder implements DatabaseSeeder {
         adminUser.setPhoneNumber("0123456789");
         adminUser.setPassword(passwordEncoder.encode("admin123"));
         adminUser.setDepartment(cnttDept);
-        adminUser.setCreatedAt(LocalDateTime.now());
-        adminUser.setUpdatedAt(LocalDateTime.now());
+        // Không cần set createdAt và updatedAt nữa vì User đã kế thừa từ Auditable
 
         List<UserRole> userRoles = new ArrayList<>();
         UserRole userRole = new UserRole();

@@ -41,9 +41,9 @@ public class DigitalSignature extends Auditable {
     @Column(name = "status", nullable = false)
     private SignatureStatusEnum status = SignatureStatusEnum.PENDING; // Trạng thái chữ ký
 
-    // Foreign key relationships
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "innovation_id", nullable = false)
+    // Relationships
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "innovation_id")
     private Innovation innovation;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
@@ -54,8 +54,8 @@ public class DigitalSignature extends Auditable {
     @JoinColumn(name = "user_signature_profile_id", nullable = false)
     private UserSignatureProfile userSignatureProfile;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = true)
-    @JoinColumn(name = "report_id", nullable = true)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "report_id")
     private Report report;
 
     @PrePersist
