@@ -150,7 +150,7 @@ public class ChapterService {
         return Utils.toResultPaginationDTO(responses, pageable);
     }
 
-    // Convert to Response DTO
+    // Mapper
     private ChapterResponse toChapterResponse(Chapter chapter) {
         ChapterResponse response = new ChapterResponse();
         response.setId(chapter.getId());

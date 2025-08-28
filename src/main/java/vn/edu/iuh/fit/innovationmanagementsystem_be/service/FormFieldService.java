@@ -29,22 +29,22 @@ public class FormFieldService {
     // 1. Create Form Field
     public FormFieldResponse createFormField(FormFieldRequest request, String templateId) {
 
-        FormField formField = mapToFormField(request, templateId);
+        FormField formField = toFormField(request, templateId);
 
         this.formFieldRepository.save(formField);
 
-        return mapToResponse(formField);
+        return toResponse(formField);
     }
 
     // 2. Create Multiple Form Fields
     public List<FormFieldResponse> createMultipleFormFields(List<FormFieldRequest> requests, String templateId) {
         List<FormField> formFields = requests.stream()
-                .map(request -> mapToFormField(request, templateId))
+                .map(request -> toFormField(request, templateId))
                 .collect(Collectors.toList());
         this.formFieldRepository.saveAll(formFields);
 
         return formFields.stream()
-                .map(this::mapToResponse)
+                .map(this::toResponse)
                 .collect(Collectors.toList());
     }
 
@@ -75,7 +75,7 @@ public class FormFieldService {
 
         this.formFieldRepository.save(formField);
 
-        return mapToResponse(formField);
+        return toResponse(formField);
     }
 
     // 4. Delete Form Field
@@ -89,14 +89,14 @@ public class FormFieldService {
     public FormFieldResponse getFormFieldById(String id) {
         FormField formField = formFieldRepository.findById(id)
                 .orElseThrow(() -> new IdInvalidException("Không tìm thấy form field với id: " + id));
-        return mapToResponse(formField);
+        return toResponse(formField);
     }
 
     // 6. Get Form Fields by Template Id
     public List<FormFieldResponse> getFormFieldsByTemplateId(String templateId) {
         List<FormField> formFields = formFieldRepository.findByFormTemplateId(templateId);
         return formFields.stream()
-                .map(this::mapToResponse)
+                .map(this::toResponse)
                 .collect(Collectors.toList());
     }
 
@@ -106,11 +106,11 @@ public class FormFieldService {
                 .orElseThrow(() -> new IdInvalidException("Không tìm thấy form field với id: " + id));
         formField.setOrderInTemplate(request.getOrderInTemplate());
         this.formFieldRepository.save(formField);
-        return mapToResponse(formField);
+        return toResponse(formField);
     }
 
     // Mapper
-    private FormField mapToFormField(FormFieldRequest request, String templateId) {
+    private FormField toFormField(FormFieldRequest request, String templateId) {
         FormField formField = new FormField();
         formField.setLabel(request.getLabel());
         formField.setFieldKey(request.getFieldKey());
@@ -122,7 +122,7 @@ public class FormFieldService {
         return formField;
     }
 
-    private FormFieldResponse mapToResponse(FormField formField) {
+    private FormFieldResponse toResponse(FormField formField) {
         FormFieldResponse response = new FormFieldResponse();
         response.setId(formField.getId());
         response.setLabel(formField.getLabel());

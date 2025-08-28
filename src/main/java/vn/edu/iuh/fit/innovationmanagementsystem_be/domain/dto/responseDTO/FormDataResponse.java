@@ -14,14 +14,15 @@ public class FormDataResponse {
 
     // Basic FormData info
     private String id;
+    private String fieldValue;
     private String formFieldId;
     private String formFieldLabel;
     private String formFieldKey;
-    private String fieldValue;
     private FieldTypeEnum fieldType;
     private Boolean isRequired;
     private Integer orderInTemplate;
     private String innovationId;
+    private String innovationName;
 
     // Template info
     private String templateId;

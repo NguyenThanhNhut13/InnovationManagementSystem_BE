@@ -116,15 +116,15 @@ public class FormTemplateService {
         // Map form fields
         if (template.getFormFields() != null) {
             response.setFormFields(template.getFormFields().stream()
-                    .map(this::mapFormFieldToResponse)
+                    .map(this::toFormFieldResponse)
                     .collect(Collectors.toList()));
         }
 
         return response;
     }
 
-    // Map form field sang response DTO
-    private FormFieldResponse mapFormFieldToResponse(FormField field) {
+    // Mapper
+    private FormFieldResponse toFormFieldResponse(FormField field) {
         FormFieldResponse response = new FormFieldResponse();
         response.setId(field.getId());
         response.setLabel(field.getLabel());

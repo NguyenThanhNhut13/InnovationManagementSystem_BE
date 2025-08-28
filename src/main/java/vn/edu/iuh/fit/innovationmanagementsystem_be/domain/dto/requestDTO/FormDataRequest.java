@@ -12,6 +12,7 @@ import java.util.List;
 @AllArgsConstructor
 public class FormDataRequest {
 
+    // Fields cho Create/Update single FormData
     @NotBlank(message = "Field value không được để trống")
     private String fieldValue;
 
@@ -23,6 +24,14 @@ public class FormDataRequest {
 
     // Fields cho bulk operations
     private List<FormDataItemRequest> formDataItems;
+
+    // Fields cho bulk update
+    private String bulkOperation; // UPDATE, DELETE, VALIDATE
+    private List<String> formDataIds;
+
+    // Fields cho form status
+    private String formStatus; // DRAFT, SUBMITTED, APPROVED, REJECTED
+    private String submitComment;
 
 }
 

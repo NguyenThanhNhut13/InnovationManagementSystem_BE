@@ -322,7 +322,7 @@ public class RegulationService {
                 chapterResults);
     }
 
-    // Convert to Response DTO
+    // Mapper
     private RegulationResponse toRegulationResponse(Regulation regulation) {
         RegulationResponse response = new RegulationResponse();
         response.setId(regulation.getId());

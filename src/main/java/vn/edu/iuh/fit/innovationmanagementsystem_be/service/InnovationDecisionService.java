@@ -107,7 +107,7 @@ public class InnovationDecisionService {
         return Utils.toResultPaginationDTO(responses, pageable);
     }
 
-    // Convert to Response DTO
+    // Mapper
     private InnovationDecisionResponse toInnovationDecisionResponse(InnovationDecision innovationDecision) {
         InnovationDecisionResponse response = new InnovationDecisionResponse();
         response.setId(innovationDecision.getId());
