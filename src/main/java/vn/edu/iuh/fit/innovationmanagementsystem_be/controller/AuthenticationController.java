@@ -3,16 +3,17 @@ package vn.edu.iuh.fit.innovationmanagementsystem_be.controller;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.dto.requestDTO.LoginRequest;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.dto.requestDTO.LogoutRequest;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.dto.requestDTO.RefreshTokenRequest;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.dto.requestDTO.ChangePasswordRequest;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.dto.requestDTO.OtpRequest;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.dto.requestDTO.ResetPasswordWithOtpRequest;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.dto.responseDTO.LoginResponse;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.dto.responseDTO.TokenResponse;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.dto.responseDTO.ChangePasswordResponse;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.dto.responseDTO.OtpResponse;
+
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.ChangePasswordRequest;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.LoginRequest;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.LogoutRequest;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.OtpRequest;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.RefreshTokenRequest;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.ResetPasswordWithOtpRequest;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.ChangePasswordResponse;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.LoginResponse;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.OtpResponse;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.TokenResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.service.AuthenticationService;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.annotation.ApiMessage;
 

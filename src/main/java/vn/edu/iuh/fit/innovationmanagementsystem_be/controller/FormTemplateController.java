@@ -8,10 +8,10 @@ import org.springframework.web.bind.annotation.*;
 
 import com.turkraft.springfilter.boot.Filter;
 
-import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.dto.requestDTO.CreateFormTemplateRequest;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.dto.requestDTO.UpdateFormTemplateRequest;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.dto.responseDTO.FormTemplateResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.FormTemplate;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.CreateFormTemplateRequest;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.UpdateFormTemplateRequest;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.FormTemplateResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.service.FormTemplateService;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.RestResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.ResultPaginationDTO;

@@ -12,14 +12,14 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import jakarta.transaction.Transactional;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.dto.requestDTO.UserRequest;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.dto.responseDTO.UserResponse;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.dto.responseDTO.UserRoleResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.Department;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.Role;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.User;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.UserRole;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.UserStatusEnum;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.UserRequest;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.UserResponse;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.UserRoleResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.UserRoleEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.exception.IdInvalidException;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.DepartmentRepository;

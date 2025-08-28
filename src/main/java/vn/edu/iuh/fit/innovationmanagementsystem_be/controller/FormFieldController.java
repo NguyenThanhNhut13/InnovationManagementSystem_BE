@@ -14,9 +14,9 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import jakarta.validation.Valid;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.dto.requestDTO.FormFieldRequest;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.dto.requestDTO.UpdateFormFieldRequest;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.dto.responseDTO.FormFieldResponse;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.FormFieldRequest;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.UpdateFormFieldRequest;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.FormFieldResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.service.FormFieldService;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.annotation.ApiMessage;
 

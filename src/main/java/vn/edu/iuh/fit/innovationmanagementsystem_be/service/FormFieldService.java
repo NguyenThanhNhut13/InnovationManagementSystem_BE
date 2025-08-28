@@ -2,10 +2,11 @@ package vn.edu.iuh.fit.innovationmanagementsystem_be.service;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.dto.requestDTO.FormFieldRequest;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.dto.requestDTO.UpdateFormFieldRequest;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.dto.responseDTO.FormFieldResponse;
+
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.FormField;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.FormFieldRequest;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.UpdateFormFieldRequest;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.FormFieldResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.exception.IdInvalidException;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.FormFieldRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.FormTemplateRepository;
