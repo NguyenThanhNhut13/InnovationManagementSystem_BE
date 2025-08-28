@@ -1,5 +1,8 @@
 package vn.edu.iuh.fit.innovationmanagementsystem_be.config;
 
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.ApplicationArguments;
+import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
@@ -7,6 +10,7 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 
 @Configuration
+@Slf4j
 public class RedisConfig {
 
     @Bean
@@ -25,5 +29,20 @@ public class RedisConfig {
 
         template.afterPropertiesSet();
         return template;
+    }
+
+    @Bean
+    public ApplicationRunner redisHealthLogger(RedisConnectionFactory connectionFactory) {
+        return new ApplicationRunner() {
+            @Override
+            public void run(ApplicationArguments args) {
+                try (var connection = connectionFactory.getConnection()) {
+                    String ping = connection.ping();
+                    log.info("Redis ping: {} (kết nối Redis thành công)", ping);
+                } catch (Exception e) {
+                    log.error("Không thể kết nối Redis: {}", e.getMessage(), e);
+                }
+            }
+        };
     }
 }

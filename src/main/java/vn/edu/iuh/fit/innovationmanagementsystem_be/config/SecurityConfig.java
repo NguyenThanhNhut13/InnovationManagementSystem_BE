@@ -16,12 +16,8 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
-import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
-import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import org.springframework.security.web.SecurityFilterChain;
-
-import java.security.interfaces.RSAPublicKey;
 
 @Configuration
 @EnableWebSecurity
@@ -37,9 +33,15 @@ public class SecurityConfig {
         // UserRoleEnum.TV_HOI_DONG_TRUONG.name();
 
         private final JwtBlacklistFilter jwtBlacklistFilter;
+        private final JwtDecoder jwtDecoder;
+        private final JwtAuthenticationConverter jwtAuthenticationConverter;
 
-        public SecurityConfig(JwtBlacklistFilter jwtBlacklistFilter) {
+        public SecurityConfig(JwtBlacklistFilter jwtBlacklistFilter,
+                        JwtDecoder jwtDecoder,
+                        JwtAuthenticationConverter jwtAuthenticationConverter) {
                 this.jwtBlacklistFilter = jwtBlacklistFilter;
+                this.jwtDecoder = jwtDecoder;
+                this.jwtAuthenticationConverter = jwtAuthenticationConverter;
         }
 
         @Bean
@@ -95,8 +97,8 @@ public class SecurityConfig {
                                 .oauth2ResourceServer(oauth2 -> oauth2
                                                 .jwt(jwt -> jwt
                                                                 .jwtAuthenticationConverter(
-                                                                                jwtAuthenticationConverter())
-                                                                .decoder(jwtDecoder()))
+                                                                                jwtAuthenticationConverter)
+                                                                .decoder(jwtDecoder))
                                                 .authenticationEntryPoint(customAuthenticationEntryPoint)
                                                 .accessDeniedHandler(customAccessDeniedHandler))
                                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
@@ -116,40 +118,5 @@ public class SecurityConfig {
                 return new BCryptPasswordEncoder();
         }
 
-        @Bean
-        public JwtDecoder jwtDecoder() {
-                try {
-                        // Load public key for JWT validation
-                        java.io.InputStream publicKeyStream = new org.springframework.core.io.ClassPathResource(
-                                        "keys/public_key.pem").getInputStream();
-                        byte[] publicKeyBytes = publicKeyStream.readAllBytes();
-                        String publicKeyPEM = new String(publicKeyBytes)
-                                        .replace("-----BEGIN PUBLIC KEY-----", "")
-                                        .replace("-----END PUBLIC KEY-----", "")
-                                        .replaceAll("\\s", "");
-
-                        java.security.spec.X509EncodedKeySpec publicKeySpec = new java.security.spec.X509EncodedKeySpec(
-                                        java.util.Base64.getDecoder().decode(publicKeyPEM));
-                        java.security.KeyFactory publicKeyFactory = java.security.KeyFactory.getInstance("RSA");
-                        RSAPublicKey publicKey = (RSAPublicKey) publicKeyFactory.generatePublic(publicKeySpec);
-
-                        return NimbusJwtDecoder.withPublicKey(publicKey)
-                                        .signatureAlgorithm(
-                                                        org.springframework.security.oauth2.jose.jws.SignatureAlgorithm.RS256)
-                                        .build();
-                } catch (Exception e) {
-                        throw new RuntimeException("Failed to create JWT decoder: " + e.getMessage(), e);
-                }
-        }
-
-        @Bean
-        public JwtAuthenticationConverter jwtAuthenticationConverter() {
-                JwtGrantedAuthoritiesConverter grantedAuthoritiesConverter = new JwtGrantedAuthoritiesConverter();
-                grantedAuthoritiesConverter.setAuthoritiesClaimName("roles");
-                grantedAuthoritiesConverter.setAuthorityPrefix("ROLE_");
-
-                JwtAuthenticationConverter jwtAuthenticationConverter = new JwtAuthenticationConverter();
-                jwtAuthenticationConverter.setJwtGrantedAuthoritiesConverter(grantedAuthoritiesConverter);
-                return jwtAuthenticationConverter;
-        }
+        // JWT configuration moved to JwtConfig
 }
