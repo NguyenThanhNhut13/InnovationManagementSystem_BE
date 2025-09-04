@@ -15,15 +15,14 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.User;
 @Repository
 public interface UserRepository extends JpaRepository<User, String>, JpaSpecificationExecutor<User> {
 
-        // Kiểm tra personnel ID có tồn tại không
         boolean existsByPersonnelId(String personnelId);
 
-        // Kiểm tra email có tồn tại không
         boolean existsByEmail(String email);
 
         // Tìm user theo department
         @Query("SELECT u FROM User u WHERE u.department.id = :departmentId")
-        Page<User> findByDepartmentId(@Param("departmentId") String departmentId, Pageable pageable);
+        Page<User> findByDepartmentId(@Param("departmentId") String departmentId,
+                        Pageable pageable);
 
         // Tìm kiếm user theo tên, email hoặc personnel_id
         @Query("SELECT u FROM User u WHERE " +
@@ -32,10 +31,8 @@ public interface UserRepository extends JpaRepository<User, String>, JpaSpecific
                         "LOWER(u.personnelId) LIKE LOWER(CONCAT('%', :searchTerm, '%'))")
         Page<User> searchUsersByFullNameOrEmailOrPersonnelId(@Param("searchTerm") String searchTerm, Pageable pageable);
 
-        // Thêm method để tìm user theo personnelId
         Optional<User> findByPersonnelId(String personnelId);
 
-        // Thêm method để tìm user theo email
         Optional<User> findByEmail(String email);
 
 }

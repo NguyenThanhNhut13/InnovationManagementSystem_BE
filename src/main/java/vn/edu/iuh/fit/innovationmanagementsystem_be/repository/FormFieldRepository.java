@@ -9,7 +9,6 @@ import java.util.List;
 @Repository
 public interface FormFieldRepository extends JpaRepository<FormField, String> {
 
-    // findByFormTemplateId
     List<FormField> findByFormTemplateId(String templateId);
 
 }

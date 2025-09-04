@@ -11,7 +11,9 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.FormField;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.FormTemplate;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.InnovationRound;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.CreateFormTemplateRequest;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.CreateMultipleFormTemplatesRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.UpdateFormTemplateRequest;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.CreateMultipleFormTemplatesResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.FormFieldResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.FormTemplateResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.exception.IdInvalidException;
@@ -65,6 +67,49 @@ public class FormTemplateService {
 
         FormTemplate savedTemplate = formTemplateRepository.save(template);
         return mapToResponse(savedTemplate);
+    }
+
+    // 3.1. Create Multiple Form Templates
+    @Transactional
+    public CreateMultipleFormTemplatesResponse createMultipleFormTemplates(CreateMultipleFormTemplatesRequest request) {
+
+        InnovationRound innovationRound = innovationRoundRepository.findById(request.getInnovationRoundId())
+                .orElseThrow(() -> new IdInvalidException(
+                        "Innovation round không tồn tại với ID: " + request.getInnovationRoundId()));
+
+        if (request.getFormTemplates() == null || request.getFormTemplates().isEmpty()) {
+            throw new IdInvalidException("Danh sách form templates không được để trống");
+        }
+
+        List<String> templateNames = request.getFormTemplates().stream()
+                .map(CreateMultipleFormTemplatesRequest.FormTemplateData::getName)
+                .collect(Collectors.toList());
+
+        if (templateNames.size() != templateNames.stream().distinct().count()) {
+            throw new IdInvalidException("Danh sách form templates có tên trùng lặp");
+        }
+
+        // Tạo danh sách form templates
+        List<FormTemplate> formTemplates = request.getFormTemplates().stream()
+                .map(templateData -> {
+                    FormTemplate template = new FormTemplate();
+                    template.setName(templateData.getName());
+                    template.setDescription(templateData.getDescription());
+                    template.setInnovationRound(innovationRound);
+                    return template;
+                })
+                .collect(Collectors.toList());
+
+        List<FormTemplate> savedFormTemplates = formTemplateRepository.saveAll(formTemplates);
+
+        List<FormTemplateResponse> formTemplateResponses = savedFormTemplates.stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+
+        return new CreateMultipleFormTemplatesResponse(
+                request.getInnovationRoundId(),
+                innovationRound.getName(),
+                formTemplateResponses);
     }
 
     // 4. Update form template

@@ -15,13 +15,10 @@ import java.time.LocalDate;
 public interface InnovationDecisionRepository
                 extends JpaRepository<InnovationDecision, String>, JpaSpecificationExecutor<InnovationDecision> {
 
-        // Tìm kiếm InnovationDecision theo người ký với phân trang
         Page<InnovationDecision> findBySignedBy(String signedBy, Pageable pageable);
 
-        // Kiểm tra số hiệu quyết định đã tồn tại chưa
         boolean existsByDecisionNumber(String decisionNumber);
 
-        // Tìm InnovationDecision theo khoảng thời gian ban hành
         @Query("SELECT id FROM InnovationDecision id WHERE id.promulgatedDate BETWEEN :startDate AND :endDate")
         Page<InnovationDecision> findByPromulgatedDateBetween(
                         @Param("startDate") LocalDate startDate,

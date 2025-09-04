@@ -10,7 +10,9 @@ import com.turkraft.springfilter.boot.Filter;
 
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.FormTemplate;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.CreateFormTemplateRequest;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.CreateMultipleFormTemplatesRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.UpdateFormTemplateRequest;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.CreateMultipleFormTemplatesResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.FormTemplateResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.service.FormTemplateService;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.RestResponse;
@@ -50,6 +52,14 @@ public class FormTemplateController {
     public ResponseEntity<FormTemplateResponse> createFormTemplate(
             @Valid @RequestBody CreateFormTemplateRequest request) {
         return ResponseEntity.ok(formTemplateService.createFormTemplate(request));
+    }
+
+    // 3.1. Create Multiple Form Templates
+    @PostMapping("/bulk")
+    @ApiMessage("Tạo nhiều form templates thành công")
+    public ResponseEntity<CreateMultipleFormTemplatesResponse> createMultipleFormTemplates(
+            @Valid @RequestBody CreateMultipleFormTemplatesRequest request) {
+        return ResponseEntity.ok(formTemplateService.createMultipleFormTemplates(request));
     }
 
     // 4. Update form template

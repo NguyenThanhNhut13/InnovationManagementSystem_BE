@@ -10,15 +10,11 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.Regulation;
 @Repository
 public interface RegulationRepository extends JpaRepository<Regulation, String>, JpaSpecificationExecutor<Regulation> {
 
-        // Tìm Regulation theo InnovationDecision với phân trang
         Page<Regulation> findByInnovationDecisionId(String innovationDecisionId, Pageable pageable);
 
-        // Tìm Regulation theo Chapter với phân trang
         Page<Regulation> findByChapterId(String chapterId, Pageable pageable);
 
-        // Tìm Regulation không thuộc Chapter nào với phân trang
         Page<Regulation> findByChapterIdIsNull(Pageable pageable);
 
-        // Kiểm tra Regulation đã tồn tại theo số hiệu và InnovationDecision
         boolean existsByClauseNumberAndInnovationDecisionId(String clauseNumber, String innovationDecisionId);
 }
