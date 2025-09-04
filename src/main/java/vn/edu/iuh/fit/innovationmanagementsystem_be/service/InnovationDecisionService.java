@@ -13,17 +13,20 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.exception.IdInvalidException
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.InnovationDecisionRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.ResultPaginationDTO;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.Utils;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.mapper.InnovationDecisionMapper;
 
 import java.time.LocalDate;
-import java.util.stream.Collectors;
 
 @Service
 public class InnovationDecisionService {
 
     private final InnovationDecisionRepository innovationDecisionRepository;
+    private final InnovationDecisionMapper innovationDecisionMapper;
 
-    public InnovationDecisionService(InnovationDecisionRepository innovationDecisionRepository) {
+    public InnovationDecisionService(InnovationDecisionRepository innovationDecisionRepository,
+            InnovationDecisionMapper innovationDecisionMapper) {
         this.innovationDecisionRepository = innovationDecisionRepository;
+        this.innovationDecisionMapper = innovationDecisionMapper;
     }
 
     // 1. Create InnovationDecision
@@ -33,22 +36,18 @@ public class InnovationDecisionService {
             throw new IdInvalidException("Số hiệu quyết định đã tồn tại");
         }
 
-        InnovationDecision innovationDecision = new InnovationDecision();
-        innovationDecision.setDecisionNumber(request.getDecisionNumber());
-        innovationDecision.setTitle(request.getTitle());
-        innovationDecision.setPromulgatedDate(request.getPromulgatedDate());
-        innovationDecision.setSignedBy(request.getSignedBy());
-        innovationDecision.setBases(request.getBases());
+        InnovationDecision innovationDecision = innovationDecisionMapper.toInnovationDecision(request);
 
         innovationDecisionRepository.save(innovationDecision);
-        return toInnovationDecisionResponse(innovationDecision);
+        return innovationDecisionMapper.toInnovationDecisionResponse(innovationDecision);
     }
 
     // 2. Get All InnovationDecisions
     public ResultPaginationDTO getAllInnovationDecisions(Specification<InnovationDecision> specification,
             Pageable pageable) {
         Page<InnovationDecision> innovationDecisions = innovationDecisionRepository.findAll(specification, pageable);
-        Page<InnovationDecisionResponse> responses = innovationDecisions.map(this::toInnovationDecisionResponse);
+        Page<InnovationDecisionResponse> responses = innovationDecisions
+                .map(innovationDecisionMapper::toInnovationDecisionResponse);
         return Utils.toResultPaginationDTO(responses, pageable);
     }
 
@@ -56,7 +55,7 @@ public class InnovationDecisionService {
     public InnovationDecisionResponse getInnovationDecisionById(String id) {
         InnovationDecision innovationDecision = innovationDecisionRepository.findById(id)
                 .orElseThrow(() -> new IdInvalidException("Quyết định không tồn tại"));
-        return toInnovationDecisionResponse(innovationDecision);
+        return innovationDecisionMapper.toInnovationDecisionResponse(innovationDecision);
     }
 
     // 4. Update InnovationDecision
@@ -87,14 +86,15 @@ public class InnovationDecisionService {
         }
 
         innovationDecisionRepository.save(innovationDecision);
-        return toInnovationDecisionResponse(innovationDecision);
+        return innovationDecisionMapper.toInnovationDecisionResponse(innovationDecision);
     }
 
     // 5. Get by signed by
     public ResultPaginationDTO getInnovationDecisionsBySignedBy(String signedBy, Pageable pageable) {
         Page<InnovationDecision> innovationDecisions = innovationDecisionRepository
                 .findBySignedBy(signedBy, pageable);
-        Page<InnovationDecisionResponse> responses = innovationDecisions.map(this::toInnovationDecisionResponse);
+        Page<InnovationDecisionResponse> responses = innovationDecisions
+                .map(innovationDecisionMapper::toInnovationDecisionResponse);
         return Utils.toResultPaginationDTO(responses, pageable);
     }
 
@@ -103,35 +103,9 @@ public class InnovationDecisionService {
             Pageable pageable) {
         Page<InnovationDecision> innovationDecisions = innovationDecisionRepository
                 .findByPromulgatedDateBetween(startDate, endDate, pageable);
-        Page<InnovationDecisionResponse> responses = innovationDecisions.map(this::toInnovationDecisionResponse);
+        Page<InnovationDecisionResponse> responses = innovationDecisions
+                .map(innovationDecisionMapper::toInnovationDecisionResponse);
         return Utils.toResultPaginationDTO(responses, pageable);
     }
 
-    // Mapper
-    private InnovationDecisionResponse toInnovationDecisionResponse(InnovationDecision innovationDecision) {
-        InnovationDecisionResponse response = new InnovationDecisionResponse();
-        response.setId(innovationDecision.getId());
-        response.setDecisionNumber(innovationDecision.getDecisionNumber());
-        response.setTitle(innovationDecision.getTitle());
-        response.setPromulgatedDate(innovationDecision.getPromulgatedDate());
-        response.setSignedBy(innovationDecision.getSignedBy());
-        response.setBases(innovationDecision.getBases());
-        response.setCreatedAt(innovationDecision.getCreatedAt());
-        response.setUpdatedAt(innovationDecision.getUpdatedAt());
-        response.setCreatedBy(innovationDecision.getCreatedBy());
-        response.setUpdatedBy(innovationDecision.getUpdatedBy());
-
-        if (innovationDecision.getChapters() != null) {
-            response.setChapterIds(innovationDecision.getChapters().stream()
-                    .map(chapter -> chapter.getId())
-                    .collect(Collectors.toList()));
-        }
-        if (innovationDecision.getRegulations() != null) {
-            response.setRegulationIds(innovationDecision.getRegulations().stream()
-                    .map(regulation -> regulation.getId())
-                    .collect(Collectors.toList()));
-        }
-
-        return response;
-    }
 }

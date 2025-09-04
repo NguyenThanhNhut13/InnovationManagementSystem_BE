@@ -17,6 +17,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.ChapterRepository
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.InnovationDecisionRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.ResultPaginationDTO;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.Utils;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.mapper.ChapterMapper;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -26,11 +27,14 @@ public class ChapterService {
 
     private final ChapterRepository chapterRepository;
     private final InnovationDecisionRepository innovationDecisionRepository;
+    private final ChapterMapper chapterMapper;
 
     public ChapterService(ChapterRepository chapterRepository,
-            InnovationDecisionRepository innovationDecisionRepository) {
+            InnovationDecisionRepository innovationDecisionRepository,
+            ChapterMapper chapterMapper) {
         this.chapterRepository = chapterRepository;
         this.innovationDecisionRepository = innovationDecisionRepository;
+        this.chapterMapper = chapterMapper;
     }
 
     // 1. Create Chapter
@@ -46,13 +50,11 @@ public class ChapterService {
             throw new IdInvalidException("Số hiệu chương đã tồn tại trong quyết định này");
         }
 
-        Chapter chapter = new Chapter();
-        chapter.setChapterNumber(request.getChapterNumber());
-        chapter.setTitle(request.getTitle());
+        Chapter chapter = chapterMapper.toChapter(request);
         chapter.setInnovationDecision(innovationDecision);
 
         chapterRepository.save(chapter);
-        return toChapterResponse(chapter);
+        return chapterMapper.toChapterResponse(chapter);
     }
 
     // 2. Create Multiple Chapters
@@ -101,7 +103,7 @@ public class ChapterService {
 
         // Chuyển đổi sang response
         List<ChapterResponse> chapterResponses = savedChapters.stream()
-                .map(this::toChapterResponse)
+                .map(chapterMapper::toChapterResponse)
                 .collect(Collectors.toList());
 
         return new CreateMultipleChaptersResponse(request.getInnovationDecisionId(), chapterResponses);
@@ -110,7 +112,7 @@ public class ChapterService {
     // 3. Get All Chapters
     public ResultPaginationDTO getAllChapters(Specification<Chapter> specification, Pageable pageable) {
         Page<Chapter> chapters = chapterRepository.findAll(specification, pageable);
-        Page<ChapterResponse> responses = chapters.map(this::toChapterResponse);
+        Page<ChapterResponse> responses = chapters.map(chapterMapper::toChapterResponse);
         return Utils.toResultPaginationDTO(responses, pageable);
     }
 
@@ -118,7 +120,7 @@ public class ChapterService {
     public ChapterResponse getChapterById(String id) {
         Chapter chapter = chapterRepository.findById(id)
                 .orElseThrow(() -> new IdInvalidException("Chương không tồn tại"));
-        return toChapterResponse(chapter);
+        return chapterMapper.toChapterResponse(chapter);
     }
 
     // 5. Update Chapter
@@ -140,31 +142,14 @@ public class ChapterService {
         }
 
         chapterRepository.save(chapter);
-        return toChapterResponse(chapter);
+        return chapterMapper.toChapterResponse(chapter);
     }
 
     // 6. Get Chapters by InnovationDecision
     public ResultPaginationDTO getChaptersByInnovationDecision(String innovationDecisionId, Pageable pageable) {
         Page<Chapter> chapters = chapterRepository.findByInnovationDecisionId(innovationDecisionId, pageable);
-        Page<ChapterResponse> responses = chapters.map(this::toChapterResponse);
+        Page<ChapterResponse> responses = chapters.map(chapterMapper::toChapterResponse);
         return Utils.toResultPaginationDTO(responses, pageable);
     }
 
-    // Mapper
-    private ChapterResponse toChapterResponse(Chapter chapter) {
-        ChapterResponse response = new ChapterResponse();
-        response.setId(chapter.getId());
-        response.setChapterNumber(chapter.getChapterNumber());
-        response.setTitle(chapter.getTitle());
-        response.setInnovationDecisionId(chapter.getInnovationDecision().getId());
-
-        // Set related regulation IDs
-        if (chapter.getRegulations() != null) {
-            response.setRegulationIds(chapter.getRegulations().stream()
-                    .map(regulation -> regulation.getId())
-                    .collect(Collectors.toList()));
-        }
-
-        return response;
-    }
 }

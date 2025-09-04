@@ -26,6 +26,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.InnovationReposit
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.UserRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.ResultPaginationDTO;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.Utils;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.mapper.DepartmentMapper;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -39,16 +40,19 @@ public class DepartmentService {
     private final InnovationRepository innovationRepository;
     private final DepartmentMergeHistoryRepository departmentMergeHistoryRepository;
     private final DepartmentSplitHistoryRepository departmentSplitHistoryRepository;
+    private final DepartmentMapper departmentMapper;
 
     public DepartmentService(DepartmentRepository departmentRepository, UserRepository userRepository,
             InnovationRepository innovationRepository,
             DepartmentMergeHistoryRepository departmentMergeHistoryRepository,
-            DepartmentSplitHistoryRepository departmentSplitHistoryRepository) {
+            DepartmentSplitHistoryRepository departmentSplitHistoryRepository,
+            DepartmentMapper departmentMapper) {
         this.departmentRepository = departmentRepository;
         this.userRepository = userRepository;
         this.innovationRepository = innovationRepository;
         this.departmentMergeHistoryRepository = departmentMergeHistoryRepository;
         this.departmentSplitHistoryRepository = departmentSplitHistoryRepository;
+        this.departmentMapper = departmentMapper;
     }
 
     // 1. Create Department
@@ -56,11 +60,9 @@ public class DepartmentService {
         if (departmentRepository.existsByDepartmentCode(departmentRequest.getDepartmentCode())) {
             throw new IdInvalidException("Mã phòng ban đã tồn tại");
         }
-        Department department = new Department();
-        department.setDepartmentName(departmentRequest.getDepartmentName());
-        department.setDepartmentCode(departmentRequest.getDepartmentCode());
+        Department department = departmentMapper.toDepartment(departmentRequest);
         departmentRepository.save(department);
-        return toDepartmentResponse(department);
+        return departmentMapper.toDepartmentResponse(department);
     }
 
     // 2. Get All Departments
@@ -68,7 +70,7 @@ public class DepartmentService {
             @NonNull Pageable pageable) {
         Page<Department> departments = departmentRepository.findAll(specification, pageable);
 
-        Page<DepartmentResponse> departmentResponses = departments.map(department -> toDepartmentResponse(department));
+        Page<DepartmentResponse> departmentResponses = departments.map(departmentMapper::toDepartmentResponse);
         return Utils.toResultPaginationDTO(departmentResponses, pageable);
     }
 
@@ -76,7 +78,7 @@ public class DepartmentService {
     public DepartmentResponse getDepartmentById(@NonNull String id) {
         Department department = departmentRepository.findById(id)
                 .orElseThrow(() -> new IdInvalidException("Phòng ban không tồn tại"));
-        return toDepartmentResponse(department);
+        return departmentMapper.toDepartmentResponse(department);
     }
 
     // 4. Update Department
@@ -95,7 +97,7 @@ public class DepartmentService {
             department.setDepartmentCode(departmentRequest.getDepartmentCode());
         }
         departmentRepository.save(department);
-        return toDepartmentResponse(department);
+        return departmentMapper.toDepartmentResponse(department);
     }
 
     // 5. Get Department User Statistics
@@ -103,7 +105,7 @@ public class DepartmentService {
         List<Department> departments = departmentRepository.findAll();
 
         return departments.stream()
-                .map(this::toDepartmentResponse)
+                .map(departmentMapper::toDepartmentResponse)
                 .collect(Collectors.toList());
     }
 
@@ -111,7 +113,7 @@ public class DepartmentService {
     public DepartmentResponse getDepartmentUserStatisticsById(@NonNull String departmentId) {
         Department department = departmentRepository.findById(departmentId)
                 .orElseThrow(() -> new IdInvalidException("Phòng ban không tồn tại"));
-        return toDepartmentResponse(department);
+        return departmentMapper.toDepartmentResponse(department);
     }
 
     // 7. Search Department
@@ -119,7 +121,7 @@ public class DepartmentService {
             @NonNull Pageable pageable) {
 
         Page<Department> departments = departmentRepository.findByCodeOrNameContainingWithPagination(keyword, pageable);
-        Page<DepartmentResponse> departmentResponses = departments.map(this::toDepartmentResponse);
+        Page<DepartmentResponse> departmentResponses = departments.map(departmentMapper::toDepartmentResponse);
         return Utils.toResultPaginationDTO(departmentResponses, pageable);
     }
 
@@ -131,7 +133,7 @@ public class DepartmentService {
         }
 
         Page<User> users = departmentRepository.findUsersByDepartmentId(departmentId, pageable);
-        Page<UserDepartmentResponse> userResponses = users.map(this::toUserDepartmentResponse);
+        Page<UserDepartmentResponse> userResponses = users.map(departmentMapper::toUserDepartmentResponse);
         return Utils.toResultPaginationDTO(userResponses, pageable);
     }
 
@@ -142,7 +144,7 @@ public class DepartmentService {
             throw new IdInvalidException("Phòng ban không tồn tại");
         }
         Page<User> users = departmentRepository.findActiveUsersByDepartmentId(departmentId, pageable);
-        Page<UserDepartmentResponse> userResponses = users.map(this::toUserDepartmentResponse);
+        Page<UserDepartmentResponse> userResponses = users.map(departmentMapper::toUserDepartmentResponse);
         return Utils.toResultPaginationDTO(userResponses, pageable);
     }
 
@@ -153,7 +155,7 @@ public class DepartmentService {
             throw new IdInvalidException("Phòng ban không tồn tại");
         }
         Page<User> users = departmentRepository.findInactiveUsersByDepartmentId(departmentId, pageable);
-        Page<UserDepartmentResponse> userResponses = users.map(this::toUserDepartmentResponse);
+        Page<UserDepartmentResponse> userResponses = users.map(departmentMapper::toUserDepartmentResponse);
         return Utils.toResultPaginationDTO(userResponses, pageable);
     }
 
@@ -370,7 +372,7 @@ public class DepartmentService {
             // Lưu lịch sử gộp
             saveMergeHistory(mergedDepartment, request);
 
-            return toDepartmentResponse(mergedDepartment);
+            return departmentMapper.toDepartmentResponse(mergedDepartment);
 
         } catch (Exception e) {
             throw new RuntimeException("Lỗi khi gộp departments: " + e.getMessage(), e);
@@ -445,48 +447,12 @@ public class DepartmentService {
             saveSplitHistory(sourceDepartment, newDepartments, request);
 
             return newDepartments.stream()
-                    .map(this::toDepartmentResponse)
+                    .map(departmentMapper::toDepartmentResponse)
                     .collect(Collectors.toList());
 
         } catch (Exception e) {
             throw new RuntimeException("Lỗi khi tách department: " + e.getMessage(), e);
         }
-    }
-
-    // Mapper
-    private DepartmentResponse toDepartmentResponse(Department department) {
-        return new DepartmentResponse(
-                department.getId(),
-                department.getDepartmentName(),
-                department.getDepartmentCode(),
-                department.getUsers() != null ? (long) department.getUsers().size() : 0L,
-                department.getUsers() != null ? department.getUsers().stream()
-                        .filter(user -> user.getStatus() != null && user.getStatus().name().equalsIgnoreCase("ACTIVE"))
-                        .count() : 0L,
-                department.getUsers() != null ? department.getUsers().stream()
-                        .filter(user -> user.getStatus() != null
-                                && user.getStatus().name().equalsIgnoreCase("INACTIVE"))
-                        .count() : 0L,
-                department.getUsers() != null ? department.getUsers().stream()
-                        .filter(user -> user.getStatus() != null
-                                && user.getStatus().name().equalsIgnoreCase("SUSPENDED"))
-                        .count() : 0L,
-                department.getInnovations() != null ? department.getInnovations().size() : 0);
-    }
-
-    private UserDepartmentResponse toUserDepartmentResponse(User user) {
-        return new UserDepartmentResponse(
-                user.getId(),
-                user.getPersonnelId(),
-                user.getFullName(),
-                user.getEmail(),
-                user.getPhoneNumber(),
-                user.getStatus(),
-                user.getDepartment().getId(),
-                user.getDepartment().getDepartmentName(),
-                user.getDepartment().getDepartmentCode(),
-                user.getCreatedAt(),
-                user.getUpdatedAt());
     }
 
 }

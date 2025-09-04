@@ -1,6 +1,7 @@
 package vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -20,6 +21,7 @@ public class UserDepartmentResponse {
     private String departmentId;
     private String departmentName;
     private String departmentCode;
+    private List<String> roles;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

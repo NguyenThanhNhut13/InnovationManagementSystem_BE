@@ -27,4 +27,5 @@ public class InnovationDecisionResponse {
     // Có thể thêm danh sách chapters và regulations nếu cần
     private List<String> chapterIds;
     private List<String> regulationIds;
+
 }

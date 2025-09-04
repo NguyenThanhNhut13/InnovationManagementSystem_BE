@@ -24,6 +24,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.InnovationDecisio
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.ChapterRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.ResultPaginationDTO;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.Utils;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.mapper.RegulationMapper;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -36,15 +37,18 @@ public class RegulationService {
     private final InnovationDecisionRepository innovationDecisionRepository;
     private final ChapterRepository chapterRepository;
     private final ObjectMapper objectMapper;
+    private final RegulationMapper regulationMapper;
 
     public RegulationService(RegulationRepository regulationRepository,
             InnovationDecisionRepository innovationDecisionRepository,
             ChapterRepository chapterRepository,
-            ObjectMapper objectMapper) {
+            ObjectMapper objectMapper,
+            RegulationMapper regulationMapper) {
         this.regulationRepository = regulationRepository;
         this.innovationDecisionRepository = innovationDecisionRepository;
         this.chapterRepository = chapterRepository;
         this.objectMapper = objectMapper;
+        this.regulationMapper = regulationMapper;
     }
 
     // 1. Create Regulation
@@ -66,21 +70,18 @@ public class RegulationService {
             throw new IdInvalidException("Số hiệu điều đã tồn tại trong quyết định này");
         }
 
-        Regulation regulation = new Regulation();
-        regulation.setClauseNumber(request.getClauseNumber());
-        regulation.setTitle(request.getTitle());
-        regulation.setContent(request.getContent());
+        Regulation regulation = regulationMapper.toRegulation(request);
         regulation.setInnovationDecision(innovationDecision);
         regulation.setChapter(chapter);
 
         regulationRepository.save(regulation);
-        return toRegulationResponse(regulation);
+        return regulationMapper.toRegulationResponse(regulation);
     }
 
     // 2. Get All Regulations
     public ResultPaginationDTO getAllRegulations(Specification<Regulation> specification, Pageable pageable) {
         Page<Regulation> regulations = regulationRepository.findAll(specification, pageable);
-        Page<RegulationResponse> responses = regulations.map(this::toRegulationResponse);
+        Page<RegulationResponse> responses = regulations.map(regulationMapper::toRegulationResponse);
         return Utils.toResultPaginationDTO(responses, pageable);
     }
 
@@ -88,7 +89,7 @@ public class RegulationService {
     public RegulationResponse getRegulationById(String id) {
         Regulation regulation = regulationRepository.findById(id)
                 .orElseThrow(() -> new IdInvalidException("Điều không tồn tại"));
-        return toRegulationResponse(regulation);
+        return regulationMapper.toRegulationResponse(regulation);
     }
 
     // 4. Update Regulation
@@ -129,27 +130,27 @@ public class RegulationService {
         }
 
         regulationRepository.save(regulation);
-        return toRegulationResponse(regulation);
+        return regulationMapper.toRegulationResponse(regulation);
     }
 
     // 5. Get Regulations by InnovationDecision
     public ResultPaginationDTO getRegulationsByInnovationDecision(String innovationDecisionId, Pageable pageable) {
         Page<Regulation> regulations = regulationRepository.findByInnovationDecisionId(innovationDecisionId, pageable);
-        Page<RegulationResponse> responses = regulations.map(this::toRegulationResponse);
+        Page<RegulationResponse> responses = regulations.map(regulationMapper::toRegulationResponse);
         return Utils.toResultPaginationDTO(responses, pageable);
     }
 
     // 6. Get Regulations by Chapter
     public ResultPaginationDTO getRegulationsByChapter(String chapterId, Pageable pageable) {
         Page<Regulation> regulations = regulationRepository.findByChapterId(chapterId, pageable);
-        Page<RegulationResponse> responses = regulations.map(this::toRegulationResponse);
+        Page<RegulationResponse> responses = regulations.map(regulationMapper::toRegulationResponse);
         return Utils.toResultPaginationDTO(responses, pageable);
     }
 
     // 7. Get Regulations not in any Chapter
     public ResultPaginationDTO getRegulationsNotInChapter(Pageable pageable) {
         Page<Regulation> regulations = regulationRepository.findByChapterIdIsNull(pageable);
-        Page<RegulationResponse> responses = regulations.map(this::toRegulationResponse);
+        Page<RegulationResponse> responses = regulations.map(regulationMapper::toRegulationResponse);
         return Utils.toResultPaginationDTO(responses, pageable);
     }
 
@@ -203,7 +204,7 @@ public class RegulationService {
         List<Regulation> savedRegulations = regulationRepository.saveAll(regulations);
 
         List<RegulationResponse> regulationResponses = savedRegulations.stream()
-                .map(this::toRegulationResponse)
+                .map(regulationMapper::toRegulationResponse)
                 .collect(Collectors.toList());
 
         return new ImportMultipleRegulationsResponse(
@@ -305,7 +306,7 @@ public class RegulationService {
 
             // Chuyển đổi sang response
             List<RegulationResponse> regulationResponses = savedRegulations.stream()
-                    .map(this::toRegulationResponse)
+                    .map(regulationMapper::toRegulationResponse)
                     .collect(Collectors.toList());
 
             // Tạo kết quả cho chương này
@@ -322,17 +323,4 @@ public class RegulationService {
                 chapterResults);
     }
 
-    // Mapper
-    private RegulationResponse toRegulationResponse(Regulation regulation) {
-        RegulationResponse response = new RegulationResponse();
-        response.setId(regulation.getId());
-        response.setClauseNumber(regulation.getClauseNumber());
-        response.setTitle(regulation.getTitle());
-
-        response.setContent(regulation.getContent());
-
-        response.setInnovationDecisionId(regulation.getInnovationDecision().getId());
-        response.setChapterId(regulation.getChapter() != null ? regulation.getChapter().getId() : null);
-        return response;
-    }
 }

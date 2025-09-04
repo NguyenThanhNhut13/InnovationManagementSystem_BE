@@ -1,8 +1,6 @@
 package vn.edu.iuh.fit.innovationmanagementsystem_be.service;
 
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.stream.Collectors;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -28,6 +26,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.UserRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.UserRoleRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.ResultPaginationDTO;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.Utils;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.mapper.UserMapper;
 
 @Service
 @Transactional
@@ -37,14 +36,17 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
     private final RoleRepository roleRepository;
     private final UserRoleRepository userRoleRepository;
+    private final UserMapper userMapper;
 
     public UserService(UserRepository userRepository, DepartmentRepository departmentRepository,
-            PasswordEncoder passwordEncoder, RoleRepository roleRepository, UserRoleRepository userRoleRepository) {
+            PasswordEncoder passwordEncoder, RoleRepository roleRepository, UserRoleRepository userRoleRepository,
+            UserMapper userMapper) {
         this.userRepository = userRepository;
         this.departmentRepository = departmentRepository;
         this.passwordEncoder = passwordEncoder;
         this.roleRepository = roleRepository;
         this.userRoleRepository = userRoleRepository;
+        this.userMapper = userMapper;
     }
 
     // 1. Cretae User
@@ -59,13 +61,14 @@ public class UserService {
         Department department = departmentRepository.findById(userRequest.getDepartmentId())
                 .orElseThrow(() -> new IdInvalidException("Phòng ban không tồn tại"));
 
-        User user = toUser(userRequest);
+        User user = userMapper.toUser(userRequest);
         user.setDepartment(department);
+        user.setPassword(passwordEncoder.encode(userRequest.getPassword()));
         userRepository.save(user);
 
         assignDefaultRoleToUser(user);
 
-        return toUserResponse(user);
+        return userMapper.toUserResponse(user);
     }
 
     // 2. Get All Users With Pagination
@@ -73,7 +76,7 @@ public class UserService {
             @NonNull Pageable pageable) {
         Page<User> users = userRepository.findAll(specification, pageable);
 
-        Page<UserResponse> userResponses = users.map(this::toUserResponse);
+        Page<UserResponse> userResponses = users.map(userMapper::toUserResponse);
 
         return Utils.toResultPaginationDTO(userResponses, pageable);
     }
@@ -82,7 +85,7 @@ public class UserService {
     public UserResponse getUserById(@NonNull String id) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new IdInvalidException("Người dùng không tồn tại với ID: " + id));
-        return toUserResponse(user);
+        return userMapper.toUserResponse(user);
     }
 
     // 4. Update User
@@ -114,7 +117,7 @@ public class UserService {
         user.setStatus(userRequest.getStatus() != null ? userRequest.getStatus() : UserStatusEnum.ACTIVE);
 
         userRepository.save(user);
-        return toUserResponse(user);
+        return userMapper.toUserResponse(user);
     }
 
     // 5. Get Users By Status With Pagination
@@ -125,7 +128,7 @@ public class UserService {
 
         Page<User> userPage = userRepository.findAll(statusSpec, pageable);
 
-        Page<UserResponse> userResponses = userPage.map(this::toUserResponse);
+        Page<UserResponse> userResponses = userPage.map(userMapper::toUserResponse);
         return Utils.toResultPaginationDTO(userResponses, pageable);
     }
 
@@ -144,7 +147,7 @@ public class UserService {
         userRole.setUser(user);
         userRole.setRole(role);
         userRoleRepository.save(userRole);
-        return toUserRoleResponse(userRole);
+        return userMapper.toUserRoleResponse(userRole);
     }
 
     // 7. Delete Role From User
@@ -172,7 +175,7 @@ public class UserService {
 
         Page<User> userPage = userRolePage.map(UserRole::getUser);
 
-        Page<UserResponse> userResponsePage = userPage.map(this::toUserResponse);
+        Page<UserResponse> userResponsePage = userPage.map(userMapper::toUserResponse);
 
         return Utils.toResultPaginationDTO(userResponsePage, pageable);
 
@@ -204,7 +207,7 @@ public class UserService {
         }
 
         Page<User> userPage = userRepository.findByDepartmentId(departmentId, pageable);
-        Page<UserResponse> userResponsePage = userPage.map(this::toUserResponse);
+        Page<UserResponse> userResponsePage = userPage.map(userMapper::toUserResponse);
         return Utils.toResultPaginationDTO(userResponsePage, pageable);
     }
 
@@ -216,55 +219,8 @@ public class UserService {
         }
 
         Page<User> userPage = userRepository.searchUsersByFullNameOrEmailOrPersonnelId(searchTerm.trim(), pageable);
-        Page<UserResponse> userResponsePage = userPage.map(this::toUserResponse);
+        Page<UserResponse> userResponsePage = userPage.map(userMapper::toUserResponse);
         return Utils.toResultPaginationDTO(userResponsePage, pageable);
-    }
-
-    // Mapper
-    private UserResponse toUserResponse(User user) {
-        return new UserResponse(
-                user.getId(),
-                user.getPersonnelId(),
-                user.getFullName(),
-                user.getEmail(),
-                user.getPhoneNumber(),
-                user.getStatus(),
-                user.getDepartment() != null ? user.getDepartment().getId() : null,
-                user.getDepartment() != null ? user.getDepartment().getDepartmentName() : null,
-                user.getDepartment() != null ? user.getDepartment().getDepartmentCode() : null,
-                user.getInnovations() != null ? user.getInnovations().size() : 0,
-                user.getCoInnovations() != null ? user.getCoInnovations().size() : 0,
-                user.getUserRoles() != null
-                        ? user.getUserRoles().stream()
-                                .map(userRole -> userRole.getRole() != null && userRole.getRole().getRoleName() != null
-                                        ? userRole.getRole().getRoleName().name()
-                                        : null)
-                                .collect(Collectors.toList())
-                        : Collections.emptyList(),
-                user.getCreatedAt(),
-                user.getUpdatedAt());
-    }
-
-    private User toUser(UserRequest userRequest) {
-        User user = new User();
-        user.setPersonnelId(userRequest.getPersonnelId());
-        user.setFullName(userRequest.getFullName());
-        user.setEmail(userRequest.getEmail());
-        user.setPhoneNumber(userRequest.getPhoneNumber());
-        user.setStatus(userRequest.getStatus() != null ? userRequest.getStatus() : UserStatusEnum.ACTIVE);
-        user.setPassword(passwordEncoder.encode(userRequest.getPassword()));
-        user.setDepartment(departmentRepository.findById(userRequest.getDepartmentId())
-                .orElseThrow(() -> new IdInvalidException("Phòng ban không tồn tại")));
-        return user;
-    }
-
-    private UserRoleResponse toUserRoleResponse(UserRole userRole) {
-        return new UserRoleResponse(
-                userRole.getId(),
-                userRole.getRole().getId(),
-                userRole.getRole().getRoleName().name(),
-                userRole.getUser().getId(),
-                userRole.getUser().getFullName());
     }
 
 }

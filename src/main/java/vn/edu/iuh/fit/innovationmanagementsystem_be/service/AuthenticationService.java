@@ -21,8 +21,8 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.TokenResp
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.UserRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.JwtTokenUtil;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.mapper.AuthenticationMapper;
 import java.util.Collections;
-import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
@@ -37,11 +37,13 @@ public class AuthenticationService {
     private final EmailService emailService;
     private final RateLimitingService rateLimitingService;
     private final OtpService otpService;
+    private final AuthenticationMapper authenticationMapper;
 
     public AuthenticationService(AuthenticationManager authenticationManager, JwtTokenUtil jwtTokenUtil,
             UserRepository userRepository, RedisTokenService redisTokenService,
             RefreshTokenValidationService refreshTokenValidationService, PasswordEncoder passwordEncoder,
-            EmailService emailService, RateLimitingService rateLimitingService, OtpService otpService) {
+            EmailService emailService, RateLimitingService rateLimitingService, OtpService otpService,
+            AuthenticationMapper authenticationMapper) {
         this.authenticationManager = authenticationManager;
         this.jwtTokenUtil = jwtTokenUtil;
         this.userRepository = userRepository;
@@ -51,6 +53,7 @@ public class AuthenticationService {
         this.emailService = emailService;
         this.rateLimitingService = rateLimitingService;
         this.otpService = otpService;
+        this.authenticationMapper = authenticationMapper;
     }
 
     // 1. Login
@@ -74,7 +77,10 @@ public class AuthenticationService {
                                                                                     // seconds
             redisTokenService.saveRefreshToken(user.getPersonnelId(), refreshToken, refreshTokenTTL);
 
-            return buildLoginResponse(user, accessToken, refreshToken);
+            LoginResponse loginResponse = authenticationMapper.toLoginResponse(user);
+            loginResponse.setAccessToken(accessToken);
+            loginResponse.setRefreshToken(refreshToken);
+            return loginResponse;
 
         } catch (BadCredentialsException e) {
 
@@ -165,28 +171,6 @@ public class AuthenticationService {
     // 4. Extract personnelId từ access token
     public String extractPersonnelIdFromToken(String accessToken) {
         return jwtTokenUtil.extractUsername(accessToken);
-    }
-
-    private LoginResponse buildLoginResponse(User user, String accessToken, String refreshToken) {
-        List<String> roles = user.getUserRoles() != null ? user.getUserRoles().stream()
-                .map(userRole -> userRole.getRole().getRoleName().name())
-                .collect(Collectors.toList()) : Collections.singletonList(UserRoleEnum.GIANG_VIEN.name());
-
-        return new LoginResponse(
-                user.getId(),
-                user.getPersonnelId(),
-                user.getFullName(),
-                user.getEmail(),
-                user.getPhoneNumber(),
-                user.getStatus(),
-                user.getDepartment() != null ? user.getDepartment().getId() : null,
-                user.getDepartment() != null ? user.getDepartment().getDepartmentName() : null,
-                user.getDepartment() != null ? user.getDepartment().getDepartmentCode() : null,
-                roles,
-                user.getCreatedAt(),
-                user.getUpdatedAt(),
-                accessToken,
-                refreshToken);
     }
 
     // 5. Đổi mật khẩu
