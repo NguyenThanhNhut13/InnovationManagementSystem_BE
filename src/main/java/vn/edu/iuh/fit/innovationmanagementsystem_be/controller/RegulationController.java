@@ -75,13 +75,6 @@ public class RegulationController {
         return ResponseEntity.ok(regulationService.getRegulationsByChapter(chapterId, pageable));
     }
 
-    // 7. Get Regulations not in any Chapter
-    @GetMapping("/regulations/not-in-chapter")
-    @ApiMessage("Lấy danh sách điều không thuộc chương nào thành công")
-    public ResponseEntity<ResultPaginationDTO> getRegulationsNotInChapter(Pageable pageable) {
-        return ResponseEntity.ok(regulationService.getRegulationsNotInChapter(pageable));
-    }
-
     // 8. Import Multiple Regulations to Chapter
     @PostMapping("/chapters/{chapterId}/regulations/import")
     @ApiMessage("Import danh sách điều khoản vào chương thành công")

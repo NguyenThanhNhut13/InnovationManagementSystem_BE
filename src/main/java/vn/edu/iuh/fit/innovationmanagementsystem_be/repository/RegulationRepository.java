@@ -14,7 +14,5 @@ public interface RegulationRepository extends JpaRepository<Regulation, String>,
 
         Page<Regulation> findByChapterId(String chapterId, Pageable pageable);
 
-        Page<Regulation> findByChapterIdIsNull(Pageable pageable);
-
         boolean existsByClauseNumberAndInnovationDecisionId(String clauseNumber, String innovationDecisionId);
 }

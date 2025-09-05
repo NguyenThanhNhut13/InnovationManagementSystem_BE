@@ -124,19 +124,6 @@ public class FormTemplateService {
         return mapToResponse(updatedTemplate);
     }
 
-    // 5. Delete form template
-    public void deleteFormTemplate(String id) {
-        FormTemplate template = formTemplateRepository.findById(id)
-                .orElseThrow(() -> new IdInvalidException("Form template không tồn tại với ID: " + id));
-
-        // Kiểm tra template có được sử dụng bởi innovation nào không
-        if (formTemplateRepository.isTemplateUsedByInnovation(id)) {
-            throw new RuntimeException("Không thể xóa template đã được sử dụng bởi innovation");
-        }
-
-        formTemplateRepository.delete(template);
-    }
-
     // 6. Get all form templates with pagination and search
     public ResultPaginationDTO getAllFormTemplatesWithPaginationAndSearch(
             @NonNull Specification<FormTemplate> specification,

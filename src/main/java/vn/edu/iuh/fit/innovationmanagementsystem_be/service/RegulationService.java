@@ -147,13 +147,6 @@ public class RegulationService {
         return Utils.toResultPaginationDTO(responses, pageable);
     }
 
-    // 7. Get Regulations not in any Chapter
-    public ResultPaginationDTO getRegulationsNotInChapter(Pageable pageable) {
-        Page<Regulation> regulations = regulationRepository.findByChapterIdIsNull(pageable);
-        Page<RegulationResponse> responses = regulations.map(regulationMapper::toRegulationResponse);
-        return Utils.toResultPaginationDTO(responses, pageable);
-    }
-
     // 8. Import Multiple Regulations to Chapter
     @Transactional
     public ImportMultipleRegulationsResponse importMultipleRegulationsToChapter(

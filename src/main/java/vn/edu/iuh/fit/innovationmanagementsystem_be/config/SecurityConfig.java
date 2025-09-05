@@ -26,7 +26,7 @@ public class SecurityConfig {
 
         private final String QUAN_TRI_VIEN = UserRoleEnum.QUAN_TRI_VIEN.name();
         private final String THU_KY_QLKH_HTQT = UserRoleEnum.THU_KY_QLKH_HTQT.name();
-        private final String TRUONG_KHOA = UserRoleEnum.TRUONG_KHOA.name();
+        // private final String TRUONG_KHOA = UserRoleEnum.TRUONG_KHOA.name();
         // private final String THU_KY_KHOA = UserRoleEnum.THU_KY_KHOA.name();
         // private final String TV_HOI_DONG_KHOA = UserRoleEnum.TV_HOI_DONG_KHOA.name();
         // private final String TV_HOI_DONG_TRUONG =
@@ -53,46 +53,27 @@ public class SecurityConfig {
                                 .csrf(csrf -> csrf.disable())
                                 .cors(Customizer.withDefaults())
                                 .authorizeHttpRequests(auth -> auth
-                                                .requestMatchers("/api/v1/auth/**").permitAll()
 
-                                                .requestMatchers(HttpMethod.POST, "/api/v1/users/**").permitAll()
+                                                .requestMatchers(EndpointConstants.AUTH_PUBLIC).permitAll()
+                                                .requestMatchers(HttpMethod.POST, EndpointConstants.USER_PUBLIC[0])
+                                                .permitAll()
+                                                .requestMatchers(HttpMethod.GET, EndpointConstants.USER_PUBLIC[1])
+                                                .permitAll()
+                                                .requestMatchers(HttpMethod.PUT, EndpointConstants.USER_PUBLIC[2])
+                                                .permitAll()
 
-                                                .requestMatchers("/api/v1/innovation-decisions/**",
-                                                                "/api/v1/regulations/**", "/api/v1/chapters/**",
-                                                                "/api/v1/innovation-rounds/**",
-                                                                "/api/form-templates/**",
-                                                                "/api/v1/form-fields/**")
+                                                .requestMatchers(HttpMethod.GET, EndpointConstants.USER_GET)
+                                                .hasAnyRole(QUAN_TRI_VIEN, THU_KY_QLKH_HTQT)
+                                                .requestMatchers(HttpMethod.POST, EndpointConstants.USER_POST)
+                                                .hasAnyRole(QUAN_TRI_VIEN, THU_KY_QLKH_HTQT)
+                                                .requestMatchers(HttpMethod.DELETE, EndpointConstants.USER_DELETE)
                                                 .hasAnyRole(QUAN_TRI_VIEN, THU_KY_QLKH_HTQT)
 
-                                                .requestMatchers(HttpMethod.GET,
-                                                                "/api/v1//departments/users/statistics",
-                                                                "/api/v1//departments/{id}/users/statistics",
-                                                                "/api/v1/departments/{id}/users",
-                                                                "/api/v1/departments/{id}/users/active",
-                                                                "/api/v1/departments/{id}/users/inactive")
-                                                .hasAnyRole(QUAN_TRI_VIEN, THU_KY_QLKH_HTQT, TRUONG_KHOA)
-
-                                                .requestMatchers(HttpMethod.POST,
-                                                                "/api/v1/departments",
-                                                                "/api/v1/departments/merge",
-                                                                "/api/v1/departments/split",
-                                                                "/api/v1/departments/{id}/merge-history",
-                                                                // Form Field
-                                                                "/api/v1/form-fields",
-                                                                "/api/v1/form-fields/bulk")
+                                                .requestMatchers(HttpMethod.GET, EndpointConstants.DEPARTMENT_GET)
                                                 .hasAnyRole(QUAN_TRI_VIEN, THU_KY_QLKH_HTQT)
-
-                                                .requestMatchers(HttpMethod.PUT,
-                                                                "/api/v1/departments/{id}",
-                                                                // Form Field
-                                                                "/api/v1/form-fields/{id}",
-                                                                "/api/v1/form-fields/{id}/reorder")
+                                                .requestMatchers(HttpMethod.POST, EndpointConstants.DEPARTMENT_POST)
                                                 .hasAnyRole(QUAN_TRI_VIEN, THU_KY_QLKH_HTQT)
-
-                                                .requestMatchers(HttpMethod.DELETE,
-                                                                "/api/v1/departments/{departmentId}/users/{userId}",
-                                                                // Form Field
-                                                                "/api/v1/form-fields/{id}")
+                                                .requestMatchers(HttpMethod.PUT, EndpointConstants.DEPARTMENT_PUT)
                                                 .hasAnyRole(QUAN_TRI_VIEN, THU_KY_QLKH_HTQT)
 
                                                 .anyRequest().authenticated())

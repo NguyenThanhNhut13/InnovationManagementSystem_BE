@@ -15,7 +15,6 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.UpdateForm
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.CreateMultipleFormTemplatesResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.FormTemplateResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.service.FormTemplateService;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.RestResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.ResultPaginationDTO;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.annotation.ApiMessage;
 
@@ -69,14 +68,6 @@ public class FormTemplateController {
             @PathVariable String id,
             @Valid @RequestBody UpdateFormTemplateRequest request) {
         return ResponseEntity.ok(formTemplateService.updateFormTemplate(id, request));
-    }
-
-    // 5. Delete form template
-    @DeleteMapping("/{id}")
-    @ApiMessage("Xóa form template thành công")
-    public ResponseEntity<RestResponse<String>> deleteFormTemplate(@PathVariable String id) {
-        formTemplateService.deleteFormTemplate(id);
-        return ResponseEntity.noContent().build();
     }
 
     // 6. Get all form templates with pagination and search
