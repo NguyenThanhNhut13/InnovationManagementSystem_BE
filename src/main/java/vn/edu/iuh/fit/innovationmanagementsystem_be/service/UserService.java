@@ -8,7 +8,10 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.lang.NonNull;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.transaction.Transactional;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.Department;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.Role;
@@ -24,9 +27,12 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.DepartmentReposit
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.RoleRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.UserRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.UserRoleRepository;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.JwtTokenUtil;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.ResultPaginationDTO;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.Utils;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.mapper.UserMapper;
+
+import java.util.Optional;
 
 @Service
 @Transactional
@@ -37,16 +43,18 @@ public class UserService {
     private final RoleRepository roleRepository;
     private final UserRoleRepository userRoleRepository;
     private final UserMapper userMapper;
+    private final JwtTokenUtil jwtTokenUtil;
 
     public UserService(UserRepository userRepository, DepartmentRepository departmentRepository,
             PasswordEncoder passwordEncoder, RoleRepository roleRepository, UserRoleRepository userRoleRepository,
-            UserMapper userMapper) {
+            UserMapper userMapper, JwtTokenUtil jwtTokenUtil) {
         this.userRepository = userRepository;
         this.departmentRepository = departmentRepository;
         this.passwordEncoder = passwordEncoder;
         this.roleRepository = roleRepository;
         this.userRoleRepository = userRoleRepository;
         this.userMapper = userMapper;
+        this.jwtTokenUtil = jwtTokenUtil;
     }
 
     // 1. Cretae User
@@ -152,12 +160,11 @@ public class UserService {
 
     // 7. Delete Role From User
     public void removeRoleFromUser(@NonNull String userId, @NonNull String roleId) {
-        // Check if user exists
+
         if (!userRepository.existsById(userId)) {
             throw new IdInvalidException("User không tồn tại với ID: " + userId);
         }
 
-        // Check if role exists
         if (!roleRepository.existsById(roleId)) {
             throw new IdInvalidException("Role không tồn tại với ID: " + roleId);
         }
@@ -201,7 +208,7 @@ public class UserService {
     // 9. Get Users By Department With Pagination
     public ResultPaginationDTO getUsersByDepartmentWithPagination(@NonNull String departmentId,
             @NonNull Pageable pageable) {
-        // Check if department exists
+
         if (!departmentRepository.existsById(departmentId)) {
             throw new IdInvalidException("Phòng ban không tồn tại với ID: " + departmentId);
         }
@@ -221,6 +228,92 @@ public class UserService {
         Page<User> userPage = userRepository.searchUsersByFullNameOrEmailOrPersonnelId(searchTerm.trim(), pageable);
         Page<UserResponse> userResponsePage = userPage.map(userMapper::toUserResponse);
         return Utils.toResultPaginationDTO(userResponsePage, pageable);
+    }
+
+    // 11. Get Current User from JWT Token
+    public User getCurrentUser() {
+        try {
+            // Get JWT token from request header
+            ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder
+                    .getRequestAttributes();
+            if (attributes == null) {
+                throw new IdInvalidException("Không thể lấy thông tin request");
+            }
+
+            HttpServletRequest request = attributes.getRequest();
+
+            // Check if user is already cached in request
+            User cachedUser = (User) request.getAttribute("currentUser");
+            if (cachedUser != null) {
+                return cachedUser;
+            }
+
+            String authHeader = request.getHeader("Authorization");
+            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+                throw new IdInvalidException("Không tìm thấy Bearer token");
+            }
+
+            String token = authHeader.substring(7);
+            String userId = jwtTokenUtil.extractUsername(token);
+
+            if (userId == null) {
+                throw new IdInvalidException("Không thể extract user ID từ token");
+            }
+
+            // Try to find user by ID first (most common case)
+            Optional<User> userOpt = userRepository.findById(userId);
+
+            // If not found by ID, try to find by personnelId
+            if (userOpt.isEmpty()) {
+                userOpt = userRepository.findByPersonnelId(userId);
+            }
+
+            // If not found by personnelId, try to find by email
+            if (userOpt.isEmpty()) {
+                userOpt = userRepository.findByEmail(userId);
+            }
+
+            User user = userOpt
+                    .orElseThrow(() -> new IdInvalidException("Không tìm thấy người dùng hiện tại với ID: " + userId));
+
+            // Cache user in request scope
+            request.setAttribute("currentUser", user);
+
+            return user;
+
+        } catch (Exception e) {
+            throw new IdInvalidException("Lỗi khi lấy thông tin người dùng hiện tại: " + e.getMessage());
+        }
+    }
+
+    // 12. Get Current User ID (without database query)
+    public String getCurrentUserId() {
+        try {
+            ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder
+                    .getRequestAttributes();
+            if (attributes == null) {
+                throw new IdInvalidException("Không thể lấy thông tin request");
+            }
+
+            HttpServletRequest request = attributes.getRequest();
+            String authHeader = request.getHeader("Authorization");
+
+            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+                throw new IdInvalidException("Không tìm thấy Bearer token");
+            }
+
+            String token = authHeader.substring(7);
+            return jwtTokenUtil.extractUsername(token);
+
+        } catch (Exception e) {
+            throw new IdInvalidException("Lỗi khi lấy user ID: " + e.getMessage());
+        }
+    }
+
+    // 13. Check if current user is owner of innovation
+    public boolean isOwnerOfInnovation(String innovationUserId) {
+        String currentUserId = getCurrentUserId();
+        return currentUserId.equals(innovationUserId);
     }
 
 }

@@ -7,16 +7,15 @@ import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.FormField;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.FormTemplate;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.InnovationRound;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.CreateFormTemplateRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.CreateMultipleFormTemplatesRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.UpdateFormTemplateRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.CreateMultipleFormTemplatesResponse;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.FormFieldResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.FormTemplateResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.exception.IdInvalidException;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.mapper.FormTemplateMapper;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.FormTemplateRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.InnovationRoundRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.ResultPaginationDTO;
@@ -31,11 +30,14 @@ public class FormTemplateService {
 
     private final FormTemplateRepository formTemplateRepository;
     private final InnovationRoundRepository innovationRoundRepository;
+    private final FormTemplateMapper formTemplateMapper;
 
     public FormTemplateService(FormTemplateRepository formTemplateRepository,
-            InnovationRoundRepository innovationRoundRepository) {
+            InnovationRoundRepository innovationRoundRepository,
+            FormTemplateMapper formTemplateMapper) {
         this.formTemplateRepository = formTemplateRepository;
         this.innovationRoundRepository = innovationRoundRepository;
+        this.formTemplateMapper = formTemplateMapper;
     }
 
     // 1. Get form template by id
@@ -43,19 +45,20 @@ public class FormTemplateService {
         FormTemplate template = formTemplateRepository.findById(id)
                 .orElseThrow(() -> new IdInvalidException("Form template không tồn tại với ID: " + id));
 
-        return mapToResponse(template);
+        return formTemplateMapper.toFormTemplateResponse(template);
     }
 
     // 2. Get all form templates by innovation round
     public List<FormTemplateResponse> getFormTemplatesByInnovationRound(String roundId) {
         List<FormTemplate> templates = formTemplateRepository.findByInnovationRoundIdOrderByName(roundId);
         return templates.stream()
-                .map(this::mapToResponse)
+                .map(formTemplateMapper::toFormTemplateResponse)
                 .collect(Collectors.toList());
     }
 
     // 3. Create form template
     public FormTemplateResponse createFormTemplate(CreateFormTemplateRequest request) {
+
         InnovationRound round = innovationRoundRepository.findById(request.getInnovationRoundId())
                 .orElseThrow(() -> new IdInvalidException(
                         "Innovation round không tồn tại với ID: " + request.getInnovationRoundId()));
@@ -66,10 +69,10 @@ public class FormTemplateService {
         template.setInnovationRound(round);
 
         FormTemplate savedTemplate = formTemplateRepository.save(template);
-        return mapToResponse(savedTemplate);
+        return formTemplateMapper.toFormTemplateResponse(savedTemplate);
     }
 
-    // 3.1. Create Multiple Form Templates
+    // 4. Create Multiple Form Templates
     @Transactional
     public CreateMultipleFormTemplatesResponse createMultipleFormTemplates(CreateMultipleFormTemplatesRequest request) {
 
@@ -89,7 +92,6 @@ public class FormTemplateService {
             throw new IdInvalidException("Danh sách form templates có tên trùng lặp");
         }
 
-        // Tạo danh sách form templates
         List<FormTemplate> formTemplates = request.getFormTemplates().stream()
                 .map(templateData -> {
                     FormTemplate template = new FormTemplate();
@@ -103,7 +105,7 @@ public class FormTemplateService {
         List<FormTemplate> savedFormTemplates = formTemplateRepository.saveAll(formTemplates);
 
         List<FormTemplateResponse> formTemplateResponses = savedFormTemplates.stream()
-                .map(this::mapToResponse)
+                .map(formTemplateMapper::toFormTemplateResponse)
                 .collect(Collectors.toList());
 
         return new CreateMultipleFormTemplatesResponse(
@@ -112,7 +114,7 @@ public class FormTemplateService {
                 formTemplateResponses);
     }
 
-    // 4. Update form template
+    // 5. Update form template
     public FormTemplateResponse updateFormTemplate(String id, UpdateFormTemplateRequest request) {
         FormTemplate template = formTemplateRepository.findById(id)
                 .orElseThrow(() -> new IdInvalidException("Form template không tồn tại với ID: " + id));
@@ -121,7 +123,7 @@ public class FormTemplateService {
         template.setDescription(request.getDescription());
 
         FormTemplate updatedTemplate = formTemplateRepository.save(template);
-        return mapToResponse(updatedTemplate);
+        return formTemplateMapper.toFormTemplateResponse(updatedTemplate);
     }
 
     // 6. Get all form templates with pagination and search
@@ -129,40 +131,7 @@ public class FormTemplateService {
             @NonNull Specification<FormTemplate> specification,
             @NonNull Pageable pageable) {
         Page<FormTemplate> templates = formTemplateRepository.findAll(specification, pageable);
-        return Utils.toResultPaginationDTO(templates.map(this::mapToResponse), pageable);
+        return Utils.toResultPaginationDTO(templates.map(formTemplateMapper::toFormTemplateResponse), pageable);
     }
 
-    // Map entity sang response DTO
-    private FormTemplateResponse mapToResponse(FormTemplate template) {
-        FormTemplateResponse response = new FormTemplateResponse();
-        response.setId(template.getId());
-        response.setName(template.getName());
-        response.setDescription(template.getDescription());
-        response.setInnovationRoundId(template.getInnovationRound().getId());
-        response.setInnovationRoundName(template.getInnovationRound().getName());
-        response.setCreatedAt(template.getCreatedAt());
-        response.setUpdatedAt(template.getUpdatedAt());
-        response.setCreatedBy(template.getCreatedBy());
-        response.setUpdatedBy(template.getUpdatedBy());
-
-        // Map form fields
-        if (template.getFormFields() != null) {
-            response.setFormFields(template.getFormFields().stream()
-                    .map(this::toFormFieldResponse)
-                    .collect(Collectors.toList()));
-        }
-
-        return response;
-    }
-
-    // Mapper
-    private FormFieldResponse toFormFieldResponse(FormField field) {
-        FormFieldResponse response = new FormFieldResponse();
-        response.setId(field.getId());
-        response.setLabel(field.getLabel());
-        response.setFieldType(field.getFieldType());
-        response.setIsRequired(field.getIsRequired());
-        response.setOrderInTemplate(field.getOrderInTemplate());
-        return response;
-    }
 }

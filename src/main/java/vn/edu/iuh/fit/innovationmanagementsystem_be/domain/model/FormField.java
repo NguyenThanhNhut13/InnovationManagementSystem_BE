@@ -21,7 +21,7 @@ public class FormField {
     @Column(name = "id")
     private String id;
 
-    @Column(name = "label", nullable = false)
+    @Column(name = "label", nullable = false, columnDefinition = "TEXT")
     private String label;
 
     @Enumerated(EnumType.STRING)
@@ -32,7 +32,7 @@ public class FormField {
     private Boolean isRequired = false;
 
     @Column(name = "order_in_template", nullable = false)
-    private Integer orderInTemplate; // Thứ tự hiển thị trong template
+    private Integer orderInTemplate;
 
     @Column(name = "field_key", nullable = false)
     private String fieldKey;

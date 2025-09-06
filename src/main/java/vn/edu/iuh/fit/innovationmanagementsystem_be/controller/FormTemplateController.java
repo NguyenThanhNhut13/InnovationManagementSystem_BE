@@ -21,7 +21,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.annotation.ApiMessage;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/form-templates")
+@RequestMapping("/api/v1/form-templates")
 public class FormTemplateController {
 
     private final FormTemplateService formTemplateService;
@@ -32,14 +32,14 @@ public class FormTemplateController {
 
     // 1. Get form template by id
     @GetMapping("/{id}")
-    @ApiMessage("Lấy form template theo id")
+    @ApiMessage("Lấy form template theo id thành công")
     public ResponseEntity<FormTemplateResponse> getFormTemplateById(@PathVariable String id) {
         return ResponseEntity.ok(formTemplateService.getFormTemplateById(id));
     }
 
     // 2. Get form templates by innovation round
-    @GetMapping("/innovation-rounds/{roundId}")
-    @ApiMessage("Lấy form templates theo innovation round")
+    @GetMapping("/innovation-round/{roundId}")
+    @ApiMessage("Lấy form templates theo innovation round thành công")
     public ResponseEntity<List<FormTemplateResponse>> getFormTemplatesByInnovationRound(
             @PathVariable String roundId) {
         return ResponseEntity.ok(formTemplateService.getFormTemplatesByInnovationRound(roundId));
@@ -47,13 +47,13 @@ public class FormTemplateController {
 
     // 3. Create form template
     @PostMapping
-    @ApiMessage("Tạo form template")
+    @ApiMessage("Tạo form template thành công")
     public ResponseEntity<FormTemplateResponse> createFormTemplate(
             @Valid @RequestBody CreateFormTemplateRequest request) {
         return ResponseEntity.ok(formTemplateService.createFormTemplate(request));
     }
 
-    // 3.1. Create Multiple Form Templates
+    // 4. Create Multiple Form Templates
     @PostMapping("/bulk")
     @ApiMessage("Tạo nhiều form templates thành công")
     public ResponseEntity<CreateMultipleFormTemplatesResponse> createMultipleFormTemplates(
@@ -61,7 +61,7 @@ public class FormTemplateController {
         return ResponseEntity.ok(formTemplateService.createMultipleFormTemplates(request));
     }
 
-    // 4. Update form template
+    // 5. Update form template
     @PutMapping("/{id}")
     @ApiMessage("Cập nhật form template thành công")
     public ResponseEntity<FormTemplateResponse> updateFormTemplate(

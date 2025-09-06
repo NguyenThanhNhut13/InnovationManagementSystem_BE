@@ -11,15 +11,11 @@ public interface FormDataMapper {
 
     @Mapping(target = "formFieldId", source = "formField.id")
     @Mapping(target = "formFieldLabel", source = "formField.label")
-    @Mapping(target = "formFieldKey", ignore = true)
-    @Mapping(target = "fieldType", ignore = true)
-    @Mapping(target = "isRequired", ignore = true)
-    @Mapping(target = "orderInTemplate", ignore = true)
-    @Mapping(target = "innovationId", ignore = true)
-    @Mapping(target = "innovationName", ignore = true)
-    @Mapping(target = "templateId", ignore = true)
-    @Mapping(target = "formDataList", ignore = true)
-    @Mapping(target = "formFields", ignore = true)
+    @Mapping(target = "formFieldKey", source = "formField.fieldKey")
+    @Mapping(target = "fieldType", source = "formField.fieldType")
+    @Mapping(target = "isRequired", source = "formField.isRequired")
+    @Mapping(target = "orderInTemplate", source = "formField.orderInTemplate")
+    @Mapping(target = "templateId", source = "formField.formTemplate.id")
     FormDataResponse toFormDataResponse(FormData formData);
 
     @Mapping(target = "id", ignore = true)
