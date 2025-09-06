@@ -2,6 +2,7 @@ package vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.Pattern;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -20,7 +21,8 @@ public class InnovationFormDataRequest {
     @NotEmpty(message = "Danh sách form data không được để trống")
     private List<FormDataItemRequest> formDataItems;
 
-    // Action type: DRAFT (lưu nháp) hoặc SUBMIT (nộp chính thức)
+    // Action type: DRAFT (lưu nháp) hoặc SUBMITTED (nộp chính thức)
+    @Pattern(regexp = "^(DRAFT|SUBMITTED)$", message = "Action type chỉ được là DRAFT hoặc SUBMITTED")
     private String actionType = InnovationStatusEnum.DRAFT.name();
 
     // Thông tin sáng kiến

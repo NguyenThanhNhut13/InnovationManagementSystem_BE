@@ -312,8 +312,9 @@ public class UserService {
 
     // 13. Check if current user is owner of innovation
     public boolean isOwnerOfInnovation(String innovationUserId) {
-        String currentUserId = getCurrentUserId();
-        return currentUserId.equals(innovationUserId);
+        User currentUser = getCurrentUser();
+        // So sánh với ID trong database của current user
+        return currentUser.getId().equals(innovationUserId);
     }
 
 }

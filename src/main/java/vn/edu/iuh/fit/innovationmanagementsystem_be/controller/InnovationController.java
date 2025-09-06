@@ -49,9 +49,19 @@ public class InnovationController {
         return ResponseEntity.ok(response);
     }
 
-    // 4. Get Innovation Form Data
+    // 4. Update Innovation FormData (Update FormData cho innovation đã tồn tại)
+    @PutMapping("/innovations/{innovationId}/form-data")
+    @ApiMessage("Cập nhật thông tin form thành công")
+    public ResponseEntity<InnovationFormDataResponse> updateInnovationFormData(
+            @PathVariable String innovationId,
+            @Valid @RequestBody InnovationFormDataRequest request) {
+        InnovationFormDataResponse response = innovationService.updateInnovationFormData(innovationId, request);
+        return ResponseEntity.ok(response);
+    }
+
+    // 5. Get Innovation Form Data
     @GetMapping("/innovations/{innovationId}/form-data")
-    @ApiMessage("Lấy thông tin form sáng kiến thành công")
+    @ApiMessage("Lấy FormData của sáng kiến thành công")
     public ResponseEntity<InnovationFormDataResponse> getInnovationFormData(
             @PathVariable String innovationId,
             @RequestParam(required = false) String templateId) {
@@ -59,17 +69,12 @@ public class InnovationController {
         return ResponseEntity.ok(response);
     }
 
-    // 5. Get Draft Innovations by Current User
-    @GetMapping("/innovations/my-innovations/draft")
-    @ApiMessage("Lấy danh sách sáng kiến DRAFT của tôi thành công")
-    public ResponseEntity<ResultPaginationDTO> getMyDraftInnovations(Pageable pageable) {
-        return ResponseEntity.ok(innovationService.getInnovationsByUserAndStatus("DRAFT", pageable));
-    }
-
-    // 6. Get Submitted Innovations by Current User
-    @GetMapping("/innovations/my-innovations/submitted")
-    @ApiMessage("Lấy danh sách sáng kiến SUBMITTED của tôi thành công")
-    public ResponseEntity<ResultPaginationDTO> getMySubmittedInnovations(Pageable pageable) {
-        return ResponseEntity.ok(innovationService.getInnovationsByUserAndStatus("SUBMITTED", pageable));
+    // 6. Get My Innovations by Status
+    @GetMapping("/innovations/my-innovations")
+    @ApiMessage("Lấy danh sách sáng kiến của tôi theo trạng thái thành công")
+    public ResponseEntity<ResultPaginationDTO> getMyInnovationsByStatus(
+            @RequestParam String status,
+            Pageable pageable) {
+        return ResponseEntity.ok(innovationService.getInnovationsByUserAndStatus(status, pageable));
     }
 }
