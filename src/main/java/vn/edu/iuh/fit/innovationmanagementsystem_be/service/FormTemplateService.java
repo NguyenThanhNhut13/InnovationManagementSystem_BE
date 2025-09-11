@@ -66,6 +66,7 @@ public class FormTemplateService {
         FormTemplate template = new FormTemplate();
         template.setName(request.getName());
         template.setDescription(request.getDescription());
+        template.setTemplateContent(request.getTemplateContent());
         template.setInnovationRound(round);
 
         FormTemplate savedTemplate = formTemplateRepository.save(template);
@@ -97,6 +98,7 @@ public class FormTemplateService {
                     FormTemplate template = new FormTemplate();
                     template.setName(templateData.getName());
                     template.setDescription(templateData.getDescription());
+                    template.setTemplateContent(templateData.getTemplateContent());
                     template.setInnovationRound(innovationRound);
                     return template;
                 })
@@ -121,6 +123,7 @@ public class FormTemplateService {
 
         template.setName(request.getName());
         template.setDescription(request.getDescription());
+        template.setTemplateContent(request.getTemplateContent());
 
         FormTemplate updatedTemplate = formTemplateRepository.save(template);
         return formTemplateMapper.toFormTemplateResponse(updatedTemplate);

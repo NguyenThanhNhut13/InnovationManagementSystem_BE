@@ -22,6 +22,9 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.InnovationRoundRe
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.ResultPaginationDTO;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.Utils;
 
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.Base64;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -36,17 +39,20 @@ public class InnovationService {
     private final FormDataService formDataService;
     private final InnovationMapper innovationMapper;
     private final UserService userService;
+    private final DigitalSignatureService digitalSignatureService;
 
     public InnovationService(InnovationRepository innovationRepository,
             InnovationRoundRepository innovationRoundRepository,
             FormDataService formDataService,
             InnovationMapper innovationMapper,
-            UserService userService) {
+            UserService userService,
+            DigitalSignatureService digitalSignatureService) {
         this.innovationRepository = innovationRepository;
         this.innovationRoundRepository = innovationRoundRepository;
         this.formDataService = formDataService;
         this.innovationMapper = innovationMapper;
         this.userService = userService;
+        this.digitalSignatureService = digitalSignatureService;
     }
 
     // 1. Get All Innovations
@@ -106,9 +112,13 @@ public class InnovationService {
                 })
                 .collect(Collectors.toList());
 
+        // Tạo documentHash từ dữ liệu form
+        String documentHash = generateDocumentHash(request.getFormDataItems(), request.getTemplateId());
+
         InnovationFormDataResponse response = new InnovationFormDataResponse();
         response.setInnovation(innovationMapper.toInnovationResponse(savedInnovation));
         response.setFormDataList(formDataResponses);
+        response.setDocumentHash(documentHash);
 
         return response;
     }
@@ -164,13 +174,24 @@ public class InnovationService {
                 throw new IdInvalidException(
                         "Chỉ có thể SUBMITTED khi đã điền xong cả 2 mẫu form. Vui lòng hoàn thành mẫu còn lại trước khi nộp.");
             }
+
+            // Kiểm tra xem cả 2 mẫu đã được ký đủ chưa
+            if (!digitalSignatureService.isBothFormsFullySigned(innovationId)) {
+                throw new IdInvalidException(
+                        "Chỉ có thể SUBMITTED khi cả 2 mẫu đã được ký đủ. Vui lòng hoàn thành chữ ký số cho các mẫu còn lại.");
+            }
+
             innovation.setStatus(InnovationStatusEnum.SUBMITTED);
             innovationRepository.save(innovation);
         }
 
+        // Tạo documentHash từ dữ liệu form
+        String documentHash = generateDocumentHash(request.getFormDataItems(), request.getTemplateId());
+
         InnovationFormDataResponse response = new InnovationFormDataResponse();
         response.setInnovation(innovationMapper.toInnovationResponse(innovation));
         response.setFormDataList(formDataResponses);
+        response.setDocumentHash(documentHash);
 
         return response;
     }
@@ -192,9 +213,13 @@ public class InnovationService {
             formDataList = formDataService.getFormDataByInnovationId(innovationId);
         }
 
+        // Tạo documentHash từ dữ liệu form hiện tại
+        String documentHash = generateDocumentHashFromFormData(formDataList, templateId);
+
         InnovationFormDataResponse response = new InnovationFormDataResponse();
         response.setInnovation(innovationMapper.toInnovationResponse(innovation));
         response.setFormDataList(formDataList);
+        response.setDocumentHash(documentHash);
 
         return response;
     }
@@ -236,6 +261,63 @@ public class InnovationService {
 
         // Kiểm tra xem có ít nhất 2 template khác nhau không
         return completedTemplateIds.size() >= 2;
+    }
+
+    // Helper method: Tạo documentHash từ dữ liệu form
+    private String generateDocumentHash(List<InnovationFormDataRequest.FormDataItemRequest> formDataItems,
+            String templateId) {
+        try {
+            // Tạo chuỗi dữ liệu để hash
+            StringBuilder dataBuilder = new StringBuilder();
+            dataBuilder.append("templateId:").append(templateId).append("|");
+
+            // Sắp xếp formDataItems theo formFieldId để đảm bảo tính nhất quán
+            formDataItems.stream()
+                    .sorted((a, b) -> a.getFormFieldId().compareTo(b.getFormFieldId()))
+                    .forEach(item -> {
+                        dataBuilder.append("fieldId:").append(item.getFormFieldId())
+                                .append("|value:").append(item.getFieldValue()).append("|");
+                    });
+
+            String dataString = dataBuilder.toString();
+
+            // Tạo SHA-256 hash
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest(dataString.getBytes());
+            String hashString = Base64.getEncoder().encodeToString(hash);
+
+            return "sha256:" + hashString;
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException("Không thể tạo document hash: " + e.getMessage(), e);
+        }
+    }
+
+    // Helper method: Tạo documentHash từ FormDataResponse
+    private String generateDocumentHashFromFormData(List<FormDataResponse> formDataList, String templateId) {
+        try {
+            // Tạo chuỗi dữ liệu để hash
+            StringBuilder dataBuilder = new StringBuilder();
+            dataBuilder.append("templateId:").append(templateId).append("|");
+
+            // Sắp xếp formDataList theo formFieldId để đảm bảo tính nhất quán
+            formDataList.stream()
+                    .sorted((a, b) -> a.getFormFieldId().compareTo(b.getFormFieldId()))
+                    .forEach(item -> {
+                        dataBuilder.append("fieldId:").append(item.getFormFieldId())
+                                .append("|value:").append(item.getFieldValue()).append("|");
+                    });
+
+            String dataString = dataBuilder.toString();
+
+            // Tạo SHA-256 hash
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest(dataString.getBytes());
+            String hashString = Base64.getEncoder().encodeToString(hash);
+
+            return "sha256:" + hashString;
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException("Không thể tạo document hash: " + e.getMessage(), e);
+        }
     }
 
 }

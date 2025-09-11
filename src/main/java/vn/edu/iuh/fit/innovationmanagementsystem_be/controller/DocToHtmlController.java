@@ -1,8 +1,6 @@
 package vn.edu.iuh.fit.innovationmanagementsystem_be.controller;
 
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 
@@ -43,16 +41,7 @@ public class DocToHtmlController {
 
             Process process = pb.start();
 
-            // Log stdout/stderr của LibreOffice
-            try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    System.out.println("[soffice] " + line);
-                }
-            }
-
-            int exitCode = process.waitFor();
-            System.out.println("LibreOffice exit code = " + exitCode);
+            process.waitFor();
 
             // 4. Tìm file HTML đã sinh ra
             String tempName = tempFile.getName();
@@ -79,12 +68,10 @@ public class DocToHtmlController {
         } finally {
             // 7. Dọn dẹp file tạm
             if (tempFile != null && tempFile.exists()) {
-                boolean deleted = tempFile.delete();
-                System.out.println("Deleted tempFile: " + deleted);
+                tempFile.delete();
             }
             if (htmlFile != null && htmlFile.exists()) {
-                boolean deleted = htmlFile.delete();
-                System.out.println("Deleted htmlFile: " + deleted);
+                htmlFile.delete();
             }
         }
     }

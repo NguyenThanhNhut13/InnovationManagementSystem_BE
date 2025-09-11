@@ -3,13 +3,12 @@
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 
-	<!-- Spring Boot Parent - Cung cấp dependency management và plugin configuration -->
+	<!-- Spring Boot Parent -->
 	<parent>
 		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-parent</artifactId>
 		<version>3.5.5</version>
 		<relativePath/>
-		<!-- lookup parent from repository -->
 	</parent>
 
 	<groupId>vn.edu.iuh.fit</groupId>
@@ -34,7 +33,7 @@
 			<version>${org.mapstruct.version}</version>
 		</dependency>
 
-		<!-- Spring Boot Web Starter - Cung cấp web server và REST API support -->
+		<!-- Spring Boot Web Starter  -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-web</artifactId>
@@ -46,7 +45,7 @@
 			<artifactId>spring-boot-starter-data-jpa</artifactId>
 		</dependency>
 
-		<!-- Spring Boot Security - Authentication và Authorization -->
+		<!-- Spring Boot Security - Authentication & Authorization -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-security</artifactId>
@@ -58,13 +57,13 @@
 			<artifactId>spring-boot-starter-oauth2-resource-server</artifactId>
 		</dependency>
 
-		<!-- Spring Boot Validation - Bean validation và input validation -->
+		<!-- Spring Boot Validation - Bean validation & input validation -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-validation</artifactId>
 		</dependency>
 
-		<!-- Spring Boot Data Redis - In-memory cache và session storage -->
+		<!-- Spring Boot Data Redis - In-memory cache & session storage -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-data-redis</artifactId>
@@ -85,7 +84,7 @@
 			<scope>runtime</scope>
 		</dependency>
 
-		<!-- Lombok - Giảm boilerplate code (getters, setters, constructors) -->
+		<!-- Lombok  -->
 		<dependency>
 			<groupId>org.projectlombok</groupId>
 			<artifactId>lombok</artifactId>
@@ -122,11 +121,12 @@
 			<artifactId>spring-security-test</artifactId>
 			<scope>test</scope>
 		</dependency>
+
 	</dependencies>
 
 	<build>
 		<plugins>
-			<!-- Maven Compiler Plugin - Java compilation với Lombok support -->
+			<!-- Maven Compiler Plugin -->
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>

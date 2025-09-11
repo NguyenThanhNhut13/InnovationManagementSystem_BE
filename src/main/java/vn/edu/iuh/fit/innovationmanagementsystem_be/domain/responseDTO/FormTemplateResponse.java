@@ -15,6 +15,7 @@ public class FormTemplateResponse {
     private String id;
     private String name;
     private String description;
+    private String templateContent;
     private String innovationRoundId;
     private String innovationRoundName;
     private List<FormFieldResponse> formFields;

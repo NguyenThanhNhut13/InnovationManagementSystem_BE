@@ -15,4 +15,7 @@ public class InnovationFormDataResponse {
 
     private List<FormDataResponse> formDataList;
 
+    // Thêm documentHash để client có thể tạo chữ ký
+    private String documentHash;
+
 }

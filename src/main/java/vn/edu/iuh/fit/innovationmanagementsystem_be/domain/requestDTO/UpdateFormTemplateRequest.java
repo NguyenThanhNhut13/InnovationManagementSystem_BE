@@ -14,4 +14,6 @@ public class UpdateFormTemplateRequest {
     private String name;
 
     private String description;
+
+    private String templateContent;
 }

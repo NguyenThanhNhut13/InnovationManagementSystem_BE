@@ -2,6 +2,8 @@ package vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.DocumentTypeEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.SignatureStatusEnum;
@@ -11,8 +13,10 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "digital_signatures")
+@Data
 @NoArgsConstructor
 @AllArgsConstructor
+@EqualsAndHashCode(callSuper = false)
 public class DigitalSignature extends Auditable {
 
     @Id

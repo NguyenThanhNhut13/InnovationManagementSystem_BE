@@ -31,5 +31,7 @@ public class CreateMultipleFormTemplatesRequest {
         private String name;
 
         private String description;
+
+        private String templateContent;
     }
 }

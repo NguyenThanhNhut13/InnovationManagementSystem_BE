@@ -16,6 +16,8 @@ public class CreateFormTemplateRequest {
 
     private String description;
 
+    private String templateContent;
+
     @NotNull(message = "ID của innovation round không được để trống")
     private String innovationRoundId;
 }
