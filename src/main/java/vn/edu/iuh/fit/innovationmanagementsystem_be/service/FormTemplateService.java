@@ -121,9 +121,21 @@ public class FormTemplateService {
         FormTemplate template = formTemplateRepository.findById(id)
                 .orElseThrow(() -> new IdInvalidException("Form template không tồn tại với ID: " + id));
 
-        template.setName(request.getName());
-        template.setDescription(request.getDescription());
-        template.setTemplateContent(request.getTemplateContent());
+        // Check if at least one field is provided for update
+        if (request.getName() == null && request.getDescription() == null && request.getTemplateContent() == null) {
+            throw new IdInvalidException("Ít nhất một trường phải được cung cấp để cập nhật");
+        }
+
+        // Only update fields that are not null
+        if (request.getName() != null) {
+            template.setName(request.getName());
+        }
+        if (request.getDescription() != null) {
+            template.setDescription(request.getDescription());
+        }
+        if (request.getTemplateContent() != null) {
+            template.setTemplateContent(request.getTemplateContent());
+        }
 
         FormTemplate updatedTemplate = formTemplateRepository.save(template);
         return formTemplateMapper.toFormTemplateResponse(updatedTemplate);
