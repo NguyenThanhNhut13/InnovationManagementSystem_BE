@@ -17,6 +17,7 @@ import jakarta.validation.Valid;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.InnovationRound;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationRoundStatusEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.InnovationRoundRequest;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.UpdateInnovationRoundRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationRoundResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.service.InnovationRoundService;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.ResultPaginationDTO;
@@ -63,7 +64,7 @@ public class InnovationRoundController {
     @PutMapping("/innovation-rounds/{id}")
     @ApiMessage("Cập nhật đợt sáng kiến thành công")
     public ResponseEntity<InnovationRoundResponse> updateInnovationRound(@PathVariable String id,
-            @Valid @RequestBody InnovationRoundRequest request) {
+            @Valid @RequestBody UpdateInnovationRoundRequest request) {
         InnovationRoundResponse response = innovationRoundService.updateInnovationRound(id, request);
         return ResponseEntity.ok(response);
     }

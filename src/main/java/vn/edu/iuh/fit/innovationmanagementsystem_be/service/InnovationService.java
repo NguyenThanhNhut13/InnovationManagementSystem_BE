@@ -11,6 +11,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.InnovationRound
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.User;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationStatusEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.FormDataRequest;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.UpdateFormDataRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.InnovationFormDataRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.FormDataResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationFormDataResponse;
@@ -93,8 +94,6 @@ public class InnovationService {
         innovation.setIsScore(request.getIsScore() != null ? request.getIsScore() : false);
 
         if (InnovationStatusEnum.SUBMITTED.name().equals(actionType)) {
-            // Khi tạo mới, chỉ có 1 template nên không thể SUBMITTED ngay
-            // Chuyển về DRAFT để user phải điền thêm template thứ 2
             innovation.setStatus(InnovationStatusEnum.DRAFT);
         } else {
             innovation.setStatus(InnovationStatusEnum.DRAFT);
@@ -148,10 +147,10 @@ public class InnovationService {
 
         // Process form data items (update existing or create new)
         List<FormDataResponse> formDataResponses = request.getFormDataItems().stream()
-                .map(item -> {
+                .<FormDataResponse>map(item -> {
                     if (item.getDataId() != null && !item.getDataId().trim().isEmpty()) {
                         // Update existing form data
-                        FormDataRequest updateRequest = new FormDataRequest();
+                        UpdateFormDataRequest updateRequest = new UpdateFormDataRequest();
                         updateRequest.setFieldValue(item.getFieldValue());
                         updateRequest.setFormFieldId(item.getFormFieldId());
                         updateRequest.setInnovationId(innovationId);

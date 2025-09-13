@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import jakarta.validation.Valid;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.FormDataRequest;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.UpdateFormDataRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.FormDataResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.service.FormDataService;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.annotation.ApiMessage;
@@ -50,7 +51,7 @@ public class FormDataController {
     @ApiMessage("Cập nhật Form Data thành công")
     public ResponseEntity<FormDataResponse> updateFormData(
             @PathVariable String id,
-            @Valid @RequestBody FormDataRequest request) {
+            @Valid @RequestBody UpdateFormDataRequest request) {
         FormDataResponse response = formDataService.updateFormData(id, request);
         return ResponseEntity.ok(response);
     }

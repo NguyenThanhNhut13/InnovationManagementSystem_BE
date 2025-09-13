@@ -10,6 +10,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.InnovationDecis
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.InnovationRound;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationRoundStatusEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.InnovationRoundRequest;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.UpdateInnovationRoundRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationRoundResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.exception.IdInvalidException;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.InnovationDecisionRepository;
@@ -68,20 +69,53 @@ public class InnovationRoundService {
 
     // 4. Update InnovationRound
     @Transactional
-    public InnovationRoundResponse updateInnovationRound(String id, InnovationRoundRequest request) {
+    public InnovationRoundResponse updateInnovationRound(String id, UpdateInnovationRoundRequest request) {
 
         InnovationRound innovationRound = innovationRoundRepository.findById(id)
                 .orElseThrow(() -> new IdInvalidException("ID đợt sáng kiến không tồn tại"));
-        InnovationDecision innovationDecision = innovationDecisionRepository.findById(request.getInnovationDecisionId())
-                .orElseThrow(() -> new IdInvalidException("ID quyết định của sáng kiến không tồn tại"));
-        if (request.getEndDate().isBefore(request.getStartDate())) {
-            throw new IdInvalidException("Ngày kết thúc phải sau ngày bắt đầu");
+
+        // Check if at least one field is provided for update
+        if (request.getName() == null && request.getStartDate() == null &&
+                request.getEndDate() == null && request.getStatus() == null &&
+                request.getInnovationDecisionId() == null) {
+            throw new IdInvalidException("Ít nhất một trường phải được cung cấp để cập nhật");
         }
 
-        innovationRound.setName(request.getName());
-        innovationRound.setStartDate(request.getStartDate());
-        innovationRound.setEndDate(request.getEndDate());
-        innovationRound.setInnovationDecision(innovationDecision);
+        // Only update fields that are not null
+        if (request.getName() != null) {
+            innovationRound.setName(request.getName());
+        }
+        if (request.getStartDate() != null) {
+            innovationRound.setStartDate(request.getStartDate());
+        }
+        if (request.getEndDate() != null) {
+            innovationRound.setEndDate(request.getEndDate());
+        }
+        if (request.getStatus() != null) {
+            innovationRound.setStatus(request.getStatus());
+        }
+        if (request.getInnovationDecisionId() != null) {
+            InnovationDecision innovationDecision = innovationDecisionRepository
+                    .findById(request.getInnovationDecisionId())
+                    .orElseThrow(() -> new IdInvalidException("ID quyết định của sáng kiến không tồn tại"));
+            innovationRound.setInnovationDecision(innovationDecision);
+        }
+
+        // Validate date logic if both dates are provided
+        if (request.getStartDate() != null && request.getEndDate() != null) {
+            if (request.getEndDate().isBefore(request.getStartDate())) {
+                throw new IdInvalidException("Ngày kết thúc phải sau ngày bắt đầu");
+            }
+        } else if (request.getStartDate() != null && innovationRound.getEndDate() != null) {
+            if (innovationRound.getEndDate().isBefore(request.getStartDate())) {
+                throw new IdInvalidException("Ngày kết thúc phải sau ngày bắt đầu");
+            }
+        } else if (request.getEndDate() != null && innovationRound.getStartDate() != null) {
+            if (request.getEndDate().isBefore(innovationRound.getStartDate())) {
+                throw new IdInvalidException("Ngày kết thúc phải sau ngày bắt đầu");
+            }
+        }
+
         innovationRoundRepository.save(innovationRound);
         return toInnovationRoundResponse(innovationRound);
     }

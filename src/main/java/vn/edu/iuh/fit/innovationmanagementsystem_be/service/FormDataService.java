@@ -7,6 +7,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.FormData;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.FormField;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.Innovation;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.FormDataRequest;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.UpdateFormDataRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.FormDataResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.exception.IdInvalidException;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.FormDataRepository;
@@ -82,11 +83,33 @@ public class FormDataService {
         }
 
         // 3. Update FormData
-        public FormDataResponse updateFormData(String formDataId, FormDataRequest request) {
+        public FormDataResponse updateFormData(String formDataId, UpdateFormDataRequest request) {
                 FormData formData = formDataRepository.findById(formDataId)
                                 .orElseThrow(() -> new IdInvalidException(
                                                 "Không tìm thấy Form Data với ID: " + formDataId));
-                formData.setFieldValue(request.getFieldValue());
+
+                if (request.getFieldValue() == null && request.getFormFieldId() == null &&
+                                request.getInnovationId() == null) {
+                        throw new IdInvalidException("Ít nhất một trường phải được cung cấp để cập nhật");
+                }
+
+                // Only update fields that are not null
+                if (request.getFieldValue() != null) {
+                        formData.setFieldValue(request.getFieldValue());
+                }
+                if (request.getFormFieldId() != null) {
+                        FormField formField = formFieldRepository.findById(request.getFormFieldId())
+                                        .orElseThrow(() -> new IdInvalidException("Không tìm thấy Form Field với ID: "
+                                                        + request.getFormFieldId()));
+                        formData.setFormField(formField);
+                }
+                if (request.getInnovationId() != null) {
+                        Innovation innovation = innovationRepository.findById(request.getInnovationId())
+                                        .orElseThrow(() -> new IdInvalidException("Không tìm thấy Innovation với ID: "
+                                                        + request.getInnovationId()));
+                        formData.setInnovation(innovation);
+                }
+
                 FormData savedFormData = formDataRepository.save(formData);
 
                 FormData formDataWithRelations = formDataRepository.findByIdWithRelations(savedFormData.getId())
