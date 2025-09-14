@@ -28,14 +28,12 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.DepartmentReposit
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.RoleRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.UserRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.UserRoleRepository;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.UserSignatureProfileRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.JwtTokenUtil;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.ResultPaginationDTO;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.Utils;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.mapper.UserMapper;
 
 import java.util.Optional;
-import java.security.KeyPair;
 
 @Service
 @Transactional
@@ -47,14 +45,12 @@ public class UserService {
     private final UserRoleRepository userRoleRepository;
     private final UserMapper userMapper;
     private final JwtTokenUtil jwtTokenUtil;
-    private final UserSignatureProfileRepository userSignatureProfileRepository;
-    private final KeyManagementService keyManagementService;
+    private final UserSignatureProfileService userSignatureProfileService;
 
     public UserService(UserRepository userRepository, DepartmentRepository departmentRepository,
             PasswordEncoder passwordEncoder, RoleRepository roleRepository, UserRoleRepository userRoleRepository,
             UserMapper userMapper, JwtTokenUtil jwtTokenUtil,
-            UserSignatureProfileRepository userSignatureProfileRepository,
-            KeyManagementService keyManagementService) {
+            UserSignatureProfileService userSignatureProfileService) {
         this.userRepository = userRepository;
         this.departmentRepository = departmentRepository;
         this.passwordEncoder = passwordEncoder;
@@ -62,8 +58,7 @@ public class UserService {
         this.userRoleRepository = userRoleRepository;
         this.userMapper = userMapper;
         this.jwtTokenUtil = jwtTokenUtil;
-        this.userSignatureProfileRepository = userSignatureProfileRepository;
-        this.keyManagementService = keyManagementService;
+        this.userSignatureProfileService = userSignatureProfileService;
     }
 
     // 1. Cretae User
@@ -331,40 +326,16 @@ public class UserService {
 
     // 14. Tạo UserSignatureProfile cho user mới
     private void createUserSignatureProfile(User user) {
-        try {
-            // Tạo cặp khóa mới cho user
-            KeyPair keyPair = keyManagementService.generateKeyPair();
-
-            // Tạo UserSignatureProfile
-            UserSignatureProfile signatureProfile = new UserSignatureProfile();
-            signatureProfile.setUser(user);
-            signatureProfile.setPrivateKey(keyManagementService.privateKeyToString(keyPair.getPrivate()));
-            signatureProfile.setPublicKey(keyManagementService.publicKeyToString(keyPair.getPublic()));
-            signatureProfile.setCertificateSerial(keyManagementService.generateCertificateSerial());
-            signatureProfile.setCertificateIssuer("IUH Innovation Management System");
-            signatureProfile.setCertificateValidFrom(keyManagementService.getCertificateValidFrom());
-            signatureProfile.setCertificateValidTo(keyManagementService.getCertificateValidTo());
-            signatureProfile.setPathUrl("/signatures/" + user.getId());
-
-            userSignatureProfileRepository.save(signatureProfile);
-        } catch (Exception e) {
-            throw new IdInvalidException("Không thể tạo hồ sơ chữ ký số cho user: " + e.getMessage());
-        }
+        userSignatureProfileService.createUserSignatureProfile(user);
     }
 
     // 15. Tạo UserSignatureProfile cho user hiện có (API endpoint)
     public UserSignatureProfile createUserSignatureProfileForExistingUser(String userId) {
-        User user = userRepository.findById(userId)
+        // Validate user exists
+        userRepository.findById(userId)
                 .orElseThrow(() -> new IdInvalidException("Không tìm thấy user với ID: " + userId));
 
-        // Kiểm tra xem user đã có signature profile chưa
-        if (userSignatureProfileRepository.findByUserId(userId).isPresent()) {
-            throw new IdInvalidException("User đã có hồ sơ chữ ký số");
-        }
-
-        createUserSignatureProfile(user);
-        return userSignatureProfileRepository.findByUserId(userId)
-                .orElseThrow(() -> new IdInvalidException("Không thể tạo hồ sơ chữ ký số"));
+        return userSignatureProfileService.createUserSignatureProfileForExistingUser(userId);
     }
 
 }

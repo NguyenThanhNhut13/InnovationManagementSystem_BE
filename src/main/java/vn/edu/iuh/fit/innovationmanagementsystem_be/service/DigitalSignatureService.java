@@ -28,17 +28,20 @@ public class DigitalSignatureService {
     private final DigitalSignatureRepository digitalSignatureRepository;
     private final InnovationRepository innovationRepository;
     private final UserSignatureProfileRepository userSignatureProfileRepository;
+    private final UserSignatureProfileService userSignatureProfileService;
     private final UserService userService;
     private final KeyManagementService keyManagementService;
 
     public DigitalSignatureService(DigitalSignatureRepository digitalSignatureRepository,
             InnovationRepository innovationRepository,
             UserSignatureProfileRepository userSignatureProfileRepository,
+            UserSignatureProfileService userSignatureProfileService,
             UserService userService,
             KeyManagementService keyManagementService) {
         this.digitalSignatureRepository = digitalSignatureRepository;
         this.innovationRepository = innovationRepository;
         this.userSignatureProfileRepository = userSignatureProfileRepository;
+        this.userSignatureProfileService = userSignatureProfileService;
         this.userService = userService;
         this.keyManagementService = keyManagementService;
     }
@@ -57,8 +60,7 @@ public class DigitalSignatureService {
         validateSigningPermission(innovation, currentUser, request.getSignedAsRole());
 
         // Get user signature profile
-        UserSignatureProfile signatureProfile = userSignatureProfileRepository.findByUserId(currentUser.getId())
-                .orElseThrow(() -> new IdInvalidException("Người dùng chưa có hồ sơ chữ ký số"));
+        UserSignatureProfile signatureProfile = userSignatureProfileService.findByCurrentUser(currentUser);
 
         // Check if already signed
         if (digitalSignatureRepository.existsByInnovationIdAndDocumentTypeAndUserIdAndStatus(
@@ -287,8 +289,7 @@ public class DigitalSignatureService {
     // Method để tạo chữ ký từ document hash bằng private key của user hiện tại
     public String generateSignatureForDocument(String documentHash) {
         User currentUser = userService.getCurrentUser();
-        UserSignatureProfile signatureProfile = userSignatureProfileRepository.findByUserId(currentUser.getId())
-                .orElseThrow(() -> new IdInvalidException("Người dùng chưa có hồ sơ chữ ký số"));
+        UserSignatureProfile signatureProfile = userSignatureProfileService.findByCurrentUser(currentUser);
 
         return keyManagementService.generateSignature(documentHash, signatureProfile.getPrivateKey());
     }
