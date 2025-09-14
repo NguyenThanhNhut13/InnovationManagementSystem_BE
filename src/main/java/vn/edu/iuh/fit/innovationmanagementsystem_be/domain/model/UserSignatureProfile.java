@@ -25,10 +25,10 @@ public class UserSignatureProfile extends Auditable {
     @Column(name = "path_url")
     private String pathUrl;
 
-    @Column(name = "private_key")
+    @Column(name = "private_key", columnDefinition = "TEXT")
     private String privateKey;
 
-    @Column(name = "public_key")
+    @Column(name = "public_key", columnDefinition = "TEXT")
     private String publicKey;
 
     @Column(name = "certificate_serial", nullable = false)

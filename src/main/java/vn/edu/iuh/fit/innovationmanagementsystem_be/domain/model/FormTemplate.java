@@ -28,7 +28,7 @@ public class FormTemplate extends Auditable {
     @Column(name = "description", columnDefinition = "TEXT")
     private String description;
 
-    @Column(name = "template_content", columnDefinition = "LONGTEXT")
+    @Column(name = "template_content", columnDefinition = "TEXT")
     private String templateContent;
 
     // Relationships
