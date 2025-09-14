@@ -8,16 +8,13 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.Department;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.Role;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.User;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.UserRole;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.UserSignatureProfile;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.UserRoleEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.exception.IdInvalidException;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.DepartmentRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.RoleRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.UserRepository;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.UserSignatureProfileRepository;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.service.KeyManagementService;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.service.UserSignatureProfileService;
 
-import java.security.KeyPair;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -30,8 +27,7 @@ public class UserSeeder implements DatabaseSeeder {
     private final DepartmentRepository departmentRepository;
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
-    private final UserSignatureProfileRepository userSignatureProfileRepository;
-    private final KeyManagementService keyManagementService;
+    private final UserSignatureProfileService userSignatureProfileService;
 
     @Override
     public void seed() {
@@ -47,7 +43,6 @@ public class UserSeeder implements DatabaseSeeder {
 
         if (isForce()) {
             log.info("Force seeding: Xóa dữ liệu cũ và tạo mới...");
-            userSignatureProfileRepository.deleteAll();
             userRepository.deleteAll();
         }
 
@@ -131,21 +126,7 @@ public class UserSeeder implements DatabaseSeeder {
      */
     private void createUserSignatureProfile(User user) {
         try {
-            // Tạo cặp khóa mới cho user
-            KeyPair keyPair = keyManagementService.generateKeyPair();
-
-            // Tạo UserSignatureProfile
-            UserSignatureProfile signatureProfile = new UserSignatureProfile();
-            signatureProfile.setUser(user);
-            signatureProfile.setPrivateKey(keyManagementService.privateKeyToString(keyPair.getPrivate()));
-            signatureProfile.setPublicKey(keyManagementService.publicKeyToString(keyPair.getPublic()));
-            signatureProfile.setCertificateSerial(keyManagementService.generateCertificateSerial());
-            signatureProfile.setCertificateIssuer("IUH Innovation Management System");
-            signatureProfile.setCertificateValidFrom(keyManagementService.getCertificateValidFrom());
-            signatureProfile.setCertificateValidTo(keyManagementService.getCertificateValidTo());
-            signatureProfile.setPathUrl("/signatures/" + user.getId());
-
-            userSignatureProfileRepository.save(signatureProfile);
+            userSignatureProfileService.createUserSignatureProfile(user);
         } catch (Exception e) {
             throw new IdInvalidException(
                     "Không thể tạo hồ sơ chữ ký số cho user " + user.getPersonnelId() + ": " + e.getMessage());
