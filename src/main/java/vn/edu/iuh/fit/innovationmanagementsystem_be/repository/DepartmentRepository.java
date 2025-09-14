@@ -15,13 +15,10 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.User;
 @Repository
 public interface DepartmentRepository extends JpaRepository<Department, String>, JpaSpecificationExecutor<Department> {
 
-    // Tìm Department theo code
     Optional<Department> findByDepartmentCode(String departmentCode);
 
-    // Kiểm tra department code đã tồn tại không
     boolean existsByDepartmentCode(String departmentCode);
 
-    // Tìm Department theo tên
     Optional<Department> findByDepartmentName(String departmentName);
 
     // Thêm method tìm kiếm có phân trang

@@ -15,25 +15,20 @@ import java.util.Optional;
 @Repository
 public interface DigitalSignatureRepository extends JpaRepository<DigitalSignature, String> {
 
-        // Tìm chữ ký theo innovation và document type
         List<DigitalSignature> findByInnovationIdAndDocumentType(String innovationId, DocumentTypeEnum documentType);
 
-        // Tìm chữ ký theo innovation, document type và role
         List<DigitalSignature> findByInnovationIdAndDocumentTypeAndSignedAsRole(
                         String innovationId,
                         DocumentTypeEnum documentType,
                         UserRoleEnum signedAsRole);
 
-        // Tìm chữ ký theo innovation, document type và status
         List<DigitalSignature> findByInnovationIdAndDocumentTypeAndStatus(
                         String innovationId,
                         DocumentTypeEnum documentType,
                         SignatureStatusEnum status);
 
-        // Tìm chữ ký theo user và document type
         List<DigitalSignature> findByUserIdAndDocumentType(String userId, DocumentTypeEnum documentType);
 
-        // Kiểm tra xem user đã ký document chưa
         boolean existsByInnovationIdAndDocumentTypeAndUserIdAndStatus(
                         String innovationId,
                         DocumentTypeEnum documentType,
@@ -67,13 +62,10 @@ public interface DigitalSignatureRepository extends JpaRepository<DigitalSignatu
                         @Param("documentType") DocumentTypeEnum documentType,
                         @Param("status") SignatureStatusEnum status);
 
-        // Tìm chữ ký theo signature hash
         Optional<DigitalSignature> findBySignatureHash(String signatureHash);
 
-        // Tìm chữ ký theo document hash
         List<DigitalSignature> findByDocumentHash(String documentHash);
 
-        // Kiểm tra xem có chữ ký với role và status cụ thể không
         boolean existsByInnovationIdAndDocumentTypeAndSignedAsRoleAndStatus(
                         String innovationId,
                         DocumentTypeEnum documentType,
