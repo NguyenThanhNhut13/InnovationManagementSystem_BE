@@ -22,13 +22,7 @@ public class UserSignatureProfileService {
         this.keyManagementService = keyManagementService;
     }
 
-    // 1. Find UserSignatureProfile by current user (business logic)
-    public UserSignatureProfile findByCurrentUser(User currentUser) {
-        return userSignatureProfileRepository.findByUserId(currentUser.getId())
-                .orElseThrow(() -> new IdInvalidException("Người dùng chưa có hồ sơ chữ ký số"));
-    }
-
-    // 2. Create UserSignatureProfile for user
+    // 1. Create UserSignatureProfile for user
     public UserSignatureProfile createUserSignatureProfile(User user) {
         try {
             // Tạo cặp khóa mới cho user
@@ -51,7 +45,7 @@ public class UserSignatureProfileService {
         }
     }
 
-    // 3. Create UserSignatureProfile for existing user
+    // 2. Create UserSignatureProfile for existing user
     public UserSignatureProfile createUserSignatureProfileForExistingUser(String userId) {
         if (userSignatureProfileRepository.findByUserId(userId).isPresent()) {
             throw new IdInvalidException("User đã có hồ sơ chữ ký số");
