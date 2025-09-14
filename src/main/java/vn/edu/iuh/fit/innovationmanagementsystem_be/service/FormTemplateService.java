@@ -121,7 +121,6 @@ public class FormTemplateService {
         FormTemplate template = formTemplateRepository.findById(id)
                 .orElseThrow(() -> new IdInvalidException("Form template không tồn tại với ID: " + id));
 
-        // Check if at least one field is provided for update
         if (request.getName() == null && request.getDescription() == null && request.getTemplateContent() == null) {
             throw new IdInvalidException("Ít nhất một trường phải được cung cấp để cập nhật");
         }

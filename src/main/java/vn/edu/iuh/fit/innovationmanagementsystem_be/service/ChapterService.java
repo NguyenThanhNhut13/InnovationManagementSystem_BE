@@ -40,11 +40,10 @@ public class ChapterService {
     // 1. Create Chapter
     @Transactional
     public ChapterResponse createChapter(ChapterRequest request) {
-        // Kiểm tra InnovationDecision tồn tại
+
         InnovationDecision innovationDecision = innovationDecisionRepository.findById(request.getInnovationDecisionId())
                 .orElseThrow(() -> new IdInvalidException("Quyết định không tồn tại"));
 
-        // Kiểm tra Chapter number đã tồn tại trong InnovationDecision
         if (chapterRepository.existsByChapterNumberAndInnovationDecisionId(request.getChapterNumber(),
                 request.getInnovationDecisionId())) {
             throw new IdInvalidException("Số hiệu chương đã tồn tại trong quyết định này");
@@ -60,16 +59,14 @@ public class ChapterService {
     // 2. Create Multiple Chapters
     @Transactional
     public CreateMultipleChaptersResponse createMultipleChapters(CreateMultipleChaptersRequest request) {
-        // Kiểm tra InnovationDecision tồn tại
+
         InnovationDecision innovationDecision = innovationDecisionRepository.findById(request.getInnovationDecisionId())
                 .orElseThrow(() -> new IdInvalidException("Quyết định không tồn tại"));
 
-        // Kiểm tra danh sách chương không được rỗng
         if (request.getChapters() == null || request.getChapters().isEmpty()) {
             throw new IdInvalidException("Danh sách chương không được để trống");
         }
 
-        // Kiểm tra trùng lặp số hiệu chương trong request
         List<String> chapterNumbers = request.getChapters().stream()
                 .map(CreateMultipleChaptersRequest.ChapterData::getChapterNumber)
                 .collect(Collectors.toList());
@@ -78,7 +75,6 @@ public class ChapterService {
             throw new IdInvalidException("Danh sách chương có số hiệu trùng lặp");
         }
 
-        // Kiểm tra số hiệu chương đã tồn tại trong database
         for (CreateMultipleChaptersRequest.ChapterData chapterData : request.getChapters()) {
             if (chapterRepository.existsByChapterNumberAndInnovationDecisionId(
                     chapterData.getChapterNumber(), request.getInnovationDecisionId())) {
@@ -98,10 +94,8 @@ public class ChapterService {
                 })
                 .collect(Collectors.toList());
 
-        // Lưu tất cả chương
         List<Chapter> savedChapters = chapterRepository.saveAll(chapters);
 
-        // Chuyển đổi sang response
         List<ChapterResponse> chapterResponses = savedChapters.stream()
                 .map(chapterMapper::toChapterResponse)
                 .collect(Collectors.toList());

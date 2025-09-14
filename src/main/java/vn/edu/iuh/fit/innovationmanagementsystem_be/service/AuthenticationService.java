@@ -137,7 +137,7 @@ public class AuthenticationService {
         }
     }
 
-    // 3. Đăng xuất - xóa refresh token khỏi Redis và blacklist access token
+    // 3. Logout - delete refresh token from Redis and blacklist access token
     public void logout(String accessToken, String refreshToken) {
         if (accessToken == null || accessToken.isEmpty()) {
             throw new RuntimeException("Access token không được để trống");
@@ -161,7 +161,6 @@ public class AuthenticationService {
         // Delete refresh token from Redis
         redisTokenService.deleteRefreshToken(refreshToken);
 
-        // Blacklist access token với TTL dài hơn để đảm bảo token bị vô hiệu hóa
         // dụng TTL của access token + thêm 1 giờ để đảm bảo an toàn
         long accessTokenTTL = (jwtTokenUtil.getAccessTokenExpiration() / 1000) + 3600; // +1 giờ
         redisTokenService.blacklistAccessToken(accessToken, accessTokenTTL);
@@ -173,7 +172,7 @@ public class AuthenticationService {
         return jwtTokenUtil.extractUsername(accessToken);
     }
 
-    // 5. Đổi mật khẩu
+    // 5. Change Password
     public ChangePasswordResponse changePassword(ChangePasswordRequest request) {
         String currentUsername = getCurrentUsername();
         if (currentUsername == null) {
@@ -205,7 +204,7 @@ public class AuthenticationService {
     }
 
     /**
-     * Lấy username hiện tại từ SecurityContext
+     * Get current username from SecurityContext
      */
     private String getCurrentUsername() {
         try {
@@ -219,7 +218,7 @@ public class AuthenticationService {
         }
     }
 
-    // 6. Quên mật khẩu - Gửi OTP qua email
+    // 6. Forgot Password - Send OTP via email
     public OtpResponse forgotPassword(OtpRequest request) {
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy tài khoản với email: " + request.getEmail()));
@@ -235,10 +234,10 @@ public class AuthenticationService {
         // Generate OTP 6 số
         String otp = otpService.generateOtp();
 
-        // Lưu OTP vào Redis với TTL 5 phút
+        // Save OTP to Redis with TTL 5 minutes
         otpService.saveOtp(request.getEmail(), otp);
 
-        // Gửi email OTP
+        // Send OTP email
         emailService.sendOtpEmail(user.getEmail(), otp, 5L);
 
         return new OtpResponse(
@@ -247,7 +246,7 @@ public class AuthenticationService {
                 300L); // 5 phút = 300 giây
     }
 
-    // 7. Reset mật khẩu - Sử dụng OTP
+    // 7. Reset Password - Use OTP
     public ChangePasswordResponse resetPassword(ResetPasswordWithOtpRequest request) {
         if (!request.getNewPassword().equals(request.getConfirmPassword())) {
             throw new RuntimeException("Mật khẩu mới và xác nhận mật khẩu không khớp");
@@ -263,7 +262,7 @@ public class AuthenticationService {
 
         userRepository.save(user);
 
-        // Gửi email thông báo password đã được đổi
+        // Send email notification password changed
         emailService.sendPasswordChangedEmail(user.getEmail(), user.getPersonnelId());
 
         return new ChangePasswordResponse(

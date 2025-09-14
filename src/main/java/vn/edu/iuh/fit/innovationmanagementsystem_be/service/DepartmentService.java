@@ -127,7 +127,7 @@ public class DepartmentService {
 
     // 8. Get all User in Department
     public ResultPaginationDTO getAllUserInDepartment(@NonNull String departmentId, @NonNull Pageable pageable) {
-        // Check if department exists
+
         if (!departmentRepository.existsById(departmentId)) {
             throw new IdInvalidException("Phòng ban không tồn tại");
         }
@@ -139,7 +139,7 @@ public class DepartmentService {
 
     // 9. Get Active User in Department
     public ResultPaginationDTO getActiveUserInDepartment(@NonNull String departmentId, @NonNull Pageable pageable) {
-        // Check if department exists
+
         if (!departmentRepository.existsById(departmentId)) {
             throw new IdInvalidException("Phòng ban không tồn tại");
         }
@@ -150,7 +150,7 @@ public class DepartmentService {
 
     // 10. Get Inactive User in Department
     public ResultPaginationDTO getInactiveUserInDepartment(@NonNull String departmentId, @NonNull Pageable pageable) {
-        // Check if department exists
+
         if (!departmentRepository.existsById(departmentId)) {
             throw new IdInvalidException("Phòng ban không tồn tại");
         }
@@ -161,7 +161,7 @@ public class DepartmentService {
 
     // 11. Remove User from Department
     public void removeUserFromDepartment(@NonNull String departmentId, @NonNull String userId) {
-        // Check if department exists
+
         if (!departmentRepository.existsById(departmentId)) {
             throw new IdInvalidException("Phòng ban không tồn tại");
         }

@@ -81,7 +81,7 @@ public class UserService {
         assignDefaultRoleToUser(user);
 
         // Tạo UserSignatureProfile cho user mới
-        createUserSignatureProfile(user);
+        this.userSignatureProfileService.createUserSignatureProfile(user);
 
         return userMapper.toUserResponse(user);
     }
@@ -324,12 +324,7 @@ public class UserService {
         return currentUser.getId().equals(innovationUserId);
     }
 
-    // 14. Tạo UserSignatureProfile cho user mới
-    private void createUserSignatureProfile(User user) {
-        userSignatureProfileService.createUserSignatureProfile(user);
-    }
-
-    // 15. Tạo UserSignatureProfile cho user hiện có (API endpoint)
+    // 14. Tạo UserSignatureProfile cho user hiện có (API endpoint)
     public UserSignatureProfile createUserSignatureProfileForExistingUser(String userId) {
         // Validate user exists
         userRepository.findById(userId)

@@ -46,14 +46,13 @@ public class DigitalSignatureService {
         this.keyManagementService = keyManagementService;
     }
 
-    // 1. Tạo chữ ký số
+    // 1. Create digital signature
     public DigitalSignatureResponse createDigitalSignature(DigitalSignatureRequest request) {
-        // Validate innovation exists
+
         Innovation innovation = innovationRepository.findById(request.getInnovationId())
                 .orElseThrow(
                         () -> new IdInvalidException("Không tìm thấy sáng kiến với ID: " + request.getInnovationId()));
 
-        // Get current user
         User currentUser = userService.getCurrentUser();
 
         // Validate user has permission to sign
@@ -62,7 +61,6 @@ public class DigitalSignatureService {
         // Get user signature profile
         UserSignatureProfile signatureProfile = userSignatureProfileService.findByCurrentUser(currentUser);
 
-        // Check if already signed
         if (digitalSignatureRepository.existsByInnovationIdAndDocumentTypeAndUserIdAndStatus(
                 request.getInnovationId(), request.getDocumentType(), currentUser.getId(),
                 SignatureStatusEnum.SIGNED)) {
@@ -95,7 +93,7 @@ public class DigitalSignatureService {
         return mapToResponse(savedSignature);
     }
 
-    // 2. Lấy trạng thái chữ ký của innovation
+    // 2. Get signature status of innovation
     public SignatureStatusResponse getSignatureStatus(String innovationId, DocumentTypeEnum documentType) {
         Innovation innovation = innovationRepository.findById(innovationId)
                 .orElseThrow(() -> new IdInvalidException("Không tìm thấy sáng kiến với ID: " + innovationId));
@@ -149,14 +147,14 @@ public class DigitalSignatureService {
         return response;
     }
 
-    // 3. Kiểm tra xem cả 2 mẫu đã được ký đủ chưa
+    // 3. Check if both forms are fully signed
     public boolean isBothFormsFullySigned(String innovationId) {
         boolean form1Signed = isFormFullySigned(innovationId, DocumentTypeEnum.FORM_1);
         boolean form2Signed = isFormFullySigned(innovationId, DocumentTypeEnum.FORM_2);
         return form1Signed && form2Signed;
     }
 
-    // 4. Kiểm tra xem một mẫu đã được ký đủ chưa
+    // 4. Check if a form is fully signed
     public boolean isFormFullySigned(String innovationId, DocumentTypeEnum documentType) {
         List<SignatureStatusResponse.RequiredSignatureInfo> requiredSignatures = getRequiredSignatures(documentType);
 

@@ -19,7 +19,7 @@ public class EmailService {
     @Value("${spring.mail.username}")
     private String fromEmail;
 
-    // 1. Gửi email OTP reset password
+    // 1. Send OTP reset password email
     public void sendOtpEmail(String toEmail, String otp, Long expiresInMinutes) {
         try {
             MimeMessage mimeMessage = mailSender.createMimeMessage();
@@ -120,7 +120,7 @@ public class EmailService {
         }
     }
 
-    // 2. Gửi email thông báo password đã được đổi
+    // 2. Send email notification password changed
     public void sendPasswordChangedEmail(String toEmail, String personnelId) {
         try {
             MimeMessage mimeMessage = mailSender.createMimeMessage();

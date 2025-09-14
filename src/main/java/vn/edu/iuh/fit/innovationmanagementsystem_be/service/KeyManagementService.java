@@ -16,9 +16,7 @@ public class KeyManagementService {
     private static final int KEY_SIZE = 2048;
     private static final String SIGNATURE_ALGORITHM = "SHA256withRSA";
 
-    /**
-     * Tạo cặp khóa mới cho user
-     */
+    // 1. Generate key pair
     public KeyPair generateKeyPair() {
         try {
             KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance(ALGORITHM);
@@ -29,23 +27,17 @@ public class KeyManagementService {
         }
     }
 
-    /**
-     * Chuyển đổi PrivateKey thành chuỗi Base64
-     */
+    // 2. Convert PrivateKey to Base64
     public String privateKeyToString(PrivateKey privateKey) {
         return Base64.getEncoder().encodeToString(privateKey.getEncoded());
     }
 
-    /**
-     * Chuyển đổi PublicKey thành chuỗi Base64
-     */
+    // 3. Convert PublicKey to Base64
     public String publicKeyToString(PublicKey publicKey) {
         return Base64.getEncoder().encodeToString(publicKey.getEncoded());
     }
 
-    /**
-     * Chuyển đổi chuỗi Base64 thành PrivateKey
-     */
+    // 4. Convert Base64 to PrivateKey
     public PrivateKey stringToPrivateKey(String privateKeyString) {
         try {
             byte[] keyBytes = Base64.getDecoder().decode(privateKeyString);
@@ -57,9 +49,7 @@ public class KeyManagementService {
         }
     }
 
-    /**
-     * Chuyển đổi chuỗi Base64 thành PublicKey
-     */
+    // 5. Convert Base64 to PublicKey
     public PublicKey stringToPublicKey(String publicKeyString) {
         try {
             byte[] keyBytes = Base64.getDecoder().decode(publicKeyString);
@@ -71,9 +61,7 @@ public class KeyManagementService {
         }
     }
 
-    /**
-     * Tạo hash SHA-256 cho file content
-     */
+    // 6. Generate SHA-256 hash for file content
     public String generateDocumentHash(byte[] fileContent) {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
@@ -84,9 +72,7 @@ public class KeyManagementService {
         }
     }
 
-    /**
-     * Tạo chữ ký từ document hash bằng private key của user
-     */
+    // 7. Generate signature from document hash
     public String generateSignature(String documentHash, String privateKeyString) {
         try {
             PrivateKey privateKey = stringToPrivateKey(privateKeyString);
@@ -100,9 +86,7 @@ public class KeyManagementService {
         }
     }
 
-    /**
-     * Xác thực chữ ký bằng public key của user
-     */
+    // 8. Verify signature
     public boolean verifySignature(String documentHash, String signatureHash, String publicKeyString) {
         try {
             PublicKey publicKey = stringToPublicKey(publicKeyString);
@@ -117,16 +101,12 @@ public class KeyManagementService {
         }
     }
 
-    /**
-     * Tạo chứng thư số giả lập (trong thực tế sẽ lấy từ CA)
-     */
+    // 9. Generate certificate serial
     public String generateCertificateSerial() {
         return "CERT-" + System.currentTimeMillis() + "-" + (int) (Math.random() * 10000);
     }
 
-    /**
-     * Tạo thông tin chứng thư số
-     */
+    // 10. Get certificate valid from
     public LocalDateTime getCertificateValidFrom() {
         return LocalDateTime.now();
     }
