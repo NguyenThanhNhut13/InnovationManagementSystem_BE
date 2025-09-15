@@ -45,7 +45,7 @@ public class InnovationDecision extends Auditable {
     private List<Regulation> regulations = new ArrayList<>();
 
     @OneToMany(mappedBy = "innovationDecision", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<InnovationRound> innovationRounds = new ArrayList<>();
+    private List<InnovationPhase> innovationPhases = new ArrayList<>();
 
     @OneToMany(mappedBy = "innovationDecision", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<ReviewScore> reviewScores = new ArrayList<>();

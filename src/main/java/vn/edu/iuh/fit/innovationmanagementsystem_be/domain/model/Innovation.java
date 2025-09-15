@@ -43,8 +43,8 @@ public class Innovation extends Auditable {
     private Department department;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "innovation_round_id")
-    private InnovationRound innovationRound;
+    @JoinColumn(name = "innovation_phase_id")
+    private InnovationPhase innovationPhase;
 
     @OneToMany(mappedBy = "innovation", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
     private List<ReportInnovationDetail> reportInnovationDetails = new ArrayList<>();

@@ -28,10 +28,10 @@ public class InnovationPhase extends Auditable {
     @Column(name = "name", nullable = false)
     private String name;
 
-    @Column(name = "round_start_date", nullable = false)
+    @Column(name = "start_date", nullable = false)
     private LocalDate roundStartDate;
 
-    @Column(name = "round_end_date", nullable = false)
+    @Column(name = "end_date", nullable = false)
     private LocalDate roundEndDate;
 
     @Enumerated(EnumType.STRING)
