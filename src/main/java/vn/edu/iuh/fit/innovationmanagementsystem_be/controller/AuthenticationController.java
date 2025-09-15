@@ -22,6 +22,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.ChangePas
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.LoginResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.OtpResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.TokenResponse;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.exception.IdInvalidException;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.service.AuthenticationService;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.annotation.ApiMessage;
 
@@ -80,7 +81,7 @@ public class AuthenticationController {
             @Parameter(description = "Authorization header with Bearer token", required = true) @RequestHeader("Authorization") String authorizationHeader,
             @Parameter(description = "Logout request with refresh token", required = true) @Valid @RequestBody LogoutRequest logoutRequest) {
         if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
-            throw new RuntimeException("Invalid authorization header");
+            throw new IdInvalidException("Invalid authorization header");
         }
 
         String accessToken = authorizationHeader.substring(7);
