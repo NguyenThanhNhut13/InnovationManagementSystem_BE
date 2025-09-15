@@ -7,7 +7,6 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import java.util.List;
 import java.util.ArrayList;
-import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "user_signature_profiles")
@@ -36,12 +35,6 @@ public class UserSignatureProfile extends Auditable {
 
     @Column(name = "certificate_issuer")
     private String certificateIssuer; // Tổ chức phát hành chứng chỉ
-
-    @Column(name = "certificate_valid_from")
-    private LocalDateTime certificateValidFrom; // Thời gian có hiệu lực
-
-    @Column(name = "certificate_valid_to")
-    private LocalDateTime certificateValidTo; // Thời gian hết hạn
 
     // Relationships
     @ManyToOne(fetch = FetchType.LAZY, optional = false)

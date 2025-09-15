@@ -34,6 +34,4 @@ public class DigitalSignatureResponse {
     // Certificate information
     private String certificateSerial;
     private String certificateIssuer;
-    private LocalDateTime certificateValidFrom;
-    private LocalDateTime certificateValidTo;
 }
