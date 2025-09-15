@@ -123,4 +123,15 @@ public final class EndpointConstants {
                         "/api/v1/utils/download/{fileName}",
                         "/api/v1/utils/info/{fileName}"
         };
+
+        // ================== SWAGGER ==================
+        public static final String[] SWAGGER_PUBLIC = {
+                        "/swagger-ui/**",
+                        "/swagger-ui.html",
+                        "/v3/api-docs/**",
+                        "/api-docs",
+                        "/api-docs/**",
+                        "/swagger-resources/**",
+                        "/webjars/**"
+        };
 }

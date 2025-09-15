@@ -55,15 +55,13 @@ public class SecurityConfig {
                                 .authorizeHttpRequests(auth -> auth
 
                                                 .requestMatchers(EndpointConstants.AUTH_PUBLIC).permitAll()
+                                                .requestMatchers(EndpointConstants.SWAGGER_PUBLIC).permitAll()
+                                                .requestMatchers(EndpointConstants.UTILS_PUBLIC[0]).permitAll()
                                                 .requestMatchers(HttpMethod.POST, EndpointConstants.USER_PUBLIC[0])
                                                 .permitAll()
                                                 .requestMatchers(HttpMethod.GET, EndpointConstants.USER_PUBLIC[1])
                                                 .permitAll()
                                                 .requestMatchers(HttpMethod.PUT, EndpointConstants.USER_PUBLIC[2])
-                                                .permitAll()
-                                                .requestMatchers(HttpMethod.GET, EndpointConstants.UTILS_PUBLIC[0])
-                                                .permitAll()
-                                                .requestMatchers(HttpMethod.GET, EndpointConstants.UTILS_PUBLIC[1])
                                                 .permitAll()
 
                                                 .requestMatchers(HttpMethod.GET, EndpointConstants.USER_GET)
