@@ -2,119 +2,119 @@ package vn.edu.iuh.fit.innovationmanagementsystem_be.config;
 
 public final class EndpointConstants {
 
-    private EndpointConstants() {
-    }
+        private EndpointConstants() {
+        }
 
-    // ================== AUTH ==================
-    public static final String[] AUTH_PUBLIC = {
-            "/api/v1/auth/login",
-            "/api/v1/auth/forgot-password",
-            "/api/v1/auth/reset-password"
-    };
+        // ================== AUTH ==================
+        public static final String[] AUTH_PUBLIC = {
+                        "/api/v1/auth/login",
+                        "/api/v1/auth/forgot-password",
+                        "/api/v1/auth/reset-password"
+        };
 
-    // ================== USER ==================
-    public static final String[] USER_PUBLIC = {
-            "/api/v1/users", // POST
-            "/api/v1/users/{id}", // GET
-            "/api/v1/users/{id}" // PUT
-    };
+        // ================== USER ==================
+        public static final String[] USER_PUBLIC = {
+                        "/api/v1/users", // POST
+                        "/api/v1/users/{id}", // GET
+                        "/api/v1/users/{id}" // PUT
+        };
 
-    public static final String[] USER_GET = {
-            "/api/v1/users",
-            "/api/v1/users/status",
-            "/api/v1/roles/{roleId}/users",
-            "/api/v1/users/departments/{departmentId}/users"
-    };
+        public static final String[] USER_GET = {
+                        "/api/v1/users",
+                        "/api/v1/users/status",
+                        "/api/v1/roles/{roleId}/users",
+                        "/api/v1/users/departments/{departmentId}/users"
+        };
 
-    public static final String[] USER_POST = {
-            "/api/v1/users/{userId}/roles/{roleId}"
-    };
+        public static final String[] USER_POST = {
+                        "/api/v1/users/{userId}/roles/{roleId}"
+        };
 
-    public static final String[] USER_DELETE = {
-            "/api/v1/users/{userId}/roles/{roleId}"
-    };
+        public static final String[] USER_DELETE = {
+                        "/api/v1/users/{userId}/roles/{roleId}"
+        };
 
-    // ================== DEPARTMENT ==================
-    public static final String[] DEPARTMENT_GET = {
-            "/api/v1/departments/users/statistics",
-            "/api/v1/departments/{id}/users/statistics",
-            "/api/v1/departments/{id}/users",
-            "/api/v1/departments/{id}/users/active",
-            "/api/v1/departments/{id}/users/inactive"
-    };
+        // ================== DEPARTMENT ==================
+        public static final String[] DEPARTMENT_GET = {
+                        "/api/v1/departments/users/statistics",
+                        "/api/v1/departments/{id}/users/statistics",
+                        "/api/v1/departments/{id}/users",
+                        "/api/v1/departments/{id}/users/active",
+                        "/api/v1/departments/{id}/users/inactive"
+        };
 
-    public static final String[] DEPARTMENT_POST = {
-            "/api/v1/departments",
-            "/api/v1/departments/merge",
-            "/api/v1/departments/split"
-    };
+        public static final String[] DEPARTMENT_POST = {
+                        "/api/v1/departments",
+                        "/api/v1/departments/merge",
+                        "/api/v1/departments/split"
+        };
 
-    public static final String[] DEPARTMENT_PUT = {
-            "/api/v1/departments/{id}"
-    };
+        public static final String[] DEPARTMENT_PUT = {
+                        "/api/v1/departments/{id}"
+        };
 
-    // ================== INNOVATION DECISION ==================
-    public static final String[] INNOVATION_DECISION_POST = {
-            "/api/v1/innovation-decisions"
-    };
+        // ================== INNOVATION DECISION ==================
+        public static final String[] INNOVATION_DECISION_POST = {
+                        "/api/v1/innovation-decisions"
+        };
 
-    public static final String[] INNOVATION_DECISION_PUT = {
-            "/api/v1/innovation-decisions/{id}"
-    };
+        public static final String[] INNOVATION_DECISION_PUT = {
+                        "/api/v1/innovation-decisions/{id}"
+        };
 
-    // ================== CHAPTER ==================
-    public static final String[] CHAPTER_POST = {
-            "/api/v1/chapters",
-            "/api/v1/chapters/bulk"
-    };
+        // ================== CHAPTER ==================
+        public static final String[] CHAPTER_POST = {
+                        "/api/v1/chapters",
+                        "/api/v1/chapters/bulk"
+        };
 
-    public static final String[] CHAPTER_PUT = {
-            "/api/v1/chapters/{id}"
-    };
+        public static final String[] CHAPTER_PUT = {
+                        "/api/v1/chapters/{id}"
+        };
 
-    // ================== REGULATION ==================
-    public static final String[] REGULATION_POST = {
-            "/api/v1/regulations",
-            "/api/v1/regulations/bulk",
-            "/api/v1/innovation-decisions/{innovationDecisionId}/chapters/regulations/import"
-    };
+        // ================== REGULATION ==================
+        public static final String[] REGULATION_POST = {
+                        "/api/v1/regulations",
+                        "/api/v1/regulations/bulk",
+                        "/api/v1/innovation-decisions/{innovationDecisionId}/chapters/regulations/import"
+        };
 
-    public static final String[] REGULATION_PUT = {
-            "/api/v1/regulations/{id}"
-    };
+        public static final String[] REGULATION_PUT = {
+                        "/api/v1/regulations/{id}"
+        };
 
-    // ================== INNOVATION ROUND ==================
-    public static final String[] INNOVATION_ROUND_POST = {
-            "/api/v1/innovation-rounds",
-            "/api/v1/innovation-rounds/{id}/status"
-    };
+        // ================== INNOVATION ROUND ==================
+        public static final String[] INNOVATION_ROUND_POST = {
+                        "/api/v1/innovation-rounds",
+                        "/api/v1/innovation-rounds/{id}/status"
+        };
 
-    public static final String[] INNOVATION_ROUND_PUT = {
-            "/api/v1/innovation-rounds/{id}"
-    };
+        public static final String[] INNOVATION_ROUND_PUT = {
+                        "/api/v1/innovation-rounds/{id}"
+        };
 
-    // ================== FORM TEMPLATE ==================
-    public static final String[] FORM_TEMPLATE_POST = {
-            "/api/v1/form-templates",
-            "/api/v1/form-templates/bulk"
-    };
+        // ================== FORM TEMPLATE ==================
+        public static final String[] FORM_TEMPLATE_POST = {
+                        "/api/v1/form-templates",
+                        "/api/v1/form-templates/bulk"
+        };
 
-    public static final String[] FORM_TEMPLATE_PUT = {
-            "/api/v1/form-templates/{id}"
-    };
+        public static final String[] FORM_TEMPLATE_PUT = {
+                        "/api/v1/form-templates/{id}"
+        };
 
-    // ================== FORM FIELD ==================
-    public static final String[] FORM_FIELD_POST = {
-            "/api/v1/form-fields",
-            "/api/v1/form-fields/bulk"
-    };
+        // ================== FORM FIELD ==================
+        public static final String[] FORM_FIELD_POST = {
+                        "/api/v1/form-fields",
+                        "/api/v1/form-fields/bulk"
+        };
 
-    public static final String[] FORM_FIELD_PUT = {
-            "/api/v1/form-fields/{id}",
-            "/api/v1/form-fields/{id}/reorder"
-    };
+        public static final String[] FORM_FIELD_PUT = {
+                        "/api/v1/form-fields/{id}",
+                        "/api/v1/form-fields/{id}/reorder"
+        };
 
-    public static final String[] FORM_FIELD_DELETE = {
-            "/api/v1/form-fields/{id}"
-    };
+        public static final String[] FORM_FIELD_DELETE = {
+                        "/api/v1/form-fields/{id}"
+        };
 }
