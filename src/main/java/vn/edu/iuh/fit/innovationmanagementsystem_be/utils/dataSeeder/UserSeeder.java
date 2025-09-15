@@ -9,6 +9,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.Role;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.User;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.UserRole;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.UserRoleEnum;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.UserSignatureProfileRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.exception.IdInvalidException;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.DepartmentRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.RoleRepository;
@@ -126,7 +127,10 @@ public class UserSeeder implements DatabaseSeeder {
      */
     private void createUserSignatureProfile(User user) {
         try {
-            userSignatureProfileService.createUserSignatureProfile(user);
+            UserSignatureProfileRequest request = new UserSignatureProfileRequest();
+            request.setUserId(user.getId());
+            request.setPathUrl(null); // Để null cho user seeder
+            userSignatureProfileService.createUserSignatureProfile(request);
         } catch (Exception e) {
             throw new IdInvalidException(
                     "Không thể tạo hồ sơ chữ ký số cho user " + user.getPersonnelId() + ": " + e.getMessage());
