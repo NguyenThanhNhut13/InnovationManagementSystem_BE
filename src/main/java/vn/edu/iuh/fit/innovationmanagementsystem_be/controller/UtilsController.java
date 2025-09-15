@@ -182,7 +182,7 @@ public class UtilsController {
         return ResponseEntity.ok(response);
     }
 
-    // 7. Convert DOC/DOCX file to HTML
+    // 7. Convert DOC/DOCX file to HTML using LibreOffice container
     @PostMapping(value = "/doc-to-html", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @ApiMessage("Convert DOC/DOCX sang HTML thành công")
     public ResponseEntity<String> convertDocToHtml(@RequestParam("file") MultipartFile file) {
@@ -196,23 +196,66 @@ public class UtilsController {
             // 2. Thư mục output
             File outputDir = new File(System.getProperty("java.io.tmpdir"));
 
-            // 3. Gọi LibreOffice để convert DOC/DOCX → HTML
+            // 3. Copy file vào container trước
+            ProcessBuilder copyInPb = new ProcessBuilder(
+                    "docker", "cp",
+                    tempFile.getAbsolutePath(),
+                    "libreoffice:/tmp/" + tempFile.getName());
+            copyInPb.redirectErrorStream(true);
+
+            Process copyInProcess = copyInPb.start();
+            int copyInExitCode = copyInProcess.waitFor();
+
+            if (copyInExitCode != 0) {
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                        .body("Failed to copy file to container");
+            }
+
+            // 4. Gọi LibreOffice container để convert DOC/DOCX → HTML
             ProcessBuilder pb = new ProcessBuilder(
-                    "C:\\Program Files\\LibreOffice\\program\\soffice.exe",
+                    "docker", "exec", "libreoffice",
+                    "libreoffice",
                     "--headless",
-                    // "--convert-to", "html:HTML (StarWriter)",
                     "--convert-to", "html:XHTML Writer File:UTF8",
-                    "--outdir", outputDir.getAbsolutePath(),
-                    tempFile.getAbsolutePath());
+                    "--outdir", "/tmp",
+                    "/tmp/" + tempFile.getName());
             pb.redirectErrorStream(true);
 
             Process process = pb.start();
 
-            process.waitFor();
+            // Đọc output để debug nếu cần
+            try (var reader = new java.io.BufferedReader(new java.io.InputStreamReader(process.getInputStream()))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    System.out.println("LibreOffice output: " + line);
+                }
+            }
 
-            // 4. Tìm file HTML đã sinh ra
+            int exitCode = process.waitFor();
+            if (exitCode != 0) {
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                        .body("LibreOffice conversion failed with exit code: " + exitCode);
+            }
+
+            // 5. Tìm file HTML đã sinh ra trong container
             String tempName = tempFile.getName();
             String htmlName = tempName.replaceAll("\\.[^.]+$", "") + ".html";
+
+            // 6. Copy file từ container về host
+            ProcessBuilder copyPb = new ProcessBuilder(
+                    "docker", "cp",
+                    "libreoffice:/tmp/" + htmlName,
+                    outputDir.getAbsolutePath() + "/" + htmlName);
+            copyPb.redirectErrorStream(true);
+
+            Process copyProcess = copyPb.start();
+            int copyExitCode = copyProcess.waitFor();
+
+            if (copyExitCode != 0) {
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                        .body("Failed to copy converted file from container");
+            }
+
             htmlFile = new File(outputDir, htmlName);
 
             if (!htmlFile.exists()) {
@@ -220,10 +263,10 @@ public class UtilsController {
                         .body("Convert thất bại! Không tìm thấy file: " + htmlFile.getAbsolutePath());
             }
 
-            // 5. Đọc nội dung HTML
+            // 7. Đọc nội dung HTML
             String html = new String(Files.readAllBytes(htmlFile.toPath()), StandardCharsets.UTF_8);
 
-            // 6. Trả về nội dung HTML
+            // 8. Trả về nội dung HTML
             return ResponseEntity.ok()
                     .contentType(MediaType.TEXT_HTML)
                     .body(html);
@@ -233,12 +276,25 @@ public class UtilsController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Lỗi khi convert: " + e.getMessage());
         } finally {
-            // 7. Dọn dẹp file tạm
+            // 9. Dọn dẹp file tạm
             if (tempFile != null && tempFile.exists()) {
                 tempFile.delete();
             }
             if (htmlFile != null && htmlFile.exists()) {
                 htmlFile.delete();
+            }
+
+            // 10. Dọn dẹp file trong container
+            try {
+                String tempName = tempFile != null ? tempFile.getName() : "";
+                String htmlName = tempName.replaceAll("\\.[^.]+$", "") + ".html";
+
+                ProcessBuilder cleanupPb = new ProcessBuilder(
+                        "docker", "exec", "libreoffice",
+                        "rm", "-f", "/tmp/" + tempName, "/tmp/" + htmlName);
+                cleanupPb.start();
+            } catch (Exception e) {
+                System.err.println("Failed to cleanup container files: " + e.getMessage());
             }
         }
     }

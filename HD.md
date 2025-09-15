@@ -1,4 +1,4 @@
-# Khởi động MinIO
+# Khởi động 
 docker-compose up -d
 
 # Kiểm tra trạng thái
@@ -6,6 +6,4 @@ docker-compose ps
 
 # Xem logs
 docker-compose logs minio
-
-# Dừng MinIO
-docker-compose down
+docker-compose logs libreoffice
