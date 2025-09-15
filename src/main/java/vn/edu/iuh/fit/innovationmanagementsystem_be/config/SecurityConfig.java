@@ -111,14 +111,15 @@ public class SecurityConfig {
                                                 .requestMatchers(HttpMethod.PUT, EndpointConstants.INNOVATION_PHASE_PUT)
                                                 .hasAnyRole(QUAN_TRI_VIEN, THU_KY_QLKH_HTQT)
 
-                                                // Innovation Department Phase
+                                                // Innovation Department Phase - Only TRUONG_KHOA can create, others can
+                                                // view
                                                 .requestMatchers(HttpMethod.POST,
                                                                 EndpointConstants.DEPARTMENT_PHASE_POST)
-                                                .hasAnyRole(TRUONG_KHOA, THU_KY_QLKH_HTQT, QUAN_TRI_VIEN)
+                                                .hasRole(TRUONG_KHOA)
                                                 .requestMatchers(HttpMethod.GET, EndpointConstants.DEPARTMENT_PHASE_GET)
                                                 .hasAnyRole(TRUONG_KHOA, THU_KY_QLKH_HTQT, QUAN_TRI_VIEN)
                                                 .requestMatchers(HttpMethod.PUT, EndpointConstants.DEPARTMENT_PHASE_PUT)
-                                                .hasAnyRole(TRUONG_KHOA, THU_KY_QLKH_HTQT, QUAN_TRI_VIEN)
+                                                .hasRole(TRUONG_KHOA)
 
                                                 // Form Template
                                                 .requestMatchers(HttpMethod.POST, EndpointConstants.FORM_TEMPLATE_POST)

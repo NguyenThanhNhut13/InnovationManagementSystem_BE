@@ -165,7 +165,7 @@ public class UserService {
 
         // Kiểm tra ràng buộc: mỗi phòng ban chỉ được có 1 role TRUONG_KHOA
         if (role.getRoleName() == UserRoleEnum.TRUONG_KHOA) {
-            boolean departmentHasTruongKhoa = userRoleRepository.existsByRoleNameAndUserDepartmentId(
+            boolean departmentHasTruongKhoa = userRoleRepository.existsByRoleRoleNameAndUserDepartmentId(
                     UserRoleEnum.TRUONG_KHOA, user.getDepartment().getId());
             if (departmentHasTruongKhoa) {
                 throw new IdInvalidException("Phòng ban này đã có trưởng khoa, không thể gán thêm role TRUONG_KHOA");
