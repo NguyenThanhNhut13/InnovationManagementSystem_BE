@@ -54,6 +54,7 @@ public class SecurityConfig {
                                 .cors(Customizer.withDefaults())
                                 .authorizeHttpRequests(auth -> auth
 
+                                                // Public endpoints
                                                 .requestMatchers(EndpointConstants.AUTH_PUBLIC).permitAll()
                                                 .requestMatchers(EndpointConstants.SWAGGER_PUBLIC).permitAll()
                                                 .requestMatchers(EndpointConstants.UTILS_PUBLIC[0]).permitAll()
@@ -71,6 +72,15 @@ public class SecurityConfig {
                                                 .requestMatchers(HttpMethod.DELETE, EndpointConstants.USER_DELETE)
                                                 .hasAnyRole(QUAN_TRI_VIEN, THU_KY_QLKH_HTQT)
 
+                                                // Role Management
+                                                .requestMatchers(HttpMethod.POST,
+                                                                EndpointConstants.ROLE_MANAGEMENT_POST)
+                                                .hasRole(THU_KY_QLKH_HTQT)
+                                                .requestMatchers(HttpMethod.DELETE,
+                                                                EndpointConstants.ROLE_MANAGEMENT_DELETE)
+                                                .hasRole(THU_KY_QLKH_HTQT)
+
+                                                // Department
                                                 .requestMatchers(HttpMethod.GET, EndpointConstants.DEPARTMENT_GET)
                                                 .hasAnyRole(QUAN_TRI_VIEN, THU_KY_QLKH_HTQT)
                                                 .requestMatchers(HttpMethod.POST, EndpointConstants.DEPARTMENT_POST)
@@ -78,6 +88,7 @@ public class SecurityConfig {
                                                 .requestMatchers(HttpMethod.PUT, EndpointConstants.DEPARTMENT_PUT)
                                                 .hasAnyRole(QUAN_TRI_VIEN, THU_KY_QLKH_HTQT)
 
+                                                // Innovation Decision
                                                 .requestMatchers(HttpMethod.POST,
                                                                 EndpointConstants.INNOVATION_DECISION_POST)
                                                 .hasAnyRole(QUAN_TRI_VIEN, THU_KY_QLKH_HTQT)
@@ -85,27 +96,32 @@ public class SecurityConfig {
                                                                 EndpointConstants.INNOVATION_DECISION_PUT)
                                                 .hasAnyRole(QUAN_TRI_VIEN, THU_KY_QLKH_HTQT)
 
+                                                // Chapter
                                                 .requestMatchers(HttpMethod.POST, EndpointConstants.CHAPTER_POST)
                                                 .hasAnyRole(QUAN_TRI_VIEN, THU_KY_QLKH_HTQT)
                                                 .requestMatchers(HttpMethod.PUT, EndpointConstants.CHAPTER_PUT)
                                                 .hasAnyRole(QUAN_TRI_VIEN, THU_KY_QLKH_HTQT)
 
+                                                // Regulation
                                                 .requestMatchers(HttpMethod.POST, EndpointConstants.REGULATION_POST)
                                                 .hasAnyRole(QUAN_TRI_VIEN, THU_KY_QLKH_HTQT)
                                                 .requestMatchers(HttpMethod.PUT, EndpointConstants.REGULATION_PUT)
                                                 .hasAnyRole(QUAN_TRI_VIEN, THU_KY_QLKH_HTQT)
 
+                                                // Innovation Phase
                                                 .requestMatchers(HttpMethod.POST,
                                                                 EndpointConstants.INNOVATION_PHASE_POST)
                                                 .hasAnyRole(QUAN_TRI_VIEN, THU_KY_QLKH_HTQT)
                                                 .requestMatchers(HttpMethod.PUT, EndpointConstants.INNOVATION_PHASE_PUT)
                                                 .hasAnyRole(QUAN_TRI_VIEN, THU_KY_QLKH_HTQT)
 
+                                                // Form Template
                                                 .requestMatchers(HttpMethod.POST, EndpointConstants.FORM_TEMPLATE_POST)
                                                 .hasAnyRole(QUAN_TRI_VIEN, THU_KY_QLKH_HTQT)
                                                 .requestMatchers(HttpMethod.PUT, EndpointConstants.FORM_TEMPLATE_PUT)
                                                 .hasAnyRole(QUAN_TRI_VIEN, THU_KY_QLKH_HTQT)
 
+                                                // Form Field
                                                 .requestMatchers(HttpMethod.POST, EndpointConstants.FORM_FIELD_POST)
                                                 .hasAnyRole(QUAN_TRI_VIEN, THU_KY_QLKH_HTQT)
                                                 .requestMatchers(HttpMethod.PUT, EndpointConstants.FORM_FIELD_PUT)

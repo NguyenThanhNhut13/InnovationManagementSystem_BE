@@ -153,14 +153,6 @@ public class UserService {
 
     // 6. Assign Role To User
     public UserRoleResponse assignRoleToUser(@NonNull String userId, @NonNull String roleId) {
-        // Kiểm tra quyền: chỉ THU_KY_QLKH_HTQT được gán role
-        User currentUser = getCurrentUser();
-        boolean hasPermission = currentUser.getUserRoles().stream()
-                .anyMatch(userRole -> userRole.getRole().getRoleName() == UserRoleEnum.THU_KY_QLKH_HTQT);
-
-        if (!hasPermission) {
-            throw new IdInvalidException("Chỉ có THU_KY_QLKH_HTQT mới được gán vai trò cho người dùng");
-        }
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IdInvalidException("Người dùng không tồn tại với ID: " + userId));
@@ -189,14 +181,6 @@ public class UserService {
 
     // 7. Delete Role From User
     public void removeRoleFromUser(@NonNull String userId, @NonNull String roleId) {
-        // Kiểm tra quyền: chỉ THU_KY_QLKH_HTQT được xóa role
-        User currentUser = getCurrentUser();
-        boolean hasPermission = currentUser.getUserRoles().stream()
-                .anyMatch(userRole -> userRole.getRole().getRoleName() == UserRoleEnum.THU_KY_QLKH_HTQT);
-
-        if (!hasPermission) {
-            throw new IdInvalidException("Chỉ có THU_KY_QLKH_HTQT mới được xóa vai trò khỏi người dùng");
-        }
 
         if (!userRepository.existsById(userId)) {
             throw new IdInvalidException("User không tồn tại với ID: " + userId);

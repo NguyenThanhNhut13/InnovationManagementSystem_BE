@@ -27,10 +27,19 @@ public final class EndpointConstants {
         };
 
         public static final String[] USER_POST = {
-                        "/api/v1/users/{userId}/roles/{roleId}"
+                        // Removed role management endpoints - moved to ROLE_MANAGEMENT
         };
 
         public static final String[] USER_DELETE = {
+                        // Removed role management endpoints - moved to ROLE_MANAGEMENT
+        };
+
+        // ================== ROLE MANAGEMENT ==================
+        public static final String[] ROLE_MANAGEMENT_POST = {
+                        "/api/v1/users/{userId}/roles/{roleId}"
+        };
+
+        public static final String[] ROLE_MANAGEMENT_DELETE = {
                         "/api/v1/users/{userId}/roles/{roleId}"
         };
 
