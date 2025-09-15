@@ -31,7 +31,6 @@ public class InnovationPhaseResponse {
 
     // InnovationDecision info
     private String innovationDecisionId;
-    private String innovationDecisionTitle;
 
     // Audit info
     private LocalDateTime createdAt;

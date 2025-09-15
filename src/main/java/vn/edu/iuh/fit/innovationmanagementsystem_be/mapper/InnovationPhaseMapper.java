@@ -10,7 +10,6 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.Innovatio
 public interface InnovationPhaseMapper {
 
     @Mapping(target = "innovationDecisionId", source = "innovationDecision.id")
-    @Mapping(target = "innovationDecisionTitle", source = "innovationDecision.title")
     InnovationPhaseResponse toInnovationPhaseResponse(InnovationPhase innovationPhase);
 
     @Mapping(target = "id", ignore = true)
