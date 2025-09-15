@@ -27,7 +27,7 @@ public class InnovationFormDataRequest {
 
     // Thông tin sáng kiến
     private String innovationName;
-    private String innovationRoundId;
+    private String innovationPhaseId;
     private Boolean isScore;
 
     @Data

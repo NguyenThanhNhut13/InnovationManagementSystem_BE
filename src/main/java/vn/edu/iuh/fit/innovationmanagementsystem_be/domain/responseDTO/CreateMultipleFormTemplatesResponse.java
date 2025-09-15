@@ -11,15 +11,15 @@ import java.util.List;
 @AllArgsConstructor
 public class CreateMultipleFormTemplatesResponse {
 
-    private String innovationRoundId;
-    private String innovationRoundName;
+    private String innovationPhaseId;
+    private String innovationPhaseName;
     private int totalCreated;
     private List<FormTemplateResponse> formTemplates;
 
-    public CreateMultipleFormTemplatesResponse(String innovationRoundId, String innovationRoundName,
+    public CreateMultipleFormTemplatesResponse(String innovationPhaseId, String innovationPhaseName,
             List<FormTemplateResponse> formTemplates) {
-        this.innovationRoundId = innovationRoundId;
-        this.innovationRoundName = innovationRoundName;
+        this.innovationPhaseId = innovationPhaseId;
+        this.innovationPhaseName = innovationPhaseName;
         this.totalCreated = formTemplates.size();
         this.formTemplates = formTemplates;
     }

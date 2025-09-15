@@ -16,8 +16,8 @@ public class FormTemplateResponse {
     private String name;
     private String description;
     private String templateContent;
-    private String innovationRoundId;
-    private String innovationRoundName;
+    private String innovationPhaseId;
+    private String innovationPhaseName;
     private List<FormFieldResponse> formFields;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

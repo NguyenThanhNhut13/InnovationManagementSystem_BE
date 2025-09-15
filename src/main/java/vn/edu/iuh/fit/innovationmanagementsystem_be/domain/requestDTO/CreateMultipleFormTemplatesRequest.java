@@ -15,8 +15,8 @@ import java.util.List;
 @AllArgsConstructor
 public class CreateMultipleFormTemplatesRequest {
 
-    @NotNull(message = "ID của innovation round không được để trống")
-    private String innovationRoundId;
+    @NotNull(message = "ID của innovation phase không được để trống")
+    private String innovationPhaseId;
 
     @NotEmpty(message = "Danh sách form templates không được để trống")
     @Valid

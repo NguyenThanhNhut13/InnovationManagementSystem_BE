@@ -18,6 +18,6 @@ public class CreateFormTemplateRequest {
 
     private String templateContent;
 
-    @NotNull(message = "ID của innovation round không được để trống")
-    private String innovationRoundId;
+    @NotNull(message = "ID của innovation phase không được để trống")
+    private String innovationPhaseId;
 }

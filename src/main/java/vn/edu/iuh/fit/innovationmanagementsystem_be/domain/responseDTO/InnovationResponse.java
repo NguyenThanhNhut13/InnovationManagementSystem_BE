@@ -27,8 +27,8 @@ public class InnovationResponse {
     private String departmentName;
     private String departmentCode;
 
-    // Innovation Round info
-    private String innovationRoundId;
+    // Innovation Phase info
+    private String innovationPhaseId;
     private String innovationDecisionId;
 
     // Audit info

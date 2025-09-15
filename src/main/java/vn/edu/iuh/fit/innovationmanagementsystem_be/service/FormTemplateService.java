@@ -8,7 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.FormTemplate;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.InnovationRound;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.InnovationPhase;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.CreateFormTemplateRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.CreateMultipleFormTemplatesRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.UpdateFormTemplateRequest;
@@ -17,7 +17,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.FormTempl
 import vn.edu.iuh.fit.innovationmanagementsystem_be.exception.IdInvalidException;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.mapper.FormTemplateMapper;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.FormTemplateRepository;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.InnovationRoundRepository;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.InnovationPhaseRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.ResultPaginationDTO;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.Utils;
 
@@ -29,14 +29,14 @@ import java.util.stream.Collectors;
 public class FormTemplateService {
 
     private final FormTemplateRepository formTemplateRepository;
-    private final InnovationRoundRepository innovationRoundRepository;
+    private final InnovationPhaseRepository innovationPhaseRepository;
     private final FormTemplateMapper formTemplateMapper;
 
     public FormTemplateService(FormTemplateRepository formTemplateRepository,
-            InnovationRoundRepository innovationRoundRepository,
+            InnovationPhaseRepository innovationPhaseRepository,
             FormTemplateMapper formTemplateMapper) {
         this.formTemplateRepository = formTemplateRepository;
-        this.innovationRoundRepository = innovationRoundRepository;
+        this.innovationPhaseRepository = innovationPhaseRepository;
         this.formTemplateMapper = formTemplateMapper;
     }
 
@@ -48,9 +48,9 @@ public class FormTemplateService {
         return formTemplateMapper.toFormTemplateResponse(template);
     }
 
-    // 2. Get all form templates by innovation round
-    public List<FormTemplateResponse> getFormTemplatesByInnovationRound(String roundId) {
-        List<FormTemplate> templates = formTemplateRepository.findByInnovationRoundIdOrderByName(roundId);
+    // 2. Get all form templates by innovation phase
+    public List<FormTemplateResponse> getFormTemplatesByInnovationPhase(String phaseId) {
+        List<FormTemplate> templates = formTemplateRepository.findByInnovationPhaseIdOrderByName(phaseId);
         return templates.stream()
                 .map(formTemplateMapper::toFormTemplateResponse)
                 .collect(Collectors.toList());
@@ -59,15 +59,15 @@ public class FormTemplateService {
     // 3. Create form template
     public FormTemplateResponse createFormTemplate(CreateFormTemplateRequest request) {
 
-        InnovationRound round = innovationRoundRepository.findById(request.getInnovationRoundId())
+        InnovationPhase phase = innovationPhaseRepository.findById(request.getInnovationPhaseId())
                 .orElseThrow(() -> new IdInvalidException(
-                        "Innovation round không tồn tại với ID: " + request.getInnovationRoundId()));
+                        "Innovation phase không tồn tại với ID: " + request.getInnovationPhaseId()));
 
         FormTemplate template = new FormTemplate();
         template.setName(request.getName());
         template.setDescription(request.getDescription());
         template.setTemplateContent(request.getTemplateContent());
-        template.setInnovationRound(round);
+        template.setInnovationPhase(phase);
 
         FormTemplate savedTemplate = formTemplateRepository.save(template);
         return formTemplateMapper.toFormTemplateResponse(savedTemplate);
@@ -77,9 +77,9 @@ public class FormTemplateService {
     @Transactional
     public CreateMultipleFormTemplatesResponse createMultipleFormTemplates(CreateMultipleFormTemplatesRequest request) {
 
-        InnovationRound innovationRound = innovationRoundRepository.findById(request.getInnovationRoundId())
+        InnovationPhase innovationPhase = innovationPhaseRepository.findById(request.getInnovationPhaseId())
                 .orElseThrow(() -> new IdInvalidException(
-                        "Innovation round không tồn tại với ID: " + request.getInnovationRoundId()));
+                        "Innovation phase không tồn tại với ID: " + request.getInnovationPhaseId()));
 
         if (request.getFormTemplates() == null || request.getFormTemplates().isEmpty()) {
             throw new IdInvalidException("Danh sách form templates không được để trống");
@@ -99,7 +99,7 @@ public class FormTemplateService {
                     template.setName(templateData.getName());
                     template.setDescription(templateData.getDescription());
                     template.setTemplateContent(templateData.getTemplateContent());
-                    template.setInnovationRound(innovationRound);
+                    template.setInnovationPhase(innovationPhase);
                     return template;
                 })
                 .collect(Collectors.toList());
@@ -111,8 +111,8 @@ public class FormTemplateService {
                 .collect(Collectors.toList());
 
         return new CreateMultipleFormTemplatesResponse(
-                request.getInnovationRoundId(),
-                innovationRound.getName(),
+                request.getInnovationPhaseId(),
+                innovationPhase.getName(),
                 formTemplateResponses);
     }
 
