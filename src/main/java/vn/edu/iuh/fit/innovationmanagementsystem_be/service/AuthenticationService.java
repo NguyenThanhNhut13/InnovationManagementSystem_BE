@@ -18,6 +18,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.ChangePas
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.LoginResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.OtpResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.TokenResponse;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.exception.IdInvalidException;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.UserRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.JwtTokenUtil;
@@ -66,7 +67,7 @@ public class AuthenticationService {
 
             UserDetails userDetails = (UserDetails) authentication.getPrincipal();
             User user = userRepository.findByPersonnelId(userDetails.getUsername())
-                    .orElseThrow(() -> new RuntimeException(
+                    .orElseThrow(() -> new IdInvalidException(
                             "Không tìm thấy tài khoản với mã nhân viên: " + userDetails.getUsername()));
 
             String accessToken = jwtTokenUtil.generateAccessToken(userDetails);
@@ -84,10 +85,10 @@ public class AuthenticationService {
 
         } catch (BadCredentialsException e) {
 
-            throw new RuntimeException("Thông tin đăng nhập không hợp lệ");
+            throw new IdInvalidException("Thông tin đăng nhập không hợp lệ");
         } catch (Exception e) {
 
-            throw new RuntimeException("Xác thực thất bại: " + e.getMessage());
+            throw new IdInvalidException("Xác thực thất bại: " + e.getMessage());
         }
     }
 
@@ -98,7 +99,7 @@ public class AuthenticationService {
                 .validateRefreshToken(refreshToken);
 
         if (!validationResult.isValid()) {
-            throw new RuntimeException(validationResult.getErrorMessage());
+            throw new IdInvalidException(validationResult.getErrorMessage());
         }
 
         String username = validationResult.getUsername();
@@ -133,29 +134,29 @@ public class AuthenticationService {
                     newAccessToken,
                     newRefreshToken);
         } else {
-            throw new RuntimeException("Refresh token không hợp lệ");
+            throw new IdInvalidException("Refresh token không hợp lệ");
         }
     }
 
     // 3. Logout - delete refresh token from Redis and blacklist access token
     public void logout(String accessToken, String refreshToken) {
         if (accessToken == null || accessToken.isEmpty()) {
-            throw new RuntimeException("Access token không được để trống");
+            throw new IdInvalidException("Access token không được để trống");
         }
         if (jwtTokenUtil.isTokenExpired(accessToken)) {
-            throw new RuntimeException("Access token đã hết hạn");
+            throw new IdInvalidException("Access token đã hết hạn");
         }
         String personnelId = extractPersonnelIdFromToken(accessToken);
         if (personnelId == null) {
-            throw new RuntimeException("Không thể xác thực access token");
+            throw new IdInvalidException("Không thể xác thực access token");
         }
         String refreshTokenOwner = redisTokenService.getUserIdFromRefreshToken(refreshToken);
         if (refreshTokenOwner == null) {
-            throw new RuntimeException("Refresh token không tồn tại");
+            throw new IdInvalidException("Refresh token không tồn tại");
         }
 
         if (!personnelId.equals(refreshTokenOwner)) {
-            throw new RuntimeException("Refresh token không hợp lệ");
+            throw new IdInvalidException("Refresh token không hợp lệ");
         }
 
         // Delete refresh token from Redis
@@ -176,18 +177,18 @@ public class AuthenticationService {
     public ChangePasswordResponse changePassword(ChangePasswordRequest request) {
         String currentUsername = getCurrentUsername();
         if (currentUsername == null) {
-            throw new RuntimeException("Không thể xác thực người dùng");
+            throw new IdInvalidException("Không thể xác thực người dùng");
         }
         if (request.getNewPassword().equals(request.getOldPassword())) {
-            throw new RuntimeException("Mật khẩu mới không được giống mật khẩu cũ");
+            throw new IdInvalidException("Mật khẩu mới không được giống mật khẩu cũ");
         }
         if (!request.getNewPassword().equals(request.getConfirmNewPassword())) {
-            throw new RuntimeException("Mật khẩu mới và xác nhận mật khẩu không khớp");
+            throw new IdInvalidException("Mật khẩu mới và xác nhận mật khẩu không khớp");
         }
         User currentUser = userRepository.findByPersonnelId(currentUsername)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy tài khoản"));
+                .orElseThrow(() -> new IdInvalidException("Không tìm thấy tài khoản"));
         if (!passwordEncoder.matches(request.getOldPassword(), currentUser.getPassword())) {
-            throw new RuntimeException("Mật khẩu cũ không đúng");
+            throw new IdInvalidException("Mật khẩu cũ không đúng");
         }
 
         String encodedNewPassword = passwordEncoder.encode(request.getNewPassword());
@@ -221,13 +222,13 @@ public class AuthenticationService {
     // 6. Forgot Password - Send OTP via email
     public OtpResponse forgotPassword(OtpRequest request) {
         User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy tài khoản với email: " + request.getEmail()));
+                .orElseThrow(() -> new IdInvalidException("Không tìm thấy tài khoản với email: " + request.getEmail()));
 
         // Kiểm tra rate limiting (max 3 requests/hour per email)
         if (rateLimitingService.isOtpRateLimited(request.getEmail())) {
             RateLimitingService.RateLimitInfo rateLimitInfo = rateLimitingService.getRateLimitInfo(request.getEmail());
 
-            throw new RuntimeException("Quá nhiều yêu cầu reset password. Vui lòng thử lại sau " +
+            throw new IdInvalidException("Quá nhiều yêu cầu reset password. Vui lòng thử lại sau " +
                     (rateLimitInfo.getRemainingTimeSeconds() / 60) + " phút");
         }
 
@@ -249,13 +250,13 @@ public class AuthenticationService {
     // 7. Reset Password - Use OTP
     public ChangePasswordResponse resetPassword(ResetPasswordWithOtpRequest request) {
         if (!request.getNewPassword().equals(request.getConfirmPassword())) {
-            throw new RuntimeException("Mật khẩu mới và xác nhận mật khẩu không khớp");
+            throw new IdInvalidException("Mật khẩu mới và xác nhận mật khẩu không khớp");
         }
         if (!otpService.validateOtp(request.getEmail(), request.getOtp())) {
-            throw new RuntimeException("OTP không hợp lệ hoặc đã hết hạn");
+            throw new IdInvalidException("OTP không hợp lệ hoặc đã hết hạn");
         }
         User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy tài khoản"));
+                .orElseThrow(() -> new IdInvalidException("Không tìm thấy tài khoản"));
 
         String encodedNewPassword = passwordEncoder.encode(request.getNewPassword());
         user.setPassword(encodedNewPassword);
