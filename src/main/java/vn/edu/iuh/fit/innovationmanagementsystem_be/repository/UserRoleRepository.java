@@ -16,6 +16,6 @@ public interface UserRoleRepository extends JpaRepository<UserRole, String> {
 
     Page<UserRole> findByRoleId(String roleId, Pageable pageable);
 
-    boolean existsByRoleNameAndUserDepartmentId(UserRoleEnum roleName, String departmentId);
+    boolean existsByRoleRoleNameAndUserDepartmentId(UserRoleEnum roleName, String departmentId);
 
 }
