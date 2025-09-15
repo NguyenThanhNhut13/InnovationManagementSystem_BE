@@ -1,6 +1,14 @@
 package vn.edu.iuh.fit.innovationmanagementsystem_be.controller;
 
 import io.minio.StatObjectResponse;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -25,6 +33,8 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/utils")
+@Tag(name = "Utils", description = "Utility APIs for file management and other utilities")
+@SecurityRequirement(name = "Bearer Authentication")
 public class UtilsController {
 
     private final FileService fileService;
@@ -36,7 +46,14 @@ public class UtilsController {
     // 1. Upload single file to MinIO
     @PostMapping("/upload")
     @ApiMessage("Upload file thành công")
-    public ResponseEntity<FileUploadResponse> uploadFile(@RequestParam("file") MultipartFile file) throws Exception {
+    @Operation(summary = "Upload Single File", description = "Upload a single file to MinIO storage")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "File uploaded successfully", content = @Content(schema = @Schema(implementation = FileUploadResponse.class))),
+            @ApiResponse(responseCode = "400", description = "Invalid file or file too large")
+    })
+    public ResponseEntity<FileUploadResponse> uploadFile(
+            @Parameter(description = "File to upload", required = true) @RequestParam("file") MultipartFile file)
+            throws Exception {
 
         if (file.isEmpty()) {
             throw new IllegalArgumentException("File is empty");
@@ -65,8 +82,14 @@ public class UtilsController {
     // 2. Upload multiple files to MinIO
     @PostMapping("/upload-multiple")
     @ApiMessage("Upload nhiều file thành công")
+    @Operation(summary = "Upload Multiple Files", description = "Upload multiple files to MinIO storage")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Files uploaded successfully", content = @Content(schema = @Schema(implementation = MultipleFileUploadResponse.class))),
+            @ApiResponse(responseCode = "400", description = "Invalid files or total size too large")
+    })
     public ResponseEntity<MultipleFileUploadResponse> uploadMultipleFiles(
-            @RequestParam("files") List<MultipartFile> files) throws Exception {
+            @Parameter(description = "Files to upload", required = true) @RequestParam("files") List<MultipartFile> files)
+            throws Exception {
 
         if (files == null || files.isEmpty()) {
             throw new IllegalArgumentException("No files provided");
@@ -115,7 +138,14 @@ public class UtilsController {
     // 3. Download file from MinIO
     @GetMapping("/download/{fileName}")
     @ApiMessage("Download file thành công")
-    public ResponseEntity<InputStreamResource> downloadFile(@PathVariable String fileName) throws Exception {
+    @Operation(summary = "Download File", description = "Download a file from MinIO storage")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "File downloaded successfully"),
+            @ApiResponse(responseCode = "404", description = "File not found")
+    })
+    public ResponseEntity<InputStreamResource> downloadFile(
+            @Parameter(description = "File name to download", required = true) @PathVariable String fileName)
+            throws Exception {
 
         if (!fileService.fileExists(fileName)) {
             return ResponseEntity.notFound().build();

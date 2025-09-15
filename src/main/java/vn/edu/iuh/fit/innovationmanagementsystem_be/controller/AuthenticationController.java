@@ -1,5 +1,13 @@
 package vn.edu.iuh.fit.innovationmanagementsystem_be.controller;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -19,6 +27,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.annotation.ApiMessage;
 
 @RestController
 @RequestMapping("/api/v1")
+@Tag(name = "Authentication", description = "Authentication management APIs")
 public class AuthenticationController {
 
     private final AuthenticationService authenticationService;
@@ -30,7 +39,14 @@ public class AuthenticationController {
     // 1. Login
     @PostMapping("/auth/login")
     @ApiMessage("Đăng nhập thành công")
-    public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest loginRequest) {
+    @Operation(summary = "User Login", description = "Authenticate user with email and password")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Login successful", content = @Content(schema = @Schema(implementation = LoginResponse.class))),
+            @ApiResponse(responseCode = "401", description = "Invalid credentials"),
+            @ApiResponse(responseCode = "400", description = "Invalid request data")
+    })
+    public ResponseEntity<LoginResponse> login(
+            @Parameter(description = "Login credentials", required = true) @Valid @RequestBody LoginRequest loginRequest) {
         LoginResponse loginResponse = authenticationService.authenticate(loginRequest);
         return ResponseEntity.ok(loginResponse);
     }
@@ -38,8 +54,14 @@ public class AuthenticationController {
     // 2. Refresh Token
     @PostMapping("/auth/refresh")
     @ApiMessage("Refresh token thành công")
+    @Operation(summary = "Refresh Token", description = "Get new access token using refresh token")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Token refreshed successfully", content = @Content(schema = @Schema(implementation = TokenResponse.class))),
+            @ApiResponse(responseCode = "401", description = "Invalid refresh token"),
+            @ApiResponse(responseCode = "400", description = "Invalid request data")
+    })
     public ResponseEntity<TokenResponse> refreshToken(
-            @Valid @RequestBody RefreshTokenRequest refreshTokenRequest) {
+            @Parameter(description = "Refresh token request", required = true) @Valid @RequestBody RefreshTokenRequest refreshTokenRequest) {
         TokenResponse tokenResponse = authenticationService.refreshToken(refreshTokenRequest.getRefreshToken());
         return ResponseEntity.ok(tokenResponse);
     }
@@ -47,9 +69,16 @@ public class AuthenticationController {
     // 3. Logout
     @PostMapping("/auth/logout")
     @ApiMessage("Đăng xuất thành công")
+    @Operation(summary = "User Logout", description = "Logout user and invalidate tokens")
+    @SecurityRequirement(name = "Bearer Authentication")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Logout successful"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized"),
+            @ApiResponse(responseCode = "400", description = "Invalid request data")
+    })
     public ResponseEntity<Void> logout(
-            @RequestHeader("Authorization") String authorizationHeader,
-            @Valid @RequestBody LogoutRequest logoutRequest) {
+            @Parameter(description = "Authorization header with Bearer token", required = true) @RequestHeader("Authorization") String authorizationHeader,
+            @Parameter(description = "Logout request with refresh token", required = true) @Valid @RequestBody LogoutRequest logoutRequest) {
         if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
             throw new RuntimeException("Invalid authorization header");
         }
@@ -64,8 +93,15 @@ public class AuthenticationController {
     // 4. Change Password
     @PostMapping("/auth/change-password")
     @ApiMessage("Đổi mật khẩu thành công")
+    @Operation(summary = "Change Password", description = "Change user password with current password verification")
+    @SecurityRequirement(name = "Bearer Authentication")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Password changed successfully", content = @Content(schema = @Schema(implementation = ChangePasswordResponse.class))),
+            @ApiResponse(responseCode = "401", description = "Unauthorized"),
+            @ApiResponse(responseCode = "400", description = "Invalid request data or current password")
+    })
     public ResponseEntity<ChangePasswordResponse> changePassword(
-            @Valid @RequestBody ChangePasswordRequest changePasswordRequest) {
+            @Parameter(description = "Change password request", required = true) @Valid @RequestBody ChangePasswordRequest changePasswordRequest) {
         ChangePasswordResponse response = authenticationService.changePassword(changePasswordRequest);
         return ResponseEntity.ok(response);
     }
@@ -73,8 +109,14 @@ public class AuthenticationController {
     // 5. Quên mật khẩu - Gửi OTP (Public API)
     @PostMapping("/auth/forgot-password")
     @ApiMessage("OTP đã được gửi đến email của bạn")
+    @Operation(summary = "Forgot Password", description = "Send OTP to email for password reset")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "OTP sent successfully", content = @Content(schema = @Schema(implementation = OtpResponse.class))),
+            @ApiResponse(responseCode = "404", description = "Email not found"),
+            @ApiResponse(responseCode = "400", description = "Invalid request data")
+    })
     public ResponseEntity<OtpResponse> forgotPassword(
-            @Valid @RequestBody OtpRequest otpRequest) {
+            @Parameter(description = "Email for password reset", required = true) @Valid @RequestBody OtpRequest otpRequest) {
 
         OtpResponse response = authenticationService.forgotPassword(otpRequest);
         return ResponseEntity.ok(response);
@@ -83,8 +125,14 @@ public class AuthenticationController {
     // 6. Reset mật khẩu với OTP (Public API)
     @PostMapping("/auth/reset-password")
     @ApiMessage("Đặt lại mật khẩu thành công")
+    @Operation(summary = "Reset Password", description = "Reset password using OTP verification")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Password reset successfully", content = @Content(schema = @Schema(implementation = ChangePasswordResponse.class))),
+            @ApiResponse(responseCode = "400", description = "Invalid OTP or request data"),
+            @ApiResponse(responseCode = "404", description = "Email not found")
+    })
     public ResponseEntity<ChangePasswordResponse> resetPassword(
-            @Valid @RequestBody ResetPasswordWithOtpRequest resetPasswordRequest) {
+            @Parameter(description = "Reset password request with OTP", required = true) @Valid @RequestBody ResetPasswordWithOtpRequest resetPasswordRequest) {
 
         ChangePasswordResponse response = authenticationService.resetPassword(resetPasswordRequest);
         return ResponseEntity.ok(response);

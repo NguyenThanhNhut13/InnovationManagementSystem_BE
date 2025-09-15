@@ -1,5 +1,13 @@
 package vn.edu.iuh.fit.innovationmanagementsystem_be.controller;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
@@ -17,6 +25,8 @@ import java.time.LocalDate;
 
 @RestController
 @RequestMapping("/api/v1")
+@Tag(name = "Innovation Decision", description = "Innovation decision management APIs")
+@SecurityRequirement(name = "Bearer Authentication")
 public class InnovationDecisionController {
 
     private final InnovationDecisionService innovationDecisionService;
@@ -28,8 +38,13 @@ public class InnovationDecisionController {
     // 1. Create InnovationDecision
     @PostMapping("/innovation-decisions")
     @ApiMessage("Tạo quyết định thành công")
+    @Operation(summary = "Create Innovation Decision", description = "Create a new innovation decision")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Innovation decision created successfully", content = @Content(schema = @Schema(implementation = InnovationDecisionResponse.class))),
+            @ApiResponse(responseCode = "400", description = "Invalid request data")
+    })
     public ResponseEntity<InnovationDecisionResponse> createInnovationDecision(
-            @Valid @RequestBody InnovationDecisionRequest request) {
+            @Parameter(description = "Innovation decision creation request", required = true) @Valid @RequestBody InnovationDecisionRequest request) {
         InnovationDecisionResponse response = innovationDecisionService.createInnovationDecision(request);
         return ResponseEntity.ok(response);
     }
@@ -37,39 +52,68 @@ public class InnovationDecisionController {
     // 2. Get All InnovationDecisions
     @GetMapping("/innovation-decisions")
     @ApiMessage("Lấy danh sách quyết định thành công")
+    @Operation(summary = "Get All Innovation Decisions", description = "Get all innovation decisions with pagination and filtering")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Innovation decisions retrieved successfully", content = @Content(schema = @Schema(implementation = ResultPaginationDTO.class)))
+    })
     public ResponseEntity<ResultPaginationDTO> getAllInnovationDecisions(
-            @Filter Specification<InnovationDecision> specification, Pageable pageable) {
+            @Parameter(description = "Filter specification for innovation decisions") @Filter Specification<InnovationDecision> specification,
+            @Parameter(description = "Pagination parameters") Pageable pageable) {
         return ResponseEntity.ok(innovationDecisionService.getAllInnovationDecisions(specification, pageable));
     }
 
     // 3. Get InnovationDecision by Id
     @GetMapping("/innovation-decisions/{id}")
     @ApiMessage("Lấy quyết định thành công")
-    public ResponseEntity<InnovationDecisionResponse> getInnovationDecisionById(@PathVariable String id) {
+    @Operation(summary = "Get Innovation Decision by ID", description = "Get innovation decision details by ID")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Innovation decision retrieved successfully", content = @Content(schema = @Schema(implementation = InnovationDecisionResponse.class))),
+            @ApiResponse(responseCode = "404", description = "Innovation decision not found")
+    })
+    public ResponseEntity<InnovationDecisionResponse> getInnovationDecisionById(
+            @Parameter(description = "Innovation decision ID", required = true) @PathVariable String id) {
         return ResponseEntity.ok(innovationDecisionService.getInnovationDecisionById(id));
     }
 
     // 4. Update InnovationDecision
     @PutMapping("/innovation-decisions/{id}")
     @ApiMessage("Cập nhật quyết định thành công")
+    @Operation(summary = "Update Innovation Decision", description = "Update innovation decision by ID")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Innovation decision updated successfully", content = @Content(schema = @Schema(implementation = InnovationDecisionResponse.class))),
+            @ApiResponse(responseCode = "400", description = "Invalid request data"),
+            @ApiResponse(responseCode = "404", description = "Innovation decision not found")
+    })
     public ResponseEntity<InnovationDecisionResponse> updateInnovationDecision(
-            @PathVariable String id, @Valid @RequestBody InnovationDecisionRequest request) {
+            @Parameter(description = "Innovation decision ID", required = true) @PathVariable String id,
+            @Parameter(description = "Innovation decision update request", required = true) @Valid @RequestBody InnovationDecisionRequest request) {
         return ResponseEntity.ok(innovationDecisionService.updateInnovationDecision(id, request));
     }
 
     // 5. Get InnovationDecisions by signed by
     @GetMapping("/innovation-decisions/signed-by")
     @ApiMessage("Lấy quyết định theo người ký thành công")
+    @Operation(summary = "Get Innovation Decisions by Signed By", description = "Get innovation decisions filtered by signer")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Innovation decisions retrieved successfully", content = @Content(schema = @Schema(implementation = ResultPaginationDTO.class)))
+    })
     public ResponseEntity<ResultPaginationDTO> getInnovationDecisionsBySignedBy(
-            @RequestParam String signedBy, Pageable pageable) {
+            @Parameter(description = "Signer name", required = true) @RequestParam String signedBy,
+            @Parameter(description = "Pagination parameters") Pageable pageable) {
         return ResponseEntity.ok(innovationDecisionService.getInnovationDecisionsBySignedBy(signedBy, pageable));
     }
 
     // 6. Get InnovationDecisions by date range
     @GetMapping("/innovation-decisions/date-range")
     @ApiMessage("Lấy quyết định theo khoảng thời gian thành công")
+    @Operation(summary = "Get Innovation Decisions by Date Range", description = "Get innovation decisions filtered by date range")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Innovation decisions retrieved successfully", content = @Content(schema = @Schema(implementation = ResultPaginationDTO.class)))
+    })
     public ResponseEntity<ResultPaginationDTO> getInnovationDecisionsByDateRange(
-            @RequestParam LocalDate startDate, @RequestParam LocalDate endDate, Pageable pageable) {
+            @Parameter(description = "Start date", required = true) @RequestParam LocalDate startDate,
+            @Parameter(description = "End date", required = true) @RequestParam LocalDate endDate,
+            @Parameter(description = "Pagination parameters") Pageable pageable) {
         return ResponseEntity
                 .ok(innovationDecisionService.getInnovationDecisionsByDateRange(startDate, endDate, pageable));
     }
