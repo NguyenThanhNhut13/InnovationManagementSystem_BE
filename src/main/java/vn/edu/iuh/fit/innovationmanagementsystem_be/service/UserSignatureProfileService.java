@@ -4,8 +4,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.User;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.UserSignatureProfile;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.UserSignatureProfileRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.exception.IdInvalidException;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.UserSignatureProfileRepository;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.constants.SignatureConstants;
 
 import java.security.KeyPair;
 
@@ -23,21 +25,27 @@ public class UserSignatureProfileService {
     }
 
     // 1. Create UserSignatureProfile for user
-    public UserSignatureProfile createUserSignatureProfile(User user) {
+    public UserSignatureProfile createUserSignatureProfile(UserSignatureProfileRequest request) {
         try {
+
+            if (userSignatureProfileRepository.findByUserId(request.getUserId()).isPresent()) {
+                throw new IdInvalidException("User đã có hồ sơ chữ ký số");
+            }
+
             // Tạo cặp khóa mới cho user
             KeyPair keyPair = keyManagementService.generateKeyPair();
+
+            User user = new User();
+            user.setId(request.getUserId());
 
             // Tạo UserSignatureProfile
             UserSignatureProfile signatureProfile = new UserSignatureProfile();
             signatureProfile.setUser(user);
+            signatureProfile.setPathUrl(request.getPathUrl());
             signatureProfile.setPrivateKey(keyManagementService.privateKeyToString(keyPair.getPrivate()));
             signatureProfile.setPublicKey(keyManagementService.publicKeyToString(keyPair.getPublic()));
             signatureProfile.setCertificateSerial(keyManagementService.generateCertificateSerial());
-            signatureProfile.setCertificateIssuer("IUH Innovation Management System");
-            signatureProfile.setCertificateValidFrom(keyManagementService.getCertificateValidFrom());
-            signatureProfile.setCertificateValidTo(keyManagementService.getCertificateValidTo());
-            signatureProfile.setPathUrl("/signatures/" + user.getId());
+            signatureProfile.setCertificateIssuer(SignatureConstants.CERTIFICATE_ISSUER);
 
             return userSignatureProfileRepository.save(signatureProfile);
         } catch (Exception e) {
@@ -45,15 +53,12 @@ public class UserSignatureProfileService {
         }
     }
 
-    // 2. Create UserSignatureProfile for existing user
+    // 2. Create UserSignatureProfile for existing user with default path
     public UserSignatureProfile createUserSignatureProfileForExistingUser(String userId) {
-        if (userSignatureProfileRepository.findByUserId(userId).isPresent()) {
-            throw new IdInvalidException("User đã có hồ sơ chữ ký số");
-        }
+        UserSignatureProfileRequest request = new UserSignatureProfileRequest();
+        request.setUserId(userId);
+        request.setPathUrl(null); // Không set pathUrl, để null
 
-        User user = new User();
-        user.setId(userId);
-
-        return createUserSignatureProfile(user);
+        return createUserSignatureProfile(request);
     }
 }

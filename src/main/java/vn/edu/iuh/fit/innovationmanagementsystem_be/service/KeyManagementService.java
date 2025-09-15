@@ -6,7 +6,6 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.exception.IdInvalidException
 import java.security.*;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
-import java.time.LocalDateTime;
 import java.util.Base64;
 
 @Service
@@ -106,15 +105,4 @@ public class KeyManagementService {
         return "CERT-" + System.currentTimeMillis() + "-" + (int) (Math.random() * 10000);
     }
 
-    // 10. Get certificate valid from
-    public LocalDateTime getCertificateValidFrom() {
-        return LocalDateTime.now();
-    }
-
-    /**
-     * Tạo thời gian hết hạn chứng thư số (1 năm)
-     */
-    public LocalDateTime getCertificateValidTo() {
-        return LocalDateTime.now().plusYears(1);
-    }
 }

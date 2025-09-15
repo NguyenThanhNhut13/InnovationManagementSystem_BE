@@ -267,8 +267,6 @@ public class DigitalSignatureService {
         if (signature.getUserSignatureProfile() != null) {
             response.setCertificateSerial(signature.getUserSignatureProfile().getCertificateSerial());
             response.setCertificateIssuer(signature.getUserSignatureProfile().getCertificateIssuer());
-            response.setCertificateValidFrom(signature.getUserSignatureProfile().getCertificateValidFrom());
-            response.setCertificateValidTo(signature.getUserSignatureProfile().getCertificateValidTo());
         }
 
         return response;

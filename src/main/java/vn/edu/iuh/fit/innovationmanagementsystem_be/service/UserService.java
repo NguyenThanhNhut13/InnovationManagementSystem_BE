@@ -20,6 +20,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.UserRole;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.UserSignatureProfile;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.UserStatusEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.UserRequest;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.UserSignatureProfileRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.UserResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.UserRoleResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.UserRoleEnum;
@@ -81,7 +82,10 @@ public class UserService {
         assignDefaultRoleToUser(user);
 
         // Tạo UserSignatureProfile cho user mới
-        this.userSignatureProfileService.createUserSignatureProfile(user);
+        UserSignatureProfileRequest request = new UserSignatureProfileRequest();
+        request.setUserId(user.getId());
+        request.setPathUrl(null); // Để null cho user mới
+        this.userSignatureProfileService.createUserSignatureProfile(request);
 
         return userMapper.toUserResponse(user);
     }
