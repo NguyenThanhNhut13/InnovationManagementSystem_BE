@@ -30,7 +30,7 @@ public interface InnovationDecisionMapper {
     @Mapping(target = "updatedAt", ignore = true)
     @Mapping(target = "createdBy", ignore = true)
     @Mapping(target = "updatedBy", ignore = true)
-    @Mapping(target = "innovationRounds", ignore = true)
+    @Mapping(target = "innovationPhases", ignore = true)
     @Mapping(target = "reviewScores", ignore = true)
     InnovationDecision toInnovationDecision(InnovationDecisionRequest innovationDecisionRequest);
 
