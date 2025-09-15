@@ -48,7 +48,7 @@ public class DepartmentPhase extends Auditable {
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "innovation_phase_id", nullable = false)
-    private InnovationPhase innovationPhase; // Giai đoạn tổng thể mà giai đoạn khoa này thuộc về
+    private InnovationPhase innovationPhase;
 
     @PrePersist
     protected void onCreate() {

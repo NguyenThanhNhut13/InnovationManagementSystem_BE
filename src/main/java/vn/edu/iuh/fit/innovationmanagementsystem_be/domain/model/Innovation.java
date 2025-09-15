@@ -34,20 +34,9 @@ public class Innovation extends Auditable {
     private Boolean isScore;
 
     // Relationships
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id")
-    private User user;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "department_id")
-    private Department department;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "innovation_phase_id")
-    private InnovationPhase innovationPhase;
 
     @OneToMany(mappedBy = "innovation", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
-    private List<ReportInnovationDetail> reportInnovationDetails = new ArrayList<>();
+    private List<FormData> formDataList = new ArrayList<>();
 
     @OneToMany(mappedBy = "innovation", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true, targetEntity = Attachment.class)
     private List<Attachment> attachments = new ArrayList<>();
@@ -55,17 +44,33 @@ public class Innovation extends Auditable {
     @OneToMany(mappedBy = "innovation", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<CoInnovation> coInnovations = new ArrayList<>();
 
-    @OneToMany(mappedBy = "innovation", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
-    private List<FormData> formDataList = new ArrayList<>();
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "department_id")
+    private Department department;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id")
+    private User user;
 
     @OneToMany(mappedBy = "innovation", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
-    private List<ReviewScore> reviewScores = new ArrayList<>();
+    private List<ReportInnovationDetail> reportInnovationDetails = new ArrayList<>();
+
+    @OneToMany(mappedBy = "innovation", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<DigitalSignature> digitalSignatures = new ArrayList<>();
 
     @OneToMany(mappedBy = "innovation", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
     private List<ReviewComment> reviewComments = new ArrayList<>();
 
-    @OneToMany(mappedBy = "innovation", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<DigitalSignature> digitalSignatures = new ArrayList<>();
+    @OneToMany(mappedBy = "innovation", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
+    private List<ReviewScore> reviewScores = new ArrayList<>();
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "innovation_round_id")
+    private InnovationRound innovationRound;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "innovation_phase_id")
+    private InnovationPhase innovationPhase;
 
     @PrePersist
     protected void ensureDefaults() {

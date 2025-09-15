@@ -38,14 +38,15 @@ public class InnovationDecision extends Auditable {
     private String bases;
 
     // Relationships
+
+    @OneToMany(mappedBy = "innovationDecision", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
+    private List<InnovationRound> innovationRounds = new ArrayList<>();
+
     @OneToMany(mappedBy = "innovationDecision", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
     private List<Chapter> chapters = new ArrayList<>();
 
     @OneToMany(mappedBy = "innovationDecision", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
     private List<Regulation> regulations = new ArrayList<>();
-
-    @OneToMany(mappedBy = "innovationDecision", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<InnovationPhase> innovationPhases = new ArrayList<>();
 
     @OneToMany(mappedBy = "innovationDecision", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<ReviewScore> reviewScores = new ArrayList<>();

@@ -6,7 +6,6 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationPhaseEnum;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationRoundStatusEnum;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -27,16 +26,6 @@ public class InnovationPhase extends Auditable {
 
     @Column(name = "name", nullable = false)
     private String name;
-
-    @Column(name = "start_date", nullable = false)
-    private LocalDate roundStartDate;
-
-    @Column(name = "end_date", nullable = false)
-    private LocalDate roundEndDate;
-
-    @Enumerated(EnumType.STRING)
-    @Column(name = "status", nullable = false)
-    private InnovationRoundStatusEnum status;
 
     // Thông tin giai đoạn cụ thể
     @Enumerated(EnumType.STRING)
@@ -60,14 +49,8 @@ public class InnovationPhase extends Auditable {
 
     // Relationships
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "innovation_decision_id", nullable = false)
-    private InnovationDecision innovationDecision;
-
-    @OneToMany(mappedBy = "innovationPhase", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
-    private List<FormTemplate> formTemplates = new ArrayList<>();
-
-    @OneToMany(mappedBy = "innovationPhase", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
-    private List<Innovation> innovations = new ArrayList<>();
+    @JoinColumn(name = "innovation_round_id", nullable = false)
+    private InnovationRound innovationRound;
 
     @OneToMany(mappedBy = "innovationPhase", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
     private List<DepartmentPhase> departmentPhases = new ArrayList<>();
@@ -77,19 +60,11 @@ public class InnovationPhase extends Auditable {
         if (isActive == null) {
             isActive = true;
         }
-        if (status == null) {
-            status = InnovationRoundStatusEnum.ACTIVE;
-        }
-    }
-
-    // // Phase methods
-    public boolean isCurrentlyActive() {
-        LocalDate today = LocalDate.now();
-        return isActive && !today.isBefore(phaseStartDate) && !today.isAfter(phaseEndDate);
     }
 
     public boolean isPhaseWithinRoundTimeframe(LocalDate startDate, LocalDate endDate) {
-        return !startDate.isBefore(roundStartDate) && !endDate.isAfter(roundEndDate);
+        return innovationRound != null &&
+                innovationRound.isPhaseWithinRoundTimeframe(startDate, endDate);
     }
 
     public boolean isPhaseWithinPhaseTimeframe(LocalDate startDate, LocalDate endDate) {

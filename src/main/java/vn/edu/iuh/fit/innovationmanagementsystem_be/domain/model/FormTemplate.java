@@ -33,8 +33,8 @@ public class FormTemplate extends Auditable {
 
     // Relationships
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "innovation_phase_id", nullable = false)
-    private InnovationPhase innovationPhase;
+    @JoinColumn(name = "innovation_round_id", nullable = false)
+    private InnovationRound innovationRound;
 
     @OneToMany(mappedBy = "formTemplate", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
     private List<FormField> formFields = new ArrayList<>();
