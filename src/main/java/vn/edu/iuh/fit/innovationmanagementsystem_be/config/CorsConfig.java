@@ -17,7 +17,8 @@ public class CorsConfig {
 
         // cho phép các URL nào có thể kết nối tới backend
         configuration.setAllowedOrigins(
-                Arrays.asList("http://localhost:3000", "http://localhost:9000", "http://localhost:9001"));
+                Arrays.asList("http://localhost:3000", "http://localhost:9000", "http://localhost:9001",
+                        "https://innovation-management-system-fe.vercel.app/"));
 
         // các method nào đc kết nối
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));

@@ -26,7 +26,7 @@ public class SecurityConfig {
 
         private final String QUAN_TRI_VIEN = UserRoleEnum.QUAN_TRI_VIEN.name();
         private final String THU_KY_QLKH_HTQT = UserRoleEnum.THU_KY_QLKH_HTQT.name();
-        // private final String TRUONG_KHOA = UserRoleEnum.TRUONG_KHOA.name();
+        private final String TRUONG_KHOA = UserRoleEnum.TRUONG_KHOA.name();
         // private final String THU_KY_KHOA = UserRoleEnum.THU_KY_KHOA.name();
         // private final String TV_HOI_DONG_KHOA = UserRoleEnum.TV_HOI_DONG_KHOA.name();
         // private final String TV_HOI_DONG_TRUONG =
@@ -66,10 +66,6 @@ public class SecurityConfig {
                                                 .permitAll()
 
                                                 .requestMatchers(HttpMethod.GET, EndpointConstants.USER_GET)
-                                                .hasAnyRole(QUAN_TRI_VIEN, THU_KY_QLKH_HTQT)
-                                                .requestMatchers(HttpMethod.POST, EndpointConstants.USER_POST)
-                                                .hasAnyRole(QUAN_TRI_VIEN, THU_KY_QLKH_HTQT)
-                                                .requestMatchers(HttpMethod.DELETE, EndpointConstants.USER_DELETE)
                                                 .hasAnyRole(QUAN_TRI_VIEN, THU_KY_QLKH_HTQT)
 
                                                 // Role Management
@@ -114,6 +110,15 @@ public class SecurityConfig {
                                                 .hasAnyRole(QUAN_TRI_VIEN, THU_KY_QLKH_HTQT)
                                                 .requestMatchers(HttpMethod.PUT, EndpointConstants.INNOVATION_PHASE_PUT)
                                                 .hasAnyRole(QUAN_TRI_VIEN, THU_KY_QLKH_HTQT)
+
+                                                // Innovation Department Phase
+                                                .requestMatchers(HttpMethod.POST,
+                                                                EndpointConstants.DEPARTMENT_PHASE_POST)
+                                                .hasAnyRole(TRUONG_KHOA, THU_KY_QLKH_HTQT, QUAN_TRI_VIEN)
+                                                .requestMatchers(HttpMethod.GET, EndpointConstants.DEPARTMENT_PHASE_GET)
+                                                .hasAnyRole(TRUONG_KHOA, THU_KY_QLKH_HTQT, QUAN_TRI_VIEN)
+                                                .requestMatchers(HttpMethod.PUT, EndpointConstants.DEPARTMENT_PHASE_PUT)
+                                                .hasAnyRole(TRUONG_KHOA, THU_KY_QLKH_HTQT, QUAN_TRI_VIEN)
 
                                                 // Form Template
                                                 .requestMatchers(HttpMethod.POST, EndpointConstants.FORM_TEMPLATE_POST)

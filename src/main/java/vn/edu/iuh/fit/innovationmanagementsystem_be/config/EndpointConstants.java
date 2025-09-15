@@ -26,14 +26,6 @@ public final class EndpointConstants {
                         "/api/v1/users/departments/{departmentId}/users"
         };
 
-        public static final String[] USER_POST = {
-                        // Removed role management endpoints - moved to ROLE_MANAGEMENT
-        };
-
-        public static final String[] USER_DELETE = {
-                        // Removed role management endpoints - moved to ROLE_MANAGEMENT
-        };
-
         // ================== ROLE MANAGEMENT ==================
         public static final String[] ROLE_MANAGEMENT_POST = {
                         "/api/v1/users/{userId}/roles/{roleId}"
@@ -94,7 +86,7 @@ public final class EndpointConstants {
 
         // ================== INNOVATION PHASE ==================
         public static final String[] INNOVATION_PHASE_POST = {
-                        "/api/v1/innovation-phases/decision/{decisionId}/create-phases",
+                        "/api/v1/innovation-phases/create-phases",
                         "/api/v1/innovation-phases/decision/{decisionId}/create-phase"
         };
 
@@ -127,6 +119,28 @@ public final class EndpointConstants {
 
         public static final String[] FORM_FIELD_DELETE = {
                         "/api/v1/form-fields/{id}"
+        };
+
+        // ================== DEPARTMENT PHASE ==================
+        public static final String[] DEPARTMENT_PHASE_POST = {
+                        "/api/v1/department-phases/department/{departmentId}/create-phase",
+                        "/api/v1/department-phases/department/{departmentId}/copy-from-innovation-phase/{innovationPhaseId}"
+        };
+
+        public static final String[] DEPARTMENT_PHASE_GET = {
+                        "/api/v1/department-phases/department/{departmentId}/phase/{phaseId}",
+                        "/api/v1/department-phases/department/{departmentId}/phase/{phaseId}/current",
+                        "/api/v1/department-phases/department/{departmentId}/phase/{phaseId}/type/{phaseType}",
+                        "/api/v1/department-phases/department/{departmentId}/phase/{phaseId}/can-submit",
+                        "/api/v1/department-phases/department/{departmentId}/phase/{phaseId}/can-review-department",
+                        "/api/v1/department-phases/department/{departmentId}/phase/{phaseId}/can-review-university",
+                        "/api/v1/department-phases/department/{departmentId}/phase/{phaseId}/can-announce"
+        };
+
+        public static final String[] DEPARTMENT_PHASE_PUT = {
+                        "/api/v1/department-phases/{phaseId}/dates",
+                        "/api/v1/department-phases/{phaseId}",
+                        "/api/v1/department-phases/{phaseId}/toggle-status"
         };
 
         // ================== UTILS ==================
