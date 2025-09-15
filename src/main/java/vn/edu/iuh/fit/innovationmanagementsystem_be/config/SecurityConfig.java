@@ -61,6 +61,10 @@ public class SecurityConfig {
                                                 .permitAll()
                                                 .requestMatchers(HttpMethod.PUT, EndpointConstants.USER_PUBLIC[2])
                                                 .permitAll()
+                                                .requestMatchers(HttpMethod.GET, EndpointConstants.UTILS_PUBLIC[0])
+                                                .permitAll()
+                                                .requestMatchers(HttpMethod.GET, EndpointConstants.UTILS_PUBLIC[1])
+                                                .permitAll()
 
                                                 .requestMatchers(HttpMethod.GET, EndpointConstants.USER_GET)
                                                 .hasAnyRole(QUAN_TRI_VIEN, THU_KY_QLKH_HTQT)

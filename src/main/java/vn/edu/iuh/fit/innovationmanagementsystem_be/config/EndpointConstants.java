@@ -117,4 +117,10 @@ public final class EndpointConstants {
         public static final String[] FORM_FIELD_DELETE = {
                         "/api/v1/form-fields/{id}"
         };
+
+        // ================== UTILS ==================
+        public static final String[] UTILS_PUBLIC = {
+                        "/api/v1/utils/download/{fileName}",
+                        "/api/v1/utils/info/{fileName}"
+        };
 }

@@ -1,6 +1,7 @@
 package vn.edu.iuh.fit.innovationmanagementsystem_be.utils;
 
 import org.springframework.core.MethodParameter;
+import org.springframework.core.io.Resource;
 import org.springframework.http.MediaType;
 import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.http.server.ServerHttpRequest;
@@ -35,7 +36,7 @@ public class FormatRestResponse implements ResponseBodyAdvice<Object> {
         RestResponse<Object> res = new RestResponse<Object>();
         res.setStatusCode(status);
 
-        if (body instanceof String || status >= 400) {
+        if (body instanceof String || body instanceof Resource || status >= 400) {
             return body;
         } else {
             res.setData(body);
