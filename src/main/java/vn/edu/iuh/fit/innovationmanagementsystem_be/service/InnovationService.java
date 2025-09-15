@@ -7,7 +7,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.Innovation;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.InnovationRound;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.InnovationPhase;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.User;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationStatusEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.FormDataRequest;
@@ -19,7 +19,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.Innovatio
 import vn.edu.iuh.fit.innovationmanagementsystem_be.exception.IdInvalidException;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.mapper.InnovationMapper;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.InnovationRepository;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.InnovationRoundRepository;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.InnovationPhaseRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.ResultPaginationDTO;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.Utils;
 
@@ -36,20 +36,20 @@ import java.util.stream.Collectors;
 public class InnovationService {
 
     private final InnovationRepository innovationRepository;
-    private final InnovationRoundRepository innovationRoundRepository;
+    private final InnovationPhaseRepository innovationPhaseRepository;
     private final FormDataService formDataService;
     private final InnovationMapper innovationMapper;
     private final UserService userService;
     private final DigitalSignatureService digitalSignatureService;
 
     public InnovationService(InnovationRepository innovationRepository,
-            InnovationRoundRepository innovationRoundRepository,
+            InnovationPhaseRepository innovationPhaseRepository,
             FormDataService formDataService,
             InnovationMapper innovationMapper,
             UserService userService,
             DigitalSignatureService digitalSignatureService) {
         this.innovationRepository = innovationRepository;
-        this.innovationRoundRepository = innovationRoundRepository;
+        this.innovationPhaseRepository = innovationPhaseRepository;
         this.formDataService = formDataService;
         this.innovationMapper = innovationMapper;
         this.userService = userService;
@@ -80,9 +80,9 @@ public class InnovationService {
                     "Action type chỉ được là DRAFT hoặc SUBMITTED. Các trạng thái khác sẽ được xử lý bởi hội đồng chấm điểm.");
         }
 
-        InnovationRound innovationRound = innovationRoundRepository.findByIdWithDecision(request.getInnovationRoundId())
+        InnovationPhase innovationPhase = innovationPhaseRepository.findById(request.getInnovationPhaseId())
                 .orElseThrow(() -> new IdInvalidException(
-                        "Không tìm thấy đợt sáng kiến với ID: " + request.getInnovationRoundId()));
+                        "Không tìm thấy giai đoạn sáng kiến với ID: " + request.getInnovationPhaseId()));
 
         User currentUser = userService.getCurrentUser();
 
@@ -90,7 +90,7 @@ public class InnovationService {
         innovation.setInnovationName(request.getInnovationName());
         innovation.setUser(currentUser);
         innovation.setDepartment(currentUser.getDepartment());
-        innovation.setInnovationRound(innovationRound);
+        innovation.setInnovationPhase(innovationPhase);
         innovation.setIsScore(request.getIsScore() != null ? request.getIsScore() : false);
 
         if (InnovationStatusEnum.SUBMITTED.name().equals(actionType)) {
@@ -287,7 +287,7 @@ public class InnovationService {
 
             return "sha256:" + hashString;
         } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException("Không thể tạo document hash: " + e.getMessage(), e);
+            throw new IdInvalidException("Không thể tạo document hash: " + e.getMessage(), e);
         }
     }
 
@@ -315,7 +315,7 @@ public class InnovationService {
 
             return "sha256:" + hashString;
         } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException("Không thể tạo document hash: " + e.getMessage(), e);
+            throw new IdInvalidException("Không thể tạo document hash: " + e.getMessage(), e);
         }
     }
 

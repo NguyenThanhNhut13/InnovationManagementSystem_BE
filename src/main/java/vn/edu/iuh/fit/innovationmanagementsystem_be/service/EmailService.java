@@ -6,6 +6,7 @@ import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 
 import jakarta.mail.internet.MimeMessage;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.exception.IdInvalidException;
 
 @Service
 public class EmailService {
@@ -116,7 +117,7 @@ public class EmailService {
 
             mailSender.send(mimeMessage);
         } catch (Exception e) {
-            throw new RuntimeException("Không thể gửi email OTP: " + e.getMessage());
+            throw new IdInvalidException("Không thể gửi email OTP: " + e.getMessage());
         }
     }
 

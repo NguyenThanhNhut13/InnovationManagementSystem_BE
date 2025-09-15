@@ -7,6 +7,7 @@ import org.springframework.security.oauth2.jwt.*;
 import org.springframework.stereotype.Component;
 
 import jakarta.annotation.PostConstruct;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.exception.IdInvalidException;
 
 import java.io.InputStream;
 import java.security.KeyFactory;
@@ -70,7 +71,7 @@ public class JwtTokenUtil {
             this.publicKey = publicKeyFactory.generatePublic(publicKeySpec);
 
         } catch (Exception e) {
-            throw new RuntimeException("Lỗi khi tải khóa RSA: " + e.getMessage());
+            throw new IdInvalidException("Lỗi khi tải khóa RSA: " + e.getMessage());
         }
     }
 
@@ -119,7 +120,7 @@ public class JwtTokenUtil {
             Jwt jwt = jwtEncoder.encode(parameters);
             return jwt.getTokenValue();
         } catch (Exception e) {
-            throw new RuntimeException("Lỗi khi tạo token JWT: " + e.getMessage());
+            throw new IdInvalidException("Lỗi khi tạo token JWT: " + e.getMessage());
         }
     }
 

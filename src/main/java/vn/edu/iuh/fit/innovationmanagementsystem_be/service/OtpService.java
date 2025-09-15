@@ -3,6 +3,8 @@ package vn.edu.iuh.fit.innovationmanagementsystem_be.service;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
+import vn.edu.iuh.fit.innovationmanagementsystem_be.exception.IdInvalidException;
+
 import java.util.concurrent.TimeUnit;
 
 @Service
@@ -33,7 +35,7 @@ public class OtpService {
         try {
             redisTemplate.opsForValue().set(key, otp, OTP_TTL, TimeUnit.SECONDS);
         } catch (Exception e) {
-            throw new RuntimeException("Không thể lưu OTP", e);
+            throw new IdInvalidException("Không thể lưu OTP", e);
         }
     }
 

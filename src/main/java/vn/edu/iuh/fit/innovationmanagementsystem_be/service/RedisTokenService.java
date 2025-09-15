@@ -2,6 +2,9 @@ package vn.edu.iuh.fit.innovationmanagementsystem_be.service;
 
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
+
+import vn.edu.iuh.fit.innovationmanagementsystem_be.exception.IdInvalidException;
+
 import java.util.concurrent.TimeUnit;
 
 @Service
@@ -22,7 +25,7 @@ public class RedisTokenService {
         try {
             redisTemplate.opsForValue().set(key, userId, ttlInSeconds, TimeUnit.SECONDS);
         } catch (Exception e) {
-            throw new RuntimeException("Không thể lưu refresh token", e);
+            throw new IdInvalidException("Không thể lưu refresh token", e);
         }
     }
 
@@ -62,7 +65,7 @@ public class RedisTokenService {
             saveRefreshToken(userId, newRefreshToken, ttlInSeconds);
 
         } catch (Exception e) {
-            throw new RuntimeException("Không thể cập nhật refresh token", e);
+            throw new IdInvalidException("Không thể cập nhật refresh token", e);
         }
     }
 
