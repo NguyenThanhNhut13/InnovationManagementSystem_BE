@@ -153,6 +153,15 @@ public class UserService {
 
     // 6. Assign Role To User
     public UserRoleResponse assignRoleToUser(@NonNull String userId, @NonNull String roleId) {
+        // Kiểm tra quyền: chỉ THU_KY_QLKH_HTQT được gán role
+        User currentUser = getCurrentUser();
+        boolean hasPermission = currentUser.getUserRoles().stream()
+                .anyMatch(userRole -> userRole.getRole().getRoleName() == UserRoleEnum.THU_KY_QLKH_HTQT);
+
+        if (!hasPermission) {
+            throw new IdInvalidException("Chỉ có THU_KY_QLKH_HTQT mới được gán vai trò cho người dùng");
+        }
+
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IdInvalidException("Người dùng không tồn tại với ID: " + userId));
         Role role = roleRepository.findById(roleId)
@@ -160,6 +169,15 @@ public class UserService {
 
         if (this.userRoleRepository.existsByUserIdAndRoleId(userId, roleId)) {
             throw new IdInvalidException("User đã có role này");
+        }
+
+        // Kiểm tra ràng buộc: mỗi phòng ban chỉ được có 1 role TRUONG_KHOA
+        if (role.getRoleName() == UserRoleEnum.TRUONG_KHOA) {
+            boolean departmentHasTruongKhoa = userRoleRepository.existsByRoleNameAndUserDepartmentId(
+                    UserRoleEnum.TRUONG_KHOA, user.getDepartment().getId());
+            if (departmentHasTruongKhoa) {
+                throw new IdInvalidException("Phòng ban này đã có trưởng khoa, không thể gán thêm role TRUONG_KHOA");
+            }
         }
 
         UserRole userRole = new UserRole();
@@ -171,6 +189,14 @@ public class UserService {
 
     // 7. Delete Role From User
     public void removeRoleFromUser(@NonNull String userId, @NonNull String roleId) {
+        // Kiểm tra quyền: chỉ THU_KY_QLKH_HTQT được xóa role
+        User currentUser = getCurrentUser();
+        boolean hasPermission = currentUser.getUserRoles().stream()
+                .anyMatch(userRole -> userRole.getRole().getRoleName() == UserRoleEnum.THU_KY_QLKH_HTQT);
+
+        if (!hasPermission) {
+            throw new IdInvalidException("Chỉ có THU_KY_QLKH_HTQT mới được xóa vai trò khỏi người dùng");
+        }
 
         if (!userRepository.existsById(userId)) {
             throw new IdInvalidException("User không tồn tại với ID: " + userId);
