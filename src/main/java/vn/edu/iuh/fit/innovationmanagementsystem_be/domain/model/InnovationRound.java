@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationRoundStatusEnum;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationPhaseEnum;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -48,11 +49,43 @@ public class InnovationRound extends Auditable {
     @OneToMany(mappedBy = "innovationRound", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
     private List<Innovation> innovations = new ArrayList<>();
 
+    @OneToMany(mappedBy = "innovationRound", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
+    private List<InnovationPhase> innovationPhases = new ArrayList<>();
+
     @PrePersist
     protected void onCreate() {
         if (status == null) {
             status = InnovationRoundStatusEnum.ACTIVE;
         }
+    }
+
+    // Get current phase
+    public InnovationPhase getCurrentPhase() {
+        return innovationPhases.stream()
+                .filter(InnovationPhase::isCurrentlyActive)
+                .findFirst()
+                .orElse(null);
+    }
+
+    // Get phase by type
+    public InnovationPhase getPhaseByType(InnovationPhaseEnum phaseType) {
+        return innovationPhases.stream()
+                .filter(phase -> phase.getPhaseType() == phaseType)
+                .findFirst()
+                .orElse(null);
+    }
+
+    // Check if there is an active phase
+    public boolean hasActivePhase() {
+        return innovationPhases.stream().anyMatch(InnovationPhase::isCurrentlyActive);
+    }
+
+    // Get completed phases
+    public List<InnovationPhase> getCompletedPhases() {
+        return innovationPhases.stream()
+                .filter(InnovationPhase::isCompleted)
+                .sorted((p1, p2) -> p1.getPhaseOrder().compareTo(p2.getPhaseOrder()))
+                .toList();
     }
 
 }
