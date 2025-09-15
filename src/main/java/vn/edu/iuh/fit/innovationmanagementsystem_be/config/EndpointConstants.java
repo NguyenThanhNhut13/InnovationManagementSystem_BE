@@ -83,14 +83,16 @@ public final class EndpointConstants {
                         "/api/v1/regulations/{id}"
         };
 
-        // ================== INNOVATION ROUND ==================
-        public static final String[] INNOVATION_ROUND_POST = {
-                        "/api/v1/innovation-rounds",
-                        "/api/v1/innovation-rounds/{id}/status"
+        // ================== INNOVATION PHASE ==================
+        public static final String[] INNOVATION_PHASE_POST = {
+                        "/api/v1/innovation-phases/decision/{decisionId}/create-phases",
+                        "/api/v1/innovation-phases/decision/{decisionId}/create-phase"
         };
 
-        public static final String[] INNOVATION_ROUND_PUT = {
-                        "/api/v1/innovation-rounds/{id}"
+        public static final String[] INNOVATION_PHASE_PUT = {
+                        "/api/v1/innovation-phases/{phaseId}/dates",
+                        "/api/v1/innovation-phases/{phaseId}/toggle-status",
+                        "/api/v1/innovation-phases/{phaseId}"
         };
 
         // ================== FORM TEMPLATE ==================

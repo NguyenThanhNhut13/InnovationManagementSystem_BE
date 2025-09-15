@@ -78,6 +78,41 @@ public class SecurityConfig {
                                                 .requestMatchers(HttpMethod.PUT, EndpointConstants.DEPARTMENT_PUT)
                                                 .hasAnyRole(QUAN_TRI_VIEN, THU_KY_QLKH_HTQT)
 
+                                                .requestMatchers(HttpMethod.POST,
+                                                                EndpointConstants.INNOVATION_DECISION_POST)
+                                                .hasAnyRole(QUAN_TRI_VIEN, THU_KY_QLKH_HTQT)
+                                                .requestMatchers(HttpMethod.PUT,
+                                                                EndpointConstants.INNOVATION_DECISION_PUT)
+                                                .hasAnyRole(QUAN_TRI_VIEN, THU_KY_QLKH_HTQT)
+
+                                                .requestMatchers(HttpMethod.POST, EndpointConstants.CHAPTER_POST)
+                                                .hasAnyRole(QUAN_TRI_VIEN, THU_KY_QLKH_HTQT)
+                                                .requestMatchers(HttpMethod.PUT, EndpointConstants.CHAPTER_PUT)
+                                                .hasAnyRole(QUAN_TRI_VIEN, THU_KY_QLKH_HTQT)
+
+                                                .requestMatchers(HttpMethod.POST, EndpointConstants.REGULATION_POST)
+                                                .hasAnyRole(QUAN_TRI_VIEN, THU_KY_QLKH_HTQT)
+                                                .requestMatchers(HttpMethod.PUT, EndpointConstants.REGULATION_PUT)
+                                                .hasAnyRole(QUAN_TRI_VIEN, THU_KY_QLKH_HTQT)
+
+                                                .requestMatchers(HttpMethod.POST,
+                                                                EndpointConstants.INNOVATION_PHASE_POST)
+                                                .hasAnyRole(QUAN_TRI_VIEN, THU_KY_QLKH_HTQT)
+                                                .requestMatchers(HttpMethod.PUT, EndpointConstants.INNOVATION_PHASE_PUT)
+                                                .hasAnyRole(QUAN_TRI_VIEN, THU_KY_QLKH_HTQT)
+
+                                                .requestMatchers(HttpMethod.POST, EndpointConstants.FORM_TEMPLATE_POST)
+                                                .hasAnyRole(QUAN_TRI_VIEN, THU_KY_QLKH_HTQT)
+                                                .requestMatchers(HttpMethod.PUT, EndpointConstants.FORM_TEMPLATE_PUT)
+                                                .hasAnyRole(QUAN_TRI_VIEN, THU_KY_QLKH_HTQT)
+
+                                                .requestMatchers(HttpMethod.POST, EndpointConstants.FORM_FIELD_POST)
+                                                .hasAnyRole(QUAN_TRI_VIEN, THU_KY_QLKH_HTQT)
+                                                .requestMatchers(HttpMethod.PUT, EndpointConstants.FORM_FIELD_PUT)
+                                                .hasAnyRole(QUAN_TRI_VIEN, THU_KY_QLKH_HTQT)
+                                                .requestMatchers(HttpMethod.DELETE, EndpointConstants.FORM_FIELD_DELETE)
+                                                .hasAnyRole(QUAN_TRI_VIEN, THU_KY_QLKH_HTQT)
+
                                                 .anyRequest().authenticated())
                                 .oauth2ResourceServer(oauth2 -> oauth2
                                                 .jwt(jwt -> jwt
