@@ -281,7 +281,7 @@ public class DepartmentService {
     private void verifyUserTransfer(List<User> users, String newDepartmentId) {
         users.forEach(user -> {
             if (!user.getDepartment().getId().equals(newDepartmentId)) {
-                throw new RuntimeException("Có lỗi xác thực xảy ra khi di chuyển user: " + user.getId());
+                throw new IdInvalidException("Có lỗi xác thực xảy ra khi di chuyển user: " + user.getId());
             }
         });
     }
@@ -289,7 +289,7 @@ public class DepartmentService {
     private void verifyInnovationTransfer(List<Innovation> innovations, String newDepartmentId) {
         innovations.forEach(innovation -> {
             if (!innovation.getDepartment().getId().equals(newDepartmentId)) {
-                throw new RuntimeException(
+                throw new IdInvalidException(
                         "Có lỗi xác thực xảy ra khi di chuyển innovation: " + innovation.getId());
             }
         });
@@ -375,7 +375,7 @@ public class DepartmentService {
             return departmentMapper.toDepartmentResponse(mergedDepartment);
 
         } catch (Exception e) {
-            throw new RuntimeException("Lỗi khi gộp departments: " + e.getMessage(), e);
+            throw new IdInvalidException("Lỗi khi gộp departments: " + e.getMessage(), e);
         }
     }
 
@@ -385,7 +385,7 @@ public class DepartmentService {
         try {
             // Validation bước 1: Kiểm tra source department
             Department sourceDepartment = departmentRepository.findById(request.getSourceDepartmentId())
-                    .orElseThrow(() -> new RuntimeException(
+                    .orElseThrow(() -> new IdInvalidException(
                             "Không tìm thấy source department với id: " + request.getSourceDepartmentId()));
 
             // Validation bước 2: Kiểm tra new department codes
@@ -451,7 +451,7 @@ public class DepartmentService {
                     .collect(Collectors.toList());
 
         } catch (Exception e) {
-            throw new RuntimeException("Lỗi khi tách department: " + e.getMessage(), e);
+            throw new IdInvalidException("Lỗi khi tách department: " + e.getMessage(), e);
         }
     }
 
