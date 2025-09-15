@@ -32,6 +32,16 @@ public class FormatRestResponse implements ResponseBodyAdvice<Object> {
             return false;
         }
 
+        // Skip formatting for file conversion endpoints that return raw content
+        if (methodName.contains("convertDocToHtml") || methodName.contains("downloadFile")) {
+            return false;
+        }
+
+        // Skip formatting for digital signature endpoints that return raw strings
+        if (methodName.contains("generateSignature") || methodName.contains("generateDocumentHash")) {
+            return false;
+        }
+
         return true;
     }
 
