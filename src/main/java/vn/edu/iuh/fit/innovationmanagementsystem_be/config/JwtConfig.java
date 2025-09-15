@@ -7,6 +7,8 @@ import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 
+import vn.edu.iuh.fit.innovationmanagementsystem_be.exception.IdInvalidException;
+
 import java.security.interfaces.RSAPublicKey;
 
 @Configuration
@@ -34,7 +36,7 @@ public class JwtConfig {
                             org.springframework.security.oauth2.jose.jws.SignatureAlgorithm.RS256)
                     .build();
         } catch (Exception e) {
-            throw new RuntimeException("Failed to create JWT decoder: " + e.getMessage(), e);
+            throw new IdInvalidException("Failed to create JWT decoder: " + e.getMessage(), e);
         }
     }
 

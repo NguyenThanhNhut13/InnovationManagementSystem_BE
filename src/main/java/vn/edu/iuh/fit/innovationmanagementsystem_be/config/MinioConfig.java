@@ -2,6 +2,8 @@ package vn.edu.iuh.fit.innovationmanagementsystem_be.config;
 
 import io.minio.MinioClient;
 import lombok.extern.slf4j.Slf4j;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.exception.IdInvalidException;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -29,7 +31,7 @@ public class MinioConfig {
 
             return client;
         } catch (Exception e) {
-            throw new RuntimeException("Failed to initialize MinIO client", e);
+            throw new IdInvalidException("Failed to initialize MinIO client", e);
         }
     }
 }
