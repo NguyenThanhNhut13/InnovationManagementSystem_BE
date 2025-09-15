@@ -98,6 +98,13 @@
 			<version>3.1.9</version>
 		</dependency>
 
+		<!-- MinIO Client - Object storage -->
+		<dependency>
+			<groupId>io.minio</groupId>
+			<artifactId>minio</artifactId>
+			<version>8.5.7</version>
+		</dependency>
+
 		<!-- ===== DEVELOPMENT & TESTING TOOLS ===== -->
 
 		<!-- Spring Boot DevTools - Hot reload và development utilities -->
