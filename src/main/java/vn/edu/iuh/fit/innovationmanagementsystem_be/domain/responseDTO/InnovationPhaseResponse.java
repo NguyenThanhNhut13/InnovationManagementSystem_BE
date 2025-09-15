@@ -1,41 +1,41 @@
-package vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO;
+package vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO;
 
-import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationPhaseEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationRoundStatusEnum;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Getter
-@Setter
-public class InnovationPhaseRequest {
+public class InnovationPhaseResponse {
+
+    private String id;
 
     private String name;
-
+    private LocalDate roundStartDate;
+    private LocalDate roundEndDate;
     private InnovationRoundStatusEnum status;
 
     // Thông tin giai đoạn cụ thể
-    @NotNull(message = "Loại giai đoạn không được để trống")
     private InnovationPhaseEnum phaseType;
-
-    @NotNull(message = "Ngày bắt đầu giai đoạn không được để trống")
     private LocalDate phaseStartDate;
-
-    @NotNull(message = "Ngày kết thúc giai đoạn không được để trống")
     private LocalDate phaseEndDate;
-
     private String description;
-
     private Boolean isActive;
+    private Integer phaseOrder; // Thứ tự giai đoạn (1, 2, 3, 4)
 
-    @NotNull(message = "Thứ tự giai đoạn không được để trống")
-    private Integer phaseOrder;
+    // InnovationDecision info
+    private String innovationDecisionId;
+    private String innovationDecisionTitle;
+
+    // Audit info
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
+    private String createdBy;
+    private String updatedBy;
 }
