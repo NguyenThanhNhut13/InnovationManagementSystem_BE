@@ -1,0 +1,245 @@
+package vn.edu.iuh.fit.innovationmanagementsystem_be.controller;
+
+import io.minio.StatObjectResponse;
+import org.springframework.core.io.InputStreamResource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.FileExistsResponse;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.FileInfoResponse;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.FileUploadResponse;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.MultipleFileUploadResponse;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.service.FileService;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.annotation.ApiMessage;
+
+import java.io.File;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/v1/utils")
+public class UtilsController {
+
+    private final FileService fileService;
+
+    public UtilsController(FileService fileService) {
+        this.fileService = fileService;
+    }
+
+    // 1. Upload single file to MinIO
+    @PostMapping("/upload")
+    @ApiMessage("Upload file thành công")
+    public ResponseEntity<FileUploadResponse> uploadFile(@RequestParam("file") MultipartFile file) throws Exception {
+
+        if (file.isEmpty()) {
+            throw new IllegalArgumentException("File is empty");
+        }
+
+        if (file.getOriginalFilename() == null || file.getOriginalFilename().trim().isEmpty()) {
+            throw new IllegalArgumentException("File name is required");
+        }
+
+        if (file.getSize() > 10 * 1024 * 1024) {
+            throw new IllegalArgumentException("File size exceeds 10MB limit");
+        }
+
+        String fileName = fileService.uploadFile(file);
+
+        FileUploadResponse response = new FileUploadResponse(
+                fileName,
+                file.getOriginalFilename(),
+                file.getSize(),
+                file.getContentType(),
+                LocalDateTime.now());
+
+        return ResponseEntity.ok(response);
+    }
+
+    // 2. Upload multiple files to MinIO
+    @PostMapping("/upload-multiple")
+    @ApiMessage("Upload nhiều file thành công")
+    public ResponseEntity<MultipleFileUploadResponse> uploadMultipleFiles(
+            @RequestParam("files") List<MultipartFile> files) throws Exception {
+
+        if (files == null || files.isEmpty()) {
+            throw new IllegalArgumentException("No files provided");
+        }
+
+        for (MultipartFile file : files) {
+            if (file.isEmpty()) {
+                throw new IllegalArgumentException("One or more files are empty");
+            }
+        }
+
+        for (MultipartFile file : files) {
+            if (file.getSize() > 10 * 1024 * 1024) {
+                throw new IllegalArgumentException("File '" + file.getOriginalFilename() + "' exceeds 10MB limit");
+            }
+        }
+
+        long totalSize = files.stream().mapToLong(MultipartFile::getSize).sum();
+        if (totalSize > 50 * 1024 * 1024) {
+            throw new IllegalArgumentException("Total request size exceeds 50MB limit");
+        }
+
+        List<String> uploadedFileNames = fileService.uploadMultipleFiles(files);
+
+        List<FileUploadResponse> fileResponses = new ArrayList<>();
+        for (int i = 0; i < files.size(); i++) {
+            FileUploadResponse fileResponse = new FileUploadResponse(
+                    uploadedFileNames.get(i),
+                    files.get(i).getOriginalFilename(),
+                    files.get(i).getSize(),
+                    files.get(i).getContentType(),
+                    LocalDateTime.now());
+            fileResponses.add(fileResponse);
+        }
+
+        MultipleFileUploadResponse response = new MultipleFileUploadResponse(
+                uploadedFileNames.size(),
+                totalSize,
+                uploadedFileNames,
+                fileResponses,
+                LocalDateTime.now());
+
+        return ResponseEntity.ok(response);
+    }
+
+    // 3. Download file from MinIO
+    @GetMapping("/download/{fileName}")
+    @ApiMessage("Download file thành công")
+    public ResponseEntity<InputStreamResource> downloadFile(@PathVariable String fileName) throws Exception {
+
+        if (!fileService.fileExists(fileName)) {
+            return ResponseEntity.notFound().build();
+        }
+
+        StatObjectResponse fileInfo = fileService.getFileInfo(fileName);
+        InputStream fileStream = fileService.downloadFile(fileName);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.add(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fileName + "\"");
+        headers.add(HttpHeaders.CONTENT_TYPE, fileInfo.contentType());
+        headers.add(HttpHeaders.CONTENT_LENGTH, String.valueOf(fileInfo.size()));
+
+        InputStreamResource resource = new InputStreamResource(fileStream);
+
+        return ResponseEntity.ok()
+                .headers(headers)
+                .body(resource);
+    }
+
+    // 4. Get file info without downloading
+    @GetMapping("/info/{fileName}")
+    @ApiMessage("Lấy thông tin file thành công")
+    public ResponseEntity<FileInfoResponse> getFileInfo(@PathVariable String fileName) throws Exception {
+
+        if (!fileService.fileExists(fileName)) {
+            return ResponseEntity.notFound().build();
+        }
+
+        StatObjectResponse fileInfo = fileService.getFileInfo(fileName);
+
+        FileInfoResponse response = new FileInfoResponse(
+                fileName,
+                fileInfo.size(),
+                fileInfo.contentType(),
+                fileInfo.lastModified().toLocalDateTime(),
+                fileInfo.etag());
+
+        return ResponseEntity.ok(response);
+    }
+
+    // 5. Delete file from MinIO
+    @DeleteMapping("/delete/{fileName}")
+    @ApiMessage("Xóa file thành công")
+    public ResponseEntity<Void> deleteFile(@PathVariable String fileName) throws Exception {
+
+        if (!fileService.fileExists(fileName)) {
+            return ResponseEntity.notFound().build();
+        }
+
+        fileService.deleteFile(fileName);
+
+        return ResponseEntity.noContent().build();
+    }
+
+    // 6. Check if file exists
+    @GetMapping("/exists/{fileName}")
+    @ApiMessage("Kiểm tra file tồn tại thành công")
+    public ResponseEntity<FileExistsResponse> checkFileExists(@PathVariable String fileName) {
+        boolean exists = fileService.fileExists(fileName);
+
+        FileExistsResponse response = new FileExistsResponse(fileName, exists);
+
+        return ResponseEntity.ok(response);
+    }
+
+    // 7. Convert DOC/DOCX file to HTML
+    @PostMapping(value = "/doc-to-html", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @ApiMessage("Convert DOC/DOCX sang HTML thành công")
+    public ResponseEntity<String> convertDocToHtml(@RequestParam("file") MultipartFile file) {
+        File tempFile = null;
+        File htmlFile = null;
+        try {
+            // 1. Lưu file tạm
+            tempFile = File.createTempFile("upload-", "-" + file.getOriginalFilename());
+            file.transferTo(tempFile);
+
+            // 2. Thư mục output
+            File outputDir = new File(System.getProperty("java.io.tmpdir"));
+
+            // 3. Gọi LibreOffice để convert DOC/DOCX → HTML
+            ProcessBuilder pb = new ProcessBuilder(
+                    "C:\\Program Files\\LibreOffice\\program\\soffice.exe",
+                    "--headless",
+                    // "--convert-to", "html:HTML (StarWriter)",
+                    "--convert-to", "html:XHTML Writer File:UTF8",
+                    "--outdir", outputDir.getAbsolutePath(),
+                    tempFile.getAbsolutePath());
+            pb.redirectErrorStream(true);
+
+            Process process = pb.start();
+
+            process.waitFor();
+
+            // 4. Tìm file HTML đã sinh ra
+            String tempName = tempFile.getName();
+            String htmlName = tempName.replaceAll("\\.[^.]+$", "") + ".html";
+            htmlFile = new File(outputDir, htmlName);
+
+            if (!htmlFile.exists()) {
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                        .body("Convert thất bại! Không tìm thấy file: " + htmlFile.getAbsolutePath());
+            }
+
+            // 5. Đọc nội dung HTML
+            String html = new String(Files.readAllBytes(htmlFile.toPath()), StandardCharsets.UTF_8);
+
+            // 6. Trả về nội dung HTML
+            return ResponseEntity.ok()
+                    .contentType(MediaType.TEXT_HTML)
+                    .body(html);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Lỗi khi convert: " + e.getMessage());
+        } finally {
+            // 7. Dọn dẹp file tạm
+            if (tempFile != null && tempFile.exists()) {
+                tempFile.delete();
+            }
+            if (htmlFile != null && htmlFile.exists()) {
+                htmlFile.delete();
+            }
+        }
+    }
+}
