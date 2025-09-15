@@ -21,6 +21,17 @@ public class FormatRestResponse implements ResponseBodyAdvice<Object> {
     @Override
     public boolean supports(@NonNull MethodParameter returnType,
             @NonNull Class<? extends HttpMessageConverter<?>> converterType) {
+        // Exclude OpenAPI endpoints from response formatting
+        String methodName = returnType.getMethod() != null ? returnType.getMethod().getName() : "";
+        String className = returnType.getContainingClass() != null ? returnType.getContainingClass().getSimpleName()
+                : "";
+
+        // Skip formatting for SpringDoc OpenAPI endpoints
+        if (className.contains("OpenApi") || methodName.contains("openapi") ||
+                methodName.contains("swagger") || methodName.contains("api-docs")) {
+            return false;
+        }
+
         return true;
     }
 
@@ -36,14 +47,20 @@ public class FormatRestResponse implements ResponseBodyAdvice<Object> {
         RestResponse<Object> res = new RestResponse<Object>();
         res.setStatusCode(status);
 
-        if (body instanceof String || body instanceof Resource || status >= 400) {
+        if (body instanceof Resource || status >= 400) {
             return body;
+        } else if (body instanceof String) {
+            // Handle String responses by wrapping them in RestResponse
+            res.setData(body);
+            ApiMessage message = returnType.getMethodAnnotation(ApiMessage.class);
+            res.setMessage(message != null ? message.value() : "CALL API SUCCESS");
+            return res;
         } else {
             res.setData(body);
             ApiMessage message = returnType.getMethodAnnotation(ApiMessage.class);
             res.setMessage(message != null ? message.value() : "CALL API SUCCESS");
+            return res;
         }
-        return res;
     }
 
 }
