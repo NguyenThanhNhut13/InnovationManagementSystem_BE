@@ -18,6 +18,7 @@ public interface InnovationMapper {
     @Mapping(target = "departmentName", source = "department.departmentName")
     @Mapping(target = "departmentCode", source = "department.departmentCode")
     @Mapping(target = "innovationPhaseId", source = "innovationPhase.id")
-    @Mapping(target = "innovationDecisionId", source = "innovationPhase.innovationDecision.id")
+    @Mapping(target = "innovationRoundId", source = "innovationRound.id")
+    @Mapping(target = "innovationRoundName", source = "innovationRound.name")
     InnovationResponse toInnovationResponse(Innovation innovation);
 }

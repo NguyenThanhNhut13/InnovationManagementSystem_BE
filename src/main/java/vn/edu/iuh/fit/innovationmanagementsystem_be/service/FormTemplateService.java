@@ -48,9 +48,15 @@ public class FormTemplateService {
         return formTemplateMapper.toFormTemplateResponse(template);
     }
 
-    // 2. Get all form templates by innovation phase
+    // 2. Get all form templates by innovation phase (via innovation round)
     public List<FormTemplateResponse> getFormTemplatesByInnovationPhase(String phaseId) {
-        List<FormTemplate> templates = formTemplateRepository.findByInnovationPhaseIdOrderByName(phaseId);
+        // First get the innovation phase to find its innovation round
+        InnovationPhase phase = innovationPhaseRepository.findById(phaseId)
+                .orElseThrow(() -> new IdInvalidException("Innovation phase không tồn tại với ID: " + phaseId));
+
+        // Then get form templates by innovation round
+        List<FormTemplate> templates = formTemplateRepository
+                .findByInnovationRoundIdOrderByName(phase.getInnovationRound().getId());
         return templates.stream()
                 .map(formTemplateMapper::toFormTemplateResponse)
                 .collect(Collectors.toList());
@@ -67,7 +73,7 @@ public class FormTemplateService {
         template.setName(request.getName());
         template.setDescription(request.getDescription());
         template.setTemplateContent(request.getTemplateContent());
-        template.setInnovationPhase(phase);
+        template.setInnovationRound(phase.getInnovationRound());
 
         FormTemplate savedTemplate = formTemplateRepository.save(template);
         return formTemplateMapper.toFormTemplateResponse(savedTemplate);
@@ -99,7 +105,7 @@ public class FormTemplateService {
                     template.setName(templateData.getName());
                     template.setDescription(templateData.getDescription());
                     template.setTemplateContent(templateData.getTemplateContent());
-                    template.setInnovationPhase(innovationPhase);
+                    template.setInnovationRound(innovationPhase.getInnovationRound());
                     return template;
                 })
                 .collect(Collectors.toList());

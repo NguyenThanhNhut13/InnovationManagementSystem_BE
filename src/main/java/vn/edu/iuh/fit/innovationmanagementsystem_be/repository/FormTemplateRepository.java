@@ -12,7 +12,7 @@ import java.util.List;
 @Repository
 public interface FormTemplateRepository extends JpaRepository<FormTemplate, String> {
 
-        List<FormTemplate> findByInnovationPhaseIdOrderByName(String innovationPhaseId);
+        List<FormTemplate> findByInnovationRoundIdOrderByName(String innovationRoundId);
 
         Page<FormTemplate> findAll(Specification<FormTemplate> specification,
                         Pageable pageable);

@@ -29,7 +29,10 @@ public class InnovationResponse {
 
     // Innovation Phase info
     private String innovationPhaseId;
-    private String innovationDecisionId;
+
+    // Innovation Round info
+    private String innovationRoundId;
+    private String innovationRoundName;
 
     // Audit info
     private LocalDateTime createdAt;
