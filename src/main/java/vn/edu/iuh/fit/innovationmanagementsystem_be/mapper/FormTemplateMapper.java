@@ -10,7 +10,7 @@ public interface FormTemplateMapper {
 
     FormTemplateMapper INSTANCE = org.mapstruct.factory.Mappers.getMapper(FormTemplateMapper.class);
 
-    @Mapping(target = "innovationPhaseId", source = "innovationPhase.id")
-    @Mapping(target = "innovationPhaseName", source = "innovationPhase.name")
+    @Mapping(target = "innovationRoundId", source = "innovationRound.id")
+    @Mapping(target = "innovationRoundName", source = "innovationRound.name")
     FormTemplateResponse toFormTemplateResponse(FormTemplate formTemplate);
 }
