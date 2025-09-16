@@ -43,6 +43,9 @@ public class InnovationRound extends Auditable {
     @Column(name = "is_active", nullable = false)
     private Boolean isActive = true;
 
+    @Column(name = "academic_year", nullable = false)
+    private String academicYear;
+
     // Relationships
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "innovation_decision_id", nullable = false)

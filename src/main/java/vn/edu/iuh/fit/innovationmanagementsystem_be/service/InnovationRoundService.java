@@ -40,9 +40,9 @@ public class InnovationRoundService {
 
     // 1. Create innovation round
     public InnovationRoundResponse createInnovationRound(InnovationRoundRequest request) {
-        InnovationDecision decision = innovationDecisionRepository.findById(request.getInnovationDecisionId())
+        InnovationDecision decision = innovationDecisionRepository.findById(request.getDecisionId())
                 .orElseThrow(() -> new IdInvalidException(
-                        "Không tìm thấy InnovationDecision với ID: " + request.getInnovationDecisionId()));
+                        "Không tìm thấy InnovationDecision với ID: " + request.getDecisionId()));
 
         // Validate dates
         validateRoundDates(request.getStartDate(), request.getEndDate());
@@ -113,6 +113,9 @@ public class InnovationRoundService {
         }
         if (request.getIsActive() != null) {
             round.setIsActive(request.getIsActive());
+        }
+        if (request.getAcademicYear() != null) {
+            round.setAcademicYear(request.getAcademicYear());
         }
 
         // Validate dates if they were updated

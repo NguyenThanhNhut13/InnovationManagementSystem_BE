@@ -19,6 +19,7 @@ public class InnovationRoundResponse {
     private InnovationRoundStatusEnum status;
     private String description;
     private Boolean isActive;
+    private String academicYear;
     private String innovationDecisionId;
     private String innovationDecisionTitle;
     private LocalDateTime createdAt;

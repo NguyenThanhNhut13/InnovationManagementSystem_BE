@@ -17,4 +17,5 @@ public class UpdateInnovationRoundRequest {
     private InnovationRoundStatusEnum status;
     private String description;
     private Boolean isActive;
+    private String academicYear;
 }

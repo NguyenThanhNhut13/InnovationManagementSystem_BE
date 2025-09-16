@@ -29,6 +29,9 @@ public class InnovationRoundRequest {
 
     private Boolean isActive;
 
+    @NotBlank(message = "Năm học không được để trống")
+    private String academicYear;
+
     @NotBlank(message = "ID của InnovationDecision không được để trống")
-    private String innovationDecisionId;
+    private String decisionId;
 }
