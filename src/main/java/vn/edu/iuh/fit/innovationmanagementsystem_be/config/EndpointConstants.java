@@ -104,16 +104,6 @@ public final class EndpointConstants {
                         "/api/v1/innovation-phases/round/{roundId}/create-phase"
         };
 
-        public static final String[] INNOVATION_PHASE_GET = {
-                        "/api/v1/innovation-phases/round/{roundId}",
-                        "/api/v1/innovation-phases/round/{roundId}/current",
-                        "/api/v1/innovation-phases/round/{roundId}/type/{phaseType}",
-                        "/api/v1/innovation-phases/round/{roundId}/can-submit",
-                        "/api/v1/innovation-phases/round/{roundId}/can-review-department",
-                        "/api/v1/innovation-phases/round/{roundId}/can-review-university",
-                        "/api/v1/innovation-phases/round/{roundId}/can-announce"
-        };
-
         public static final String[] INNOVATION_PHASE_PUT = {
                         "/api/v1/innovation-phases/{phaseId}/dates",
                         "/api/v1/innovation-phases/{phaseId}/toggle-status",
