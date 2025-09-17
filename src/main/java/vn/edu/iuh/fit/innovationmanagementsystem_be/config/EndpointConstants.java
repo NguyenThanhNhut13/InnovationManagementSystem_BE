@@ -107,7 +107,11 @@ public final class EndpointConstants {
         public static final String[] INNOVATION_PHASE_PUT = {
                         "/api/v1/innovation-phases/{phaseId}/dates",
                         "/api/v1/innovation-phases/{phaseId}/toggle-status",
-                        "/api/v1/innovation-phases/{phaseId}"
+                        "/api/v1/innovation-phases/{phaseId}",
+                        "/api/v1/innovation-phases/{phaseId}/transition",
+                        "/api/v1/innovation-phases/{phaseId}/complete",
+                        "/api/v1/innovation-phases/{phaseId}/suspend",
+                        "/api/v1/innovation-phases/{phaseId}/cancel"
         };
 
         public static final String[] INNOVATION_PHASE_DELETE = {
