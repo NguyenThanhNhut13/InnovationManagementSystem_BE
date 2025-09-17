@@ -57,7 +57,7 @@ public class SecurityConfig {
                                                 // Public endpoints
                                                 .requestMatchers(EndpointConstants.AUTH_PUBLIC).permitAll()
                                                 .requestMatchers(EndpointConstants.SWAGGER_PUBLIC).permitAll()
-                                                .requestMatchers(EndpointConstants.UTILS_PUBLIC[0]).permitAll()
+                                                .requestMatchers(EndpointConstants.UTILS_PUBLIC).permitAll()
                                                 .requestMatchers(HttpMethod.POST, EndpointConstants.USER_PUBLIC[0])
                                                 .permitAll()
                                                 .requestMatchers(HttpMethod.GET, EndpointConstants.USER_PUBLIC[1])

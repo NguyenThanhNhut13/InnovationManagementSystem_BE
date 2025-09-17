@@ -169,7 +169,8 @@ public final class EndpointConstants {
         // ================== UTILS ==================
         public static final String[] UTILS_PUBLIC = {
                         "/api/v1/utils/download/{fileName}",
-                        "/api/v1/utils/info/{fileName}"
+                        "/api/v1/utils/info/{fileName}",
+                        "/api/v1/utils/ping"
         };
 
         // ================== SWAGGER ==================

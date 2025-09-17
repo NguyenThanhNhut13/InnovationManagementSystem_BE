@@ -259,6 +259,7 @@ public class UtilsController {
                 while ((line = reader.readLine()) != null) {
                     System.out.println("LibreOffice output: " + line);
                 }
+
             }
 
             int exitCode = process.waitFor();
@@ -327,5 +328,20 @@ public class UtilsController {
                 System.err.println("Failed to cleanup container files: " + e.getMessage());
             }
         }
+    }
+
+    // 8. Ping endpoint for Uptime
+    @GetMapping("/ping")
+    @ApiMessage("pong")
+    @Operation(summary = "Ping", description = "Endpoint rất nhẹ để kiểm tra sức khỏe service và tránh sleep")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Service online")
+    })
+    public ResponseEntity<java.util.Map<String, Object>> ping() {
+        var body = new java.util.HashMap<String, Object>();
+        body.put("status", "ok");
+        body.put("service", "innovation-management-system");
+        body.put("timestamp", java.time.Instant.now().toString());
+        return ResponseEntity.ok(body);
     }
 }
