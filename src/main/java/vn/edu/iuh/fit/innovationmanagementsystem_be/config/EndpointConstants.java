@@ -89,14 +89,6 @@ public final class EndpointConstants {
                         "/api/v1/innovation-rounds"
         };
 
-        public static final String[] INNOVATION_ROUND_GET = {
-                        "/api/v1/innovation-rounds/decision/{decisionId}",
-                        "/api/v1/innovation-rounds/{roundId}",
-                        "/api/v1/innovation-rounds/decision/{decisionId}/current",
-                        "/api/v1/innovation-rounds/status/{status}",
-                        "/api/v1/innovation-rounds/active"
-        };
-
         public static final String[] INNOVATION_ROUND_PUT = {
                         "/api/v1/innovation-rounds/{roundId}",
                         "/api/v1/innovation-rounds/{roundId}/toggle-status"
