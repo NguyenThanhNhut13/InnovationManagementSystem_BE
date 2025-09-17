@@ -4,7 +4,6 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationPhaseEnum;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationRoundStatusEnum;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -17,9 +16,6 @@ public class InnovationPhaseResponse {
     private String id;
 
     private String name;
-    private LocalDate roundStartDate;
-    private LocalDate roundEndDate;
-    private InnovationRoundStatusEnum status;
 
     // Thông tin giai đoạn cụ thể
     private InnovationPhaseEnum phaseType;
@@ -29,8 +25,9 @@ public class InnovationPhaseResponse {
     private Boolean isActive;
     private Integer phaseOrder; // Thứ tự giai đoạn (1, 2, 3, 4)
 
-    // InnovationDecision info
-    private String innovationDecisionId;
+    // InnovationRound info
+    private String innovationRoundId;
+    private String innovationRoundName;
 
     // Audit info
     private LocalDateTime createdAt;
