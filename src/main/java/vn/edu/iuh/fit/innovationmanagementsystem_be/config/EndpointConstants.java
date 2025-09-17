@@ -84,15 +84,51 @@ public final class EndpointConstants {
                         "/api/v1/regulations/{id}"
         };
 
+        // ================== INNOVATION ROUND ==================
+        public static final String[] INNOVATION_ROUND_POST = {
+                        "/api/v1/innovation-rounds"
+        };
+
+        public static final String[] INNOVATION_ROUND_GET = {
+                        "/api/v1/innovation-rounds/decision/{decisionId}",
+                        "/api/v1/innovation-rounds/{roundId}",
+                        "/api/v1/innovation-rounds/decision/{decisionId}/current",
+                        "/api/v1/innovation-rounds/status/{status}",
+                        "/api/v1/innovation-rounds/active"
+        };
+
+        public static final String[] INNOVATION_ROUND_PUT = {
+                        "/api/v1/innovation-rounds/{roundId}",
+                        "/api/v1/innovation-rounds/{roundId}/toggle-status"
+        };
+
+        public static final String[] INNOVATION_ROUND_DELETE = {
+                        "/api/v1/innovation-rounds/{roundId}"
+        };
+
         // ================== INNOVATION PHASE ==================
         public static final String[] INNOVATION_PHASE_POST = {
-                        "/api/v1/innovation-phases/create-phases",
-                        "/api/v1/innovation-phases/decision/{decisionId}/create-phase"
+                        "/api/v1/innovation-phases/round/{roundId}/create-phases",
+                        "/api/v1/innovation-phases/round/{roundId}/create-phase"
+        };
+
+        public static final String[] INNOVATION_PHASE_GET = {
+                        "/api/v1/innovation-phases/round/{roundId}",
+                        "/api/v1/innovation-phases/round/{roundId}/current",
+                        "/api/v1/innovation-phases/round/{roundId}/type/{phaseType}",
+                        "/api/v1/innovation-phases/round/{roundId}/can-submit",
+                        "/api/v1/innovation-phases/round/{roundId}/can-review-department",
+                        "/api/v1/innovation-phases/round/{roundId}/can-review-university",
+                        "/api/v1/innovation-phases/round/{roundId}/can-announce"
         };
 
         public static final String[] INNOVATION_PHASE_PUT = {
                         "/api/v1/innovation-phases/{phaseId}/dates",
                         "/api/v1/innovation-phases/{phaseId}/toggle-status",
+                        "/api/v1/innovation-phases/{phaseId}"
+        };
+
+        public static final String[] INNOVATION_PHASE_DELETE = {
                         "/api/v1/innovation-phases/{phaseId}"
         };
 

@@ -104,11 +104,28 @@ public class SecurityConfig {
                                                 .requestMatchers(HttpMethod.PUT, EndpointConstants.REGULATION_PUT)
                                                 .hasAnyRole(QUAN_TRI_VIEN, THU_KY_QLKH_HTQT)
 
+                                                // Innovation Round
+                                                .requestMatchers(HttpMethod.POST,
+                                                                EndpointConstants.INNOVATION_ROUND_POST)
+                                                .hasAnyRole(QUAN_TRI_VIEN, THU_KY_QLKH_HTQT)
+                                                .requestMatchers(HttpMethod.GET, EndpointConstants.INNOVATION_ROUND_GET)
+                                                .hasAnyRole(QUAN_TRI_VIEN, THU_KY_QLKH_HTQT)
+                                                .requestMatchers(HttpMethod.PUT, EndpointConstants.INNOVATION_ROUND_PUT)
+                                                .hasAnyRole(QUAN_TRI_VIEN, THU_KY_QLKH_HTQT)
+                                                .requestMatchers(HttpMethod.DELETE,
+                                                                EndpointConstants.INNOVATION_ROUND_DELETE)
+                                                .hasAnyRole(QUAN_TRI_VIEN, THU_KY_QLKH_HTQT)
+
                                                 // Innovation Phase
                                                 .requestMatchers(HttpMethod.POST,
                                                                 EndpointConstants.INNOVATION_PHASE_POST)
                                                 .hasAnyRole(QUAN_TRI_VIEN, THU_KY_QLKH_HTQT)
+                                                .requestMatchers(HttpMethod.GET, EndpointConstants.INNOVATION_PHASE_GET)
+                                                .hasAnyRole(QUAN_TRI_VIEN, THU_KY_QLKH_HTQT)
                                                 .requestMatchers(HttpMethod.PUT, EndpointConstants.INNOVATION_PHASE_PUT)
+                                                .hasAnyRole(QUAN_TRI_VIEN, THU_KY_QLKH_HTQT)
+                                                .requestMatchers(HttpMethod.DELETE,
+                                                                EndpointConstants.INNOVATION_PHASE_DELETE)
                                                 .hasAnyRole(QUAN_TRI_VIEN, THU_KY_QLKH_HTQT)
 
                                                 // Innovation Department Phase - Only TRUONG_KHOA can create, others can
