@@ -76,7 +76,7 @@ public final class EndpointConstants {
         // ================== REGULATION ==================
         public static final String[] REGULATION_POST = {
                         "/api/v1/regulations",
-                        "/api/v1/regulations/bulk",
+                        "/api/v1/chapters/{chapterId}/regulations/import",
                         "/api/v1/innovation-decisions/{innovationDecisionId}/chapters/regulations/import"
         };
 
