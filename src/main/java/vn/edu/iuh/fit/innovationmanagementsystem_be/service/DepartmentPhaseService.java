@@ -67,7 +67,7 @@ public class DepartmentPhaseService {
         // Create department phase using mapper
         DepartmentPhase departmentPhase = departmentPhaseMapper.toDepartmentPhase(request);
         departmentPhase.setDepartment(department);
-        departmentPhase.setInnovationPhase(innovationPhase);
+        // departmentPhase.setInnovationPhase(innovationPhase);
         departmentPhase.setIsActive(true);
 
         DepartmentPhase savedPhase = departmentPhaseRepository.save(departmentPhase);
@@ -97,7 +97,7 @@ public class DepartmentPhaseService {
         departmentPhase.setDescription(innovationPhase.getDescription() + " - " + department.getDepartmentName());
         departmentPhase.setPhaseOrder(innovationPhase.getPhaseOrder());
         departmentPhase.setDepartment(department);
-        departmentPhase.setInnovationPhase(innovationPhase);
+        // departmentPhase.setInnovationPhase(innovationPhase);
         departmentPhase.setIsActive(true);
 
         DepartmentPhase savedPhase = departmentPhaseRepository.save(departmentPhase);
@@ -205,7 +205,8 @@ public class DepartmentPhaseService {
         // Check if dates are within InnovationRound timeframe
         if (!innovationPhase.isPhaseWithinRoundTimeframe(startDate, endDate)) {
             throw new IdInvalidException("Thời gian giai đoạn phải nằm trong thời gian của InnovationRound: " +
-                    innovationPhase.getRoundStartDate() + " đến " + innovationPhase.getRoundEndDate());
+                    innovationPhase.getInnovationRound().getStartDate() + " đến "
+                    + innovationPhase.getInnovationRound().getEndDate());
         }
 
         // Check if start date is before end date

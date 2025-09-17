@@ -3,17 +3,16 @@ package vn.edu.iuh.fit.innovationmanagementsystem_be.service;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.InnovationPhase;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.InnovationDecision;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.InnovationRound;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationPhaseEnum;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationRoundStatusEnum;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.CreateRoundPhasesRequest;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.PhaseStatusEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.InnovationPhaseRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.UpdateInnovationPhaseRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationPhaseResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.exception.IdInvalidException;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.mapper.InnovationPhaseMapper;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.InnovationPhaseRepository;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.InnovationDecisionRepository;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.InnovationRoundRepository;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -25,31 +24,33 @@ import java.util.stream.Collectors;
 public class InnovationPhaseService {
 
     private final InnovationPhaseRepository innovationPhaseRepository;
-    private final InnovationDecisionRepository innovationDecisionRepository;
+    private final InnovationRoundRepository innovationRoundRepository;
     private final InnovationPhaseMapper innovationPhaseMapper;
+    private final PhaseTransitionService phaseTransitionService;
 
     public InnovationPhaseService(InnovationPhaseRepository innovationPhaseRepository,
-            InnovationDecisionRepository innovationDecisionRepository,
-            InnovationPhaseMapper innovationPhaseMapper) {
+            InnovationRoundRepository innovationRoundRepository,
+            InnovationPhaseMapper innovationPhaseMapper,
+            PhaseTransitionService phaseTransitionService) {
         this.innovationPhaseRepository = innovationPhaseRepository;
-        this.innovationDecisionRepository = innovationDecisionRepository;
+        this.innovationRoundRepository = innovationRoundRepository;
         this.innovationPhaseMapper = innovationPhaseMapper;
+        this.phaseTransitionService = phaseTransitionService;
     }
 
-    // 1. Create phases with custom dates for an InnovationDecision
-    public List<InnovationPhaseResponse> createPhasesForDecision(CreateRoundPhasesRequest request) {
-        InnovationDecision decision = innovationDecisionRepository.findById(request.getDecisionId())
-                .orElseThrow(
-                        () -> new IdInvalidException(
-                                "Không tìm thấy InnovationDecision với ID: " + request.getDecisionId()));
+    // 1. Create phases for an InnovationRound
+    public List<InnovationPhaseResponse> createPhasesForRound(String roundId,
+            List<InnovationPhaseRequest> phaseRequests) {
+        InnovationRound round = innovationRoundRepository.findById(roundId)
+                .orElseThrow(() -> new IdInvalidException("Không tìm thấy InnovationRound với ID: " + roundId));
 
         // Xóa các giai đoạn cũ nếu có
-        innovationPhaseRepository.deleteByInnovationDecisionId(request.getDecisionId());
+        innovationPhaseRepository.deleteByInnovationRoundId(roundId);
 
-        // Tạo các giai đoạn mới với thời gian tùy chỉnh
+        // Tạo các giai đoạn mới
         List<InnovationPhase> phases = new ArrayList<>();
-        for (InnovationPhaseRequest phaseRequest : request.getPhases()) {
-            InnovationPhase phase = createPhaseFromRequest(decision, phaseRequest, request);
+        for (InnovationPhaseRequest phaseRequest : phaseRequests) {
+            InnovationPhase phase = createPhaseFromRequest(round, phaseRequest);
             phases.add(phase);
         }
 
@@ -58,125 +59,66 @@ public class InnovationPhaseService {
                 .collect(Collectors.toList());
     }
 
+    // 2. Create single phase
+    public InnovationPhaseResponse createSinglePhase(String roundId, InnovationPhaseRequest phaseRequest) {
+        InnovationRound round = innovationRoundRepository.findById(roundId)
+                .orElseThrow(() -> new IdInvalidException("Không tìm thấy InnovationRound với ID: " + roundId));
+
+        InnovationPhase phase = createPhaseFromRequest(round, phaseRequest);
+        return innovationPhaseMapper.toInnovationPhaseResponse(phase);
+    }
+
     // Create phase from request
-    private InnovationPhase createPhaseFromRequest(InnovationDecision decision, InnovationPhaseRequest phaseRequest,
-            CreateRoundPhasesRequest roundRequest) {
+    private InnovationPhase createPhaseFromRequest(InnovationRound round, InnovationPhaseRequest phaseRequest) {
         // Set default values if not provided
         if (phaseRequest.getName() == null) {
-            phaseRequest.setName(roundRequest.getRoundName());
-        }
-        if (phaseRequest.getStatus() == null) {
-            phaseRequest.setStatus(
-                    roundRequest.getStatus() != null ? roundRequest.getStatus() : InnovationRoundStatusEnum.ACTIVE);
+            phaseRequest.setName(round.getName() + " - " + phaseRequest.getPhaseType().name());
         }
         if (phaseRequest.getIsActive() == null) {
             phaseRequest.setIsActive(true);
         }
 
-        // Use mapper to convert request to entity
         InnovationPhase phase = innovationPhaseMapper.toInnovationPhase(phaseRequest);
-        phase.setInnovationDecision(decision);
+        phase.setInnovationRound(round);
 
-        // Set round information from the main request
-        phase.setRoundStartDate(roundRequest.getRoundStartDate());
-        phase.setRoundEndDate(roundRequest.getRoundEndDate());
+        // Validate phase dates are within round timeframe
+        if (!round.isPhaseWithinRoundTimeframe(phaseRequest.getPhaseStartDate(), phaseRequest.getPhaseEndDate())) {
+            throw new IdInvalidException("Thời gian giai đoạn phải nằm trong thời gian của InnovationRound: " +
+                    round.getStartDate() + " đến " + round.getEndDate());
+        }
 
         return innovationPhaseRepository.save(phase);
     }
 
-    // 2. Create single phase
-    public InnovationPhaseResponse createSinglePhase(String decisionId, InnovationPhaseRequest phaseRequest) {
-        InnovationDecision decision = innovationDecisionRepository.findById(decisionId)
-                .orElseThrow(() -> new IdInvalidException("Không tìm thấy InnovationDecision với ID: " + decisionId));
-
-        // Create a temporary CreateRoundPhasesRequest for single phase creation
-        CreateRoundPhasesRequest tempRequest = new CreateRoundPhasesRequest();
-        tempRequest.setDecisionId(decisionId);
-        tempRequest.setRoundName(decision.getTitle());
-        // Use default dates for single phase creation
-        tempRequest.setRoundStartDate(LocalDate.now());
-        tempRequest.setRoundEndDate(LocalDate.now().plusMonths(3));
-        tempRequest.setStatus(InnovationRoundStatusEnum.ACTIVE);
-
-        InnovationPhase phase = createPhaseFromRequest(decision, phaseRequest, tempRequest);
-        return innovationPhaseMapper.toInnovationPhaseResponse(phase);
-    }
-
-    // 3. Get current phase
-    public InnovationPhaseResponse getCurrentPhase(String decisionId) {
-        // Validate decision exists
-        innovationDecisionRepository.findById(decisionId)
-                .orElseThrow(() -> new IdInvalidException("Không tìm thấy InnovationDecision với ID: " + decisionId));
-
-        InnovationPhase phase = innovationPhaseRepository.findByInnovationDecisionIdOrderByPhaseOrder(decisionId)
-                .stream()
-                .filter(InnovationPhase::isCurrentlyActive)
-                .findFirst()
-                .orElse(null);
-
-        return phase != null ? innovationPhaseMapper.toInnovationPhaseResponse(phase) : null;
-    }
-
-    // 4. Get phases by decision id
-    public List<InnovationPhaseResponse> getPhasesByDecisionId(String decisionId) {
-        List<InnovationPhase> phases = innovationPhaseRepository
-                .findByInnovationDecisionIdOrderByPhaseOrder(decisionId);
+    // 3. Get phases by round
+    public List<InnovationPhaseResponse> getPhasesByRound(String roundId) {
+        List<InnovationPhase> phases = innovationPhaseRepository.findByInnovationRoundIdOrderByPhaseOrder(roundId);
         return phases.stream()
                 .map(innovationPhaseMapper::toInnovationPhaseResponse)
                 .collect(Collectors.toList());
     }
 
-    // 5. Get phase by type
-    public InnovationPhaseResponse getPhaseByType(String decisionId, InnovationPhaseEnum phaseType) {
-        // Validate decision exists
-        innovationDecisionRepository.findById(decisionId)
-                .orElseThrow(() -> new IdInvalidException("Không tìm thấy InnovationDecision với ID: " + decisionId));
-
-        InnovationPhase phase = innovationPhaseRepository.findByInnovationDecisionIdAndPhaseType(decisionId, phaseType)
+    // 4. Get current active phase
+    public InnovationPhaseResponse getCurrentActivePhase(String roundId) {
+        InnovationPhase phase = innovationPhaseRepository.findCurrentActivePhase(roundId, LocalDate.now())
                 .orElse(null);
         return phase != null ? innovationPhaseMapper.toInnovationPhaseResponse(phase) : null;
     }
 
-    // 6. Update phase dates
-    public InnovationPhaseResponse updatePhaseDates(String phaseId, LocalDate startDate, LocalDate endDate) {
-        InnovationPhase phase = innovationPhaseRepository.findById(phaseId)
-                .orElseThrow(() -> new IdInvalidException("Không tìm thấy InnovationPhase với ID: " + phaseId));
-
-        phase.setPhaseStartDate(startDate);
-        phase.setPhaseEndDate(endDate);
-
-        InnovationPhase savedPhase = innovationPhaseRepository.save(phase);
-        return innovationPhaseMapper.toInnovationPhaseResponse(savedPhase);
+    // 5. Get phase by type
+    public InnovationPhaseResponse getPhaseByType(String roundId, InnovationPhaseEnum phaseType) {
+        InnovationPhase phase = innovationPhaseRepository.findByInnovationRoundIdAndPhaseType(roundId, phaseType)
+                .orElse(null);
+        return phase != null ? innovationPhaseMapper.toInnovationPhaseResponse(phase) : null;
     }
 
-    // 7. Update phase status
-    public InnovationPhaseResponse togglePhaseStatus(String phaseId, boolean isActive) {
-        InnovationPhase phase = innovationPhaseRepository.findById(phaseId)
-                .orElseThrow(() -> new IdInvalidException("Không tìm thấy InnovationPhase với ID: " + phaseId));
-
-        phase.setIsActive(isActive);
-
-        InnovationPhase savedPhase = innovationPhaseRepository.save(phase);
-        return innovationPhaseMapper.toInnovationPhaseResponse(savedPhase);
-    }
-
-    // 8. Update phase
+    // 6. Update phase
     public InnovationPhaseResponse updatePhase(String phaseId, UpdateInnovationPhaseRequest request) {
         InnovationPhase phase = innovationPhaseRepository.findById(phaseId)
                 .orElseThrow(() -> new IdInvalidException("Không tìm thấy InnovationPhase với ID: " + phaseId));
 
-        // Update only non-null fields
         if (request.getName() != null) {
             phase.setName(request.getName());
-        }
-        if (request.getRoundStartDate() != null) {
-            phase.setRoundStartDate(request.getRoundStartDate());
-        }
-        if (request.getRoundEndDate() != null) {
-            phase.setRoundEndDate(request.getRoundEndDate());
-        }
-        if (request.getStatus() != null) {
-            phase.setStatus(request.getStatus());
         }
         if (request.getPhaseType() != null) {
             phase.setPhaseType(request.getPhaseType());
@@ -197,8 +139,91 @@ public class InnovationPhaseService {
             phase.setPhaseOrder(request.getPhaseOrder());
         }
 
+        // Validate phase dates are within round timeframe
+        if (request.getPhaseStartDate() != null || request.getPhaseEndDate() != null) {
+            if (!phase.getInnovationRound().isPhaseWithinRoundTimeframe(phase.getPhaseStartDate(),
+                    phase.getPhaseEndDate())) {
+                throw new IdInvalidException("Thời gian giai đoạn phải nằm trong thời gian của InnovationRound: " +
+                        phase.getInnovationRound().getStartDate() + " đến " + phase.getInnovationRound().getEndDate());
+            }
+        }
+
         InnovationPhase savedPhase = innovationPhaseRepository.save(phase);
         return innovationPhaseMapper.toInnovationPhaseResponse(savedPhase);
     }
 
+    // 7. Update phase dates
+    public InnovationPhaseResponse updatePhaseDates(String phaseId, LocalDate startDate, LocalDate endDate) {
+        InnovationPhase phase = innovationPhaseRepository.findById(phaseId)
+                .orElseThrow(() -> new IdInvalidException("Không tìm thấy InnovationPhase với ID: " + phaseId));
+
+        // Validate dates
+        validatePhaseDates(startDate, endDate, phase.getInnovationRound());
+
+        phase.setPhaseStartDate(startDate);
+        phase.setPhaseEndDate(endDate);
+
+        InnovationPhase savedPhase = innovationPhaseRepository.save(phase);
+        return innovationPhaseMapper.toInnovationPhaseResponse(savedPhase);
+    }
+
+    // 8. Toggle phase status
+    public InnovationPhaseResponse togglePhaseStatus(String phaseId, boolean isActive) {
+        InnovationPhase phase = innovationPhaseRepository.findById(phaseId)
+                .orElseThrow(() -> new IdInvalidException("Không tìm thấy InnovationPhase với ID: " + phaseId));
+
+        phase.setIsActive(isActive);
+        InnovationPhase savedPhase = innovationPhaseRepository.save(phase);
+        return innovationPhaseMapper.toInnovationPhaseResponse(savedPhase);
+    }
+
+    // Helper method to validate phase dates
+    private void validatePhaseDates(LocalDate startDate, LocalDate endDate, InnovationRound round) {
+        if (startDate.isAfter(endDate)) {
+            throw new IdInvalidException("Ngày bắt đầu phải trước ngày kết thúc");
+        }
+
+        if (!round.isPhaseWithinRoundTimeframe(startDate, endDate)) {
+            throw new IdInvalidException("Thời gian giai đoạn phải nằm trong thời gian của InnovationRound: " +
+                    round.getStartDate() + " đến " + round.getEndDate());
+        }
+    }
+
+    // New methods for phase transition
+    public InnovationPhaseResponse transitionPhase(String phaseId, PhaseStatusEnum targetStatus, String reason) {
+        InnovationPhase phase = phaseTransitionService.transitionPhase(phaseId, targetStatus, reason);
+        return innovationPhaseMapper.toInnovationPhaseResponse(phase);
+    }
+
+    public InnovationPhaseResponse completePhase(String phaseId, String reason) {
+        InnovationPhase phase = phaseTransitionService.completePhase(phaseId, reason);
+        return innovationPhaseMapper.toInnovationPhaseResponse(phase);
+    }
+
+    public InnovationPhaseResponse suspendPhase(String phaseId, String reason) {
+        InnovationPhase phase = phaseTransitionService.suspendPhase(phaseId, reason);
+        return innovationPhaseMapper.toInnovationPhaseResponse(phase);
+    }
+
+    public InnovationPhaseResponse cancelPhase(String phaseId, String reason) {
+        InnovationPhase phase = phaseTransitionService.cancelPhase(phaseId, reason);
+        return innovationPhaseMapper.toInnovationPhaseResponse(phase);
+    }
+
+    public List<InnovationPhaseResponse> getPhasesByStatus(String roundId, PhaseStatusEnum status) {
+        List<InnovationPhase> phases = innovationPhaseRepository.findByRoundIdAndStatusOrderByPhaseOrder(roundId,
+                status);
+        return phases.stream()
+                .map(innovationPhaseMapper::toInnovationPhaseResponse)
+                .collect(Collectors.toList());
+    }
+
+    public Object getPhaseStatusSummary(String roundId) {
+        List<InnovationPhase> allPhases = innovationPhaseRepository.findByInnovationRoundIdOrderByPhaseOrder(roundId);
+
+        return allPhases.stream()
+                .collect(Collectors.groupingBy(
+                        InnovationPhase::getPhaseStatus,
+                        Collectors.counting()));
+    }
 }
