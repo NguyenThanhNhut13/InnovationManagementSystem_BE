@@ -1,13 +1,8 @@
 # Khởi động 
-docker-compose up -d
+docker-compose up -d postgres redis minio
 
 # Kiểm tra trạng thái
 docker-compose ps
-
-# Xem logs
-docker-compose logs minio
-docker-compose logs libreoffice
-
 
 # ----------------------------------------------------
 # Truy cập Swagger UI:  

@@ -1,6 +1,44 @@
 version: '3.8'
 
 services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: innovation_management
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: InnovationDB2024!Secure
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --locale=C"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-scripts:/docker-entrypoint-initdb.d
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres -d innovation_management" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes --requirepass Redis2024!SecureCache
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # MinIO Object Storage
   minio:
     image: minio/minio:latest
     container_name: minio
@@ -9,7 +47,7 @@ services:
       - "9001:9001" # MinIO Console port
     environment:
       MINIO_ROOT_USER: minioadmin
-      MINIO_ROOT_PASSWORD: minioadmin
+      MINIO_ROOT_PASSWORD: MinIO2024!SecureStorage
     volumes:
       - minio_data:/data
     command: server /data --console-address ":9001"
@@ -18,6 +56,36 @@ services:
       test: [ "CMD", "curl", "-f", "http://localhost:9000/minio/health/live" ]
       interval: 30s
       timeout: 20s
+      retries: 3
+
+  # Backend Application
+  backend:
+    build: .
+    container_name: backend
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/innovation_management
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: InnovationDB2024!Secure
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
+      SPRING_DATA_REDIS_PASSWORD: Redis2024!SecureCache
+      MINIO_ENDPOINT: http://minio:9000
+      MINIO_ACCESS_KEY: minioadmin
+      MINIO_SECRET_KEY: MinIO2024!SecureStorage
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      minio:
+        condition: service_started
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8080/api/v1/utils/ping" ]
+      interval: 30s
+      timeout: 10s
       retries: 3
   # libreoffice:
   #   image: lscr.io/linuxserver/libreoffice:latest
@@ -37,6 +105,10 @@ services:
   #     "
 
 volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
   minio_data:
     driver: local
   # libreoffice_data:

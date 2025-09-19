@@ -20,6 +20,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.FileExist
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.FileInfoResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.FileUploadResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.MultipleFileUploadResponse;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.exception.IdInvalidException;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.service.FileService;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.annotation.ApiMessage;
 
@@ -56,15 +57,15 @@ public class UtilsController {
             throws Exception {
 
         if (file.isEmpty()) {
-            throw new IllegalArgumentException("File is empty");
+            throw new IdInvalidException("File is empty");
         }
 
         if (file.getOriginalFilename() == null || file.getOriginalFilename().trim().isEmpty()) {
-            throw new IllegalArgumentException("File name is required");
+            throw new IdInvalidException("File name is required");
         }
 
         if (file.getSize() > 10 * 1024 * 1024) {
-            throw new IllegalArgumentException("File size exceeds 10MB limit");
+            throw new IdInvalidException("File size exceeds 10MB limit");
         }
 
         String fileName = fileService.uploadFile(file);
@@ -92,24 +93,24 @@ public class UtilsController {
             throws Exception {
 
         if (files == null || files.isEmpty()) {
-            throw new IllegalArgumentException("No files provided");
+            throw new IdInvalidException("No files provided");
         }
 
         for (MultipartFile file : files) {
             if (file.isEmpty()) {
-                throw new IllegalArgumentException("One or more files are empty");
+                throw new IdInvalidException("One or more files are empty");
             }
         }
 
         for (MultipartFile file : files) {
             if (file.getSize() > 10 * 1024 * 1024) {
-                throw new IllegalArgumentException("File '" + file.getOriginalFilename() + "' exceeds 10MB limit");
+                throw new IdInvalidException("File '" + file.getOriginalFilename() + "' exceeds 10MB limit");
             }
         }
 
         long totalSize = files.stream().mapToLong(MultipartFile::getSize).sum();
         if (totalSize > 50 * 1024 * 1024) {
-            throw new IllegalArgumentException("Total request size exceeds 50MB limit");
+            throw new IdInvalidException("Total request size exceeds 50MB limit");
         }
 
         List<String> uploadedFileNames = fileService.uploadMultipleFiles(files);
