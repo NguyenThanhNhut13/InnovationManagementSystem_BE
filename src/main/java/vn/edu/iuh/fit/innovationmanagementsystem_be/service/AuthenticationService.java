@@ -246,11 +246,13 @@ public class AuthenticationService {
         if (!request.getNewPassword().equals(request.getConfirmPassword())) {
             throw new IdInvalidException("Mật khẩu mới và xác nhận mật khẩu không khớp");
         }
-        if (!otpService.validateOtp(request.getEmail(), request.getOtp())) {
+
+        User user = userRepository.findByPersonnelId(request.getPersonnelId())
+                .orElseThrow(() -> new IdInvalidException("Không tìm thấy tài khoản"));
+
+        if (!otpService.validateOtp(user.getEmail(), request.getOtp())) {
             throw new IdInvalidException("OTP không hợp lệ hoặc đã hết hạn");
         }
-        User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new IdInvalidException("Không tìm thấy tài khoản"));
 
         String encodedNewPassword = passwordEncoder.encode(request.getNewPassword());
         user.setPassword(encodedNewPassword);
