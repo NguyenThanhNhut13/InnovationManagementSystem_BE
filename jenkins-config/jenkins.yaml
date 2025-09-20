@@ -1,0 +1,59 @@
+jenkins:
+  systemMessage: "Innovation Management System - Jenkins CI/CD Server"
+  numExecutors: 2
+  scmCheckoutRetryCount: 3
+  
+  securityRealm:
+    local:
+      allowsSignup: false
+      users:
+        - id: "admin"
+          password: "Quinton@443"
+  
+  authorizationStrategy:
+    loggedInUsersCanDoAnything:
+      allowAnonymousRead: false
+
+  globalNodeProperties:
+    - envVars:
+        env:
+          - key: "DOCKER_HOST"
+            value: "unix:///var/run/docker.sock"
+          - key: "MAVEN_OPTS"
+            value: "-Xmx1024m -XX:MaxPermSize=256m"
+
+tool:
+  git:
+    installations:
+      - name: "Default"
+        home: "git"
+  maven:
+    installations:
+      - name: "Maven-3.9"
+        properties:
+          - installSource:
+              installers:
+                - maven:
+                    id: "3.9.6"
+  jdk:
+    installations:
+      - name: "JDK-17"
+        properties:
+          - installSource:
+              installers:
+                - jdkInstaller:
+                    id: "17"
+                    acceptLicense: true
+
+unclassified:
+  location:
+    url: "http://localhost:8081"
+  globalLibraries:
+    libraries:
+      - name: "innovation-management-pipeline"
+        defaultVersion: "main"
+        retriever:
+          modernSCM:
+            scm:
+              git:
+                remote: "https://github.com/NguyenThanhNhut13/InnovationManagementSystem_BE.git"
