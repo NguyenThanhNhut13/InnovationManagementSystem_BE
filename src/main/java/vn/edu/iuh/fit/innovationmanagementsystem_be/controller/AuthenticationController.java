@@ -114,14 +114,14 @@ public class AuthenticationController {
     // 5. Quên mật khẩu - Gửi OTP (Public API)
     @PostMapping("/auth/forgot-password")
     @ApiMessage("OTP đã được gửi đến email của bạn")
-    @Operation(summary = "Forgot Password", description = "Send OTP to email for password reset")
+    @Operation(summary = "Forgot Password", description = "Send OTP to email for password reset using personnel ID")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "OTP sent successfully", content = @Content(schema = @Schema(implementation = OtpResponse.class))),
-            @ApiResponse(responseCode = "404", description = "Email not found"),
+            @ApiResponse(responseCode = "404", description = "Personnel ID not found"),
             @ApiResponse(responseCode = "400", description = "Invalid request data")
     })
     public ResponseEntity<OtpResponse> forgotPassword(
-            @Parameter(description = "Email for password reset", required = true) @Valid @RequestBody OtpRequest otpRequest) {
+            @Parameter(description = "Personnel ID for password reset", required = true) @Valid @RequestBody OtpRequest otpRequest) {
 
         OtpResponse response = authenticationService.forgotPassword(otpRequest);
         return ResponseEntity.ok(response);
@@ -130,14 +130,14 @@ public class AuthenticationController {
     // 6. Reset mật khẩu với OTP (Public API)
     @PostMapping("/auth/reset-password")
     @ApiMessage("Đặt lại mật khẩu thành công")
-    @Operation(summary = "Reset Password", description = "Reset password using OTP verification")
+    @Operation(summary = "Reset Password", description = "Reset password using OTP verification with personnel ID")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Password reset successfully", content = @Content(schema = @Schema(implementation = ChangePasswordResponse.class))),
             @ApiResponse(responseCode = "400", description = "Invalid OTP or request data"),
-            @ApiResponse(responseCode = "404", description = "Email not found")
+            @ApiResponse(responseCode = "404", description = "Personnel ID not found")
     })
     public ResponseEntity<ChangePasswordResponse> resetPassword(
-            @Parameter(description = "Reset password request with OTP", required = true) @Valid @RequestBody ResetPasswordWithOtpRequest resetPasswordRequest) {
+            @Parameter(description = "Reset password request with OTP and personnel ID", required = true) @Valid @RequestBody ResetPasswordWithOtpRequest resetPasswordRequest) {
 
         ChangePasswordResponse response = authenticationService.resetPassword(resetPasswordRequest);
         return ResponseEntity.ok(response);

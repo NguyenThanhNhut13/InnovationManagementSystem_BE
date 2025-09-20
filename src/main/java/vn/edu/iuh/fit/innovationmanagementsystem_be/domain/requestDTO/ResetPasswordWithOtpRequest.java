@@ -1,6 +1,5 @@
 package vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO;
 
-import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
@@ -12,9 +11,8 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class ResetPasswordWithOtpRequest {
 
-    @NotBlank(message = "Email không được để trống")
-    @Email(message = "Email không đúng định dạng")
-    private String email;
+    @NotBlank(message = "Mã nhân viên không được để trống")
+    private String personnelId;
 
     @NotBlank(message = "OTP không được để trống")
     @Size(min = 6, max = 6, message = "OTP phải có đúng 6 ký tự")

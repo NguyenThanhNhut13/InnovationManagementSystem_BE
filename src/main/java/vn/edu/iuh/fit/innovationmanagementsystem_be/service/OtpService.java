@@ -30,8 +30,8 @@ public class OtpService {
     }
 
     // 2. Save OTP to Redis with TTL 5 minutes
-    public void saveOtp(String email, String otp) {
-        String key = OTP_PREFIX + email;
+    public void saveOtp(String personnelId, String otp) {
+        String key = OTP_PREFIX + personnelId;
         try {
             redisTemplate.opsForValue().set(key, otp, OTP_TTL, TimeUnit.SECONDS);
         } catch (Exception e) {
@@ -40,8 +40,8 @@ public class OtpService {
     }
 
     // 3. Validate OTP from user
-    public boolean validateOtp(String email, String otp) {
-        String key = OTP_PREFIX + email;
+    public boolean validateOtp(String personnelId, String otp) {
+        String key = OTP_PREFIX + personnelId;
         try {
             Object savedOtp = redisTemplate.opsForValue().get(key);
             if (savedOtp != null && savedOtp.toString().equals(otp)) {
@@ -56,8 +56,8 @@ public class OtpService {
     }
 
     // 4. Lấy TTL còn lại của OTP
-    public Long getOtpTTL(String email) {
-        String key = OTP_PREFIX + email;
+    public Long getOtpTTL(String personnelId) {
+        String key = OTP_PREFIX + personnelId;
         try {
             return redisTemplate.getExpire(key, TimeUnit.SECONDS);
         } catch (Exception e) {
@@ -66,8 +66,8 @@ public class OtpService {
     }
 
     // 5. Delete OTP from Redis
-    public void deleteOtp(String email) {
-        String key = OTP_PREFIX + email;
+    public void deleteOtp(String personnelId) {
+        String key = OTP_PREFIX + personnelId;
         try {
             redisTemplate.delete(key);
         } catch (Exception e) {
@@ -76,8 +76,8 @@ public class OtpService {
     }
 
     // 6. Check if OTP exists
-    public boolean isOtpExists(String email) {
-        String key = OTP_PREFIX + email;
+    public boolean isOtpExists(String personnelId) {
+        String key = OTP_PREFIX + personnelId;
         try {
             return redisTemplate.hasKey(key);
         } catch (Exception e) {

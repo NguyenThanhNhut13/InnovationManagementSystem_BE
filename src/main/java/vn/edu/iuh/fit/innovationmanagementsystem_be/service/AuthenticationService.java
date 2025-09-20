@@ -221,12 +221,14 @@ public class AuthenticationService {
 
     // 6. Forgot Password - Send OTP via email
     public OtpResponse forgotPassword(OtpRequest request) {
-        User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new IdInvalidException("Không tìm thấy tài khoản với email: " + request.getEmail()));
+        User user = userRepository.findByPersonnelId(request.getPersonnelId())
+                .orElseThrow(() -> new IdInvalidException(
+                        "Không tìm thấy tài khoản với mã nhân viên: " + request.getPersonnelId()));
 
-        // Kiểm tra rate limiting (max 3 requests/hour per email)
-        if (rateLimitingService.isOtpRateLimited(request.getEmail())) {
-            RateLimitingService.RateLimitInfo rateLimitInfo = rateLimitingService.getRateLimitInfo(request.getEmail());
+        // Kiểm tra rate limiting (max 3 requests/hour per personnelId)
+        if (rateLimitingService.isOtpRateLimited(request.getPersonnelId())) {
+            RateLimitingService.RateLimitInfo rateLimitInfo = rateLimitingService
+                    .getRateLimitInfo(request.getPersonnelId());
 
             throw new IdInvalidException("Quá nhiều yêu cầu reset password. Vui lòng thử lại sau " +
                     (rateLimitInfo.getRemainingTimeSeconds() / 60) + " phút");
@@ -236,10 +238,10 @@ public class AuthenticationService {
         String otp = otpService.generateOtp();
 
         // Save OTP to Redis with TTL 5 minutes
-        otpService.saveOtp(request.getEmail(), otp);
+        otpService.saveOtp(request.getPersonnelId(), otp);
 
         // Send OTP email
-        emailService.sendOtpEmail(user.getEmail(), otp, 5L);
+        emailService.sendOtpEmail(user.getEmail(), otp, 5L, user.getFullName());
 
         return new OtpResponse(
                 "OTP đã được gửi đến email của bạn",
@@ -252,10 +254,10 @@ public class AuthenticationService {
         if (!request.getNewPassword().equals(request.getConfirmPassword())) {
             throw new IdInvalidException("Mật khẩu mới và xác nhận mật khẩu không khớp");
         }
-        if (!otpService.validateOtp(request.getEmail(), request.getOtp())) {
+        if (!otpService.validateOtp(request.getPersonnelId(), request.getOtp())) {
             throw new IdInvalidException("OTP không hợp lệ hoặc đã hết hạn");
         }
-        User user = userRepository.findByEmail(request.getEmail())
+        User user = userRepository.findByPersonnelId(request.getPersonnelId())
                 .orElseThrow(() -> new IdInvalidException("Không tìm thấy tài khoản"));
 
         String encodedNewPassword = passwordEncoder.encode(request.getNewPassword());
