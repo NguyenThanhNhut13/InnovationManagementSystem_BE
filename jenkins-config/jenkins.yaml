@@ -1,14 +1,13 @@
 jenkins:
-  systemMessage: "Innovation Management System - Jenkins CI/CD Server"
+  systemMessage: "Innovation Management System - Jenkins CI/CD"
   numExecutors: 2
-  scmCheckoutRetryCount: 3
   
   securityRealm:
     local:
       allowsSignup: false
       users:
         - id: "admin"
-          password: "Quinton@443"
+          password: "admin123"
   
   authorizationStrategy:
     loggedInUsersCanDoAnything:
@@ -31,12 +30,3 @@ tool:
 unclassified:
   location:
     url: "http://localhost:8081"
-  globalLibraries:
-    libraries:
-      - name: "innovation-management-pipeline"
-        defaultVersion: "main"
-        retriever:
-          modernSCM:
-            scm:
-              git:
-                remote: "https://github.com/NguyenThanhNhut13/InnovationManagementSystem_BE.git"
