@@ -12,17 +12,8 @@ import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.ChangePasswordRequest;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.LoginRequest;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.LogoutRequest;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.OtpRequest;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.RefreshTokenRequest;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.ResetPasswordWithOtpRequest;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.ChangePasswordResponse;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.LoginResponse;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.OtpResponse;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.TokenResponse;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.UserResponse;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.*;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.*;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.exception.IdInvalidException;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.service.AuthenticationService;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.service.UserService;
@@ -120,10 +111,10 @@ public class AuthenticationController {
             @ApiResponse(responseCode = "404", description = "Email not found"),
             @ApiResponse(responseCode = "400", description = "Invalid request data")
     })
-    public ResponseEntity<OtpResponse> forgotPassword(
-            @Parameter(description = "Email for password reset", required = true) @Valid @RequestBody OtpRequest otpRequest) {
+    public ResponseEntity<ForgotPasswordResponse> forgotPassword(
+            @Parameter(description = "Email for password reset", required = true) @Valid @RequestBody ForgotPasswordRequest forgotPasswordRequest) {
 
-        OtpResponse response = authenticationService.forgotPassword(otpRequest);
+        ForgotPasswordResponse response = authenticationService.forgotPassword(forgotPasswordRequest);
         return ResponseEntity.ok(response);
     }
 

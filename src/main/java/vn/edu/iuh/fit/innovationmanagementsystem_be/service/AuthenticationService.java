@@ -10,14 +10,8 @@ import org.springframework.stereotype.Service;
 
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.User;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.UserRoleEnum;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.ChangePasswordRequest;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.LoginRequest;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.OtpRequest;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.ResetPasswordWithOtpRequest;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.ChangePasswordResponse;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.LoginResponse;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.OtpResponse;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.TokenResponse;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.*;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.*;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.exception.IdInvalidException;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.UserRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -220,13 +214,13 @@ public class AuthenticationService {
     }
 
     // 6. Forgot Password - Send OTP via email
-    public OtpResponse forgotPassword(OtpRequest request) {
-        User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new IdInvalidException("Không tìm thấy tài khoản với email: " + request.getEmail()));
+    public ForgotPasswordResponse forgotPassword(ForgotPasswordRequest request) {
+        User user = userRepository.findByPersonnelId(request.getPersonnelId())
+                .orElseThrow(() -> new IdInvalidException("Không tìm thấy tài khoản với mã nhân sự: " + request.getPersonnelId()));
 
         // Kiểm tra rate limiting (max 3 requests/hour per email)
-        if (rateLimitingService.isOtpRateLimited(request.getEmail())) {
-            RateLimitingService.RateLimitInfo rateLimitInfo = rateLimitingService.getRateLimitInfo(request.getEmail());
+        if (rateLimitingService.isOtpRateLimited(user.getEmail())) {
+            RateLimitingService.RateLimitInfo rateLimitInfo = rateLimitingService.getRateLimitInfo(user.getEmail());
 
             throw new IdInvalidException("Quá nhiều yêu cầu reset password. Vui lòng thử lại sau " +
                     (rateLimitInfo.getRemainingTimeSeconds() / 60) + " phút");
@@ -236,12 +230,12 @@ public class AuthenticationService {
         String otp = otpService.generateOtp();
 
         // Save OTP to Redis with TTL 5 minutes
-        otpService.saveOtp(request.getEmail(), otp);
+        otpService.saveOtp(user.getEmail(), otp);
 
         // Send OTP email
         emailService.sendOtpEmail(user.getEmail(), otp, 5L);
 
-        return new OtpResponse(
+        return new ForgotPasswordResponse(
                 "OTP đã được gửi đến email của bạn",
                 user.getEmail(),
                 300L); // 5 phút = 300 giây
