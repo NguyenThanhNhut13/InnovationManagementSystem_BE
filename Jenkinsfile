@@ -26,7 +26,7 @@ pipeline {
         MINIO_SECRET_KEY = 'MinIO2024!SecureStorage'
         
         // Maven Configuration
-        MAVEN_OPTS = '-Xmx1024m -XX:MaxPermSize=256m'
+        MAVEN_OPTS = '-Xmx1024m'
     }
     
     options {
