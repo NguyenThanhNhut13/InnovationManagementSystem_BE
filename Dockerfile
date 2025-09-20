@@ -4,22 +4,23 @@ FROM openjdk:17-jdk-slim as builder
 # Set working directory
 WORKDIR /app
 
-# Copy Maven wrapper and pom.xml
-COPY mvnw .
-COPY .mvn .mvn
+# Install Maven
+RUN apt-get update && \
+    apt-get install -y maven && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+# Copy pom.xml first for better caching
 COPY pom.xml .
 
-# Make mvnw executable
-RUN chmod +x ./mvnw
-
-# Download dependencies (this layer will be cached if pom.xml doesn't change)
-RUN ./mvnw dependency:go-offline -B
+# Download dependencies
+RUN mvn dependency:go-offline -B
 
 # Copy source code
 COPY src ./src
 
 # Build the application
-RUN ./mvnw clean package -DskipTests
+RUN mvn clean package -DskipTests
 
 # Runtime stage
 FROM openjdk:17-jdk-slim
@@ -27,11 +28,11 @@ FROM openjdk:17-jdk-slim
 # Set working directory
 WORKDIR /app
 
+# Copy JAR file from builder stage
+COPY --from=builder /app/target/InnovationManagementSystem_BE-0.0.1-SNAPSHOT.jar app.jar
+
 # Create non-root user for security
 RUN groupadd -r appuser && useradd -r -g appuser appuser
-
-# Copy the JAR file from builder stage
-COPY --from=builder /app/target/*.jar app.jar
 
 # Change ownership to non-root user
 RUN chown -R appuser:appuser /app

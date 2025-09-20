@@ -60,7 +60,7 @@ services:
 
   # Backend Application
   backend:
-    image: innovation-management-system-be:latest
+    build: .
     container_name: backend
     ports:
       - "8080:8080"
