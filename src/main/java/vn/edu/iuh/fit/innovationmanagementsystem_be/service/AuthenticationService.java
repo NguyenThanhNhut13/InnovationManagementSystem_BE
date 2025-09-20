@@ -10,14 +10,8 @@ import org.springframework.stereotype.Service;
 
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.User;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.UserRoleEnum;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.ChangePasswordRequest;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.LoginRequest;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.OtpRequest;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.ResetPasswordWithOtpRequest;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.ChangePasswordResponse;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.LoginResponse;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.OtpResponse;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.TokenResponse;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.*;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.*;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.exception.IdInvalidException;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.UserRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -220,15 +214,14 @@ public class AuthenticationService {
     }
 
     // 6. Forgot Password - Send OTP via email
-    public OtpResponse forgotPassword(OtpRequest request) {
+    public ForgotPasswordResponse forgotPassword(ForgotPasswordRequest request) {
         User user = userRepository.findByPersonnelId(request.getPersonnelId())
                 .orElseThrow(() -> new IdInvalidException(
-                        "Không tìm thấy tài khoản với mã nhân viên: " + request.getPersonnelId()));
+                        "Không tìm thấy tài khoản với mã nhân sự: " + request.getPersonnelId()));
 
-        // Kiểm tra rate limiting (max 3 requests/hour per personnelId)
-        if (rateLimitingService.isOtpRateLimited(request.getPersonnelId())) {
-            RateLimitingService.RateLimitInfo rateLimitInfo = rateLimitingService
-                    .getRateLimitInfo(request.getPersonnelId());
+        // Kiểm tra rate limiting (max 3 requests/hour per email)
+        if (rateLimitingService.isOtpRateLimited(user.getEmail())) {
+            RateLimitingService.RateLimitInfo rateLimitInfo = rateLimitingService.getRateLimitInfo(user.getEmail());
 
             throw new IdInvalidException("Quá nhiều yêu cầu reset password. Vui lòng thử lại sau " +
                     (rateLimitInfo.getRemainingTimeSeconds() / 60) + " phút");
@@ -238,12 +231,12 @@ public class AuthenticationService {
         String otp = otpService.generateOtp();
 
         // Save OTP to Redis with TTL 5 minutes
-        otpService.saveOtp(request.getPersonnelId(), otp);
+        otpService.saveOtp(user.getEmail(), otp);
 
         // Send OTP email
         emailService.sendOtpEmail(user.getEmail(), otp, 5L, user.getFullName());
 
-        return new OtpResponse(
+        return new ForgotPasswordResponse(
                 "OTP đã được gửi đến email của bạn",
                 user.getEmail(),
                 300L); // 5 phút = 300 giây
@@ -254,11 +247,13 @@ public class AuthenticationService {
         if (!request.getNewPassword().equals(request.getConfirmPassword())) {
             throw new IdInvalidException("Mật khẩu mới và xác nhận mật khẩu không khớp");
         }
-        if (!otpService.validateOtp(request.getPersonnelId(), request.getOtp())) {
-            throw new IdInvalidException("OTP không hợp lệ hoặc đã hết hạn");
-        }
+
         User user = userRepository.findByPersonnelId(request.getPersonnelId())
                 .orElseThrow(() -> new IdInvalidException("Không tìm thấy tài khoản"));
+
+        if (!otpService.validateOtp(user.getEmail(), request.getOtp())) {
+            throw new IdInvalidException("OTP không hợp lệ hoặc đã hết hạn");
+        }
 
         String encodedNewPassword = passwordEncoder.encode(request.getNewPassword());
         user.setPassword(encodedNewPassword);

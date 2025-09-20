@@ -11,7 +11,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class ResetPasswordWithOtpRequest {
 
-    @NotBlank(message = "Mã nhân viên không được để trống")
+    @NotBlank(message = "Mã nhân sự không được để trống")
     private String personnelId;
 
     @NotBlank(message = "OTP không được để trống")
