@@ -1,0 +1,27 @@
+package vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO;
+
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class ResetPasswordWithOtpRequest {
+
+    @NotBlank(message = "Mã nhân sự không được để trống")
+    private String personnelId;
+
+    @NotBlank(message = "OTP không được để trống")
+    @Size(min = 6, max = 6, message = "OTP phải có đúng 6 ký tự")
+    private String otp;
+
+    @NotBlank(message = "Mật khẩu mới không được để trống")
+    @Size(min = 6, message = "Mật khẩu mới phải có ít nhất 6 ký tự")
+    private String newPassword;
+
+    @NotBlank(message = "Xác nhận mật khẩu không được để trống")
+    private String confirmPassword;
+}
