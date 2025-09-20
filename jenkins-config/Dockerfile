@@ -4,9 +4,14 @@ FROM jenkins/jenkins:lts-jdk17
 # Switch to root to install additional packages
 USER root
 
-# Install Docker CLI
+# Install Docker CLI, Maven, and other tools
 RUN apt-get update && \
-    apt-get install -y docker.io && \
+    apt-get install -y \
+        docker.io \
+        maven \
+        curl \
+        wget \
+        git && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
@@ -26,3 +31,5 @@ USER jenkins
 # Set environment variables
 ENV CASC_JENKINS_CONFIG=/var/jenkins_home/casc_configs/jenkins.yaml
 ENV JAVA_OPTS="-Djenkins.install.runSetupWizard=false"
+ENV MAVEN_HOME=/usr/share/maven
+ENV PATH=$PATH:$MAVEN_HOME/bin
