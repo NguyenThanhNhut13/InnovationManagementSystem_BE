@@ -347,4 +347,10 @@ public class UserService {
         return userSignatureProfileService.createUserSignatureProfileForExistingUser(userId);
     }
 
+    // 15. Get Current User Response (for API endpoint)
+    public UserResponse getCurrentUserResponse() {
+        User currentUser = getCurrentUser();
+        return userMapper.toUserResponse(currentUser);
+    }
+
 }

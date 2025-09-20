@@ -8,6 +8,7 @@ public final class EndpointConstants {
         // ================== AUTH ==================
         public static final String[] AUTH_PUBLIC = {
                         "/api/v1/auth/login",
+                        "/api/v1/auth/refresh",
                         "/api/v1/auth/forgot-password",
                         "/api/v1/auth/reset-password"
         };
@@ -21,6 +22,7 @@ public final class EndpointConstants {
 
         public static final String[] USER_GET = {
                         "/api/v1/users",
+                        "/api/v1/users/me",
                         "/api/v1/users/status",
                         "/api/v1/roles/{roleId}/users",
                         "/api/v1/users/departments/{departmentId}/users"
