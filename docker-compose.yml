@@ -95,23 +95,16 @@ services:
       dockerfile: Dockerfile
     container_name: jenkins
     ports:
-      - "8081:8080" # Jenkins web interface
-      - "50000:50000" # Jenkins agent port
+      - "8081:8080"
     environment:
-      JENKINS_OPTS: "--httpPort=8080"
       JAVA_OPTS: "-Djenkins.install.runSetupWizard=false"
       CASC_JENKINS_CONFIG: "/var/jenkins_home/casc_configs/jenkins.yaml"
     volumes:
       - jenkins_data:/var/jenkins_home
-      - /var/run/docker.sock:/var/run/docker.sock # Docker socket for building images
-      - ./jenkins-config:/var/jenkins_home/casc_configs # Configuration as Code
-    user: root # Required for Docker access
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./jenkins-config:/var/jenkins_home/casc_configs
+    user: root
     restart: unless-stopped
-    healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:8080/login" ]
-      interval: 30s
-      timeout: 10s
-      retries: 5
   # libreoffice:
   #   image: lscr.io/linuxserver/libreoffice:latest
   #   container_name: libreoffice
