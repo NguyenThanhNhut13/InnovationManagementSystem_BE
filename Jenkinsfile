@@ -127,10 +127,9 @@ pipeline {
                 echo 'Building Docker image...'
                 script {
                     def image = docker.build("${DOCKER_IMAGE}")
-                    docker.withRegistry("http://${DOCKER_REGISTRY}") {
-                        image.push()
-                        image.push("latest")
-                    }
+                    // Tag as latest for local use
+                    sh "docker tag ${DOCKER_IMAGE} innovation-management-system-be:latest"
+                    echo "Docker image built successfully: ${DOCKER_IMAGE}"
                 }
             }
         }
