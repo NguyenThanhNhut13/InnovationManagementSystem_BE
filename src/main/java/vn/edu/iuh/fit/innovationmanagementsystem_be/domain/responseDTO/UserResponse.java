@@ -21,8 +21,6 @@ public class UserResponse {
     private String departmentId;
     private String departmentName;
     private String departmentCode;
-    private int innovationCount;
-    private int coInnovationCount;
     private List<String> roleNames;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

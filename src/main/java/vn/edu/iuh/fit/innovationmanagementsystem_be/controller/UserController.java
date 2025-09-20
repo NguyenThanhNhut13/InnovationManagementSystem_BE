@@ -154,16 +154,4 @@ public class UserController {
         return ResponseEntity.ok(userService.searchUsersByFullNameOrEmailOrPersonnelId(searchTerm, pageable));
     }
 
-    // 11. Get Current User Profile
-    @GetMapping("/users/me")
-    @ApiMessage("Lấy thông tin người dùng hiện tại thành công")
-    @Operation(summary = "Get Current User Profile", description = "Get current authenticated user's profile information")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Current user profile retrieved successfully", content = @Content(schema = @Schema(implementation = UserResponse.class))),
-            @ApiResponse(responseCode = "401", description = "Unauthorized - Invalid or missing token"),
-            @ApiResponse(responseCode = "404", description = "User not found")
-    })
-    public ResponseEntity<UserResponse> getCurrentUserProfile() {
-        return ResponseEntity.ok(userService.getCurrentUserResponse());
-    }
 }

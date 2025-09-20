@@ -9,3 +9,13 @@ docker-compose ps
 URL: http://localhost:8080/swagger-ui.html
 # API Docs: 
 http://localhost:8080/api-docs
+
+# ------------------LINUX----------------------------------
+## Xem dung lượng disk
+df -h
+
+## Xem dung lượng ram
+free -h
+
+## Xem thông tin real time
+htop

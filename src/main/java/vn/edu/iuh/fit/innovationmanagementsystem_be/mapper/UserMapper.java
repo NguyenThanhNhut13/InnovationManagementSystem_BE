@@ -19,8 +19,6 @@ public interface UserMapper {
     @Mapping(target = "departmentId", source = "department.id")
     @Mapping(target = "departmentName", source = "department.departmentName")
     @Mapping(target = "departmentCode", source = "department.departmentCode")
-    @Mapping(target = "innovationCount", expression = "java(user.getInnovations() != null ? user.getInnovations().size() : 0)")
-    @Mapping(target = "coInnovationCount", expression = "java(user.getCoInnovations() != null ? user.getCoInnovations().size() : 0)")
     @Mapping(target = "roleNames", source = "userRoles", qualifiedByName = "mapUserRolesToStrings")
     UserResponse toUserResponse(User user);
 

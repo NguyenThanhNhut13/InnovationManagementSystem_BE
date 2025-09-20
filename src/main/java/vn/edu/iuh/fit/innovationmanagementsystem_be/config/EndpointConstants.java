@@ -13,6 +13,10 @@ public final class EndpointConstants {
                         "/api/v1/auth/reset-password"
         };
 
+        public static final String[] AUTH_GET = {
+                        "/api/v1/auth/me"
+        };
+
         // ================== USER ==================
         public static final String[] USER_PUBLIC = {
                         "/api/v1/users", // POST
@@ -22,7 +26,6 @@ public final class EndpointConstants {
 
         public static final String[] USER_GET = {
                         "/api/v1/users",
-                        "/api/v1/users/me",
                         "/api/v1/users/status",
                         "/api/v1/roles/{roleId}/users",
                         "/api/v1/users/departments/{departmentId}/users"
@@ -147,19 +150,19 @@ public final class EndpointConstants {
         };
 
         // ================== DEPARTMENT PHASE ==================
+        // Chỉ TRUONG_KHOA và THU_KY_QLKH_HTQT mới có thể sử dụng
         public static final String[] DEPARTMENT_PHASE_POST = {
                         "/api/v1/department-phases/department/{departmentId}/create-phase",
-                        "/api/v1/department-phases/department/{departmentId}/copy-from-innovation-phase/{innovationPhaseId}"
+                        "/api/v1/department-phases/department/{departmentId}/copy-from-innovation-phase/{innovationPhaseId}",
+                        "/api/v1/department-phases/department/{departmentId}/round/{roundId}/create-all-phases",
+                        "/api/v1/department-phases/department/{departmentId}/round/{roundId}/create-phase/{phaseType}"
         };
 
         public static final String[] DEPARTMENT_PHASE_GET = {
                         "/api/v1/department-phases/department/{departmentId}/phase/{phaseId}",
                         "/api/v1/department-phases/department/{departmentId}/phase/{phaseId}/current",
-                        "/api/v1/department-phases/department/{departmentId}/phase/{phaseId}/type/{phaseType}",
-                        "/api/v1/department-phases/department/{departmentId}/phase/{phaseId}/can-submit",
-                        "/api/v1/department-phases/department/{departmentId}/phase/{phaseId}/can-review-department",
-                        "/api/v1/department-phases/department/{departmentId}/phase/{phaseId}/can-review-university",
-                        "/api/v1/department-phases/department/{departmentId}/phase/{phaseId}/can-announce"
+                        "/api/v1/department-phases/department/{departmentId}/round/{roundId}",
+                        "/api/v1/department-phases/department/{departmentId}/round/{roundId}/current"
         };
 
         public static final String[] DEPARTMENT_PHASE_PUT = {

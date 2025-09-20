@@ -22,8 +22,10 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.ChangePas
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.LoginResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.OtpResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.TokenResponse;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.UserResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.exception.IdInvalidException;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.service.AuthenticationService;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.service.UserService;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.annotation.ApiMessage;
 
 @RestController
@@ -32,9 +34,11 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.annotation.ApiMessage;
 public class AuthenticationController {
 
     private final AuthenticationService authenticationService;
+    private final UserService userService;
 
-    public AuthenticationController(AuthenticationService authenticationService) {
+    public AuthenticationController(AuthenticationService authenticationService, UserService userService) {
         this.authenticationService = authenticationService;
+        this.userService = userService;
     }
 
     // 1. Login
@@ -137,6 +141,20 @@ public class AuthenticationController {
 
         ChangePasswordResponse response = authenticationService.resetPassword(resetPasswordRequest);
         return ResponseEntity.ok(response);
+    }
+
+    // 7. Get Current User Profile
+    @GetMapping("/auth/me")
+    @ApiMessage("Lấy thông tin người dùng hiện tại thành công")
+    @Operation(summary = "Get Current User Profile", description = "Get current authenticated user's profile information")
+    @SecurityRequirement(name = "Bearer Authentication")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Current user profile retrieved successfully", content = @Content(schema = @Schema(implementation = UserResponse.class))),
+            @ApiResponse(responseCode = "401", description = "Unauthorized - Invalid or missing token"),
+            @ApiResponse(responseCode = "404", description = "User not found")
+    })
+    public ResponseEntity<UserResponse> getCurrentUserProfile() {
+        return ResponseEntity.ok(userService.getCurrentUserResponse());
     }
 
 }
