@@ -7,11 +7,11 @@ USER root
 # Install Docker CLI, Maven, and other tools
 RUN apt-get update && \
     apt-get install -y \
-        docker.io \
-        maven \
-        curl \
-        wget \
-        git && \
+    docker.io \
+    maven \
+    curl \
+    wget \
+    git && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
