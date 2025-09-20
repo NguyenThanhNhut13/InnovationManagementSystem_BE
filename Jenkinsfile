@@ -33,7 +33,6 @@ pipeline {
         buildDiscarder(logRotator(numToKeepStr: '10'))
         timeout(time: 30, unit: 'MINUTES')
         timestamps()
-        ansiColor('xterm')
     }
     
     stages {
@@ -64,10 +63,7 @@ pipeline {
                     }
                     post {
                         always {
-                            publishTestResults testResultsPattern: 'target/surefire-reports/*.xml'
-                            publishCoverage adapters: [
-                                jacocoAdapter('target/site/jacoco/jacoco.xml')
-                            ], sourceFileResolver: sourceFiles('STORE_LAST_BUILD')
+                            echo 'Unit tests completed'
                         }
                     }
                 }
@@ -84,9 +80,7 @@ pipeline {
                     }
                     post {
                         always {
-                            publishCheckstyle pattern: 'target/checkstyle-result.xml'
-                            publishPMD pattern: 'target/pmd.xml'
-                            publishSpotBugs pattern: 'target/spotbugsXml.xml'
+                            echo 'Code quality checks completed'
                         }
                     }
                 }
@@ -112,7 +106,7 @@ pipeline {
             }
             post {
                 success {
-                    archiveArtifacts artifacts: 'target/*.jar', fingerprint: true
+                    echo 'Package created successfully'
                 }
             }
         }

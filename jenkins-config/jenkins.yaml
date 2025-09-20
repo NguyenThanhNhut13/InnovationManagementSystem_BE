@@ -27,23 +27,6 @@ tool:
     installations:
       - name: "Default"
         home: "git"
-  maven:
-    installations:
-      - name: "Maven-3.9"
-        properties:
-          - installSource:
-              installers:
-                - maven:
-                    id: "3.9.6"
-  jdk:
-    installations:
-      - name: "JDK-17"
-        properties:
-          - installSource:
-              installers:
-                - jdkInstaller:
-                    id: "17"
-                    acceptLicense: true
 
 unclassified:
   location:
