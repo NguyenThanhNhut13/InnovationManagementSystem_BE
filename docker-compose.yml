@@ -43,8 +43,8 @@ services:
     image: minio/minio:latest
     container_name: minio
     ports:
-      - "9000:9000" # MinIO API port
-      - "9001:9001" # MinIO Console port
+      - "9000:9000"
+      - "9001:9001"
     environment:
       MINIO_ROOT_USER: minioadmin
       MINIO_ROOT_PASSWORD: MinIO2024!SecureStorage
@@ -58,69 +58,18 @@ services:
       timeout: 20s
       retries: 3
 
-  # Backend Application
-  backend:
-    build: .
-    container_name: backend
-    ports:
-      - "8080:8080"
-    environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/innovation_management
-      SPRING_DATASOURCE_USERNAME: postgres
-      SPRING_DATASOURCE_PASSWORD: InnovationDB2024!Secure
-      SPRING_DATA_REDIS_HOST: redis
-      SPRING_DATA_REDIS_PORT: 6379
-      SPRING_DATA_REDIS_PASSWORD: Redis2024!SecureCache
-      MINIO_ENDPOINT: http://minio:9000
-      MINIO_ACCESS_KEY: minioadmin
-      MINIO_SECRET_KEY: MinIO2024!SecureStorage
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_started
-      minio:
-        condition: service_started
-    restart: unless-stopped
-    healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:8080/api/v1/utils/ping" ]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-
   # Jenkins CI/CD
   jenkins:
-    build:
-      context: ./jenkins-config
-      dockerfile: Dockerfile
+    image: jenkins/jenkins:lts
     container_name: jenkins
-    ports:
-      - "8081:8080"
-    environment:
-      JAVA_OPTS: "-Djenkins.install.runSetupWizard=false"
-      CASC_JENKINS_CONFIG: "/var/jenkins_home/casc_configs/jenkins.yaml"
-    volumes:
-      - jenkins_data:/var/jenkins_home
-      - /var/run/docker.sock:/var/run/docker.sock
-      - ./jenkins-config:/var/jenkins_home/casc_configs
     user: root
+    ports:
+      - "8081:8080" # Web UI Jenkins
+      - "50000:50000" # Jenkins agent
+    volumes:
+      - jenkins_home:/var/jenkins_home
+      - /var/run/docker.sock:/var/run/docker.sock # Jenkins có thể chạy docker build
     restart: unless-stopped
-  # libreoffice:
-  #   image: lscr.io/linuxserver/libreoffice:latest
-  #   container_name: libreoffice
-  #   environment:
-  #     - PUID=1000
-  #     - PGID=1000
-  #     - TZ=Asia/Ho_Chi_Minh
-  #   volumes:
-  #     - libreoffice_data:/config
-  #     - /tmp:/tmp # Mount temp directory for file conversion
-  #   restart: unless-stopped
-  #   command: >
-  #     sh -c "
-  #       echo 'LibreOffice container started' &&
-  #       tail -f /dev/null
-  #     "
 
 volumes:
   postgres_data:
@@ -129,7 +78,5 @@ volumes:
     driver: local
   minio_data:
     driver: local
-  jenkins_data:
+  jenkins_home:
     driver: local
-  # libreoffice_data:
-  #   driver: local

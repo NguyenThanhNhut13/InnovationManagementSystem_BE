@@ -1,57 +1,32 @@
 pipeline {
     agent any
-    
-    environment {
-        APP_NAME = 'innovation-management-system-be'
-        DOCKER_IMAGE = "${APP_NAME}:latest"
+
+    tools {
+        jdk 'jdk17'  
+        maven 'maven3'
     }
-    
-    options {
-        buildDiscarder(logRotator(numToKeepStr: '10'))
-        timeout(time: 30, unit: 'MINUTES')
-        timestamps()
-    }
-    
+
     stages {
-        stage('Build & Deploy') {
+        stage('Checkout') {
             steps {
-                echo 'Building and deploying application...'
-                script {
-                    sh '''
-                        # Build Docker image
-                        docker build -t ${DOCKER_IMAGE} .
-                        
-                        # Stop and remove existing backend container
-                        docker stop backend || true
-                        docker rm backend || true
-                        
-                        # Rebuild backend service with new image
-                        docker-compose up -d --build backend
-                        
-                        # Wait for backend to be ready
-                        echo "Waiting for backend to be ready..."
-                        timeout 60 bash -c 'until docker exec backend curl -f http://localhost:8080/api/v1/utils/ping; do sleep 5; done'
-                        
-                        echo "Deployment completed successfully!"
-                    '''
-                }
+                git branch: 'main', url: 'https://github.com/NguyenThanhNhut13/InnovationManagementSystem_BE'
             }
         }
-    }
-    
-    post {
-        always {
-            echo 'Pipeline execution completed!'
-            cleanWs()
+        stage('Build') {
+            steps {
+                sh 'mvn clean package -DskipTests'
+            }
         }
-        success {
-            echo 'Pipeline executed successfully!'
+        stage('Build Docker Image') {
+            steps {
+                sh 'docker build -t innovation-backend:latest .'
+            }
         }
-        failure {
-            echo 'Pipeline failed!'
-        }
-        unstable {
-            echo 'Pipeline is unstable!'
+        stage('Deploy') {
+            steps {
+                sh 'docker stop backend || true && docker rm backend || true'
+                sh 'docker run -d --name backend --network=host innovation-backend:latest'
+            }
         }
     }
 }
