@@ -6,6 +6,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.Department;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.DepartmentPhase;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.InnovationPhase;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.User;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationPhaseEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.UserRoleEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.DepartmentPhaseRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.UpdateDepartmentPhaseRequest;
@@ -15,8 +16,10 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.exception.IdInvalidException
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.DepartmentPhaseRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.DepartmentRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.InnovationPhaseRepository;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.InnovationRoundRepository;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -29,17 +32,20 @@ public class DepartmentPhaseService {
     private final InnovationPhaseRepository innovationPhaseRepository;
     private final DepartmentPhaseMapper departmentPhaseMapper;
     private final UserService userService;
+    private final InnovationRoundRepository innovationRoundRepository;
 
     public DepartmentPhaseService(DepartmentPhaseRepository departmentPhaseRepository,
             DepartmentRepository departmentRepository,
             InnovationPhaseRepository innovationPhaseRepository,
             DepartmentPhaseMapper departmentPhaseMapper,
-            UserService userService) {
+            UserService userService,
+            InnovationRoundRepository innovationRoundRepository) {
         this.departmentPhaseRepository = departmentPhaseRepository;
         this.departmentRepository = departmentRepository;
         this.innovationPhaseRepository = innovationPhaseRepository;
         this.departmentPhaseMapper = departmentPhaseMapper;
         this.userService = userService;
+        this.innovationRoundRepository = innovationRoundRepository;
     }
 
     // 1. Create department phase with validation
@@ -222,47 +228,230 @@ public class DepartmentPhaseService {
         return phase.getDepartment().getId();
     }
 
-    // Validate that current user is department head of the specified department
+    // Validate that current user is department head of the specified department or
+    // THU_KY_QLKH_HTQT
     public void validateDepartmentHeadAccess(String departmentId) {
         User currentUser = userService.getCurrentUser();
 
-        // Kiểm tra user có role TRUONG_KHOA không
-        boolean isDepartmentHead = currentUser.getUserRoles().stream()
+        // Kiểm tra user có role TRUONG_KHOA hoặc THU_KY_QLKH_HTQT không
+        boolean hasRequiredRole = currentUser.getUserRoles().stream()
                 .anyMatch(userRole -> userRole.getRole().getRoleName()
-                        .equals(UserRoleEnum.TRUONG_KHOA));
+                        .equals(UserRoleEnum.TRUONG_KHOA) ||
+                        userRole.getRole().getRoleName().equals(UserRoleEnum.THU_KY_QLKH_HTQT));
 
-        if (!isDepartmentHead) {
-            throw new IdInvalidException("Access denied: User phải có role TRUONG_KHOA");
+        if (!hasRequiredRole) {
+            throw new IdInvalidException("Access denied: User phải có role TRUONG_KHOA hoặc THU_KY_QLKH_HTQT");
         }
 
-        // Kiểm tra user có thuộc department này không
-        if (currentUser.getDepartment() == null || !currentUser.getDepartment().getId().equals(departmentId)) {
+        // Nếu là TRUONG_KHOA, kiểm tra user có thuộc department này không
+        boolean isTruongKhoa = currentUser.getUserRoles().stream()
+                .anyMatch(userRole -> userRole.getRole().getRoleName().equals(UserRoleEnum.TRUONG_KHOA));
+
+        if (isTruongKhoa
+                && (currentUser.getDepartment() == null || !currentUser.getDepartment().getId().equals(departmentId))) {
             throw new IdInvalidException("Access denied: User này không phải là trưởng khoa của phòng ban này");
         }
     }
 
     /**
      * Validate that current user is department head of the department that owns the
-     * specified phase
+     * specified phase or THU_KY_QLKH_HTQT
      */
     public void validateDepartmentHeadAccessForPhase(String phaseId) {
         User currentUser = userService.getCurrentUser();
 
-        // Kiểm tra user có role TRUONG_KHOA không
-        boolean isDepartmentHead = currentUser.getUserRoles().stream()
+        // Kiểm tra user có role TRUONG_KHOA hoặc THU_KY_QLKH_HTQT không
+        boolean hasRequiredRole = currentUser.getUserRoles().stream()
                 .anyMatch(userRole -> userRole.getRole().getRoleName()
-                        .equals(UserRoleEnum.TRUONG_KHOA));
+                        .equals(UserRoleEnum.TRUONG_KHOA) ||
+                        userRole.getRole().getRoleName().equals(UserRoleEnum.THU_KY_QLKH_HTQT));
 
-        if (!isDepartmentHead) {
-            throw new IdInvalidException("Access denied: User must have TRUONG_KHOA role");
+        if (!hasRequiredRole) {
+            throw new IdInvalidException("Access denied: User must have TRUONG_KHOA or THU_KY_QLKH_HTQT role");
         }
 
-        // Lấy departmentId từ phaseId thông qua service
-        String departmentId = getDepartmentIdByPhaseId(phaseId);
+        // Nếu là TRUONG_KHOA, kiểm tra user có thuộc department này không
+        boolean isTruongKhoa = currentUser.getUserRoles().stream()
+                .anyMatch(userRole -> userRole.getRole().getRoleName().equals(UserRoleEnum.TRUONG_KHOA));
 
-        // Kiểm tra user có thuộc department này không
-        if (currentUser.getDepartment() == null || !currentUser.getDepartment().getId().equals(departmentId)) {
-            throw new IdInvalidException("Access denied: User is not the head of this department");
+        if (isTruongKhoa) {
+            // Lấy departmentId từ phaseId thông qua service
+            String departmentId = getDepartmentIdByPhaseId(phaseId);
+
+            // Kiểm tra user có thuộc department này không
+            if (currentUser.getDepartment() == null || !currentUser.getDepartment().getId().equals(departmentId)) {
+                throw new IdInvalidException("Access denied: User is not the head of this department");
+            }
+        }
+    }
+
+    // 8. Create all 3 required phases for department
+    public List<DepartmentPhaseResponse> createAllRequiredPhasesForDepartment(String departmentId, String roundId) {
+        Department department = departmentRepository.findById(departmentId)
+                .orElseThrow(() -> new IdInvalidException("Không tìm thấy khoa với ID: " + departmentId));
+
+        innovationRoundRepository.findById(roundId)
+                .orElseThrow(() -> new IdInvalidException("Không tìm thấy round với ID: " + roundId));
+
+        // Get all innovation phases for this round
+        List<InnovationPhase> innovationPhases = innovationPhaseRepository
+                .findByInnovationRoundIdOrderByPhaseOrder(roundId);
+
+        if (innovationPhases.isEmpty()) {
+            throw new IdInvalidException("Round này chưa có giai đoạn nào");
+        }
+
+        // Check if department already has phases for this round
+        boolean hasExistingPhases = innovationPhases.stream()
+                .anyMatch(phase -> departmentPhaseRepository.existsByDepartmentIdAndInnovationPhaseId(departmentId,
+                        phase.getId()));
+
+        if (hasExistingPhases) {
+            throw new IdInvalidException("Khoa đã có giai đoạn cho round này");
+        }
+
+        List<DepartmentPhaseResponse> createdPhases = new ArrayList<>();
+
+        // Create phases for each innovation phase
+        for (InnovationPhase innovationPhase : innovationPhases) {
+            // Only create phases for the 3 required types
+            if (isRequiredPhaseType(innovationPhase.getPhaseType())) {
+                DepartmentPhase departmentPhase = new DepartmentPhase();
+                departmentPhase.setPhaseType(innovationPhase.getPhaseType());
+                departmentPhase.setStartDate(innovationPhase.getPhaseStartDate());
+                departmentPhase.setEndDate(innovationPhase.getPhaseEndDate());
+                departmentPhase
+                        .setDescription(innovationPhase.getDescription() + " - " + department.getDepartmentName());
+                departmentPhase.setPhaseOrder(innovationPhase.getPhaseOrder());
+                departmentPhase.setDepartment(department);
+                departmentPhase.setInnovationPhase(innovationPhase);
+                departmentPhase.setIsActive(true);
+
+                DepartmentPhase savedPhase = departmentPhaseRepository.save(departmentPhase);
+                createdPhases.add(departmentPhaseMapper.toDepartmentPhaseResponse(savedPhase));
+            }
+        }
+
+        return createdPhases;
+    }
+
+    // 9. Get phases by department and round
+    public List<DepartmentPhaseResponse> getPhasesByDepartmentAndRound(String departmentId, String roundId) {
+        // Get all innovation phases for this round
+        List<InnovationPhase> innovationPhases = innovationPhaseRepository
+                .findByInnovationRoundIdOrderByPhaseOrder(roundId);
+
+        List<DepartmentPhaseResponse> departmentPhases = new ArrayList<>();
+
+        for (InnovationPhase innovationPhase : innovationPhases) {
+            List<DepartmentPhase> phases = departmentPhaseRepository
+                    .findByDepartmentIdAndInnovationPhaseIdOrderByPhaseOrder(departmentId, innovationPhase.getId());
+
+            departmentPhases.addAll(phases.stream()
+                    .map(departmentPhaseMapper::toDepartmentPhaseResponse)
+                    .collect(Collectors.toList()));
+        }
+
+        return departmentPhases;
+    }
+
+    // 10. Get current active phase of department in round
+    public DepartmentPhaseResponse getCurrentActivePhase(String departmentId, String roundId) {
+        // Get all innovation phases for this round
+        List<InnovationPhase> innovationPhases = innovationPhaseRepository
+                .findByInnovationRoundIdOrderByPhaseOrder(roundId);
+
+        for (InnovationPhase innovationPhase : innovationPhases) {
+            DepartmentPhase currentPhase = departmentPhaseRepository
+                    .findCurrentActivePhase(departmentId, innovationPhase.getId(), LocalDate.now())
+                    .orElse(null);
+
+            if (currentPhase != null) {
+                return departmentPhaseMapper.toDepartmentPhaseResponse(currentPhase);
+            }
+        }
+
+        return null;
+    }
+
+    // 11. Create single required phase for department
+    public DepartmentPhaseResponse createRequiredPhaseForDepartment(String departmentId, String roundId,
+            InnovationPhaseEnum phaseType, LocalDate startDate, LocalDate endDate, String description) {
+
+        // Validate phase type
+        if (!isRequiredPhaseType(phaseType)) {
+            throw new IdInvalidException(
+                    "Chỉ được tạo giai đoạn SUBMISSION, DEPARTMENT_EVALUATION, hoặc DOCUMENT_SUBMISSION");
+        }
+
+        Department department = departmentRepository.findById(departmentId)
+                .orElseThrow(() -> new IdInvalidException("Không tìm thấy khoa với ID: " + departmentId));
+
+        innovationRoundRepository.findById(roundId)
+                .orElseThrow(() -> new IdInvalidException("Không tìm thấy round với ID: " + roundId));
+
+        // Find corresponding innovation phase
+        InnovationPhase innovationPhase = innovationPhaseRepository
+                .findByInnovationRoundIdAndPhaseType(roundId, phaseType)
+                .orElseThrow(
+                        () -> new IdInvalidException("Không tìm thấy giai đoạn " + phaseType + " trong round này"));
+
+        // Check if department already has this phase for this round
+        if (departmentPhaseRepository.existsByDepartmentIdAndInnovationPhaseId(departmentId, innovationPhase.getId())) {
+            throw new IdInvalidException("Khoa đã có giai đoạn " + phaseType + " cho round này");
+        }
+
+        // Validate time constraints
+        validateDepartmentPhaseTimeConstraints(startDate, endDate, innovationPhase);
+
+        DepartmentPhase departmentPhase = new DepartmentPhase();
+        departmentPhase.setPhaseType(phaseType);
+        departmentPhase.setStartDate(startDate);
+        departmentPhase.setEndDate(endDate);
+        departmentPhase.setDescription(description != null ? description
+                : innovationPhase.getDescription() + " - " + department.getDepartmentName());
+        departmentPhase.setPhaseOrder(innovationPhase.getPhaseOrder());
+        departmentPhase.setDepartment(department);
+        departmentPhase.setInnovationPhase(innovationPhase);
+        departmentPhase.setIsActive(true);
+
+        DepartmentPhase savedPhase = departmentPhaseRepository.save(departmentPhase);
+        return departmentPhaseMapper.toDepartmentPhaseResponse(savedPhase);
+    }
+
+    // Helper method to check if phase type is required
+    private boolean isRequiredPhaseType(InnovationPhaseEnum phaseType) {
+        return phaseType == InnovationPhaseEnum.SUBMISSION ||
+                phaseType == InnovationPhaseEnum.DEPARTMENT_EVALUATION ||
+                phaseType == InnovationPhaseEnum.DOCUMENT_SUBMISSION;
+    }
+
+    // Validate department phase time constraints
+    private void validateDepartmentPhaseTimeConstraints(LocalDate startDate, LocalDate endDate,
+            InnovationPhase innovationPhase) {
+        // Check if dates are within InnovationPhase timeframe
+        if (!innovationPhase.isPhaseWithinPhaseTimeframe(startDate, endDate)) {
+            throw new IdInvalidException("Thời gian giai đoạn phải nằm trong thời gian của InnovationPhase: " +
+                    innovationPhase.getPhaseStartDate() + " đến " + innovationPhase.getPhaseEndDate());
+        }
+
+        // Check if dates are within InnovationRound timeframe
+        if (!innovationPhase.isPhaseWithinRoundTimeframe(startDate, endDate)) {
+            throw new IdInvalidException("Thời gian giai đoạn phải nằm trong thời gian của InnovationRound: " +
+                    innovationPhase.getInnovationRound().getStartDate() + " đến "
+                    + innovationPhase.getInnovationRound().getEndDate());
+        }
+
+        // Check if start date is before end date
+        if (startDate.isAfter(endDate)) {
+            throw new IdInvalidException("Ngày bắt đầu phải trước ngày kết thúc");
+        }
+
+        // Check if department phase end date is before innovation phase end date
+        if (endDate.isAfter(innovationPhase.getPhaseEndDate())) {
+            throw new IdInvalidException(
+                    "Thời gian kết thúc giai đoạn khoa phải trước thời gian kết thúc giai đoạn toàn trường: "
+                            + innovationPhase.getPhaseEndDate());
         }
     }
 }
