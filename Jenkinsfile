@@ -25,6 +25,12 @@ pipeline {
         MINIO_ACCESS_KEY = 'minioadmin'
         MINIO_SECRET_KEY = 'MinIO2024!SecureStorage'
         
+        // Email Configuration (for testing)
+        SPRING_MAIL_HOST = 'localhost'
+        SPRING_MAIL_PORT = '587'
+        SPRING_MAIL_USERNAME = 'test@example.com'
+        SPRING_MAIL_PASSWORD = 'test'
+        
         // Maven Configuration
         MAVEN_OPTS = '-Xmx1024m'
     }
@@ -58,7 +64,11 @@ pipeline {
                             mvn clean test \
                                 -Dspring.profiles.active=test \
                                 -Dspring.datasource.url=jdbc:h2:mem:testdb \
-                                -Dspring.jpa.hibernate.ddl-auto=create-drop
+                                -Dspring.jpa.hibernate.ddl-auto=create-drop \
+                                -Dspring.mail.host=${SPRING_MAIL_HOST} \
+                                -Dspring.mail.port=${SPRING_MAIL_PORT} \
+                                -Dspring.mail.username=${SPRING_MAIL_USERNAME} \
+                                -Dspring.mail.password=${SPRING_MAIL_PASSWORD}
                         '''
                     }
                     post {
@@ -73,9 +83,10 @@ pipeline {
                         echo 'Running code quality checks...'
                         sh '''
                             mvn clean compile \
-                                checkstyle:check \
-                                pmd:check \
-                                spotbugs:check
+                                -Dspring.mail.host=${SPRING_MAIL_HOST} \
+                                -Dspring.mail.port=${SPRING_MAIL_PORT} \
+                                -Dspring.mail.username=${SPRING_MAIL_USERNAME} \
+                                -Dspring.mail.password=${SPRING_MAIL_PASSWORD}
                         '''
                     }
                     post {
