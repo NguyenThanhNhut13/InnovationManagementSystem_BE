@@ -1,20 +1,29 @@
-# ---- Build stage ----
-FROM maven:3.9-eclipse-temurin-17 AS build
+# --- Stage 1: Build ứng dụng bằng Maven ---
+FROM maven:3.9.9-eclipse-temurin-17 AS builder
+
+# Copy source vào container
 WORKDIR /app
-COPY pom.xml ./
-RUN mvn -q -B -DskipTests dependency:go-offline
+COPY pom.xml .
 COPY src ./src
-COPY mvnw mvnw.cmd ./
-RUN mvn -q -B -DskipTests clean package
 
-# ---- Run stage ----
-FROM eclipse-temurin:17-jre
-WORKDIR /app
+# Build jar (bỏ qua test để nhanh hơn)
+RUN mvn clean package -DskipTests
+
+
+# --- Stage 2: Chạy ứng dụng bằng JDK nhẹ ---
+FROM eclipse-temurin:17-jre-alpine
+
+# Set timezone (optional)
 ENV TZ=Asia/Ho_Chi_Minh
-COPY --from=build /app/target/*.jar /app/app.jar
-ENV JAVA_OPTS=""
+
+# Tạo thư mục app
+WORKDIR /app
+
+# Copy jar từ stage build sang
+COPY --from=builder /app/target/*.jar app.jar
+
+# Expose port (ví dụ app chạy ở 8080)
 EXPOSE 8080
-ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar /app/app.jar"]
 
-
-# CHUA DÙNG
+# Lệnh chạy khi container start
+ENTRYPOINT ["java","-jar","/app/app.jar"]

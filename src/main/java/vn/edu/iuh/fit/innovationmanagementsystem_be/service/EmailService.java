@@ -22,6 +22,11 @@ public class EmailService {
 
     // 1. Send OTP reset password email
     public void sendOtpEmail(String toEmail, String otp, Long expiresInMinutes) {
+        sendOtpEmail(toEmail, otp, expiresInMinutes, toEmail);
+    }
+
+    // 1.1. Send OTP reset password email with user name
+    public void sendOtpEmail(String toEmail, String otp, Long expiresInMinutes, String userName) {
         try {
             MimeMessage mimeMessage = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
@@ -111,7 +116,7 @@ public class EmailService {
                             </body>
                             </html>
                             """,
-                    toEmail, otp, expiresInMinutes);
+                    userName, otp, expiresInMinutes);
 
             helper.setText(emailContent, true);
 

@@ -11,6 +11,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationPhaseEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.DepartmentPhaseRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.UpdateDepartmentPhaseRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.DepartmentPhaseResponse;
@@ -23,7 +24,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/department-phases")
-@Tag(name = "Department Phase", description = "Department phase management APIs. Only TRUONG_KHOA can create/update phases for their department.")
+@Tag(name = "Department Phase", description = "Department phase management APIs. Only TRUONG_KHOA and THU_KY_QLKH_HTQT can access these APIs.")
 @SecurityRequirement(name = "Bearer Authentication")
 public class DepartmentPhaseController {
 
@@ -40,7 +41,7 @@ public class DepartmentPhaseController {
         @ApiResponses(value = {
                         @ApiResponse(responseCode = "200", description = "Department phase created successfully", content = @Content(schema = @Schema(implementation = DepartmentPhaseResponse.class))),
                         @ApiResponse(responseCode = "400", description = "Invalid request data or time constraints violated"),
-                        @ApiResponse(responseCode = "403", description = "Access denied - only TRUONG_KHOA of the department can create phases")
+                        @ApiResponse(responseCode = "403", description = "Access denied - only TRUONG_KHOA and THU_KY_QLKH_HTQT can create phases")
         })
         public ResponseEntity<DepartmentPhaseResponse> createDepartmentPhase(
                         @Parameter(description = "Department ID", required = true) @PathVariable String departmentId,
@@ -61,7 +62,7 @@ public class DepartmentPhaseController {
         @ApiResponses(value = {
                         @ApiResponse(responseCode = "200", description = "Department phase created successfully", content = @Content(schema = @Schema(implementation = List.class))),
                         @ApiResponse(responseCode = "400", description = "Invalid request data"),
-                        @ApiResponse(responseCode = "403", description = "Access denied - only TRUONG_KHOA of the department can create phases")
+                        @ApiResponse(responseCode = "403", description = "Access denied - only TRUONG_KHOA and THU_KY_QLKH_HTQT can create phases")
         })
         public ResponseEntity<List<DepartmentPhaseResponse>> createPhaseFromInnovationPhase(
                         @Parameter(description = "Department ID", required = true) @PathVariable String departmentId,
@@ -81,7 +82,7 @@ public class DepartmentPhaseController {
         @Operation(summary = "Get Department Phases", description = "Get all phases of a department in a specific InnovationPhase")
         @ApiResponses(value = {
                         @ApiResponse(responseCode = "200", description = "Department phases retrieved successfully", content = @Content(schema = @Schema(implementation = List.class))),
-                        @ApiResponse(responseCode = "403", description = "Access denied - only TRUONG_KHOA of the department can access")
+                        @ApiResponse(responseCode = "403", description = "Access denied - only TRUONG_KHOA and THU_KY_QLKH_HTQT can access")
         })
         public ResponseEntity<List<DepartmentPhaseResponse>> getPhasesByDepartmentAndPhase(
                         @Parameter(description = "Department ID", required = true) @PathVariable String departmentId,
@@ -103,7 +104,7 @@ public class DepartmentPhaseController {
         @ApiResponses(value = {
                         @ApiResponse(responseCode = "200", description = "Current department phase retrieved successfully", content = @Content(schema = @Schema(implementation = DepartmentPhaseResponse.class))),
                         @ApiResponse(responseCode = "404", description = "No active phase found"),
-                        @ApiResponse(responseCode = "403", description = "Access denied - only TRUONG_KHOA of the department can access")
+                        @ApiResponse(responseCode = "403", description = "Access denied - only TRUONG_KHOA and THU_KY_QLKH_HTQT can access")
         })
         public ResponseEntity<DepartmentPhaseResponse> getCurrentPhase(
                         @Parameter(description = "Department ID", required = true) @PathVariable String departmentId,
@@ -126,7 +127,7 @@ public class DepartmentPhaseController {
         @ApiResponses(value = {
                         @ApiResponse(responseCode = "200", description = "Department phase dates updated successfully", content = @Content(schema = @Schema(implementation = DepartmentPhaseResponse.class))),
                         @ApiResponse(responseCode = "400", description = "Invalid request data or time constraints violated"),
-                        @ApiResponse(responseCode = "403", description = "Access denied - only TRUONG_KHOA of the department can access")
+                        @ApiResponse(responseCode = "403", description = "Access denied - only TRUONG_KHOA and THU_KY_QLKH_HTQT can access")
         })
         public ResponseEntity<DepartmentPhaseResponse> updatePhaseDates(
                         @Parameter(description = "Phase ID", required = true) @PathVariable String phaseId,
@@ -149,7 +150,7 @@ public class DepartmentPhaseController {
                         @ApiResponse(responseCode = "200", description = "Department phase updated successfully", content = @Content(schema = @Schema(implementation = DepartmentPhaseResponse.class))),
                         @ApiResponse(responseCode = "400", description = "Invalid request data"),
                         @ApiResponse(responseCode = "404", description = "Phase not found"),
-                        @ApiResponse(responseCode = "403", description = "Access denied - only TRUONG_KHOA of the department can access")
+                        @ApiResponse(responseCode = "403", description = "Access denied - only TRUONG_KHOA and THU_KY_QLKH_HTQT can access")
         })
         public ResponseEntity<DepartmentPhaseResponse> updatePhase(
                         @Parameter(description = "Phase ID", required = true) @PathVariable String phaseId,
@@ -169,7 +170,7 @@ public class DepartmentPhaseController {
         @ApiResponses(value = {
                         @ApiResponse(responseCode = "200", description = "Department phase status updated successfully", content = @Content(schema = @Schema(implementation = DepartmentPhaseResponse.class))),
                         @ApiResponse(responseCode = "400", description = "Invalid request data"),
-                        @ApiResponse(responseCode = "403", description = "Access denied - only TRUONG_KHOA of the department can access")
+                        @ApiResponse(responseCode = "403", description = "Access denied - only TRUONG_KHOA and THU_KY_QLKH_HTQT can access")
         })
         public ResponseEntity<DepartmentPhaseResponse> togglePhaseStatus(
                         @Parameter(description = "Phase ID", required = true) @PathVariable String phaseId,
@@ -180,6 +181,97 @@ public class DepartmentPhaseController {
 
                 DepartmentPhaseResponse updatedPhase = departmentPhaseService.togglePhaseStatus(phaseId, isActive);
                 return ResponseEntity.ok(updatedPhase);
+        }
+
+        // 8. Create all 3 required phases for department (SUBMISSION,
+        // DEPARTMENT_EVALUATION, DOCUMENT_SUBMISSION)
+        @PostMapping("/department/{departmentId}/round/{roundId}/create-all-phases")
+        @ApiMessage("Tạo tất cả 3 giai đoạn cần thiết cho khoa thành công")
+        @Operation(summary = "Create All Required Phases for Department", description = "Create all 3 required phases (SUBMISSION, DEPARTMENT_EVALUATION, DOCUMENT_SUBMISSION) for a department in a specific round. Only TRUONG_KHOA and THU_KY_QLKH_HTQT can create phases.")
+        @ApiResponses(value = {
+                        @ApiResponse(responseCode = "200", description = "All department phases created successfully", content = @Content(schema = @Schema(implementation = List.class))),
+                        @ApiResponse(responseCode = "400", description = "Invalid request data or phases already exist"),
+                        @ApiResponse(responseCode = "403", description = "Access denied - only TRUONG_KHOA and THU_KY_QLKH_HTQT can create phases")
+        })
+        public ResponseEntity<List<DepartmentPhaseResponse>> createAllRequiredPhasesForDepartment(
+                        @Parameter(description = "Department ID", required = true) @PathVariable String departmentId,
+                        @Parameter(description = "Round ID", required = true) @PathVariable String roundId) {
+
+                // Validate user is department head of this department
+                departmentPhaseService.validateDepartmentHeadAccess(departmentId);
+
+                List<DepartmentPhaseResponse> createdPhases = departmentPhaseService
+                                .createAllRequiredPhasesForDepartment(departmentId, roundId);
+                return ResponseEntity.ok(createdPhases);
+        }
+
+        // 9. Get phases by department and round
+        @GetMapping("/department/{departmentId}/round/{roundId}")
+        @ApiMessage("Lấy danh sách giai đoạn khoa theo round thành công")
+        @Operation(summary = "Get Department Phases by Round", description = "Get all phases of a department in a specific round")
+        @ApiResponses(value = {
+                        @ApiResponse(responseCode = "200", description = "Department phases retrieved successfully", content = @Content(schema = @Schema(implementation = List.class))),
+                        @ApiResponse(responseCode = "403", description = "Access denied - only TRUONG_KHOA and THU_KY_QLKH_HTQT can access")
+        })
+        public ResponseEntity<List<DepartmentPhaseResponse>> getPhasesByDepartmentAndRound(
+                        @Parameter(description = "Department ID", required = true) @PathVariable String departmentId,
+                        @Parameter(description = "Round ID", required = true) @PathVariable String roundId) {
+
+                // Validate user is department head of this department
+                departmentPhaseService.validateDepartmentHeadAccess(departmentId);
+
+                List<DepartmentPhaseResponse> phases = departmentPhaseService
+                                .getPhasesByDepartmentAndRound(departmentId, roundId);
+                return ResponseEntity.ok(phases);
+        }
+
+        // 10. Get current active phase of department in round
+        @GetMapping("/department/{departmentId}/round/{roundId}/current")
+        @ApiMessage("Lấy giai đoạn hiện tại đang hoạt động của khoa thành công")
+        @Operation(summary = "Get Current Active Department Phase", description = "Get current active phase of a department in a specific round")
+        @ApiResponses(value = {
+                        @ApiResponse(responseCode = "200", description = "Current active department phase retrieved successfully", content = @Content(schema = @Schema(implementation = DepartmentPhaseResponse.class))),
+                        @ApiResponse(responseCode = "404", description = "No active phase found"),
+                        @ApiResponse(responseCode = "403", description = "Access denied - only TRUONG_KHOA and THU_KY_QLKH_HTQT can access")
+        })
+        public ResponseEntity<DepartmentPhaseResponse> getCurrentActivePhase(
+                        @Parameter(description = "Department ID", required = true) @PathVariable String departmentId,
+                        @Parameter(description = "Round ID", required = true) @PathVariable String roundId) {
+
+                // Validate user is department head of this department
+                departmentPhaseService.validateDepartmentHeadAccess(departmentId);
+
+                DepartmentPhaseResponse currentPhase = departmentPhaseService.getCurrentActivePhase(departmentId,
+                                roundId);
+                if (currentPhase == null) {
+                        return ResponseEntity.notFound().build();
+                }
+                return ResponseEntity.ok(currentPhase);
+        }
+
+        // 11. Create single required phase for department
+        @PostMapping("/department/{departmentId}/round/{roundId}/create-phase/{phaseType}")
+        @ApiMessage("Tạo giai đoạn cần thiết cho khoa thành công")
+        @Operation(summary = "Create Single Required Phase for Department", description = "Create a single required phase (SUBMISSION, DEPARTMENT_EVALUATION, or DOCUMENT_SUBMISSION) for a department. Only TRUONG_KHOA can create phases for their department.")
+        @ApiResponses(value = {
+                        @ApiResponse(responseCode = "200", description = "Department phase created successfully", content = @Content(schema = @Schema(implementation = DepartmentPhaseResponse.class))),
+                        @ApiResponse(responseCode = "400", description = "Invalid request data or phase already exists"),
+                        @ApiResponse(responseCode = "403", description = "Access denied - only TRUONG_KHOA and THU_KY_QLKH_HTQT can create phases")
+        })
+        public ResponseEntity<DepartmentPhaseResponse> createRequiredPhaseForDepartment(
+                        @Parameter(description = "Department ID", required = true) @PathVariable String departmentId,
+                        @Parameter(description = "Round ID", required = true) @PathVariable String roundId,
+                        @Parameter(description = "Phase Type", required = true) @PathVariable InnovationPhaseEnum phaseType,
+                        @Parameter(description = "Start date", required = true) @RequestParam LocalDate startDate,
+                        @Parameter(description = "End date", required = true) @RequestParam LocalDate endDate,
+                        @Parameter(description = "Description", required = false) @RequestParam(required = false) String description) {
+
+                // Validate user is department head of this department
+                departmentPhaseService.validateDepartmentHeadAccess(departmentId);
+
+                DepartmentPhaseResponse createdPhase = departmentPhaseService.createRequiredPhaseForDepartment(
+                                departmentId, roundId, phaseType, startDate, endDate, description);
+                return ResponseEntity.ok(createdPhase);
         }
 
 }

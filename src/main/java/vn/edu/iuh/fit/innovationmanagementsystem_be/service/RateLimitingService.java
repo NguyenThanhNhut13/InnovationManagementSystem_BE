@@ -19,8 +19,8 @@ public class RateLimitingService {
     private static final long RATE_LIMIT_WINDOW = 3600; // 1 giờ = 3600 giây
 
     // 1. Kiểm tra rate limiting cho OTP
-    public boolean isOtpRateLimited(String email) {
-        String key = OTP_RATE_LIMIT_PREFIX + email;
+    public boolean isOtpRateLimited(String personnelId) {
+        String key = OTP_RATE_LIMIT_PREFIX + personnelId;
 
         try {
             // Lấy số lần request hiện tại
@@ -48,9 +48,9 @@ public class RateLimitingService {
         }
     }
 
-    // 2. Reset rate limit counter cho email (dùng để test hoặc admin reset)
-    public void resetRateLimit(String email) {
-        String key = OTP_RATE_LIMIT_PREFIX + email;
+    // 2. Reset rate limit counter cho personnelId (dùng để test hoặc admin reset)
+    public void resetRateLimit(String personnelId) {
+        String key = OTP_RATE_LIMIT_PREFIX + personnelId;
         try {
             redisTemplate.delete(key);
         } catch (Exception e) {
@@ -58,8 +58,8 @@ public class RateLimitingService {
     }
 
     // 3. Lấy thông tin rate limit hiện tại
-    public RateLimitInfo getRateLimitInfo(String email) {
-        String key = OTP_RATE_LIMIT_PREFIX + email;
+    public RateLimitInfo getRateLimitInfo(String personnelId) {
+        String key = OTP_RATE_LIMIT_PREFIX + personnelId;
 
         try {
             Object currentCount = redisTemplate.opsForValue().get(key);

@@ -216,7 +216,8 @@ public class AuthenticationService {
     // 6. Forgot Password - Send OTP via email
     public ForgotPasswordResponse forgotPassword(ForgotPasswordRequest request) {
         User user = userRepository.findByPersonnelId(request.getPersonnelId())
-                .orElseThrow(() -> new IdInvalidException("Không tìm thấy tài khoản với mã nhân sự: " + request.getPersonnelId()));
+                .orElseThrow(() -> new IdInvalidException(
+                        "Không tìm thấy tài khoản với mã nhân sự: " + request.getPersonnelId()));
 
         // Kiểm tra rate limiting (max 3 requests/hour per email)
         if (rateLimitingService.isOtpRateLimited(user.getEmail())) {
@@ -233,7 +234,7 @@ public class AuthenticationService {
         otpService.saveOtp(user.getEmail(), otp);
 
         // Send OTP email
-        emailService.sendOtpEmail(user.getEmail(), otp, 5L);
+        emailService.sendOtpEmail(user.getEmail(), otp, 5L, user.getFullName());
 
         return new ForgotPasswordResponse(
                 "OTP đã được gửi đến email của bạn",

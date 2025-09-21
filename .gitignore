@@ -39,3 +39,6 @@ src/main/resources/
 *.crt
 *.p12
 *.pfx
+
+# Env file
+.env

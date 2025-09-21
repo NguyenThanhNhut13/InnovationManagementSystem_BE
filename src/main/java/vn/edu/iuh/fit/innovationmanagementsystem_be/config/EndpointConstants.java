@@ -100,10 +100,6 @@ public final class EndpointConstants {
                         "/api/v1/innovation-rounds/{roundId}/toggle-status"
         };
 
-        public static final String[] INNOVATION_ROUND_DELETE = {
-                        "/api/v1/innovation-rounds/{roundId}"
-        };
-
         // ================== INNOVATION PHASE ==================
         public static final String[] INNOVATION_PHASE_POST = {
                         "/api/v1/innovation-phases/round/{roundId}/create-phases",
@@ -118,10 +114,6 @@ public final class EndpointConstants {
                         "/api/v1/innovation-phases/{phaseId}/complete",
                         "/api/v1/innovation-phases/{phaseId}/suspend",
                         "/api/v1/innovation-phases/{phaseId}/cancel"
-        };
-
-        public static final String[] INNOVATION_PHASE_DELETE = {
-                        "/api/v1/innovation-phases/{phaseId}"
         };
 
         // ================== FORM TEMPLATE ==================
@@ -150,7 +142,6 @@ public final class EndpointConstants {
         };
 
         // ================== DEPARTMENT PHASE ==================
-        // Chỉ TRUONG_KHOA và THU_KY_QLKH_HTQT mới có thể sử dụng
         public static final String[] DEPARTMENT_PHASE_POST = {
                         "/api/v1/department-phases/department/{departmentId}/create-phase",
                         "/api/v1/department-phases/department/{departmentId}/copy-from-innovation-phase/{innovationPhaseId}",
