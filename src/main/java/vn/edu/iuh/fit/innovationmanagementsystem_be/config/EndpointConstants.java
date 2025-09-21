@@ -116,10 +116,6 @@ public final class EndpointConstants {
                         "/api/v1/innovation-phases/{phaseId}/cancel"
         };
 
-        public static final String[] INNOVATION_PHASE_DELETE = {
-                        "/api/v1/innovation-phases/{phaseId}"
-        };
-
         // ================== FORM TEMPLATE ==================
         public static final String[] FORM_TEMPLATE_POST = {
                         "/api/v1/form-templates",

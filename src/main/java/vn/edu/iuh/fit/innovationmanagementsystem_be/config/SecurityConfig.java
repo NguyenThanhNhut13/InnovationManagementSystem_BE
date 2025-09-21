@@ -122,9 +122,6 @@ public class SecurityConfig {
                                                 .hasAnyRole(QUAN_TRI_VIEN, THU_KY_QLKH_HTQT)
                                                 .requestMatchers(HttpMethod.PUT, EndpointConstants.INNOVATION_PHASE_PUT)
                                                 .hasAnyRole(QUAN_TRI_VIEN, THU_KY_QLKH_HTQT)
-                                                .requestMatchers(HttpMethod.DELETE,
-                                                                EndpointConstants.INNOVATION_PHASE_DELETE)
-                                                .hasAnyRole(QUAN_TRI_VIEN, THU_KY_QLKH_HTQT)
 
                                                 // Innovation Department Phase - Only TRUONG_KHOA and THU_KY_QLKH_HTQT
                                                 // can access
