@@ -21,7 +21,7 @@ public class UserResponse {
     private String departmentId;
     private String departmentName;
     private String departmentCode;
-    private List<String> roleNames;
+    private List<String> roles;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }
