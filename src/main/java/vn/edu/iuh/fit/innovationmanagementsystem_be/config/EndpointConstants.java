@@ -142,7 +142,6 @@ public final class EndpointConstants {
         };
 
         // ================== DEPARTMENT PHASE ==================
-        // Chỉ TRUONG_KHOA và THU_KY_QLKH_HTQT mới có thể sử dụng
         public static final String[] DEPARTMENT_PHASE_POST = {
                         "/api/v1/department-phases/department/{departmentId}/create-phase",
                         "/api/v1/department-phases/department/{departmentId}/copy-from-innovation-phase/{innovationPhaseId}",
