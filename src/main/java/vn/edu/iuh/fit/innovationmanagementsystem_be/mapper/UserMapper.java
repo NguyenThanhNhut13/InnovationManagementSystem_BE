@@ -19,7 +19,7 @@ public interface UserMapper {
     @Mapping(target = "departmentId", source = "department.id")
     @Mapping(target = "departmentName", source = "department.departmentName")
     @Mapping(target = "departmentCode", source = "department.departmentCode")
-    @Mapping(target = "roleNames", source = "userRoles", qualifiedByName = "mapUserRolesToStrings")
+    @Mapping(target = "roles", source = "userRoles", qualifiedByName = "mapUserRolesToStrings")
     UserResponse toUserResponse(User user);
 
     @Mapping(target = "id", ignore = true)
