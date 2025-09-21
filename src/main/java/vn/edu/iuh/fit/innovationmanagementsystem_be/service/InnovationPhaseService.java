@@ -1,5 +1,8 @@
 package vn.edu.iuh.fit.innovationmanagementsystem_be.service;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.InnovationPhase;
@@ -13,6 +16,8 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.exception.IdInvalidException
 import vn.edu.iuh.fit.innovationmanagementsystem_be.mapper.InnovationPhaseMapper;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.InnovationPhaseRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.InnovationRoundRepository;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.ResultPaginationDTO;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.Utils;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -225,5 +230,13 @@ public class InnovationPhaseService {
                 .collect(Collectors.groupingBy(
                         InnovationPhase::getPhaseStatus,
                         Collectors.counting()));
+    }
+
+    // Get all innovation phases with pagination and filtering
+    public ResultPaginationDTO getAllInnovationPhasesWithPaginationAndFilter(
+            Specification<InnovationPhase> specification, Pageable pageable) {
+        Page<InnovationPhase> phasePage = innovationPhaseRepository.findAll(specification, pageable);
+        Page<InnovationPhaseResponse> responsePage = phasePage.map(innovationPhaseMapper::toInnovationPhaseResponse);
+        return Utils.toResultPaginationDTO(responsePage, pageable);
     }
 }

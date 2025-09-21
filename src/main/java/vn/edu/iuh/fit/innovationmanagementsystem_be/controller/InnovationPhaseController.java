@@ -8,16 +8,21 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.InnovationPhase;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationPhaseEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.PhaseStatusEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.InnovationPhaseRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.UpdateInnovationPhaseRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationPhaseResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.service.InnovationPhaseService;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.ResultPaginationDTO;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.annotation.ApiMessage;
+import com.turkraft.springfilter.boot.Filter;
 
 import jakarta.validation.Valid;
 import java.time.LocalDate;
@@ -33,6 +38,21 @@ public class InnovationPhaseController {
 
         public InnovationPhaseController(InnovationPhaseService innovationPhaseService) {
                 this.innovationPhaseService = innovationPhaseService;
+        }
+
+        // 0. Get All Innovation Phases with Pagination and Filtering
+        @GetMapping
+        @ApiMessage("Lấy danh sách tất cả giai đoạn sáng kiến với phân trang và lọc thành công")
+        @Operation(summary = "Get All Innovation Phases", description = "Get paginated list of all innovation phases with filtering")
+        @ApiResponses(value = {
+                        @ApiResponse(responseCode = "200", description = "Innovation phases retrieved successfully", content = @Content(schema = @Schema(implementation = ResultPaginationDTO.class))),
+                        @ApiResponse(responseCode = "401", description = "Unauthorized")
+        })
+        public ResponseEntity<ResultPaginationDTO> getAllInnovationPhases(
+                        @Parameter(description = "Filter specification for innovation phases") @Filter Specification<InnovationPhase> specification,
+                        @Parameter(description = "Pagination parameters") Pageable pageable) {
+                return ResponseEntity.ok(innovationPhaseService
+                                .getAllInnovationPhasesWithPaginationAndFilter(specification, pageable));
         }
 
         // 1. Create phases for round
