@@ -100,10 +100,6 @@ public final class EndpointConstants {
                         "/api/v1/innovation-rounds/{roundId}/toggle-status"
         };
 
-        public static final String[] INNOVATION_ROUND_DELETE = {
-                        "/api/v1/innovation-rounds/{roundId}"
-        };
-
         // ================== INNOVATION PHASE ==================
         public static final String[] INNOVATION_PHASE_POST = {
                         "/api/v1/innovation-phases/round/{roundId}/create-phases",

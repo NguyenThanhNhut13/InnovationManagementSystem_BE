@@ -115,9 +115,6 @@ public class SecurityConfig {
                                                 .hasAnyRole(QUAN_TRI_VIEN, THU_KY_QLKH_HTQT)
                                                 .requestMatchers(HttpMethod.PUT, EndpointConstants.INNOVATION_ROUND_PUT)
                                                 .hasAnyRole(QUAN_TRI_VIEN, THU_KY_QLKH_HTQT)
-                                                .requestMatchers(HttpMethod.DELETE,
-                                                                EndpointConstants.INNOVATION_ROUND_DELETE)
-                                                .hasAnyRole(QUAN_TRI_VIEN, THU_KY_QLKH_HTQT)
 
                                                 // Innovation Phase
                                                 .requestMatchers(HttpMethod.POST,

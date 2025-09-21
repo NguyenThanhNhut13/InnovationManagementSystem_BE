@@ -37,6 +37,21 @@ public class InnovationRoundController {
                 this.innovationRoundService = innovationRoundService;
         }
 
+        // 0. Get All Innovation Rounds with Pagination and Filtering
+        @GetMapping
+        @ApiMessage("Lấy danh sách tất cả đợt sáng kiến với phân trang và lọc thành công")
+        @Operation(summary = "Get All Innovation Rounds", description = "Get paginated list of all innovation rounds with filtering")
+        @ApiResponses(value = {
+                        @ApiResponse(responseCode = "200", description = "Innovation rounds retrieved successfully", content = @Content(schema = @Schema(implementation = ResultPaginationDTO.class))),
+                        @ApiResponse(responseCode = "401", description = "Unauthorized")
+        })
+        public ResponseEntity<ResultPaginationDTO> getAllInnovationRounds(
+                        @Parameter(description = "Filter specification for innovation rounds") @Filter Specification<InnovationRound> specification,
+                        @Parameter(description = "Pagination parameters") Pageable pageable) {
+                return ResponseEntity.ok(innovationRoundService
+                                .getAllInnovationRoundsWithPaginationAndFilter(specification, pageable));
+        }
+
         // 1. Create innovation round
         @PostMapping
         @ApiMessage("Tạo đợt sáng kiến thành công")

@@ -147,6 +147,14 @@ public class InnovationRoundService {
                 .collect(Collectors.toList());
     }
 
+    // 9. Get all innovation rounds with pagination and filtering
+    public ResultPaginationDTO getAllInnovationRoundsWithPaginationAndFilter(
+            Specification<InnovationRound> specification, Pageable pageable) {
+        Page<InnovationRound> roundPage = innovationRoundRepository.findAll(specification, pageable);
+        Page<InnovationRoundResponse> responsePage = roundPage.map(innovationRoundMapper::toInnovationRoundResponse);
+        return Utils.toResultPaginationDTO(responsePage, pageable);
+    }
+
     // Helper method to validate round dates
     private void validateRoundDates(LocalDate startDate, LocalDate endDate) {
         if (startDate.isAfter(endDate)) {
