@@ -78,12 +78,6 @@ public class InnovationDecisionService {
         if (request.getPromulgatedDate() != null) {
             innovationDecision.setPromulgatedDate(request.getPromulgatedDate());
         }
-        if (request.getSignedBy() != null) {
-            innovationDecision.setSignedBy(request.getSignedBy());
-        }
-        if (request.getBases() != null) {
-            innovationDecision.setBases(request.getBases());
-        }
 
         innovationDecisionRepository.save(innovationDecision);
         return innovationDecisionMapper.toInnovationDecisionResponse(innovationDecision);

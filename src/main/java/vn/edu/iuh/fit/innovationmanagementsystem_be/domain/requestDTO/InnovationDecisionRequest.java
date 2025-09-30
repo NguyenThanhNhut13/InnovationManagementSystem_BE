@@ -13,6 +13,8 @@ import java.time.LocalDate;
 @AllArgsConstructor
 public class InnovationDecisionRequest {
 
+    private String id;
+
     @NotBlank(message = "Số hiệu quyết định không được để trống")
     private String decisionNumber;
 
@@ -22,9 +24,7 @@ public class InnovationDecisionRequest {
     @NotNull(message = "Ngày ban hành không được để trống")
     private LocalDate promulgatedDate;
 
-    @NotBlank(message = "Tên người ký không được để trống")
-    private String signedBy;
-
-    private String bases;
+    @NotBlank(message = "Đường dẫn File không được để trống")
+    private String pdfFile;
 
 }

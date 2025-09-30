@@ -22,8 +22,6 @@ public interface InnovationDecisionMapper {
     @Mapping(target = "decisionNumber", source = "decisionNumber")
     @Mapping(target = "title", source = "title")
     @Mapping(target = "promulgatedDate", source = "promulgatedDate")
-    @Mapping(target = "signedBy", source = "signedBy")
-    @Mapping(target = "bases", source = "bases")
     @Mapping(target = "chapters", ignore = true)
     @Mapping(target = "regulations", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
