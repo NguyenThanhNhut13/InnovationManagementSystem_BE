@@ -22,6 +22,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.FileUploa
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.MultipleFileUploadResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.exception.IdInvalidException;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.service.FileService;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.RestResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.annotation.ApiMessage;
 
 import java.io.File;
@@ -45,7 +46,10 @@ public class UtilsController {
     }
 
     // 1. Upload single file to MinIO
-    @PostMapping("/upload")
+    @PostMapping(
+            value = "/upload",
+            consumes = MediaType.MULTIPART_FORM_DATA_VALUE
+    )
     @ApiMessage("Upload file thành công")
     @Operation(summary = "Upload Single File", description = "Upload a single file to MinIO storage")
     @ApiResponses(value = {
@@ -56,9 +60,11 @@ public class UtilsController {
             @Parameter(description = "File to upload", required = true) @RequestParam("file") MultipartFile file)
             throws Exception {
 
-        if (file.isEmpty()) {
-            throw new IdInvalidException("File is empty");
-        }
+        System.out.println("file "+ file.getOriginalFilename());
+
+//        if (file.isEmpty()) {
+//            throw new IdInvalidException("File is empty");
+//        }
 
         if (file.getOriginalFilename() == null || file.getOriginalFilename().trim().isEmpty()) {
             throw new IdInvalidException("File name is required");
@@ -345,4 +351,28 @@ public class UtilsController {
         body.put("timestamp", java.time.Instant.now().toString());
         return ResponseEntity.ok(body);
     }
+
+    @GetMapping("/view/{fileName}")
+    public ResponseEntity<RestResponse<String>> getIframeUrl(@PathVariable String fileName) {
+        try {
+            String url = fileService.getPresignedUrl(fileName, 60 * 5);
+            RestResponse<String> response = RestResponse.<String>builder()
+                    .statusCode(200)
+                    .error(null)
+                    .message("Success")
+                    .data(url)
+                    .build();
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            RestResponse<String> errorResponse = RestResponse.<String>builder()
+                    .statusCode(500)
+                    .error("Internal Server Error")
+                    .message(e.getMessage())
+                    .data(null)
+                    .build();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(errorResponse);
+        }
+    }
+
 }
