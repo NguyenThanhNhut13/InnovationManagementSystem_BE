@@ -1,6 +1,7 @@
 package vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -36,4 +37,8 @@ public class InnovationPhaseRequest {
 
     @NotNull(message = "Cấp độ của giai đoạn không được để trống")
     private InnovationPhaseLevelEnum level;
+
+    @NotNull(message = "Thứ tự giai đoạn không được để trống")
+    @Min(value = 0, message = "Thứ tự phase phải >= 0")
+    private Integer phaseOrder;
 }

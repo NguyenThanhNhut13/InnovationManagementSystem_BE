@@ -286,92 +286,92 @@ public class DepartmentPhaseService {
     }
 
     // 8. Create all 3 required phases for department
-//    public List<DepartmentPhaseResponse> createAllRequiredPhasesForDepartment(String departmentId, String roundId) {
-//        Department department = departmentRepository.findById(departmentId)
-//                .orElseThrow(() -> new IdInvalidException("Không tìm thấy khoa với ID: " + departmentId));
-//
-//        innovationRoundRepository.findById(roundId)
-//                .orElseThrow(() -> new IdInvalidException("Không tìm thấy round với ID: " + roundId));
-//
-//        // Get all innovation phases for this round
-//        List<InnovationPhase> innovationPhases = innovationPhaseRepository
-//                .findByInnovationRoundIdOrderByPhaseOrder(roundId);
-//
-//        if (innovationPhases.isEmpty()) {
-//            throw new IdInvalidException("Round này chưa có giai đoạn nào");
-//        }
-//
-//        // Check if department already has phases for this round
-//        boolean hasExistingPhases = innovationPhases.stream()
-//                .anyMatch(phase -> departmentPhaseRepository.existsByDepartmentIdAndInnovationPhaseId(departmentId,
-//                        phase.getId()));
-//
-//        if (hasExistingPhases) {
-//            throw new IdInvalidException("Khoa đã có giai đoạn cho round này");
-//        }
-//
-//        List<DepartmentPhaseResponse> createdPhases = new ArrayList<>();
-//
-//        // Create phases for each innovation phase
-//        for (InnovationPhase innovationPhase : innovationPhases) {
-//            // Only create phases for the 3 required types
-//            if (isRequiredPhaseType(innovationPhase.getPhaseType())) {
-//                DepartmentPhase departmentPhase = new DepartmentPhase();
-//                departmentPhase.setPhaseType(innovationPhase.getPhaseType());
-//                departmentPhase.setStartDate(innovationPhase.getPhaseStartDate());
-//                departmentPhase.setEndDate(innovationPhase.getPhaseEndDate());
-//                departmentPhase
-//                        .setDescription(innovationPhase.getDescription() + " - " + department.getDepartmentName());
-//                departmentPhase.setDepartment(department);
-//                departmentPhase.setInnovationPhase(innovationPhase);
-//                departmentPhase.setIsActive(true);
-//
-//                DepartmentPhase savedPhase = departmentPhaseRepository.save(departmentPhase);
-//                createdPhases.add(departmentPhaseMapper.toDepartmentPhaseResponse(savedPhase));
-//            }
-//        }
-//
-//        return createdPhases;
-//    }
-//
-//    // 9. Get phases by department and round
-//    public List<DepartmentPhaseResponse> getPhasesByDepartmentAndRound(String departmentId, String roundId) {
-//        // Get all innovation phases for this round
-//        List<InnovationPhase> innovationPhases = innovationPhaseRepository
-//                .findByInnovationRoundIdOrderByPhaseOrder(roundId);
-//
-//        List<DepartmentPhaseResponse> departmentPhases = new ArrayList<>();
-//
-//        for (InnovationPhase innovationPhase : innovationPhases) {
-//            List<DepartmentPhase> phases = departmentPhaseRepository
-//                    .findByDepartmentIdAndInnovationPhaseIdOrderByPhaseOrder(departmentId, innovationPhase.getId());
-//
-//            departmentPhases.addAll(phases.stream()
-//                    .map(departmentPhaseMapper::toDepartmentPhaseResponse)
-//                    .collect(Collectors.toList()));
-//        }
-//
-//        return departmentPhases;
-//    }
-//
-//    // 10. Get current active phase of department in round
-//    public DepartmentPhaseResponse getCurrentActivePhase(String departmentId, String roundId) {
-//        // Get all innovation phases for this round
-//        List<InnovationPhase> innovationPhases = innovationPhaseRepository
-//                .findByInnovationRoundIdOrderByPhaseOrder(roundId);
-//
-//        for (InnovationPhase innovationPhase : innovationPhases) {
-//            DepartmentPhase currentPhase = departmentPhaseRepository
-//                    .findCurrentActivePhase(departmentId, innovationPhase.getId(), LocalDate.now())
-//                    .orElse(null);
-//
-//            if (currentPhase != null) {
-//                return departmentPhaseMapper.toDepartmentPhaseResponse(currentPhase);
-//            }
-//        }
-//
-//        return null;
-//    }
+    public List<DepartmentPhaseResponse> createAllRequiredPhasesForDepartment(String departmentId, String roundId) {
+        Department department = departmentRepository.findById(departmentId)
+                .orElseThrow(() -> new IdInvalidException("Không tìm thấy khoa với ID: " + departmentId));
+
+        innovationRoundRepository.findById(roundId)
+                .orElseThrow(() -> new IdInvalidException("Không tìm thấy round với ID: " + roundId));
+
+        // Get all innovation phases for this round
+        List<InnovationPhase> innovationPhases = innovationPhaseRepository
+                .findByInnovationRoundIdOrderByPhaseOrder(roundId);
+
+        if (innovationPhases.isEmpty()) {
+            throw new IdInvalidException("Round này chưa có giai đoạn nào");
+        }
+
+        // Check if department already has phases for this round
+        boolean hasExistingPhases = innovationPhases.stream()
+                .anyMatch(phase -> departmentPhaseRepository.existsByDepartmentIdAndInnovationPhaseId(departmentId,
+                        phase.getId()));
+
+        if (hasExistingPhases) {
+            throw new IdInvalidException("Khoa đã có giai đoạn cho round này");
+        }
+
+        List<DepartmentPhaseResponse> createdPhases = new ArrayList<>();
+
+        // Create phases for each innovation phase
+        for (InnovationPhase innovationPhase : innovationPhases) {
+            // Only create phases for the 3 required types
+            if (isRequiredPhaseType(innovationPhase.getPhaseType())) {
+                DepartmentPhase departmentPhase = new DepartmentPhase();
+                departmentPhase.setPhaseType(innovationPhase.getPhaseType());
+                departmentPhase.setStartDate(innovationPhase.getPhaseStartDate());
+                departmentPhase.setEndDate(innovationPhase.getPhaseEndDate());
+                departmentPhase
+                        .setDescription(innovationPhase.getDescription() + " - " + department.getDepartmentName());
+                departmentPhase.setDepartment(department);
+                departmentPhase.setInnovationPhase(innovationPhase);
+                departmentPhase.setIsActive(true);
+
+                DepartmentPhase savedPhase = departmentPhaseRepository.save(departmentPhase);
+                createdPhases.add(departmentPhaseMapper.toDepartmentPhaseResponse(savedPhase));
+            }
+        }
+
+        return createdPhases;
+    }
+
+    // 9. Get phases by department and round
+    public List<DepartmentPhaseResponse> getPhasesByDepartmentAndRound(String departmentId, String roundId) {
+        // Get all innovation phases for this round
+        List<InnovationPhase> innovationPhases = innovationPhaseRepository
+                .findByInnovationRoundIdOrderByPhaseOrder(roundId);
+
+        List<DepartmentPhaseResponse> departmentPhases = new ArrayList<>();
+
+        for (InnovationPhase innovationPhase : innovationPhases) {
+            List<DepartmentPhase> phases = departmentPhaseRepository
+                    .findByDepartmentIdAndInnovationPhaseIdOrderByPhaseOrder(departmentId, innovationPhase.getId());
+
+            departmentPhases.addAll(phases.stream()
+                    .map(departmentPhaseMapper::toDepartmentPhaseResponse)
+                    .collect(Collectors.toList()));
+        }
+
+        return departmentPhases;
+    }
+
+    // 10. Get current active phase of department in round
+    public DepartmentPhaseResponse getCurrentActivePhase(String departmentId, String roundId) {
+        // Get all innovation phases for this round
+        List<InnovationPhase> innovationPhases = innovationPhaseRepository
+                .findByInnovationRoundIdOrderByPhaseOrder(roundId);
+
+        for (InnovationPhase innovationPhase : innovationPhases) {
+            DepartmentPhase currentPhase = departmentPhaseRepository
+                    .findCurrentActivePhase(departmentId, innovationPhase.getId(), LocalDate.now())
+                    .orElse(null);
+
+            if (currentPhase != null) {
+                return departmentPhaseMapper.toDepartmentPhaseResponse(currentPhase);
+            }
+        }
+
+        return null;
+    }
 
     // 11. Create single required phase for department
     public DepartmentPhaseResponse createRequiredPhaseForDepartment(String departmentId, String roundId,

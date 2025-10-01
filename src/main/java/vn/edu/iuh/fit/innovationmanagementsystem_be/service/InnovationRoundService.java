@@ -81,7 +81,8 @@ public class InnovationRoundService {
         if (request.getInnovationPhase() != null && !request.getInnovationPhase().isEmpty()) {
             Set<InnovationPhase> phases = innovationPhaseService.createPhasesForRound(round, request.getInnovationPhase());
 
-            round.setInnovationPhases(phases);
+            round.getInnovationPhases().clear();
+            round.getInnovationPhases().addAll(phases);
         }
 
         // 6. Save round with decision + phases

@@ -13,7 +13,11 @@ import java.util.List;
 import java.util.ArrayList;
 
 @Entity
-@Table(name = "innovation_phases")
+@Table(name = "innovation_phases",
+        uniqueConstraints = {
+                @UniqueConstraint(columnNames = {"innovation_round_id", "phase_order"})
+        }
+)
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -49,6 +53,9 @@ public class InnovationPhase extends Auditable {
 
     @Enumerated(EnumType.STRING)
     private InnovationPhaseLevelEnum level;
+
+    @Column(name = "phase_order", nullable = false)
+    private Integer phaseOrder = 0;
 
 //    @Column(name = "transition_reason", columnDefinition = "TEXT")
 //    private String transitionReason; // Lý do chuyển đổi phase

@@ -13,6 +13,8 @@ package vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO;
  */
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
@@ -47,8 +49,10 @@ public class CreateInnovationRoundRequest {
     @NotBlank(message = "Năm học không được để trống")
     private String academicYear;
 
+    @Valid
     private InnovationDecisionRequest innovationDecision;
 
+    @Valid
     private Set<InnovationPhaseRequest> innovationPhase;
 
 }

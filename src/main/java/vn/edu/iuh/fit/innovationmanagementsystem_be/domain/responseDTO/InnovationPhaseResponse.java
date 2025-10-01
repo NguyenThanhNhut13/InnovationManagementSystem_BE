@@ -21,6 +21,7 @@ public class InnovationPhaseResponse {
     private LocalDate endDate;
     private String description;
     private InnovationPhaseLevelEnum level;
+    private Integer phaseOrder;
 
     // Audit info
     private LocalDateTime createdAt;

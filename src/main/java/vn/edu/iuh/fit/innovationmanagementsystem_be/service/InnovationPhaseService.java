@@ -97,6 +97,11 @@ public class InnovationPhaseService {
             phaseRequest.setName(round.getName() + " - " + phaseRequest.getPhaseType().name());
         }
 
+        if (innovationPhaseRepository.existsByInnovationRound_IdAndPhaseOrder(round.getId(), phaseRequest.getPhaseOrder())) {
+            throw new IdInvalidException("Phase order " + phaseRequest.getPhaseOrder()
+                    + " already exists in this round");
+        }
+
         InnovationPhase phase = innovationPhaseMapper.toInnovationPhase(phaseRequest);
         phase.setInnovationRound(round);
 
