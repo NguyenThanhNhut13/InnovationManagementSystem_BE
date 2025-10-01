@@ -50,15 +50,16 @@ public class AuthenticationController {
     // 2. Refresh Token
     @PostMapping("/auth/refresh")
     @ApiMessage("Refresh token thành công")
-    @Operation(summary = "Refresh Token", description = "Get new access token using refresh token")
+    @Operation(summary = "Refresh Token", description = "Get new access token using refresh token and blacklist old access token")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Token refreshed successfully", content = @Content(schema = @Schema(implementation = TokenResponse.class))),
             @ApiResponse(responseCode = "401", description = "Invalid refresh token"),
             @ApiResponse(responseCode = "400", description = "Invalid request data")
     })
     public ResponseEntity<TokenResponse> refreshToken(
-            @Parameter(description = "Refresh token request", required = true) @Valid @RequestBody RefreshTokenRequest refreshTokenRequest) {
-        TokenResponse tokenResponse = authenticationService.refreshToken(refreshTokenRequest.getRefreshToken());
+            @Parameter(description = "Refresh token request with current access token", required = true) @Valid @RequestBody RefreshTokenRequest refreshTokenRequest) {
+        TokenResponse tokenResponse = authenticationService.refreshToken(refreshTokenRequest.getRefreshToken(),
+                refreshTokenRequest.getAccessToken());
         return ResponseEntity.ok(tokenResponse);
     }
 
