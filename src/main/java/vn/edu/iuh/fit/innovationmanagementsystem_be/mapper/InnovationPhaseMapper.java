@@ -10,19 +10,19 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.Innovatio
 @Mapper(componentModel = "spring")
 public interface InnovationPhaseMapper {
 
-    @Mapping(target = "innovationRoundId", source = "innovationRound.id")
-    @Mapping(target = "innovationRoundName", source = "innovationRound.name")
+//    @Mapping(target = "innovationRoundId", source = "innovationRound.id")
+//    @Mapping(target = "innovationRoundName", source = "innovationRound.name")
     InnovationPhaseResponse toInnovationPhaseResponse(InnovationPhase innovationPhase);
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "innovationRound", ignore = true)
     @Mapping(target = "departmentPhases", ignore = true)
     @Mapping(target = "phaseStatus", ignore = true)
-    @Mapping(target = "transitionReason", ignore = true)
+//    @Mapping(target = "transitionReason", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     @Mapping(target = "createdBy", ignore = true)
     @Mapping(target = "updatedBy", ignore = true)
-    @BeanMapping(ignoreUnmappedSourceProperties = { "status" })
+//    @BeanMapping(ignoreUnmappedSourceProperties = { "status" })
     InnovationPhase toInnovationPhase(InnovationPhaseRequest innovationPhaseRequest);
 }

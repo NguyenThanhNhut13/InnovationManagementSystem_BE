@@ -14,6 +14,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.InnovationRound;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.CreateInnovationRoundRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.InnovationRoundRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.UpdateInnovationRoundRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationRoundResponse;
@@ -61,7 +62,7 @@ public class InnovationRoundController {
                         @ApiResponse(responseCode = "400", description = "Invalid request data")
         })
         public ResponseEntity<InnovationRoundResponse> createInnovationRound(
-                        @Parameter(description = "Innovation round details", required = true) @Valid @RequestBody InnovationRoundRequest request) {
+                        @Parameter(description = "Innovation round details", required = true) @Valid @RequestBody CreateInnovationRoundRequest request) {
 
                 InnovationRoundResponse createdRound = innovationRoundService.createInnovationRound(request);
                 return ResponseEntity.ok(createdRound);

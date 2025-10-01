@@ -12,11 +12,16 @@ package vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO;
  * @version:    1.0
  */
 
-import jakarta.persistence.*;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationRoundStatusEnum;
+
+import java.time.LocalDate;
+import java.util.Set;
 
 @Data
 @NoArgsConstructor
@@ -26,14 +31,16 @@ public class CreateInnovationRoundRequest {
     @NotBlank(message ="Tên đợt không được để trống")
     private String name;
 
-    @NotBlank(message ="Ngày bắt đầu không được để trống")
-    private String startDate;
+    @NotNull(message = "Ngày bắt đầu không được để trống")
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    private LocalDate registrationStartDate;
 
-    @NotBlank(message ="Ngày kết thúc không được để trống")
-    private String endDate;
+    @NotNull(message = "Ngày kết thúc không được để trống")
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    private LocalDate registrationEndDate;
 
-    @NotBlank(message ="Ngày bắt đầu không được để trống")
-    private String status;
+    @NotBlank(message ="Trạng thái đầu không được để trống")
+    private InnovationRoundStatusEnum status;
 
     private String description;
 
@@ -41,4 +48,7 @@ public class CreateInnovationRoundRequest {
     private String academicYear;
 
     private InnovationDecisionRequest innovationDecision;
+
+    private Set<InnovationPhaseRequest> innovationPhase;
+
 }

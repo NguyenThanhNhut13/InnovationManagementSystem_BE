@@ -22,7 +22,6 @@ public interface DepartmentPhaseRepository extends JpaRepository<DepartmentPhase
 
         @Query("SELECT p FROM DepartmentPhase p WHERE p.department.id = :departmentId " +
                         "AND p.innovationPhase.id = :phaseId " +
-                        "AND p.isActive = true " +
                         "AND :currentDate >= p.startDate " +
                         "AND :currentDate <= p.endDate")
         Optional<DepartmentPhase> findCurrentActivePhase(@Param("departmentId") String departmentId,

@@ -8,8 +8,10 @@ import lombok.NoArgsConstructor;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationRoundStatusEnum;
 
 import java.time.LocalDate;
+import java.util.HashSet;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Set;
 
 @Entity
 @Table(name = "innovation_rounds")
@@ -27,11 +29,11 @@ public class InnovationRound extends Auditable {
     @Column(name = "name", nullable = false)
     private String name;
 
-    @Column(name = "start_date", nullable = false)
-    private LocalDate startDate;
+    @Column(name = "registration_start_date", nullable = false)
+    private LocalDate registrationStartDate;
 
-    @Column(name = "end_date", nullable = false)
-    private LocalDate endDate;
+    @Column(name = "registration_end_date", nullable = false)
+    private LocalDate registrationEndDate;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
@@ -39,9 +41,6 @@ public class InnovationRound extends Auditable {
 
     @Column(name = "description", columnDefinition = "TEXT")
     private String description;
-
-    @Column(name = "is_active", nullable = false)
-    private Boolean isActive = true;
 
     @Column(name = "academic_year", nullable = false)
     private String academicYear;
@@ -58,20 +57,11 @@ public class InnovationRound extends Auditable {
     private List<Innovation> innovations = new ArrayList<>();
 
     @OneToMany(mappedBy = "innovationRound", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
-    private List<InnovationPhase> innovationPhases = new ArrayList<>();
+    private Set<InnovationPhase> innovationPhases = new HashSet<>();
 
-    @PrePersist
-    protected void onCreate() {
-        if (isActive == null) {
-            isActive = true;
-        }
-        if (status == null) {
-            status = InnovationRoundStatusEnum.ACTIVE;
-        }
-    }
 
     public boolean isPhaseWithinRoundTimeframe(LocalDate phaseStartDate,
             LocalDate phaseEndDate) {
-        return !phaseStartDate.isBefore(startDate) && !phaseEndDate.isAfter(endDate);
+        return !phaseStartDate.isBefore(registrationStartDate) && !phaseEndDate.isAfter(registrationEndDate);
     }
 }

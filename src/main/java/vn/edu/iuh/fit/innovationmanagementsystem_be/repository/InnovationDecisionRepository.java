@@ -15,7 +15,7 @@ import java.time.LocalDate;
 public interface InnovationDecisionRepository
                 extends JpaRepository<InnovationDecision, String>, JpaSpecificationExecutor<InnovationDecision> {
 
-        Page<InnovationDecision> findBySignedBy(String signedBy, Pageable pageable);
+//        Page<InnovationDecision> findBySignedBy(String signedBy, Pageable pageable);
 
         boolean existsByDecisionNumber(String decisionNumber);
 

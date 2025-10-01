@@ -5,7 +5,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationPhaseEnum;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationPhaseLevelEnum;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationPhaseTypeEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.PhaseStatusEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.exception.IdInvalidException;
 
@@ -32,7 +33,7 @@ public class InnovationPhase extends Auditable {
     // Thông tin giai đoạn cụ thể
     @Enumerated(EnumType.STRING)
     @Column(name = "phase_type", nullable = false)
-    private InnovationPhaseEnum phaseType;
+    private InnovationPhaseTypeEnum phaseType;
 
     @Column(name = "phase_start_date", nullable = false)
     private LocalDate phaseStartDate;
@@ -43,18 +44,15 @@ public class InnovationPhase extends Auditable {
     @Column(name = "description", columnDefinition = "TEXT")
     private String description;
 
-    @Column(name = "is_active", nullable = false)
-    private Boolean isActive = true;
-
-    @Column(name = "phase_order", nullable = false)
-    private Integer phaseOrder; // Thứ tự giai đoạn (1, 2, 3, 4)
-
     @Enumerated(EnumType.STRING)
     @Column(name = "phase_status", nullable = false)
     private PhaseStatusEnum phaseStatus = PhaseStatusEnum.PENDING;
 
-    @Column(name = "transition_reason", columnDefinition = "TEXT")
-    private String transitionReason; // Lý do chuyển đổi phase
+    @Enumerated(EnumType.STRING)
+    private InnovationPhaseLevelEnum level;
+
+//    @Column(name = "transition_reason", columnDefinition = "TEXT")
+//    private String transitionReason; // Lý do chuyển đổi phase
 
     // Relationships
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
@@ -63,16 +61,6 @@ public class InnovationPhase extends Auditable {
 
     @OneToMany(mappedBy = "innovationPhase", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
     private List<DepartmentPhase> departmentPhases = new ArrayList<>();
-
-    @PrePersist
-    protected void onCreate() {
-        if (isActive == null) {
-            isActive = true;
-        }
-        if (phaseStatus == null) {
-            phaseStatus = PhaseStatusEnum.PENDING;
-        }
-    }
 
     // kiểm tra phase có nằm trong thời gian của round không
     public boolean isPhaseWithinRoundTimeframe(LocalDate startDate, LocalDate endDate) {
@@ -114,7 +102,6 @@ public class InnovationPhase extends Auditable {
     public void transitionTo(PhaseStatusEnum targetStatus, String reason) {
         if (canTransitionTo(targetStatus)) {
             this.phaseStatus = targetStatus;
-            this.transitionReason = reason;
         } else {
             throw new IdInvalidException("Không thể chuyển đổi phase từ " + this.phaseStatus + " sang " + targetStatus);
         }

@@ -1,5 +1,7 @@
 package vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import jakarta.persistence.Column;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
@@ -24,7 +26,13 @@ public class InnovationDecisionRequest {
     @NotNull(message = "Ngày ban hành không được để trống")
     private LocalDate promulgatedDate;
 
-    @NotBlank(message = "Đường dẫn File không được để trống")
-    private String pdfFile;
+    @NotBlank(message = "Tên file không được để trống")
+    private String fileName;
+
+    @NotBlank(message = "Tiêu chí chấm điểm không được để trống")
+    private JsonNode scoringCriteria;
+
+    @NotBlank(message = "Nội dung hướng dẫn không được để trống")
+    private String contentGuide;
 
 }

@@ -7,6 +7,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.DepartmentPhase
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.InnovationPhase;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.User;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationPhaseEnum;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationPhaseTypeEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.UserRoleEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.DepartmentPhaseRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.UpdateDepartmentPhaseRequest;
@@ -101,7 +102,6 @@ public class DepartmentPhaseService {
         departmentPhase.setStartDate(innovationPhase.getPhaseStartDate());
         departmentPhase.setEndDate(innovationPhase.getPhaseEndDate());
         departmentPhase.setDescription(innovationPhase.getDescription() + " - " + department.getDepartmentName());
-        departmentPhase.setPhaseOrder(innovationPhase.getPhaseOrder());
         departmentPhase.setDepartment(department);
         // departmentPhase.setInnovationPhase(innovationPhase);
         departmentPhase.setIsActive(true);
@@ -211,8 +211,8 @@ public class DepartmentPhaseService {
         // Check if dates are within InnovationRound timeframe
         if (!innovationPhase.isPhaseWithinRoundTimeframe(startDate, endDate)) {
             throw new IdInvalidException("Thời gian giai đoạn phải nằm trong thời gian của InnovationRound: " +
-                    innovationPhase.getInnovationRound().getStartDate() + " đến "
-                    + innovationPhase.getInnovationRound().getEndDate());
+                    innovationPhase.getInnovationRound().getRegistrationStartDate() + " đến "
+                    + innovationPhase.getInnovationRound().getRegistrationEndDate());
         }
 
         // Check if start date is before end date
@@ -286,97 +286,96 @@ public class DepartmentPhaseService {
     }
 
     // 8. Create all 3 required phases for department
-    public List<DepartmentPhaseResponse> createAllRequiredPhasesForDepartment(String departmentId, String roundId) {
-        Department department = departmentRepository.findById(departmentId)
-                .orElseThrow(() -> new IdInvalidException("Không tìm thấy khoa với ID: " + departmentId));
-
-        innovationRoundRepository.findById(roundId)
-                .orElseThrow(() -> new IdInvalidException("Không tìm thấy round với ID: " + roundId));
-
-        // Get all innovation phases for this round
-        List<InnovationPhase> innovationPhases = innovationPhaseRepository
-                .findByInnovationRoundIdOrderByPhaseOrder(roundId);
-
-        if (innovationPhases.isEmpty()) {
-            throw new IdInvalidException("Round này chưa có giai đoạn nào");
-        }
-
-        // Check if department already has phases for this round
-        boolean hasExistingPhases = innovationPhases.stream()
-                .anyMatch(phase -> departmentPhaseRepository.existsByDepartmentIdAndInnovationPhaseId(departmentId,
-                        phase.getId()));
-
-        if (hasExistingPhases) {
-            throw new IdInvalidException("Khoa đã có giai đoạn cho round này");
-        }
-
-        List<DepartmentPhaseResponse> createdPhases = new ArrayList<>();
-
-        // Create phases for each innovation phase
-        for (InnovationPhase innovationPhase : innovationPhases) {
-            // Only create phases for the 3 required types
-            if (isRequiredPhaseType(innovationPhase.getPhaseType())) {
-                DepartmentPhase departmentPhase = new DepartmentPhase();
-                departmentPhase.setPhaseType(innovationPhase.getPhaseType());
-                departmentPhase.setStartDate(innovationPhase.getPhaseStartDate());
-                departmentPhase.setEndDate(innovationPhase.getPhaseEndDate());
-                departmentPhase
-                        .setDescription(innovationPhase.getDescription() + " - " + department.getDepartmentName());
-                departmentPhase.setPhaseOrder(innovationPhase.getPhaseOrder());
-                departmentPhase.setDepartment(department);
-                departmentPhase.setInnovationPhase(innovationPhase);
-                departmentPhase.setIsActive(true);
-
-                DepartmentPhase savedPhase = departmentPhaseRepository.save(departmentPhase);
-                createdPhases.add(departmentPhaseMapper.toDepartmentPhaseResponse(savedPhase));
-            }
-        }
-
-        return createdPhases;
-    }
-
-    // 9. Get phases by department and round
-    public List<DepartmentPhaseResponse> getPhasesByDepartmentAndRound(String departmentId, String roundId) {
-        // Get all innovation phases for this round
-        List<InnovationPhase> innovationPhases = innovationPhaseRepository
-                .findByInnovationRoundIdOrderByPhaseOrder(roundId);
-
-        List<DepartmentPhaseResponse> departmentPhases = new ArrayList<>();
-
-        for (InnovationPhase innovationPhase : innovationPhases) {
-            List<DepartmentPhase> phases = departmentPhaseRepository
-                    .findByDepartmentIdAndInnovationPhaseIdOrderByPhaseOrder(departmentId, innovationPhase.getId());
-
-            departmentPhases.addAll(phases.stream()
-                    .map(departmentPhaseMapper::toDepartmentPhaseResponse)
-                    .collect(Collectors.toList()));
-        }
-
-        return departmentPhases;
-    }
-
-    // 10. Get current active phase of department in round
-    public DepartmentPhaseResponse getCurrentActivePhase(String departmentId, String roundId) {
-        // Get all innovation phases for this round
-        List<InnovationPhase> innovationPhases = innovationPhaseRepository
-                .findByInnovationRoundIdOrderByPhaseOrder(roundId);
-
-        for (InnovationPhase innovationPhase : innovationPhases) {
-            DepartmentPhase currentPhase = departmentPhaseRepository
-                    .findCurrentActivePhase(departmentId, innovationPhase.getId(), LocalDate.now())
-                    .orElse(null);
-
-            if (currentPhase != null) {
-                return departmentPhaseMapper.toDepartmentPhaseResponse(currentPhase);
-            }
-        }
-
-        return null;
-    }
+//    public List<DepartmentPhaseResponse> createAllRequiredPhasesForDepartment(String departmentId, String roundId) {
+//        Department department = departmentRepository.findById(departmentId)
+//                .orElseThrow(() -> new IdInvalidException("Không tìm thấy khoa với ID: " + departmentId));
+//
+//        innovationRoundRepository.findById(roundId)
+//                .orElseThrow(() -> new IdInvalidException("Không tìm thấy round với ID: " + roundId));
+//
+//        // Get all innovation phases for this round
+//        List<InnovationPhase> innovationPhases = innovationPhaseRepository
+//                .findByInnovationRoundIdOrderByPhaseOrder(roundId);
+//
+//        if (innovationPhases.isEmpty()) {
+//            throw new IdInvalidException("Round này chưa có giai đoạn nào");
+//        }
+//
+//        // Check if department already has phases for this round
+//        boolean hasExistingPhases = innovationPhases.stream()
+//                .anyMatch(phase -> departmentPhaseRepository.existsByDepartmentIdAndInnovationPhaseId(departmentId,
+//                        phase.getId()));
+//
+//        if (hasExistingPhases) {
+//            throw new IdInvalidException("Khoa đã có giai đoạn cho round này");
+//        }
+//
+//        List<DepartmentPhaseResponse> createdPhases = new ArrayList<>();
+//
+//        // Create phases for each innovation phase
+//        for (InnovationPhase innovationPhase : innovationPhases) {
+//            // Only create phases for the 3 required types
+//            if (isRequiredPhaseType(innovationPhase.getPhaseType())) {
+//                DepartmentPhase departmentPhase = new DepartmentPhase();
+//                departmentPhase.setPhaseType(innovationPhase.getPhaseType());
+//                departmentPhase.setStartDate(innovationPhase.getPhaseStartDate());
+//                departmentPhase.setEndDate(innovationPhase.getPhaseEndDate());
+//                departmentPhase
+//                        .setDescription(innovationPhase.getDescription() + " - " + department.getDepartmentName());
+//                departmentPhase.setDepartment(department);
+//                departmentPhase.setInnovationPhase(innovationPhase);
+//                departmentPhase.setIsActive(true);
+//
+//                DepartmentPhase savedPhase = departmentPhaseRepository.save(departmentPhase);
+//                createdPhases.add(departmentPhaseMapper.toDepartmentPhaseResponse(savedPhase));
+//            }
+//        }
+//
+//        return createdPhases;
+//    }
+//
+//    // 9. Get phases by department and round
+//    public List<DepartmentPhaseResponse> getPhasesByDepartmentAndRound(String departmentId, String roundId) {
+//        // Get all innovation phases for this round
+//        List<InnovationPhase> innovationPhases = innovationPhaseRepository
+//                .findByInnovationRoundIdOrderByPhaseOrder(roundId);
+//
+//        List<DepartmentPhaseResponse> departmentPhases = new ArrayList<>();
+//
+//        for (InnovationPhase innovationPhase : innovationPhases) {
+//            List<DepartmentPhase> phases = departmentPhaseRepository
+//                    .findByDepartmentIdAndInnovationPhaseIdOrderByPhaseOrder(departmentId, innovationPhase.getId());
+//
+//            departmentPhases.addAll(phases.stream()
+//                    .map(departmentPhaseMapper::toDepartmentPhaseResponse)
+//                    .collect(Collectors.toList()));
+//        }
+//
+//        return departmentPhases;
+//    }
+//
+//    // 10. Get current active phase of department in round
+//    public DepartmentPhaseResponse getCurrentActivePhase(String departmentId, String roundId) {
+//        // Get all innovation phases for this round
+//        List<InnovationPhase> innovationPhases = innovationPhaseRepository
+//                .findByInnovationRoundIdOrderByPhaseOrder(roundId);
+//
+//        for (InnovationPhase innovationPhase : innovationPhases) {
+//            DepartmentPhase currentPhase = departmentPhaseRepository
+//                    .findCurrentActivePhase(departmentId, innovationPhase.getId(), LocalDate.now())
+//                    .orElse(null);
+//
+//            if (currentPhase != null) {
+//                return departmentPhaseMapper.toDepartmentPhaseResponse(currentPhase);
+//            }
+//        }
+//
+//        return null;
+//    }
 
     // 11. Create single required phase for department
     public DepartmentPhaseResponse createRequiredPhaseForDepartment(String departmentId, String roundId,
-            InnovationPhaseEnum phaseType, LocalDate startDate, LocalDate endDate, String description) {
+            InnovationPhaseTypeEnum phaseType, LocalDate startDate, LocalDate endDate, String description) {
 
         // Validate phase type
         if (!isRequiredPhaseType(phaseType)) {
@@ -410,7 +409,6 @@ public class DepartmentPhaseService {
         departmentPhase.setEndDate(endDate);
         departmentPhase.setDescription(description != null ? description
                 : innovationPhase.getDescription() + " - " + department.getDepartmentName());
-        departmentPhase.setPhaseOrder(innovationPhase.getPhaseOrder());
         departmentPhase.setDepartment(department);
         departmentPhase.setInnovationPhase(innovationPhase);
         departmentPhase.setIsActive(true);
@@ -420,10 +418,10 @@ public class DepartmentPhaseService {
     }
 
     // Helper method to check if phase type is required
-    private boolean isRequiredPhaseType(InnovationPhaseEnum phaseType) {
-        return phaseType == InnovationPhaseEnum.SUBMISSION ||
-                phaseType == InnovationPhaseEnum.DEPARTMENT_EVALUATION ||
-                phaseType == InnovationPhaseEnum.DOCUMENT_SUBMISSION;
+    private boolean isRequiredPhaseType(InnovationPhaseTypeEnum phaseType) {
+        return phaseType == InnovationPhaseTypeEnum.SUBMISSION ||
+                phaseType == InnovationPhaseTypeEnum.SCORING ||
+                phaseType == InnovationPhaseTypeEnum.ANNOUNCEMENT;
     }
 
     // Validate department phase time constraints
@@ -438,8 +436,8 @@ public class DepartmentPhaseService {
         // Check if dates are within InnovationRound timeframe
         if (!innovationPhase.isPhaseWithinRoundTimeframe(startDate, endDate)) {
             throw new IdInvalidException("Thời gian giai đoạn phải nằm trong thời gian của InnovationRound: " +
-                    innovationPhase.getInnovationRound().getStartDate() + " đến "
-                    + innovationPhase.getInnovationRound().getEndDate());
+                    innovationPhase.getInnovationRound().getRegistrationStartDate() + " đến "
+                    + innovationPhase.getInnovationRound().getRegistrationEndDate());
         }
 
         // Check if start date is before end date

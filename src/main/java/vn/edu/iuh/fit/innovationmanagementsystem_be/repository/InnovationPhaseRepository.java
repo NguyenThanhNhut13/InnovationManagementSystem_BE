@@ -7,6 +7,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.InnovationPhase;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationPhaseEnum;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationPhaseTypeEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.PhaseStatusEnum;
 
 import java.time.LocalDate;
@@ -17,13 +18,12 @@ import java.util.Optional;
 public interface InnovationPhaseRepository
                 extends JpaRepository<InnovationPhase, String>, JpaSpecificationExecutor<InnovationPhase> {
 
-        List<InnovationPhase> findByInnovationRoundIdOrderByPhaseOrder(String innovationRoundId);
+//        List<InnovationPhase> findByInnovationRoundIdOrderByPhaseOrder(String innovationRoundId);
 
         Optional<InnovationPhase> findByInnovationRoundIdAndPhaseType(String innovationRoundId,
-                        InnovationPhaseEnum phaseType);
+                        InnovationPhaseTypeEnum phaseType);
 
         @Query("SELECT p FROM InnovationPhase p WHERE p.innovationRound.id = :roundId " +
-                        "AND p.isActive = true " +
                         "AND :currentDate >= p.phaseStartDate " +
                         "AND :currentDate <= p.phaseEndDate")
         Optional<InnovationPhase> findCurrentActivePhase(@Param("roundId") String roundId,
@@ -37,11 +37,10 @@ public interface InnovationPhaseRepository
         List<InnovationPhase> findByInnovationRoundIdAndPhaseStatus(String innovationRoundId,
                         PhaseStatusEnum phaseStatus);
 
-        Optional<InnovationPhase> findByInnovationRoundIdAndPhaseOrder(String innovationRoundId, Integer phaseOrder);
+//        Optional<InnovationPhase> findByInnovationRoundIdAndPhaseOrder(String innovationRoundId);
 
-        @Query("SELECT p FROM InnovationPhase p WHERE p.innovationRound.id = :roundId " +
-                        "AND p.phaseStatus = :status " +
-                        "ORDER BY p.phaseOrder")
-        List<InnovationPhase> findByRoundIdAndStatusOrderByPhaseOrder(@Param("roundId") String roundId,
-                        @Param("status") PhaseStatusEnum status);
+//        @Query("SELECT p FROM InnovationPhase p WHERE p.innovationRound.id = :roundId " +
+//                        "AND p.phaseStatus = :status ")
+//        List<InnovationPhase> findByRoundIdAndStatusOrderByPhaseOrder(@Param("roundId") String roundId,
+//                        @Param("status") PhaseStatusEnum status);
 }

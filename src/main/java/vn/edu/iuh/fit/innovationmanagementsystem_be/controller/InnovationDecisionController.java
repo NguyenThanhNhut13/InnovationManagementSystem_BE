@@ -90,18 +90,18 @@ public class InnovationDecisionController {
         return ResponseEntity.ok(innovationDecisionService.updateInnovationDecision(id, request));
     }
 
-    // 5. Get InnovationDecisions by signed by
-    @GetMapping("/innovation-decisions/signed-by")
-    @ApiMessage("Lấy quyết định theo người ký thành công")
-    @Operation(summary = "Get Innovation Decisions by Signed By", description = "Get innovation decisions filtered by signer")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Innovation decisions retrieved successfully", content = @Content(schema = @Schema(implementation = ResultPaginationDTO.class)))
-    })
-    public ResponseEntity<ResultPaginationDTO> getInnovationDecisionsBySignedBy(
-            @Parameter(description = "Signer name", required = true) @RequestParam String signedBy,
-            @Parameter(description = "Pagination parameters") Pageable pageable) {
-        return ResponseEntity.ok(innovationDecisionService.getInnovationDecisionsBySignedBy(signedBy, pageable));
-    }
+//    // 5. Get InnovationDecisions by signed by
+//    @GetMapping("/innovation-decisions/signed-by")
+//    @ApiMessage("Lấy quyết định theo người ký thành công")
+//    @Operation(summary = "Get Innovation Decisions by Signed By", description = "Get innovation decisions filtered by signer")
+//    @ApiResponses(value = {
+//            @ApiResponse(responseCode = "200", description = "Innovation decisions retrieved successfully", content = @Content(schema = @Schema(implementation = ResultPaginationDTO.class)))
+//    })
+//    public ResponseEntity<ResultPaginationDTO> getInnovationDecisionsBySignedBy(
+//            @Parameter(description = "Signer name", required = true) @RequestParam String signedBy,
+//            @Parameter(description = "Pagination parameters") Pageable pageable) {
+//        return ResponseEntity.ok(innovationDecisionService.getInnovationDecisionsBySignedBy(signedBy, pageable));
+//    }
 
     // 6. Get InnovationDecisions by date range
     @GetMapping("/innovation-decisions/date-range")

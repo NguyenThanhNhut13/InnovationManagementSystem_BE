@@ -14,16 +14,16 @@ import java.util.stream.Collectors;
 @Mapper(componentModel = "spring")
 public interface InnovationDecisionMapper {
 
-    @Mapping(target = "chapterIds", source = "chapters", qualifiedByName = "mapChaptersToIds")
-    @Mapping(target = "regulationIds", source = "regulations", qualifiedByName = "mapRegulationsToIds")
+//    @Mapping(target = "chapterIds", source = "chapters", qualifiedByName = "mapChaptersToIds")
+//    @Mapping(target = "regulationIds", source = "regulations", qualifiedByName = "mapRegulationsToIds")
     InnovationDecisionResponse toInnovationDecisionResponse(InnovationDecision innovationDecision);
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "decisionNumber", source = "decisionNumber")
     @Mapping(target = "title", source = "title")
     @Mapping(target = "promulgatedDate", source = "promulgatedDate")
-    @Mapping(target = "chapters", ignore = true)
-    @Mapping(target = "regulations", ignore = true)
+//    @Mapping(target = "chapters", ignore = true)
+//    @Mapping(target = "regulations", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     @Mapping(target = "createdBy", ignore = true)

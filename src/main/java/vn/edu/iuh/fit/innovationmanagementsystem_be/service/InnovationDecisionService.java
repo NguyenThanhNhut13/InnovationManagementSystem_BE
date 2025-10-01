@@ -16,6 +16,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.Utils;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.mapper.InnovationDecisionMapper;
 
 import java.time.LocalDate;
+import java.util.Optional;
 
 @Service
 public class InnovationDecisionService {
@@ -40,6 +41,26 @@ public class InnovationDecisionService {
 
         innovationDecisionRepository.save(innovationDecision);
         return innovationDecisionMapper.toInnovationDecisionResponse(innovationDecision);
+    }
+
+    // 1.1
+    @Transactional
+    public InnovationDecision createDecision(InnovationDecisionRequest req) {
+
+        // validate
+        if (innovationDecisionRepository.existsByDecisionNumber(req.getDecisionNumber())) {
+            throw new IdInvalidException("Số hiệu quyết định đã tồn tại");
+        }
+
+        InnovationDecision decision = new InnovationDecision();
+        decision.setDecisionNumber(req.getDecisionNumber());
+        decision.setTitle(req.getTitle());
+        decision.setPromulgatedDate(req.getPromulgatedDate());
+        decision.setFileName(req.getFileName());
+        decision.setScoringCriteria(req.getScoringCriteria());
+        decision.setContentGuide(req.getContentGuide());
+
+        return innovationDecisionRepository.save(decision);
     }
 
     // 2. Get All InnovationDecisions
@@ -84,13 +105,13 @@ public class InnovationDecisionService {
     }
 
     // 5. Get by signed by
-    public ResultPaginationDTO getInnovationDecisionsBySignedBy(String signedBy, Pageable pageable) {
-        Page<InnovationDecision> innovationDecisions = innovationDecisionRepository
-                .findBySignedBy(signedBy, pageable);
-        Page<InnovationDecisionResponse> responses = innovationDecisions
-                .map(innovationDecisionMapper::toInnovationDecisionResponse);
-        return Utils.toResultPaginationDTO(responses, pageable);
-    }
+//    public ResultPaginationDTO getInnovationDecisionsBySignedBy(String signedBy, Pageable pageable) {
+//        Page<InnovationDecision> innovationDecisions = innovationDecisionRepository
+//                .findBySignedBy(signedBy, pageable);
+//        Page<InnovationDecisionResponse> responses = innovationDecisions
+//                .map(innovationDecisionMapper::toInnovationDecisionResponse);
+//        return Utils.toResultPaginationDTO(responses, pageable);
+//    }
 
     // 6. Get by date range
     public ResultPaginationDTO getInnovationDecisionsByDateRange(LocalDate startDate, LocalDate endDate,
@@ -102,4 +123,8 @@ public class InnovationDecisionService {
         return Utils.toResultPaginationDTO(responses, pageable);
     }
 
+    //. 7 get Entity By ID
+    public Optional<InnovationDecision> getEntityById(String id) {
+        return innovationDecisionRepository.findById(id);
+    }
 }
