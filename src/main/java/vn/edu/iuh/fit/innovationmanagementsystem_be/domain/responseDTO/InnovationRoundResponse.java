@@ -22,7 +22,6 @@ public class InnovationRoundResponse {
     private LocalDate registrationEndDate;
     private InnovationRoundStatusEnum status;
     private String description;
-    private Boolean isActive;
     private String academicYear;
 
     private LocalDateTime createdAt;

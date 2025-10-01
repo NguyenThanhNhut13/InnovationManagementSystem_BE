@@ -114,13 +114,13 @@ public class InnovationPhaseService {
         return innovationPhaseRepository.save(phase);
     }
 
-//    // 3. Get phases by round
-//    public List<InnovationPhaseResponse> getPhasesByRound(String roundId) {
-//        List<InnovationPhase> phases = innovationPhaseRepository.findByInnovationRoundIdOrderByPhaseOrder(roundId);
-//        return phases.stream()
-//                .map(innovationPhaseMapper::toInnovationPhaseResponse)
-//                .collect(Collectors.toList());
-//    }
+    // 3. Get phases by round
+    public List<InnovationPhaseResponse> getPhasesByRound(String roundId) {
+        List<InnovationPhase> phases = innovationPhaseRepository.findByInnovationRoundIdOrderByPhaseOrder(roundId);
+        return phases.stream()
+                .map(innovationPhaseMapper::toInnovationPhaseResponse)
+                .collect(Collectors.toList());
+    }
 
     // 4. Get current active phase
     public InnovationPhaseResponse getCurrentActivePhase(String roundId) {
@@ -227,22 +227,22 @@ public class InnovationPhaseService {
         return innovationPhaseMapper.toInnovationPhaseResponse(phase);
     }
 
-//    public List<InnovationPhaseResponse> getPhasesByStatus(String roundId, PhaseStatusEnum status) {
-//        List<InnovationPhase> phases = innovationPhaseRepository.findByRoundIdAndStatusOrderByPhaseOrder(roundId,
-//                status);
-//        return phases.stream()
-//                .map(innovationPhaseMapper::toInnovationPhaseResponse)
-//                .collect(Collectors.toList());
-//    }
+    public List<InnovationPhaseResponse> getPhasesByStatus(String roundId, PhaseStatusEnum status) {
+        List<InnovationPhase> phases = innovationPhaseRepository.findByRoundIdAndStatusOrderByPhaseOrder(roundId,
+                status);
+        return phases.stream()
+                .map(innovationPhaseMapper::toInnovationPhaseResponse)
+                .collect(Collectors.toList());
+    }
 
-//    public Object getPhaseStatusSummary(String roundId) {
-//        List<InnovationPhase> allPhases = innovationPhaseRepository.findByInnovationRoundIdOrderByPhaseOrder(roundId);
-//
-//        return allPhases.stream()
-//                .collect(Collectors.groupingBy(
-//                        InnovationPhase::getPhaseStatus,
-//                        Collectors.counting()));
-//    }
+    public Object getPhaseStatusSummary(String roundId) {
+        List<InnovationPhase> allPhases = innovationPhaseRepository.findByInnovationRoundIdOrderByPhaseOrder(roundId);
+
+        return allPhases.stream()
+                .collect(Collectors.groupingBy(
+                        InnovationPhase::getPhaseStatus,
+                        Collectors.counting()));
+    }
 
     // Get all innovation phases with pagination and filtering
     public ResultPaginationDTO getAllInnovationPhasesWithPaginationAndFilter(

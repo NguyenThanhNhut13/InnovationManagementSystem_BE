@@ -17,8 +17,8 @@ public class InnovationPhaseResponse {
     private String id;
     private String name;
     private InnovationPhaseTypeEnum phaseType;
-    private LocalDate startDate;
-    private LocalDate endDate;
+    private LocalDate phaseStartDate;
+    private LocalDate phaseEndDate;
     private String description;
     private InnovationPhaseLevelEnum level;
     private Integer phaseOrder;
