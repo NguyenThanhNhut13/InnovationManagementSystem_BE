@@ -43,7 +43,7 @@ public class InnovationDecisionService {
         return innovationDecisionMapper.toInnovationDecisionResponse(innovationDecision);
     }
 
-    // 1.1
+    // 2. Create Decision
     @Transactional
     public InnovationDecision createDecision(InnovationDecisionRequest req) {
 
@@ -63,7 +63,7 @@ public class InnovationDecisionService {
         return innovationDecisionRepository.save(decision);
     }
 
-    // 2. Get All InnovationDecisions
+    // 3. Get All InnovationDecisions
     public ResultPaginationDTO getAllInnovationDecisions(Specification<InnovationDecision> specification,
             Pageable pageable) {
         Page<InnovationDecision> innovationDecisions = innovationDecisionRepository.findAll(specification, pageable);
@@ -72,14 +72,14 @@ public class InnovationDecisionService {
         return Utils.toResultPaginationDTO(responses, pageable);
     }
 
-    // 3. Get InnovationDecision by Id
+    // 4. Get InnovationDecision by Id
     public InnovationDecisionResponse getInnovationDecisionById(String id) {
         InnovationDecision innovationDecision = innovationDecisionRepository.findById(id)
                 .orElseThrow(() -> new IdInvalidException("Quyết định không tồn tại"));
         return innovationDecisionMapper.toInnovationDecisionResponse(innovationDecision);
     }
 
-    // 4. Update InnovationDecision
+    // 5. Update InnovationDecision
     @Transactional
     public InnovationDecisionResponse updateInnovationDecision(String id, InnovationDecisionRequest request) {
         InnovationDecision innovationDecision = innovationDecisionRepository.findById(id)
@@ -104,16 +104,17 @@ public class InnovationDecisionService {
         return innovationDecisionMapper.toInnovationDecisionResponse(innovationDecision);
     }
 
-    // 5. Get by signed by
-//    public ResultPaginationDTO getInnovationDecisionsBySignedBy(String signedBy, Pageable pageable) {
-//        Page<InnovationDecision> innovationDecisions = innovationDecisionRepository
-//                .findBySignedBy(signedBy, pageable);
-//        Page<InnovationDecisionResponse> responses = innovationDecisions
-//                .map(innovationDecisionMapper::toInnovationDecisionResponse);
-//        return Utils.toResultPaginationDTO(responses, pageable);
-//    }
+    // 6. Get by signed by
+    // public ResultPaginationDTO getInnovationDecisionsBySignedBy(String signedBy,
+    // Pageable pageable) {
+    // Page<InnovationDecision> innovationDecisions = innovationDecisionRepository
+    // .findBySignedBy(signedBy, pageable);
+    // Page<InnovationDecisionResponse> responses = innovationDecisions
+    // .map(innovationDecisionMapper::toInnovationDecisionResponse);
+    // return Utils.toResultPaginationDTO(responses, pageable);
+    // }
 
-    // 6. Get by date range
+    // 7. Get by date range
     public ResultPaginationDTO getInnovationDecisionsByDateRange(LocalDate startDate, LocalDate endDate,
             Pageable pageable) {
         Page<InnovationDecision> innovationDecisions = innovationDecisionRepository
@@ -123,7 +124,7 @@ public class InnovationDecisionService {
         return Utils.toResultPaginationDTO(responses, pageable);
     }
 
-    //. 7 get Entity By ID
+    // 8. Get Entity By ID
     public Optional<InnovationDecision> getEntityById(String id) {
         return innovationDecisionRepository.findById(id);
     }

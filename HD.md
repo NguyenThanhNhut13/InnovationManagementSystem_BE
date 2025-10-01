@@ -1,8 +1,11 @@
 # Khởi động 
-docker-compose up -d postgres redis minio
+docker-compose up -d
 
 # Kiểm tra trạng thái
 docker-compose ps
+
+# Remove Container and Volumn
+docker-compose down -v
 
 # ----------------------------------------------------
 # Truy cập Swagger UI:  

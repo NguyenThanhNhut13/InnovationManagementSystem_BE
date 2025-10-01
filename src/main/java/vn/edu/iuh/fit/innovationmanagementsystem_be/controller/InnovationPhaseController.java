@@ -40,7 +40,7 @@ public class InnovationPhaseController {
                 this.innovationPhaseService = innovationPhaseService;
         }
 
-        // 0. Get All Innovation Phases with Pagination and Filtering
+        // 1. Get All Innovation Phases with Pagination and Filtering
         @GetMapping
         @ApiMessage("Lấy danh sách tất cả giai đoạn sáng kiến với phân trang và lọc thành công")
         @Operation(summary = "Get All Innovation Phases", description = "Get paginated list of all innovation phases with filtering")
@@ -55,7 +55,7 @@ public class InnovationPhaseController {
                                 .getAllInnovationPhasesWithPaginationAndFilter(specification, pageable));
         }
 
-        // 1. Create phases for round
+        // 2. Create phases for round
         @PostMapping("/round/{roundId}/create-phases")
         @ApiMessage("Tạo giai đoạn cho round thành công")
         @Operation(summary = "Create Phases for Round", description = "Create all phases for an innovation round")
@@ -72,7 +72,7 @@ public class InnovationPhaseController {
                 return ResponseEntity.ok(createdPhases);
         }
 
-        // 2. Create single phase
+        // 3. Create single phase
         @PostMapping("/round/{roundId}/create-phase")
         @ApiMessage("Tạo giai đoạn đơn lẻ thành công")
         @Operation(summary = "Create Single Phase", description = "Create a single phase for an innovation round")
@@ -88,7 +88,7 @@ public class InnovationPhaseController {
                 return ResponseEntity.ok(createdPhase);
         }
 
-        // 3. Get phases by round
+        // 4. Get phases by round
         @GetMapping("/round/{roundId}")
         @ApiMessage("Lấy danh sách giai đoạn thành công")
         @Operation(summary = "Get Phases by Round", description = "Get all phases for an innovation round")
@@ -102,7 +102,7 @@ public class InnovationPhaseController {
                 return ResponseEntity.ok(phases);
         }
 
-        // 4. Get current active phase
+        // 5. Get current active phase
         @GetMapping("/round/{roundId}/current")
         @ApiMessage("Lấy giai đoạn hiện tại thành công")
         @Operation(summary = "Get Current Active Phase", description = "Get current active phase for an innovation round")
@@ -120,7 +120,7 @@ public class InnovationPhaseController {
                 return ResponseEntity.ok(currentPhase);
         }
 
-        // 5. Get phase by type
+        // 6. Get phase by type
         @GetMapping("/round/{roundId}/type/{phaseType}")
         @ApiMessage("Lấy giai đoạn theo loại thành công")
         @Operation(summary = "Get Phase by Type", description = "Get phase by type for an innovation round")
@@ -139,7 +139,7 @@ public class InnovationPhaseController {
                 return ResponseEntity.ok(phase);
         }
 
-        // 6. Update phase
+        // 7. Update phase
         @PutMapping("/{phaseId}")
         @ApiMessage("Cập nhật giai đoạn thành công")
         @Operation(summary = "Update Phase", description = "Update innovation phase details")
@@ -156,7 +156,7 @@ public class InnovationPhaseController {
                 return ResponseEntity.ok(updatedPhase);
         }
 
-        // 7. Update phase dates
+        // 8. Update phase dates
         @PutMapping("/{phaseId}/dates")
         @ApiMessage("Cập nhật thời gian giai đoạn thành công")
         @Operation(summary = "Update Phase Dates", description = "Update start and end dates of an innovation phase")
@@ -175,7 +175,7 @@ public class InnovationPhaseController {
                 return ResponseEntity.ok(updatedPhase);
         }
 
-        // 8. Toggle phase status
+        // 9. Toggle phase status
         @PutMapping("/{phaseId}/toggle-status")
         @ApiMessage("Cập nhật trạng thái giai đoạn thành công")
         @Operation(summary = "Toggle Phase Status", description = "Enable or disable an innovation phase")
@@ -192,7 +192,7 @@ public class InnovationPhaseController {
                 return ResponseEntity.ok(updatedPhase);
         }
 
-        // 9. Transition phase status - ADMIN ONLY
+        // 10. Transition phase status - ADMIN ONLY
         @PutMapping("/{phaseId}/transition")
         @ApiMessage("Chuyển đổi trạng thái giai đoạn thành công")
         @Operation(summary = "Transition Phase Status", description = "Manually transition phase to a new status")
@@ -211,7 +211,7 @@ public class InnovationPhaseController {
                 return ResponseEntity.ok(updatedPhase);
         }
 
-        // 10. Complete phase - ADMIN ONLY
+        // 11. Complete phase - ADMIN ONLY
         @PutMapping("/{phaseId}/complete")
         @ApiMessage("Hoàn thành giai đoạn thành công")
         @Operation(summary = "Complete Phase", description = "Mark phase as completed")
@@ -228,7 +228,7 @@ public class InnovationPhaseController {
                 return ResponseEntity.ok(updatedPhase);
         }
 
-        // 11. Suspend phase - ADMIN ONLY
+        // 12. Suspend phase - ADMIN ONLY
         @PutMapping("/{phaseId}/suspend")
         @ApiMessage("Tạm dừng giai đoạn thành công")
         @Operation(summary = "Suspend Phase", description = "Suspend an active phase")
@@ -245,7 +245,7 @@ public class InnovationPhaseController {
                 return ResponseEntity.ok(updatedPhase);
         }
 
-        // 12. Cancel phase - ADMIN ONLY
+        // 13. Cancel phase - ADMIN ONLY
         @PutMapping("/{phaseId}/cancel")
         @ApiMessage("Hủy giai đoạn thành công")
         @Operation(summary = "Cancel Phase", description = "Cancel a phase")
@@ -262,7 +262,7 @@ public class InnovationPhaseController {
                 return ResponseEntity.ok(updatedPhase);
         }
 
-        // 13. Get phases by status
+        // 14. Get phases by status
         @GetMapping("/round/{roundId}/status/{status}")
         @ApiMessage("Lấy danh sách giai đoạn theo trạng thái thành công")
         @Operation(summary = "Get Phases by Status", description = "Get phases by status for a round")
@@ -277,7 +277,7 @@ public class InnovationPhaseController {
                 return ResponseEntity.ok(phases);
         }
 
-        // 14. Get phase status summary
+        // 15. Get phase status summary
         @GetMapping("/round/{roundId}/status-summary")
         @ApiMessage("Lấy tóm tắt trạng thái giai đoạn thành công")
         @Operation(summary = "Get Phase Status Summary", description = "Get summary of all phase statuses for a round")
