@@ -1,10 +1,7 @@
 package vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationRoundStatusEnum;
 
 import java.time.LocalDate;
@@ -18,7 +15,8 @@ import java.util.Set;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@EqualsAndHashCode(callSuper = true)
+@EqualsAndHashCode(callSuper = true, exclude = {"innovationPhases", "formTemplates", "innovations"})
+@ToString(callSuper = true, exclude = {"innovationPhases", "formTemplates", "innovations", "innovationDecision"})
 public class InnovationRound extends Auditable {
 
     @Id
@@ -35,8 +33,8 @@ public class InnovationRound extends Auditable {
     @Column(name = "registration_end_date", nullable = false)
     private LocalDate registrationEndDate;
 
-    @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
+    @Enumerated(EnumType.STRING)
     private InnovationRoundStatusEnum status;
 
     @Column(name = "description", columnDefinition = "TEXT")

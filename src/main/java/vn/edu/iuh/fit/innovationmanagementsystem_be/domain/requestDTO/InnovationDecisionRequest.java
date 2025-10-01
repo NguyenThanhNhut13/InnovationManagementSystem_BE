@@ -2,6 +2,7 @@ package vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import jakarta.persistence.Column;
+import jakarta.persistence.Lob;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
@@ -29,7 +30,9 @@ public class InnovationDecisionRequest {
     @NotBlank(message = "Tên file không được để trống")
     private String fileName;
 
-    @NotBlank(message = "Tiêu chí chấm điểm không được để trống")
+    @NotNull(message = "Tiêu chí chấm điểm không được để trống")
+    @Lob
+    @Column(columnDefinition = "TEXT")
     private JsonNode scoringCriteria;
 
     @NotBlank(message = "Nội dung hướng dẫn không được để trống")

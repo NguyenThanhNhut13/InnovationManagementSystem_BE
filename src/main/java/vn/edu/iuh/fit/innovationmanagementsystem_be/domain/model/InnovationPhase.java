@@ -1,10 +1,8 @@
 package vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationPhaseLevelEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationPhaseTypeEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.PhaseStatusEnum;
@@ -19,7 +17,8 @@ import java.util.ArrayList;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@EqualsAndHashCode(callSuper = true)
+@EqualsAndHashCode(callSuper = true, exclude = {"innovationRound", "departmentPhases"})
+@ToString(callSuper = true, exclude = {"innovationRound", "departmentPhases"})
 public class InnovationPhase extends Auditable {
 
     @Id
@@ -31,8 +30,8 @@ public class InnovationPhase extends Auditable {
     private String name;
 
     // Thông tin giai đoạn cụ thể
-    @Enumerated(EnumType.STRING)
     @Column(name = "phase_type", nullable = false)
+    @Enumerated(EnumType.STRING)
     private InnovationPhaseTypeEnum phaseType;
 
     @Column(name = "phase_start_date", nullable = false)
@@ -57,6 +56,7 @@ public class InnovationPhase extends Auditable {
     // Relationships
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "innovation_round_id", nullable = false)
+    @JsonIgnore
     private InnovationRound innovationRound;
 
     @OneToMany(mappedBy = "innovationPhase", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)

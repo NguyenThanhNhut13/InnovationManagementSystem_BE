@@ -39,7 +39,7 @@ public class CreateInnovationRoundRequest {
     @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate registrationEndDate;
 
-    @NotBlank(message ="Trạng thái đầu không được để trống")
+    @NotNull(message ="Trạng thái đầu không được để trống")
     private InnovationRoundStatusEnum status;
 
     private String description;

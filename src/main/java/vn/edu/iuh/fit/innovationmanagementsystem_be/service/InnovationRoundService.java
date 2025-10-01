@@ -62,10 +62,7 @@ public class InnovationRoundService {
         round.setRegistrationEndDate(request.getRegistrationEndDate());
         round.setStatus(request.getStatus());
 
-        // 3. Save round to get ID
-        round = innovationRoundRepository.save(round);
-
-        // 4. Create InnovationDecision (call other service)
+        // 3. Create InnovationDecision (call other service)
         if (request.getInnovationDecision() != null) {
             InnovationDecision decisionReq;
             if (request.getInnovationDecision().getId() != null) {
@@ -76,6 +73,9 @@ public class InnovationRoundService {
             }
             round.setInnovationDecision(decisionReq);
         }
+
+        // 4. Save round to get ID
+        round = innovationRoundRepository.save(round);
 
         // 5. Create InnovationPhase (call other service)
         if (request.getInnovationPhase() != null && !request.getInnovationPhase().isEmpty()) {

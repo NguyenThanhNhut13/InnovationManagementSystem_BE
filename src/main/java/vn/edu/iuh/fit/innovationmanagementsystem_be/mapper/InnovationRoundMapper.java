@@ -12,8 +12,10 @@ public interface InnovationRoundMapper {
 
     InnovationRoundMapper INSTANCE = Mappers.getMapper(InnovationRoundMapper.class);
 
-//    @Mapping(target = "innovationDecisionId", source = "innovationDecision.id")
+    //    @Mapping(target = "innovationDecisionId", source = "innovationDecision.id")
 //    @Mapping(target = "innovationDecisionTitle", source = "innovationDecision.title")
+    @Mapping(target = "innovationDecision", source = "innovationDecision")
+    @Mapping(target = "innovationPhase", source = "innovationPhases")
     InnovationRoundResponse toInnovationRoundResponse(InnovationRound innovationRound);
 
     @Mapping(target = "id", ignore = true)
