@@ -94,4 +94,13 @@ public class GlobalExceptionHandler {
         res.setMessage(ex.getMessage());
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(res);
     }
+
+    @ExceptionHandler(NotFoundException.class)
+    public ResponseEntity<RestResponse<Object>> NotFoundException(NotFoundException ex) {
+        RestResponse<Object> res = new RestResponse<Object>();
+        res.setStatusCode(HttpStatus.NOT_FOUND.value());
+        res.setError("NOTFOUND");
+        res.setMessage(ex.getMessage());
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(res);
+    }
 }

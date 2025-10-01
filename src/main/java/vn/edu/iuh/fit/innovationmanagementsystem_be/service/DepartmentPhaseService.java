@@ -7,6 +7,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.DepartmentPhase
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.InnovationPhase;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.User;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationPhaseEnum;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationPhaseTypeEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.UserRoleEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.DepartmentPhaseRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.UpdateDepartmentPhaseRequest;
@@ -101,7 +102,6 @@ public class DepartmentPhaseService {
         departmentPhase.setStartDate(innovationPhase.getPhaseStartDate());
         departmentPhase.setEndDate(innovationPhase.getPhaseEndDate());
         departmentPhase.setDescription(innovationPhase.getDescription() + " - " + department.getDepartmentName());
-        departmentPhase.setPhaseOrder(innovationPhase.getPhaseOrder());
         departmentPhase.setDepartment(department);
         // departmentPhase.setInnovationPhase(innovationPhase);
         departmentPhase.setIsActive(true);
@@ -211,8 +211,8 @@ public class DepartmentPhaseService {
         // Check if dates are within InnovationRound timeframe
         if (!innovationPhase.isPhaseWithinRoundTimeframe(startDate, endDate)) {
             throw new IdInvalidException("Thời gian giai đoạn phải nằm trong thời gian của InnovationRound: " +
-                    innovationPhase.getInnovationRound().getStartDate() + " đến "
-                    + innovationPhase.getInnovationRound().getEndDate());
+                    innovationPhase.getInnovationRound().getRegistrationStartDate() + " đến "
+                    + innovationPhase.getInnovationRound().getRegistrationEndDate());
         }
 
         // Check if start date is before end date
@@ -322,7 +322,6 @@ public class DepartmentPhaseService {
                 departmentPhase.setEndDate(innovationPhase.getPhaseEndDate());
                 departmentPhase
                         .setDescription(innovationPhase.getDescription() + " - " + department.getDepartmentName());
-                departmentPhase.setPhaseOrder(innovationPhase.getPhaseOrder());
                 departmentPhase.setDepartment(department);
                 departmentPhase.setInnovationPhase(innovationPhase);
                 departmentPhase.setIsActive(true);
@@ -376,7 +375,7 @@ public class DepartmentPhaseService {
 
     // 11. Create single required phase for department
     public DepartmentPhaseResponse createRequiredPhaseForDepartment(String departmentId, String roundId,
-            InnovationPhaseEnum phaseType, LocalDate startDate, LocalDate endDate, String description) {
+            InnovationPhaseTypeEnum phaseType, LocalDate startDate, LocalDate endDate, String description) {
 
         // Validate phase type
         if (!isRequiredPhaseType(phaseType)) {
@@ -410,7 +409,6 @@ public class DepartmentPhaseService {
         departmentPhase.setEndDate(endDate);
         departmentPhase.setDescription(description != null ? description
                 : innovationPhase.getDescription() + " - " + department.getDepartmentName());
-        departmentPhase.setPhaseOrder(innovationPhase.getPhaseOrder());
         departmentPhase.setDepartment(department);
         departmentPhase.setInnovationPhase(innovationPhase);
         departmentPhase.setIsActive(true);
@@ -420,10 +418,10 @@ public class DepartmentPhaseService {
     }
 
     // Helper method to check if phase type is required
-    private boolean isRequiredPhaseType(InnovationPhaseEnum phaseType) {
-        return phaseType == InnovationPhaseEnum.SUBMISSION ||
-                phaseType == InnovationPhaseEnum.DEPARTMENT_EVALUATION ||
-                phaseType == InnovationPhaseEnum.DOCUMENT_SUBMISSION;
+    private boolean isRequiredPhaseType(InnovationPhaseTypeEnum phaseType) {
+        return phaseType == InnovationPhaseTypeEnum.SUBMISSION ||
+                phaseType == InnovationPhaseTypeEnum.SCORING ||
+                phaseType == InnovationPhaseTypeEnum.ANNOUNCEMENT;
     }
 
     // Validate department phase time constraints
@@ -438,8 +436,8 @@ public class DepartmentPhaseService {
         // Check if dates are within InnovationRound timeframe
         if (!innovationPhase.isPhaseWithinRoundTimeframe(startDate, endDate)) {
             throw new IdInvalidException("Thời gian giai đoạn phải nằm trong thời gian của InnovationRound: " +
-                    innovationPhase.getInnovationRound().getStartDate() + " đến "
-                    + innovationPhase.getInnovationRound().getEndDate());
+                    innovationPhase.getInnovationRound().getRegistrationStartDate() + " đến "
+                    + innovationPhase.getInnovationRound().getRegistrationEndDate());
         }
 
         // Check if start date is before end date

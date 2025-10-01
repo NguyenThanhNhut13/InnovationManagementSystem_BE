@@ -3,7 +3,7 @@ package vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationPhaseEnum;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationPhaseTypeEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationRoundStatusEnum;
 
 import java.time.LocalDate;
@@ -19,7 +19,7 @@ public class UpdateInnovationPhaseRequest {
     private InnovationRoundStatusEnum status;
 
     // Thông tin giai đoạn cụ thể
-    private InnovationPhaseEnum phaseType;
+    private InnovationPhaseTypeEnum phaseType;
     private LocalDate phaseStartDate;
     private LocalDate phaseEndDate;
     private String description;

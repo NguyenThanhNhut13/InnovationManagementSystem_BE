@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationPhaseEnum;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationPhaseTypeEnum;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -14,7 +15,7 @@ import java.time.LocalDateTime;
 public class DepartmentPhaseResponse {
 
     private String id;
-    private InnovationPhaseEnum phaseType;
+    private InnovationPhaseTypeEnum phaseType;
     private LocalDate startDate;
     private LocalDate endDate;
     private String description;

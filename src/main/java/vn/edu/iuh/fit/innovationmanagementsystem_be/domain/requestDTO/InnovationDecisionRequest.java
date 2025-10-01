@@ -1,5 +1,8 @@
 package vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import jakarta.persistence.Column;
+import jakarta.persistence.Lob;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
@@ -13,6 +16,8 @@ import java.time.LocalDate;
 @AllArgsConstructor
 public class InnovationDecisionRequest {
 
+    private String id;
+
     @NotBlank(message = "Số hiệu quyết định không được để trống")
     private String decisionNumber;
 
@@ -22,9 +27,15 @@ public class InnovationDecisionRequest {
     @NotNull(message = "Ngày ban hành không được để trống")
     private LocalDate promulgatedDate;
 
-    @NotBlank(message = "Tên người ký không được để trống")
-    private String signedBy;
+    @NotBlank(message = "Tên file không được để trống")
+    private String fileName;
 
-    private String bases;
+    @NotNull(message = "Tiêu chí chấm điểm không được để trống")
+    @Lob
+    @Column(columnDefinition = "TEXT")
+    private JsonNode scoringCriteria;
+
+    @NotBlank(message = "Nội dung hướng dẫn không được để trống")
+    private String contentGuide;
 
 }

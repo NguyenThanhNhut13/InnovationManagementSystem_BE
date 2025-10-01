@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationPhaseEnum;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationPhaseTypeEnum;
 
 import java.time.LocalDate;
 
@@ -24,7 +25,7 @@ public class DepartmentPhase extends Auditable {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "phase_type", nullable = false)
-    private InnovationPhaseEnum phaseType;
+    private InnovationPhaseTypeEnum phaseType;
 
     @Column(name = "start_date", nullable = false)
     private LocalDate startDate;

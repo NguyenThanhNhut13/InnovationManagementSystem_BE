@@ -1,10 +1,14 @@
 package vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+
 import java.time.LocalDate;
 import java.util.List;
 import java.util.ArrayList;
@@ -31,22 +35,25 @@ public class InnovationDecision extends Auditable {
     @Column(name = "promulgated_date", nullable = false, columnDefinition = "DATE")
     private LocalDate promulgatedDate;
 
-    @Column(name = "signed_by", nullable = false, columnDefinition = "VARCHAR(255)")
-    private String signedBy;
+    @Column(name = "file_name", nullable = false)
+    private String fileName;
 
-    @Column(name = "bases", columnDefinition = "TEXT")
-    private String bases;
+//    @Column(name = "signed_by", nullable = false, columnDefinition = "VARCHAR(255)")
+//    private String signedBy;
+//
+//    @Column(name = "bases", columnDefinition = "TEXT")
+//    private String bases;
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "scoring_criteria", columnDefinition = "JSON")
+    private JsonNode scoringCriteria;
+
+    @Column(name = "content_guide", columnDefinition = "TEXT")
+    private String contentGuide;
 
     // Relationships
-
     @OneToMany(mappedBy = "innovationDecision", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
     private List<InnovationRound> innovationRounds = new ArrayList<>();
-
-    @OneToMany(mappedBy = "innovationDecision", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
-    private List<Chapter> chapters = new ArrayList<>();
-
-    @OneToMany(mappedBy = "innovationDecision", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
-    private List<Regulation> regulations = new ArrayList<>();
 
     @OneToMany(mappedBy = "innovationDecision", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<ReviewScore> reviewScores = new ArrayList<>();

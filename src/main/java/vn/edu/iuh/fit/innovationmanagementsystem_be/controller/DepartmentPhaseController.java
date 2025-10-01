@@ -12,6 +12,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationPhaseEnum;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationPhaseTypeEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.DepartmentPhaseRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.UpdateDepartmentPhaseRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.DepartmentPhaseResponse;
@@ -259,12 +260,12 @@ public class DepartmentPhaseController {
                         @ApiResponse(responseCode = "403", description = "Access denied - only TRUONG_KHOA and THU_KY_QLKH_HTQT can create phases")
         })
         public ResponseEntity<DepartmentPhaseResponse> createRequiredPhaseForDepartment(
-                        @Parameter(description = "Department ID", required = true) @PathVariable String departmentId,
-                        @Parameter(description = "Round ID", required = true) @PathVariable String roundId,
-                        @Parameter(description = "Phase Type", required = true) @PathVariable InnovationPhaseEnum phaseType,
-                        @Parameter(description = "Start date", required = true) @RequestParam LocalDate startDate,
-                        @Parameter(description = "End date", required = true) @RequestParam LocalDate endDate,
-                        @Parameter(description = "Description", required = false) @RequestParam(required = false) String description) {
+                @Parameter(description = "Department ID", required = true) @PathVariable String departmentId,
+                @Parameter(description = "Round ID", required = true) @PathVariable String roundId,
+                @Parameter(description = "Phase Type", required = true) @PathVariable InnovationPhaseTypeEnum phaseType,
+                @Parameter(description = "Start date", required = true) @RequestParam LocalDate startDate,
+                @Parameter(description = "End date", required = true) @RequestParam LocalDate endDate,
+                @Parameter(description = "Description", required = false) @RequestParam(required = false) String description) {
 
                 // Validate user is department head of this department
                 departmentPhaseService.validateDepartmentHeadAccess(departmentId);

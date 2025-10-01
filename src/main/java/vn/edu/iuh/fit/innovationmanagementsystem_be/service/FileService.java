@@ -1,12 +1,17 @@
 package vn.edu.iuh.fit.innovationmanagementsystem_be.service;
 
 import io.minio.*;
+import io.minio.errors.*;
+import io.minio.http.Method;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.io.InputStream;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -159,7 +164,7 @@ public class FileService {
 
     /**
      * Generate unique file name with timestamp and UUID
-     * 
+     *
      * @param fileExtension file extension
      * @return unique file name
      */
@@ -171,7 +176,7 @@ public class FileService {
 
     /**
      * Get file extension from filename
-     * 
+     *
      * @param filename original filename
      * @return file extension with dot
      */
@@ -184,5 +189,19 @@ public class FileService {
             return "";
         }
         return filename.substring(lastDotIndex);
+    }
+
+    public String getPresignedUrl(String fileName, int expirySeconds) {
+        try {
+            return minioClient.getPresignedObjectUrl(
+                    GetPresignedObjectUrlArgs.builder()
+                            .method(Method.GET)
+                            .bucket(bucketName)
+                            .object(fileName)
+                            .expiry(expirySeconds)
+                            .build());
+        } catch (Exception e) {
+            throw new RuntimeException("Fail to view file");
+        }
     }
 }
