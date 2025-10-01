@@ -14,7 +14,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.InnovationPhase;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationPhaseEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationPhaseTypeEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.PhaseStatusEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.InnovationPhaseRequest;
@@ -130,8 +129,8 @@ public class InnovationPhaseController {
                         @ApiResponse(responseCode = "404", description = "Phase not found")
         })
         public ResponseEntity<InnovationPhaseResponse> getPhaseByType(
-                @Parameter(description = "Round ID", required = true) @PathVariable String roundId,
-                @Parameter(description = "Phase Type", required = true) @PathVariable InnovationPhaseTypeEnum phaseType) {
+                        @Parameter(description = "Round ID", required = true) @PathVariable String roundId,
+                        @Parameter(description = "Phase Type", required = true) @PathVariable InnovationPhaseTypeEnum phaseType) {
 
                 InnovationPhaseResponse phase = innovationPhaseService.getPhaseByType(roundId, phaseType);
                 if (phase == null) {
