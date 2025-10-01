@@ -87,7 +87,16 @@ public class AuthenticationService {
     }
 
     // 2. Refresh Token
-    public TokenResponse refreshToken(String refreshToken) {
+    public TokenResponse refreshToken(String refreshToken, String currentAccessToken) {
+        if (currentAccessToken == null || currentAccessToken.isEmpty()) {
+            throw new IdInvalidException("Access token hiện tại không được để trống");
+        }
+
+        if (!jwtTokenUtil.isTokenExpired(currentAccessToken)
+                && redisTokenService.isAccessTokenBlacklisted(currentAccessToken)) {
+            throw new IdInvalidException("Access token hiện tại đã bị vô hiệu hóa");
+        }
+
         // Sử dụng RefreshTokenValidationService để validate theo chuẩn enterprise
         RefreshTokenValidationService.ValidationResult validationResult = refreshTokenValidationService
                 .validateRefreshToken(refreshToken);
@@ -98,6 +107,14 @@ public class AuthenticationService {
 
         String username = validationResult.getUsername();
         User user = validationResult.getUser();
+
+        // Kiểm tra access token và refresh token thuộc cùng một user
+        if (!jwtTokenUtil.isTokenExpired(currentAccessToken)) {
+            String accessTokenUsername = jwtTokenUtil.extractUsername(currentAccessToken);
+            if (!username.equals(accessTokenUsername)) {
+                throw new IdInvalidException("Access token và refresh token không thuộc cùng một người dùng");
+            }
+        }
 
         // Tạo UserDetails từ User object đã có (không cần query lại database)
         UserDetails userDetails = org.springframework.security.core.userdetails.User.builder()
@@ -119,6 +136,12 @@ public class AuthenticationService {
         if (jwtTokenUtil.validateToken(refreshToken, userDetails)) {
             String newAccessToken = jwtTokenUtil.generateAccessToken(userDetails);
             String newRefreshToken = jwtTokenUtil.generateRefreshToken(userDetails);
+
+            // Blacklist access token cũ trước khi tạo token mới
+            if (!jwtTokenUtil.isTokenExpired(currentAccessToken)) {
+                long accessTokenTTL = (jwtTokenUtil.getAccessTokenExpiration() / 1000) + 3600; // +1 giờ
+                redisTokenService.blacklistAccessToken(currentAccessToken, accessTokenTTL);
+            }
 
             // Cập nhật refresh token mới trong Redis
             long refreshTokenTTL = jwtTokenUtil.getRefreshTokenExpiration() / 1000;
