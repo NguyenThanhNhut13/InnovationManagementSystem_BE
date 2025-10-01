@@ -9,8 +9,8 @@ services:
       - "5432:5432"
     environment:
       POSTGRES_DB: innovation_management
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: InnovationDB2024!Secure
+      POSTGRES_USER: postgresADMIN
+      POSTGRES_PASSWORD: InnovationSystemPostgresql!Secure!Quinton
       POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --locale=C"
     volumes:
       - postgres_data:/var/lib/postgresql/data
@@ -28,7 +28,7 @@ services:
     container_name: redis
     ports:
       - "6379:6379"
-    command: redis-server --appendonly yes --requirepass Redis2024!SecureCache
+    command: redis-server --appendonly yes --requirepass InnovationSystemRedis!Secure!Quinton
     volumes:
       - redis_data:/data
     restart: unless-stopped
@@ -46,8 +46,8 @@ services:
       - "9000:9000"
       - "9001:9001"
     environment:
-      MINIO_ROOT_USER: minioadmin
-      MINIO_ROOT_PASSWORD: MinIO2024!SecureStorage
+      MINIO_ROOT_USER: minioADMIN
+      MINIO_ROOT_PASSWORD: InnovationSystemMinIO!Secure!Quinton
     volumes:
       - minio_data:/data
     command: server /data --console-address ":9001"
