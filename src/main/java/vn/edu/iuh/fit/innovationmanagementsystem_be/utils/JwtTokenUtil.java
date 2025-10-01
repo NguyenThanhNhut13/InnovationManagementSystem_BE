@@ -131,6 +131,7 @@ public class JwtTokenUtil {
             Jwt jwt = jwtDecoder.decode(token);
             return jwt.getSubject();
         } catch (Exception e) {
+            System.out.println(e.getMessage());
             return null;
         }
     }

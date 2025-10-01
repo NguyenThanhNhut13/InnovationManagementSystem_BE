@@ -108,14 +108,6 @@ public class AuthenticationService {
         String username = validationResult.getUsername();
         User user = validationResult.getUser();
 
-        // Kiểm tra access token và refresh token thuộc cùng một user
-        if (!jwtTokenUtil.isTokenExpired(currentAccessToken)) {
-            String accessTokenUsername = jwtTokenUtil.extractUsername(currentAccessToken);
-            if (!username.equals(accessTokenUsername)) {
-                throw new IdInvalidException("Access token và refresh token không thuộc cùng một người dùng");
-            }
-        }
-
         // Tạo UserDetails từ User object đã có (không cần query lại database)
         UserDetails userDetails = org.springframework.security.core.userdetails.User.builder()
                 .username(user.getPersonnelId())
