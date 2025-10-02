@@ -17,6 +17,9 @@ public interface InnovationRoundMapper {
     // "innovationDecision.title")
     @Mapping(target = "innovationDecision", source = "innovationDecision")
     @Mapping(target = "innovationPhase", source = "innovationPhases")
+    @Mapping(target = "submissionCount", ignore = true)
+    @Mapping(target = "reviewedCount", ignore = true)
+    @Mapping(target = "approvedCount", ignore = true)
     InnovationRoundResponse toInnovationRoundResponse(InnovationRound innovationRound);
 
     @Mapping(target = "id", ignore = true)

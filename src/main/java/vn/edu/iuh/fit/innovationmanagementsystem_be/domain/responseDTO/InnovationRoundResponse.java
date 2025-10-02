@@ -21,6 +21,11 @@ public class InnovationRoundResponse {
     private String description;
     private String academicYear;
 
+    // Statistics fields
+    private Integer submissionCount;
+    private Integer reviewedCount;
+    private Integer approvedCount;
+
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private String createdBy;
