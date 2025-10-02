@@ -52,7 +52,22 @@ public class InnovationRoundController {
                                 .getAllInnovationRoundsWithPaginationAndFilter(specification, pageable));
         }
 
-        // 2. Create innovation round
+        // 2. Get Innovation Rounds List for Table Display
+        @GetMapping("/list")
+        @ApiMessage("Lấy danh sách đợt sáng kiến cho hiển thị bảng thành công")
+        @Operation(summary = "Get Innovation Rounds List for Table", description = "Get paginated list of innovation rounds with specific fields for table display")
+        @ApiResponses(value = {
+                        @ApiResponse(responseCode = "200", description = "Innovation rounds list retrieved successfully", content = @Content(schema = @Schema(implementation = ResultPaginationDTO.class))),
+                        @ApiResponse(responseCode = "401", description = "Unauthorized")
+        })
+        public ResponseEntity<ResultPaginationDTO> getInnovationRoundsListForTable(
+                        @Parameter(description = "Filter specification for innovation rounds") @Filter Specification<InnovationRound> specification,
+                        @Parameter(description = "Pagination parameters") Pageable pageable) {
+                return ResponseEntity
+                                .ok(innovationRoundService.getInnovationRoundsListForTable(specification, pageable));
+        }
+
+        // 3. Create innovation round
         @PostMapping
         @ApiMessage("Tạo đợt sáng kiến thành công")
         @Operation(summary = "Create Innovation Round", description = "Create a new innovation round")
@@ -67,7 +82,7 @@ public class InnovationRoundController {
                 return ResponseEntity.ok(createdRound);
         }
 
-        // 3. Get all rounds by decision with pagination and filtering
+        // 4. Get all rounds by decision with pagination and filtering
         @GetMapping("/decision/{decisionId}")
         @ApiMessage("Lấy danh sách đợt sáng kiến thành công")
         @Operation(summary = "Get Rounds by Decision", description = "Get all innovation rounds for a specific decision with pagination and filtering")
@@ -84,7 +99,7 @@ public class InnovationRoundController {
                 return ResponseEntity.ok(rounds);
         }
 
-        // 4. Get round by ID
+        // 5. Get round by ID
         @GetMapping("/{roundId}")
         @ApiMessage("Lấy thông tin đợt sáng kiến thành công")
         @Operation(summary = "Get Round by ID", description = "Get innovation round by ID")
@@ -99,7 +114,7 @@ public class InnovationRoundController {
                 return ResponseEntity.ok(round);
         }
 
-        // 5. Get current active round
+        // 6. Get current active round
         @GetMapping("/decision/{decisionId}/current")
         @ApiMessage("Lấy đợt sáng kiến hiện tại thành công")
         @Operation(summary = "Get Current Active Round", description = "Get current active innovation round for a decision")
@@ -117,7 +132,7 @@ public class InnovationRoundController {
                 return ResponseEntity.ok(currentRound);
         }
 
-        // 6. Update round
+        // 7. Update round
         @PutMapping("/{roundId}")
         @ApiMessage("Cập nhật đợt sáng kiến thành công")
         @Operation(summary = "Update Innovation Round", description = "Update innovation round details")
@@ -134,7 +149,7 @@ public class InnovationRoundController {
                 return ResponseEntity.ok(updatedRound);
         }
 
-        // 7. Toggle round status
+        // 8. Toggle round status
         @PutMapping("/{roundId}/toggle-status")
         @ApiMessage("Cập nhật trạng thái đợt sáng kiến thành công")
         @Operation(summary = "Toggle Round Status", description = "Enable or disable innovation round")
@@ -151,7 +166,7 @@ public class InnovationRoundController {
                 return ResponseEntity.ok(updatedRound);
         }
 
-        // 8. Get rounds by status
+        // 9. Get rounds by status
         @GetMapping("/status/{status}")
         @ApiMessage("Lấy danh sách đợt sáng kiến theo trạng thái thành công")
         @Operation(summary = "Get Rounds by Status", description = "Get innovation rounds by status")

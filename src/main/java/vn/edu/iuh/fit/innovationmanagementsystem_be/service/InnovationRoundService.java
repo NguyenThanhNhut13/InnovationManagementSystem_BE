@@ -12,6 +12,8 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.InnovationRound
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.CreateInnovationRoundRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.UpdateInnovationRoundRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationRoundResponse;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationRoundListResponse;
+import com.fasterxml.jackson.databind.JsonNode;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.mapper.InnovationRoundMapper;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.exception.IdInvalidException;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.InnovationDecisionRepository;
@@ -173,6 +175,43 @@ public class InnovationRoundService {
         Page<InnovationRound> roundPage = innovationRoundRepository.findAll(specification, pageable);
         Page<InnovationRoundResponse> responsePage = roundPage.map(innovationRoundMapper::toInnovationRoundResponse);
         return Utils.toResultPaginationDTO(responsePage, pageable);
+    }
+
+    // 10. Get innovation rounds list for table display with pagination and
+    // filtering
+    public ResultPaginationDTO getInnovationRoundsListForTable(
+            Specification<InnovationRound> specification, Pageable pageable) {
+        Page<InnovationRound> roundPage = innovationRoundRepository.findAll(specification, pageable);
+        Page<InnovationRoundListResponse> responsePage = roundPage.map(this::convertToListResponse);
+        return Utils.toResultPaginationDTO(responsePage, pageable);
+    }
+
+    // Helper method to convert InnovationRound to InnovationRoundListResponse
+    private InnovationRoundListResponse convertToListResponse(InnovationRound round) {
+        InnovationRoundListResponse response = new InnovationRoundListResponse();
+        response.setId(round.getId());
+        response.setName(round.getName());
+        response.setAcademicYear(round.getAcademicYear());
+        response.setRegistrationStartDate(round.getRegistrationStartDate());
+        response.setRegistrationEndDate(round.getRegistrationEndDate());
+        response.setStatus(round.getStatus());
+
+        // Count innovation phases
+        response.setPhaseCount(round.getInnovationPhases() != null ? round.getInnovationPhases().size() : 0);
+
+        // Count scoring criteria from InnovationDecision
+        int criteriaCount = 0;
+        if (round.getInnovationDecision() != null && round.getInnovationDecision().getScoringCriteria() != null) {
+            JsonNode scoringCriteria = round.getInnovationDecision().getScoringCriteria();
+            if (scoringCriteria.isArray()) {
+                criteriaCount = scoringCriteria.size();
+            } else if (scoringCriteria.isObject()) {
+                criteriaCount = scoringCriteria.size();
+            }
+        }
+        response.setCriteriaCount(criteriaCount);
+
+        return response;
     }
 
 }
