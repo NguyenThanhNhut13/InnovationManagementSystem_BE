@@ -13,16 +13,14 @@ import java.util.List;
 import java.util.ArrayList;
 
 @Entity
-@Table(name = "innovation_phases",
-        uniqueConstraints = {
-                @UniqueConstraint(columnNames = {"innovation_round_id", "phase_order"})
-        }
-)
+@Table(name = "innovation_phases", uniqueConstraints = {
+        @UniqueConstraint(columnNames = { "innovation_round_id", "phase_order" })
+})
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@EqualsAndHashCode(callSuper = true, exclude = {"innovationRound", "departmentPhases"})
-@ToString(callSuper = true, exclude = {"innovationRound", "departmentPhases"})
+@EqualsAndHashCode(callSuper = true, exclude = { "innovationRound", "departmentPhases" })
+@ToString(callSuper = true, exclude = { "innovationRound", "departmentPhases" })
 public class InnovationPhase extends Auditable {
 
     @Id
@@ -57,8 +55,11 @@ public class InnovationPhase extends Auditable {
     @Column(name = "phase_order", nullable = false)
     private Integer phaseOrder = 0;
 
-//    @Column(name = "transition_reason", columnDefinition = "TEXT")
-//    private String transitionReason; // Lý do chuyển đổi phase
+    @Column(name = "is_deadline", nullable = false)
+    private Boolean isDeadline = false;
+
+    // @Column(name = "transition_reason", columnDefinition = "TEXT")
+    // private String transitionReason; // Lý do chuyển đổi phase
 
     // Relationships
     @ManyToOne(fetch = FetchType.LAZY, optional = false)

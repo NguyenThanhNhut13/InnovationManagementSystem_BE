@@ -25,4 +25,5 @@ public class UpdateInnovationPhaseRequest {
     private String description;
     private Boolean isActive;
     private Integer phaseOrder;
+    private Boolean isDeadline;
 }
