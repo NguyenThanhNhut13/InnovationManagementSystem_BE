@@ -103,12 +103,6 @@ public class SecurityConfig {
                                                 .requestMatchers(HttpMethod.PUT, EndpointConstants.CHAPTER_PUT)
                                                 .hasAnyRole(QUAN_TRI_VIEN, THU_KY_QLKH_HTQT)
 
-                                                // Regulation
-                                                .requestMatchers(HttpMethod.POST, EndpointConstants.REGULATION_POST)
-                                                .hasAnyRole(QUAN_TRI_VIEN, THU_KY_QLKH_HTQT)
-                                                .requestMatchers(HttpMethod.PUT, EndpointConstants.REGULATION_PUT)
-                                                .hasAnyRole(QUAN_TRI_VIEN, THU_KY_QLKH_HTQT)
-
                                                 // Innovation Round
                                                 .requestMatchers(HttpMethod.POST,
                                                                 EndpointConstants.INNOVATION_ROUND_POST)

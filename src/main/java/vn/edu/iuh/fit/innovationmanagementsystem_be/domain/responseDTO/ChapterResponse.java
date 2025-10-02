@@ -4,8 +4,6 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.List;
-
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -15,7 +13,4 @@ public class ChapterResponse {
     private String chapterNumber;
     private String title;
     private String innovationDecisionId;
-
-    // Có thể thêm danh sách regulations nếu cần
-    private List<String> regulationIds;
 }

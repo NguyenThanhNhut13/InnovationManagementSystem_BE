@@ -4,8 +4,6 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import java.util.List;
-import java.util.ArrayList;
 
 @Entity
 @Table(name = "chapter")
@@ -30,6 +28,4 @@ public class Chapter {
     @JoinColumn(name = "innovation_decision_id", nullable = false)
     private InnovationDecision innovationDecision;
 
-    @OneToMany(mappedBy = "chapter", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
-    private List<Regulation> regulations = new ArrayList<>();
 }
