@@ -3,6 +3,7 @@ package vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
@@ -42,5 +43,13 @@ public class CreateInnovationRoundRequest {
 
     @Valid
     private Set<InnovationPhaseRequest> innovationPhase;
+
+    @AssertTrue(message = "Ngày bắt đầu phải trước ngày kết thúc")
+    public boolean isValidDates() {
+        if (registrationStartDate == null || registrationEndDate == null) {
+            return true;
+        }
+        return !registrationStartDate.isAfter(registrationEndDate);
+    }
 
 }
