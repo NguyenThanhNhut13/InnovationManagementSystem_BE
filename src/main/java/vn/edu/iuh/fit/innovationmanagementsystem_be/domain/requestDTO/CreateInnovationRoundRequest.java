@@ -1,20 +1,9 @@
-/*
- * @ (#) CreateInnovationRoundRequest.java       1.0     30/09/2025
- *
- * Copyright (c) 2025 IUH. All rights reserved.
- */
 
 package vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO;
-/*
- * @description:
- * @author: Nguyen Thanh Nhut
- * @date: 30/09/2025
- * @version:    1.0
- */
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
@@ -30,7 +19,7 @@ import java.util.Set;
 @AllArgsConstructor
 public class CreateInnovationRoundRequest {
 
-    @NotBlank(message ="Tên đợt không được để trống")
+    @NotBlank(message = "Tên đợt không được để trống")
     private String name;
 
     @NotNull(message = "Ngày bắt đầu không được để trống")
@@ -41,7 +30,7 @@ public class CreateInnovationRoundRequest {
     @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate registrationEndDate;
 
-    @NotNull(message ="Trạng thái đầu không được để trống")
+    @NotNull(message = "Trạng thái đầu không được để trống")
     private InnovationRoundStatusEnum status;
 
     private String description;
@@ -54,5 +43,13 @@ public class CreateInnovationRoundRequest {
 
     @Valid
     private Set<InnovationPhaseRequest> innovationPhase;
+
+    @AssertTrue(message = "Ngày bắt đầu phải trước ngày kết thúc")
+    public boolean isValidDates() {
+        if (registrationStartDate == null || registrationEndDate == null) {
+            return true;
+        }
+        return !registrationStartDate.isAfter(registrationEndDate);
+    }
 
 }

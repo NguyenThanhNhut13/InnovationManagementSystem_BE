@@ -9,7 +9,6 @@ COPY src ./src
 # Build jar (bỏ qua test để nhanh hơn)
 RUN mvn clean package -DskipTests
 
-
 # --- Stage 2: Chạy ứng dụng bằng JDK nhẹ ---
 FROM eclipse-temurin:17-jre-alpine
 

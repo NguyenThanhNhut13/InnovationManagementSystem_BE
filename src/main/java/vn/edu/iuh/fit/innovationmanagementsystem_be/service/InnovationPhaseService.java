@@ -7,7 +7,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.InnovationPhase;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.InnovationRound;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationPhaseEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationPhaseTypeEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.PhaseStatusEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.InnovationPhaseRequest;
@@ -69,7 +68,7 @@ public class InnovationPhaseService {
 
     // 1.1
     public Set<InnovationPhase> createPhasesForRound(InnovationRound round,
-                                                            Set<InnovationPhaseRequest> phaseRequests) {
+            Set<InnovationPhaseRequest> phaseRequests) {
 
         Set<InnovationPhase> phases = new HashSet<>();
         for (InnovationPhaseRequest req : phaseRequests) {
@@ -79,7 +78,6 @@ public class InnovationPhaseService {
 
         return phases;
     }
-
 
     // 2. Create single phase
     public InnovationPhaseResponse createSinglePhase(String roundId, InnovationPhaseRequest phaseRequest) {
@@ -97,7 +95,8 @@ public class InnovationPhaseService {
             phaseRequest.setName(round.getName() + " - " + phaseRequest.getPhaseType().name());
         }
 
-        if (innovationPhaseRepository.existsByInnovationRound_IdAndPhaseOrder(round.getId(), phaseRequest.getPhaseOrder())) {
+        if (innovationPhaseRepository.existsByInnovationRound_IdAndPhaseOrder(round.getId(),
+                phaseRequest.getPhaseOrder())) {
             throw new IdInvalidException("Phase order " + phaseRequest.getPhaseOrder()
                     + " already exists in this round");
         }
@@ -162,7 +161,8 @@ public class InnovationPhaseService {
             if (!phase.getInnovationRound().isPhaseWithinRoundTimeframe(phase.getPhaseStartDate(),
                     phase.getPhaseEndDate())) {
                 throw new IdInvalidException("Thời gian giai đoạn phải nằm trong thời gian của InnovationRound: " +
-                        phase.getInnovationRound().getRegistrationStartDate() + " đến " + phase.getInnovationRound().getRegistrationEndDate());
+                        phase.getInnovationRound().getRegistrationStartDate() + " đến "
+                        + phase.getInnovationRound().getRegistrationEndDate());
             }
         }
 

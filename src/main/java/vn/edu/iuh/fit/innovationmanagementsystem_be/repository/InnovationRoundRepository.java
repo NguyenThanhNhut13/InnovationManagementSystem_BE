@@ -24,8 +24,13 @@ public interface InnovationRoundRepository
         Optional<InnovationRound> findCurrentActiveRound(@Param("decisionId") String decisionId,
                         @Param("currentDate") LocalDate currentDate);
 
+        @Query("SELECT r FROM InnovationRound r WHERE :currentDate >= r.registrationStartDate " +
+                        "AND :currentDate <= r.registrationEndDate " +
+                        "ORDER BY r.createdAt DESC")
+        Optional<InnovationRound> findCurrentActiveRound(@Param("currentDate") LocalDate currentDate);
+
         List<InnovationRound> findByStatus(InnovationRoundStatusEnum status);
 
-//        List<InnovationRound> findByIsActiveTrue();
+        // List<InnovationRound> findByIsActiveTrue();
 
 }

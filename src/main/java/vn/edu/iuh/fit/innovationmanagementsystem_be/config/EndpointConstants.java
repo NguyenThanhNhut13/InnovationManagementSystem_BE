@@ -69,27 +69,6 @@ public final class EndpointConstants {
                         "/api/v1/innovation-decisions/{id}"
         };
 
-        // ================== CHAPTER ==================
-        public static final String[] CHAPTER_POST = {
-                        "/api/v1/chapters",
-                        "/api/v1/chapters/bulk"
-        };
-
-        public static final String[] CHAPTER_PUT = {
-                        "/api/v1/chapters/{id}"
-        };
-
-        // ================== REGULATION ==================
-        public static final String[] REGULATION_POST = {
-                        "/api/v1/regulations",
-                        "/api/v1/chapters/{chapterId}/regulations/import",
-                        "/api/v1/innovation-decisions/{innovationDecisionId}/chapters/regulations/import"
-        };
-
-        public static final String[] REGULATION_PUT = {
-                        "/api/v1/regulations/{id}"
-        };
-
         // ================== INNOVATION ROUND ==================
         public static final String[] INNOVATION_ROUND_POST = {
                         "/api/v1/innovation-rounds"
@@ -98,6 +77,10 @@ public final class EndpointConstants {
         public static final String[] INNOVATION_ROUND_PUT = {
                         "/api/v1/innovation-rounds/{roundId}",
                         "/api/v1/innovation-rounds/{roundId}/toggle-status"
+        };
+
+        public static final String[] INNOVATION_ROUND_GET_RESTRICTED = {
+                        "/api/v1/innovation-rounds/current"
         };
 
         // ================== INNOVATION PHASE ==================

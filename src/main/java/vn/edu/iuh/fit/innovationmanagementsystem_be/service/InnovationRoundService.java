@@ -12,6 +12,9 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.InnovationRound
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.CreateInnovationRoundRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.UpdateInnovationRoundRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationRoundResponse;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationRoundListResponse;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationStatusEnum;
+import com.fasterxml.jackson.databind.JsonNode;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.mapper.InnovationRoundMapper;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.exception.IdInvalidException;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.InnovationDecisionRepository;
@@ -21,6 +24,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.Utils;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -34,9 +38,10 @@ public class InnovationRoundService {
     private final InnovationRoundMapper innovationRoundMapper;
     private final InnovationPhaseService innovationPhaseService;
 
-    public InnovationRoundService(InnovationDecisionService innovationDecisionService, InnovationRoundRepository innovationRoundRepository,
-                                  InnovationDecisionRepository innovationDecisionRepository,
-                                  InnovationRoundMapper innovationRoundMapper, InnovationPhaseService innovationPhaseService) {
+    public InnovationRoundService(InnovationDecisionService innovationDecisionService,
+            InnovationRoundRepository innovationRoundRepository,
+            InnovationDecisionRepository innovationDecisionRepository,
+            InnovationRoundMapper innovationRoundMapper, InnovationPhaseService innovationPhaseService) {
         this.innovationDecisionService = innovationDecisionService;
         this.innovationRoundRepository = innovationRoundRepository;
         this.innovationDecisionRepository = innovationDecisionRepository;
@@ -48,12 +53,7 @@ public class InnovationRoundService {
     @Transactional
     public InnovationRoundResponse createInnovationRound(CreateInnovationRoundRequest request) {
 
-        // validate
-        if (request.getRegistrationStartDate().isAfter(request.getRegistrationEndDate())) {
-            throw new IdInvalidException("Ngày bắt đầu phải trước ngày kết thúc");
-        }
-
-        // 2. Create entity InnovationRound
+        // 1. Create entity InnovationRound
         InnovationRound round = new InnovationRound();
         round.setName(request.getName());
         round.setAcademicYear(request.getAcademicYear());
@@ -62,7 +62,7 @@ public class InnovationRoundService {
         round.setRegistrationEndDate(request.getRegistrationEndDate());
         round.setStatus(request.getStatus());
 
-        // 3. Create InnovationDecision (call other service)
+        // 2. Create InnovationDecision (call other service)
         if (request.getInnovationDecision() != null) {
             InnovationDecision decisionReq;
             if (request.getInnovationDecision().getId() != null) {
@@ -74,18 +74,19 @@ public class InnovationRoundService {
             round.setInnovationDecision(decisionReq);
         }
 
-        // 4. Save round to get ID
+        // 3. Save round to get ID
         round = innovationRoundRepository.save(round);
 
-        // 5. Create InnovationPhase (call other service)
+        // 4. Create InnovationPhase (call other service)
         if (request.getInnovationPhase() != null && !request.getInnovationPhase().isEmpty()) {
-            Set<InnovationPhase> phases = innovationPhaseService.createPhasesForRound(round, request.getInnovationPhase());
+            Set<InnovationPhase> phases = innovationPhaseService.createPhasesForRound(round,
+                    request.getInnovationPhase());
 
             round.getInnovationPhases().clear();
             round.getInnovationPhases().addAll(phases);
         }
 
-        // 6. Save round with decision + phases
+        // 5. Save round with decision + phases
         return innovationRoundMapper.toInnovationRoundResponse(innovationRoundRepository.save(round));
     }
 
@@ -94,20 +95,21 @@ public class InnovationRoundService {
             @NonNull Specification<InnovationRound> specification,
             @NonNull Pageable pageable) {
 
-        // Verify decision exists
         if (!innovationDecisionRepository.existsById(decisionId)) {
             throw new IdInvalidException("Không tìm thấy InnovationDecision với ID: " + decisionId);
         }
 
-        // Create specification that includes decisionId filter
         Specification<InnovationRound> decisionSpec = (root, query, criteriaBuilder) -> criteriaBuilder
                 .equal(root.get("innovationDecision").get("id"), decisionId);
 
-        // Combine with provided specification
         Specification<InnovationRound> combinedSpec = decisionSpec.and(specification);
 
         Page<InnovationRound> rounds = innovationRoundRepository.findAll(combinedSpec, pageable);
-        Page<InnovationRoundResponse> responses = rounds.map(innovationRoundMapper::toInnovationRoundResponse);
+        Page<InnovationRoundResponse> responses = rounds.map(round -> {
+            InnovationRoundResponse response = innovationRoundMapper.toInnovationRoundResponse(round);
+            setStatistics(response, round);
+            return response;
+        });
         return Utils.toResultPaginationDTO(responses, pageable);
     }
 
@@ -115,14 +117,21 @@ public class InnovationRoundService {
     public InnovationRoundResponse getRoundById(String roundId) {
         InnovationRound round = innovationRoundRepository.findById(roundId)
                 .orElseThrow(() -> new IdInvalidException("Không tìm thấy InnovationRound với ID: " + roundId));
-        return innovationRoundMapper.toInnovationRoundResponse(round);
+        InnovationRoundResponse response = innovationRoundMapper.toInnovationRoundResponse(round);
+        setStatistics(response, round);
+        return response;
     }
 
     // 4. Get current active round
     public InnovationRoundResponse getCurrentActiveRound(String decisionId) {
         InnovationRound round = innovationRoundRepository.findCurrentActiveRound(decisionId, LocalDate.now())
                 .orElse(null);
-        return round != null ? innovationRoundMapper.toInnovationRoundResponse(round) : null;
+        if (round != null) {
+            InnovationRoundResponse response = innovationRoundMapper.toInnovationRoundResponse(round);
+            setStatistics(response, round);
+            return response;
+        }
+        return null;
     }
 
     // 5. Update round
@@ -150,13 +159,10 @@ public class InnovationRoundService {
             round.setAcademicYear(request.getAcademicYear());
         }
 
-        // Validate dates if they were updated
-        if (request.getStartDate() != null || request.getEndDate() != null) {
-            validateRoundDates(round.getRegistrationStartDate(), round.getRegistrationEndDate());
-        }
-
         InnovationRound savedRound = innovationRoundRepository.save(round);
-        return innovationRoundMapper.toInnovationRoundResponse(savedRound);
+        InnovationRoundResponse response = innovationRoundMapper.toInnovationRoundResponse(savedRound);
+        setStatistics(response, savedRound);
+        return response;
     }
 
     // 7. Toggle round status
@@ -165,7 +171,9 @@ public class InnovationRoundService {
                 .orElseThrow(() -> new IdInvalidException("Không tìm thấy InnovationRound với ID: " + roundId));
 
         InnovationRound savedRound = innovationRoundRepository.save(round);
-        return innovationRoundMapper.toInnovationRoundResponse(savedRound);
+        InnovationRoundResponse response = innovationRoundMapper.toInnovationRoundResponse(savedRound);
+        setStatistics(response, savedRound);
+        return response;
     }
 
     // 8. Get rounds by status
@@ -174,7 +182,11 @@ public class InnovationRoundService {
                 vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationRoundStatusEnum
                         .valueOf(status));
         return rounds.stream()
-                .map(innovationRoundMapper::toInnovationRoundResponse)
+                .map(round -> {
+                    InnovationRoundResponse response = innovationRoundMapper.toInnovationRoundResponse(round);
+                    setStatistics(response, round);
+                    return response;
+                })
                 .collect(Collectors.toList());
     }
 
@@ -182,14 +194,88 @@ public class InnovationRoundService {
     public ResultPaginationDTO getAllInnovationRoundsWithPaginationAndFilter(
             Specification<InnovationRound> specification, Pageable pageable) {
         Page<InnovationRound> roundPage = innovationRoundRepository.findAll(specification, pageable);
-        Page<InnovationRoundResponse> responsePage = roundPage.map(innovationRoundMapper::toInnovationRoundResponse);
+        Page<InnovationRoundResponse> responsePage = roundPage.map(round -> {
+            InnovationRoundResponse response = innovationRoundMapper.toInnovationRoundResponse(round);
+            setStatistics(response, round);
+            return response;
+        });
         return Utils.toResultPaginationDTO(responsePage, pageable);
     }
 
-    // Helper method to validate round dates
-    private void validateRoundDates(LocalDate startDate, LocalDate endDate) {
-        if (startDate.isAfter(endDate)) {
-            throw new IdInvalidException("Ngày bắt đầu phải trước ngày kết thúc");
+    // 10. Get innovation rounds list for table display with pagination and
+    // filtering
+    public ResultPaginationDTO getInnovationRoundsListForTable(
+            Specification<InnovationRound> specification, Pageable pageable) {
+        Page<InnovationRound> roundPage = innovationRoundRepository.findAll(specification, pageable);
+        Page<InnovationRoundListResponse> responsePage = roundPage.map(this::convertToListResponse);
+        return Utils.toResultPaginationDTO(responsePage, pageable);
+    }
+
+    // Helper method to convert InnovationRound to InnovationRoundListResponse
+    private InnovationRoundListResponse convertToListResponse(InnovationRound round) {
+        InnovationRoundListResponse response = new InnovationRoundListResponse();
+        response.setId(round.getId());
+        response.setName(round.getName());
+        response.setAcademicYear(round.getAcademicYear());
+        response.setRegistrationStartDate(round.getRegistrationStartDate());
+        response.setRegistrationEndDate(round.getRegistrationEndDate());
+        response.setStatus(round.getStatus());
+
+        // Count innovation phases
+        response.setPhaseCount(round.getInnovationPhases() != null ? round.getInnovationPhases().size() : 0);
+
+        // Count scoring criteria from InnovationDecision
+        int criteriaCount = 0;
+        if (round.getInnovationDecision() != null && round.getInnovationDecision().getScoringCriteria() != null) {
+            JsonNode scoringCriteria = round.getInnovationDecision().getScoringCriteria();
+            if (scoringCriteria.isArray()) {
+                criteriaCount = scoringCriteria.size();
+            } else if (scoringCriteria.isObject()) {
+                criteriaCount = scoringCriteria.size();
+            }
+        }
+        response.setCriteriaCount(criteriaCount);
+
+        return response;
+    }
+
+    // Helper method to set statistics for InnovationRoundResponse
+    private void setStatistics(InnovationRoundResponse response, InnovationRound round) {
+        if (round.getInnovations() != null) {
+            // Count submissions (innovations with SUBMITTED status)
+            int submissionCount = (int) round.getInnovations().stream()
+                    .filter(innovation -> innovation.getStatus() == InnovationStatusEnum.SUBMITTED)
+                    .count();
+            response.setSubmissionCount(submissionCount);
+
+            // Count reviewed innovations (innovations with PENDING_TRUONG_REVIEW status)
+            int reviewedCount = (int) round.getInnovations().stream()
+                    .filter(innovation -> innovation.getStatus() == InnovationStatusEnum.PENDING_TRUONG_REVIEW)
+                    .count();
+            response.setReviewedCount(reviewedCount);
+
+            // Count approved innovations (FINAL_APPROVED status)
+            int approvedCount = (int) round.getInnovations().stream()
+                    .filter(innovation -> innovation.getStatus() == InnovationStatusEnum.FINAL_APPROVED)
+                    .count();
+            response.setApprovedCount(approvedCount);
+        } else {
+            response.setSubmissionCount(0);
+            response.setReviewedCount(0);
+            response.setApprovedCount(0);
         }
     }
+
+    public InnovationRoundResponse getCurrentRound() {
+        Optional<InnovationRound> currentRound = innovationRoundRepository.findCurrentActiveRound(LocalDate.now());
+        if (currentRound.isEmpty()) {
+            return null;
+        }
+
+        InnovationRound round = currentRound.get();
+        InnovationRoundResponse response = innovationRoundMapper.toInnovationRoundResponse(round);
+        setStatistics(response, round);
+        return response;
+    }
+
 }

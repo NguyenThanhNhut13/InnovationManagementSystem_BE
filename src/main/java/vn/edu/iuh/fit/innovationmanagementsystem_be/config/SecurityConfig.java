@@ -97,24 +97,15 @@ public class SecurityConfig {
                                                                 EndpointConstants.INNOVATION_DECISION_PUT)
                                                 .hasAnyRole(QUAN_TRI_VIEN, THU_KY_QLKH_HTQT)
 
-                                                // Chapter
-                                                .requestMatchers(HttpMethod.POST, EndpointConstants.CHAPTER_POST)
-                                                .hasAnyRole(QUAN_TRI_VIEN, THU_KY_QLKH_HTQT)
-                                                .requestMatchers(HttpMethod.PUT, EndpointConstants.CHAPTER_PUT)
-                                                .hasAnyRole(QUAN_TRI_VIEN, THU_KY_QLKH_HTQT)
-
-                                                // Regulation
-                                                .requestMatchers(HttpMethod.POST, EndpointConstants.REGULATION_POST)
-                                                .hasAnyRole(QUAN_TRI_VIEN, THU_KY_QLKH_HTQT)
-                                                .requestMatchers(HttpMethod.PUT, EndpointConstants.REGULATION_PUT)
-                                                .hasAnyRole(QUAN_TRI_VIEN, THU_KY_QLKH_HTQT)
-
                                                 // Innovation Round
                                                 .requestMatchers(HttpMethod.POST,
                                                                 EndpointConstants.INNOVATION_ROUND_POST)
                                                 .hasAnyRole(QUAN_TRI_VIEN, THU_KY_QLKH_HTQT)
                                                 .requestMatchers(HttpMethod.PUT, EndpointConstants.INNOVATION_ROUND_PUT)
                                                 .hasAnyRole(QUAN_TRI_VIEN, THU_KY_QLKH_HTQT)
+                                                .requestMatchers(HttpMethod.GET,
+                                                                EndpointConstants.INNOVATION_ROUND_GET_RESTRICTED)
+                                                .hasAnyRole(TRUONG_KHOA, THU_KY_QLKH_HTQT, QUAN_TRI_VIEN)
 
                                                 // Innovation Phase
                                                 .requestMatchers(HttpMethod.POST,

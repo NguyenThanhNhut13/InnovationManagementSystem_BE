@@ -22,6 +22,7 @@ public class InnovationPhaseResponse {
     private String description;
     private InnovationPhaseLevelEnum level;
     private Integer phaseOrder;
+    private Boolean isDeadline;
 
     // Audit info
     private LocalDateTime createdAt;

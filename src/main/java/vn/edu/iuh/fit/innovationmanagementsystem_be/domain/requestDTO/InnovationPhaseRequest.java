@@ -41,4 +41,6 @@ public class InnovationPhaseRequest {
     @NotNull(message = "Thứ tự giai đoạn không được để trống")
     @Min(value = 0, message = "Thứ tự phase phải >= 0")
     private Integer phaseOrder;
+
+    private Boolean isDeadline = false;
 }
