@@ -97,12 +97,6 @@ public class SecurityConfig {
                                                                 EndpointConstants.INNOVATION_DECISION_PUT)
                                                 .hasAnyRole(QUAN_TRI_VIEN, THU_KY_QLKH_HTQT)
 
-                                                // Chapter
-                                                .requestMatchers(HttpMethod.POST, EndpointConstants.CHAPTER_POST)
-                                                .hasAnyRole(QUAN_TRI_VIEN, THU_KY_QLKH_HTQT)
-                                                .requestMatchers(HttpMethod.PUT, EndpointConstants.CHAPTER_PUT)
-                                                .hasAnyRole(QUAN_TRI_VIEN, THU_KY_QLKH_HTQT)
-
                                                 // Innovation Round
                                                 .requestMatchers(HttpMethod.POST,
                                                                 EndpointConstants.INNOVATION_ROUND_POST)

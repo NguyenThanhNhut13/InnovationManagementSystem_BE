@@ -69,16 +69,6 @@ public final class EndpointConstants {
                         "/api/v1/innovation-decisions/{id}"
         };
 
-        // ================== CHAPTER ==================
-        public static final String[] CHAPTER_POST = {
-                        "/api/v1/chapters",
-                        "/api/v1/chapters/bulk"
-        };
-
-        public static final String[] CHAPTER_PUT = {
-                        "/api/v1/chapters/{id}"
-        };
-
         // ================== INNOVATION ROUND ==================
         public static final String[] INNOVATION_ROUND_POST = {
                         "/api/v1/innovation-rounds"
