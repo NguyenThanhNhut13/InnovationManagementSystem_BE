@@ -26,6 +26,11 @@ public interface InnovationRoundRepository
 
         List<InnovationRound> findByStatus(InnovationRoundStatusEnum status);
 
-//        List<InnovationRound> findByIsActiveTrue();
+        @Query("SELECT r FROM InnovationRound r WHERE " +
+                        ":currentDate >= r.registrationStartDate " +
+                        "AND :currentDate <= r.registrationEndDate " +
+                        "AND r.status = 'ACTIVE' " +
+                        "ORDER BY r.createdAt DESC")
+        Optional<InnovationRound> findCurrentActiveRound(@Param("currentDate") LocalDate currentDate);
 
 }

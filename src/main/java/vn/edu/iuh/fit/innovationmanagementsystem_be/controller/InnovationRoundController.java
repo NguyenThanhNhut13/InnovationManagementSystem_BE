@@ -180,4 +180,21 @@ public class InnovationRoundController {
                 return ResponseEntity.ok(rounds);
         }
 
+        // 10. Get current round (restricted access)
+        @GetMapping("/current")
+        @ApiMessage("Lấy thông tin đợt sáng kiến hiện tại thành công")
+        @Operation(summary = "Get Current Round", description = "Get current active innovation round (restricted to TRUONG_KHOA, THU_KY_QLKH_HTQT, QUAN_TRI_VIEN)")
+        @ApiResponses(value = {
+                        @ApiResponse(responseCode = "200", description = "Current round retrieved successfully", content = @Content(schema = @Schema(implementation = InnovationRoundResponse.class))),
+                        @ApiResponse(responseCode = "404", description = "No current round found"),
+                        @ApiResponse(responseCode = "403", description = "Access denied")
+        })
+        public ResponseEntity<InnovationRoundResponse> getCurrentRound() {
+                InnovationRoundResponse currentRound = innovationRoundService.getCurrentRound();
+                if (currentRound == null) {
+                        return ResponseEntity.notFound().build();
+                }
+                return ResponseEntity.ok(currentRound);
+        }
+
 }

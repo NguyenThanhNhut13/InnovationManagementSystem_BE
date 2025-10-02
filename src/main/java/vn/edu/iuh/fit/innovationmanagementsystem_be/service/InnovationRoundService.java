@@ -24,6 +24,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.Utils;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -263,6 +264,18 @@ public class InnovationRoundService {
             response.setReviewedCount(0);
             response.setApprovedCount(0);
         }
+    }
+
+    public InnovationRoundResponse getCurrentRound() {
+        Optional<InnovationRound> currentRound = innovationRoundRepository.findCurrentActiveRound(LocalDate.now());
+        if (currentRound.isEmpty()) {
+            return null;
+        }
+
+        InnovationRound round = currentRound.get();
+        InnovationRoundResponse response = innovationRoundMapper.toInnovationRoundResponse(round);
+        setStatistics(response, round);
+        return response;
     }
 
 }
