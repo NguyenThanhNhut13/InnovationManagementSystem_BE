@@ -79,7 +79,7 @@ public final class EndpointConstants {
                         "/api/v1/innovation-rounds/{roundId}/toggle-status"
         };
 
-        public static final String[] INNOVATION_ROUND_GET = {
+        public static final String[] INNOVATION_ROUND_GET_RESTRICTED = {
                         "/api/v1/innovation-rounds/current"
         };
 
