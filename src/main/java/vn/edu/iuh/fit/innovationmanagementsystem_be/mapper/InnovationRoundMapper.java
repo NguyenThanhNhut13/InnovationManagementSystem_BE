@@ -20,6 +20,8 @@ public interface InnovationRoundMapper {
     InnovationRoundResponse toInnovationRoundResponse(InnovationRound innovationRound);
 
     @Mapping(target = "id", ignore = true)
+    @Mapping(target = "registrationStartDate", source = "startDate")
+    @Mapping(target = "registrationEndDate", source = "endDate")
     @Mapping(target = "innovationDecision", ignore = true)
     @Mapping(target = "innovationPhases", ignore = true)
     @Mapping(target = "formTemplates", ignore = true)
