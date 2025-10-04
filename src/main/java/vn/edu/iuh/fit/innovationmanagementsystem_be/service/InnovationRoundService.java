@@ -10,20 +10,25 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.InnovationDecis
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.InnovationPhase;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.InnovationRound;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.CreateInnovationRoundRequest;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.UpdateInnovationRoundRequest;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.InnovationPhaseRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationRoundResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationRoundListResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationStatusEnum;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationPhaseTypeEnum;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.PhaseStatusEnum;
 import com.fasterxml.jackson.databind.JsonNode;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.mapper.InnovationRoundMapper;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.exception.IdInvalidException;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.InnovationDecisionRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.InnovationRoundRepository;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.InnovationPhaseRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.ResultPaginationDTO;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.Utils;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -35,16 +40,19 @@ public class InnovationRoundService {
     private final InnovationDecisionService innovationDecisionService;
     private final InnovationRoundRepository innovationRoundRepository;
     private final InnovationDecisionRepository innovationDecisionRepository;
+    private final InnovationPhaseRepository innovationPhaseRepository;
     private final InnovationRoundMapper innovationRoundMapper;
     private final InnovationPhaseService innovationPhaseService;
 
     public InnovationRoundService(InnovationDecisionService innovationDecisionService,
             InnovationRoundRepository innovationRoundRepository,
             InnovationDecisionRepository innovationDecisionRepository,
+            InnovationPhaseRepository innovationPhaseRepository,
             InnovationRoundMapper innovationRoundMapper, InnovationPhaseService innovationPhaseService) {
         this.innovationDecisionService = innovationDecisionService;
         this.innovationRoundRepository = innovationRoundRepository;
         this.innovationDecisionRepository = innovationDecisionRepository;
+        this.innovationPhaseRepository = innovationPhaseRepository;
         this.innovationRoundMapper = innovationRoundMapper;
         this.innovationPhaseService = innovationPhaseService;
     }
@@ -135,18 +143,19 @@ public class InnovationRoundService {
     }
 
     // 5. Update round
-    public InnovationRoundResponse updateRound(String roundId, UpdateInnovationRoundRequest request) {
+    public InnovationRoundResponse updateRound(String roundId, CreateInnovationRoundRequest request) {
         InnovationRound round = innovationRoundRepository.findById(roundId)
                 .orElseThrow(() -> new IdInvalidException("Không tìm thấy InnovationRound với ID: " + roundId));
 
+        // Update basic round information
         if (request.getName() != null) {
             round.setName(request.getName());
         }
-        if (request.getStartDate() != null) {
-            round.setRegistrationStartDate(request.getStartDate());
+        if (request.getRegistrationStartDate() != null) {
+            round.setRegistrationStartDate(request.getRegistrationStartDate());
         }
-        if (request.getEndDate() != null) {
-            round.setRegistrationEndDate(request.getEndDate());
+        if (request.getRegistrationEndDate() != null) {
+            round.setRegistrationEndDate(request.getRegistrationEndDate());
         }
         if (request.getStatus() != null) {
             round.setStatus(request.getStatus());
@@ -154,11 +163,56 @@ public class InnovationRoundService {
         if (request.getDescription() != null) {
             round.setDescription(request.getDescription());
         }
-
         if (request.getAcademicYear() != null) {
             round.setAcademicYear(request.getAcademicYear());
         }
 
+        // Update InnovationDecision
+        if (request.getInnovationDecision() != null) {
+            if (round.getInnovationDecision() != null) {
+                // Update existing decision
+                InnovationDecision existingDecision = round.getInnovationDecision();
+
+                // Update decision fields
+                if (request.getInnovationDecision().getDecisionNumber() != null) {
+                    existingDecision.setDecisionNumber(request.getInnovationDecision().getDecisionNumber());
+                }
+                if (request.getInnovationDecision().getTitle() != null) {
+                    existingDecision.setTitle(request.getInnovationDecision().getTitle());
+                }
+                if (request.getInnovationDecision().getPromulgatedDate() != null) {
+                    existingDecision.setPromulgatedDate(request.getInnovationDecision().getPromulgatedDate());
+                }
+                if (request.getInnovationDecision().getFileName() != null) {
+                    existingDecision.setFileName(request.getInnovationDecision().getFileName());
+                }
+                if (request.getInnovationDecision().getScoringCriteria() != null) {
+                    existingDecision.setScoringCriteria(request.getInnovationDecision().getScoringCriteria());
+                }
+                if (request.getInnovationDecision().getContentGuide() != null) {
+                    existingDecision.setContentGuide(request.getInnovationDecision().getContentGuide());
+                }
+
+                // Save updated decision
+                innovationDecisionRepository.save(existingDecision);
+            } else {
+                // Create new decision if round doesn't have one
+                InnovationDecision decisionReq = innovationDecisionService
+                        .createDecision(request.getInnovationDecision());
+                round.setInnovationDecision(decisionReq);
+            }
+        }
+
+        // Save round to get ID before updating phases
+        round = innovationRoundRepository.save(round);
+
+        // Update InnovationPhase
+        if (request.getInnovationPhase() != null && !request.getInnovationPhase().isEmpty()) {
+            // Update existing phases or create new ones
+            updatePhasesForRound(round, new ArrayList<>(request.getInnovationPhase()));
+        }
+
+        // Final save with all updates
         InnovationRound savedRound = innovationRoundRepository.save(round);
         InnovationRoundResponse response = innovationRoundMapper.toInnovationRoundResponse(savedRound);
         setStatistics(response, savedRound);
@@ -276,6 +330,61 @@ public class InnovationRoundService {
         InnovationRoundResponse response = innovationRoundMapper.toInnovationRoundResponse(round);
         setStatistics(response, round);
         return response;
+    }
+
+    // Helper method to update phases for a round
+    private void updatePhasesForRound(InnovationRound round, List<InnovationPhaseRequest> phaseRequests) {
+        // Get existing phases
+        Set<InnovationPhase> existingPhases = round.getInnovationPhases();
+
+        // Create a map of existing phases by phaseType for quick lookup
+        Map<InnovationPhaseTypeEnum, InnovationPhase> existingPhaseMap = existingPhases.stream()
+                .collect(Collectors.toMap(InnovationPhase::getPhaseType, phase -> phase));
+
+        // Process each phase request
+        for (InnovationPhaseRequest phaseRequest : phaseRequests) {
+            InnovationPhaseTypeEnum phaseType = phaseRequest.getPhaseType();
+
+            if (existingPhaseMap.containsKey(phaseType)) {
+                // Update existing phase
+                InnovationPhase existingPhase = existingPhaseMap.get(phaseType);
+
+                if (phaseRequest.getName() != null) {
+                    existingPhase.setName(phaseRequest.getName());
+                }
+                if (phaseRequest.getPhaseStartDate() != null) {
+                    existingPhase.setPhaseStartDate(phaseRequest.getPhaseStartDate());
+                }
+                if (phaseRequest.getPhaseEndDate() != null) {
+                    existingPhase.setPhaseEndDate(phaseRequest.getPhaseEndDate());
+                }
+                if (phaseRequest.getDescription() != null) {
+                    existingPhase.setDescription(phaseRequest.getDescription());
+                }
+
+                // Save updated phase
+                innovationPhaseRepository.save(existingPhase);
+            } else {
+                // Create new phase
+                InnovationPhase newPhase = createPhaseFromRequest(round, phaseRequest);
+                round.getInnovationPhases().add(newPhase);
+            }
+        }
+    }
+
+    // Helper method to create phase from request
+    private InnovationPhase createPhaseFromRequest(InnovationRound round, InnovationPhaseRequest request) {
+        InnovationPhase phase = new InnovationPhase();
+        phase.setInnovationRound(round);
+        phase.setName(request.getName());
+        phase.setPhaseType(request.getPhaseType());
+        phase.setPhaseStartDate(request.getPhaseStartDate());
+        phase.setPhaseEndDate(request.getPhaseEndDate());
+        phase.setDescription(request.getDescription());
+        phase.setPhaseStatus(PhaseStatusEnum.PENDING);
+        phase.setIsDeadline(false);
+
+        return innovationPhaseRepository.save(phase);
     }
 
 }
