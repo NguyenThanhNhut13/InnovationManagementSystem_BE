@@ -68,6 +68,14 @@ public class DepartmentService {
     // 2. Get All Departments
     public ResultPaginationDTO getAllDepartments(@NonNull Specification<Department> specification,
             @NonNull Pageable pageable) {
+
+        if (pageable.getSort().isUnsorted()) {
+            pageable = org.springframework.data.domain.PageRequest.of(
+                    pageable.getPageNumber(),
+                    pageable.getPageSize(),
+                    org.springframework.data.domain.Sort.by("createdAt").descending());
+        }
+
         Page<Department> departments = departmentRepository.findAll(specification, pageable);
 
         Page<DepartmentResponse> departmentResponses = departments.map(departmentMapper::toDepartmentResponse);
@@ -119,6 +127,13 @@ public class DepartmentService {
     // 7. Search Department
     public ResultPaginationDTO searchDepartmentsByKeywordWithPagination(@NonNull String keyword,
             @NonNull Pageable pageable) {
+        // Thêm sort mặc định theo ngày tạo mới nhất trước nếu chưa có sort
+        if (pageable.getSort().isUnsorted()) {
+            pageable = org.springframework.data.domain.PageRequest.of(
+                    pageable.getPageNumber(),
+                    pageable.getPageSize(),
+                    org.springframework.data.domain.Sort.by("createdAt").descending());
+        }
 
         Page<Department> departments = departmentRepository.findByCodeOrNameContainingWithPagination(keyword, pageable);
         Page<DepartmentResponse> departmentResponses = departments.map(departmentMapper::toDepartmentResponse);
@@ -127,6 +142,13 @@ public class DepartmentService {
 
     // 8. Get all User in Department
     public ResultPaginationDTO getAllUserInDepartment(@NonNull String departmentId, @NonNull Pageable pageable) {
+        // Thêm sort mặc định theo ngày tạo mới nhất trước nếu chưa có sort
+        if (pageable.getSort().isUnsorted()) {
+            pageable = org.springframework.data.domain.PageRequest.of(
+                    pageable.getPageNumber(),
+                    pageable.getPageSize(),
+                    org.springframework.data.domain.Sort.by("createdAt").descending());
+        }
 
         if (!departmentRepository.existsById(departmentId)) {
             throw new IdInvalidException("Phòng ban không tồn tại");
@@ -139,6 +161,13 @@ public class DepartmentService {
 
     // 9. Get Active User in Department
     public ResultPaginationDTO getActiveUserInDepartment(@NonNull String departmentId, @NonNull Pageable pageable) {
+        // Thêm sort mặc định theo ngày tạo mới nhất trước nếu chưa có sort
+        if (pageable.getSort().isUnsorted()) {
+            pageable = org.springframework.data.domain.PageRequest.of(
+                    pageable.getPageNumber(),
+                    pageable.getPageSize(),
+                    org.springframework.data.domain.Sort.by("createdAt").descending());
+        }
 
         if (!departmentRepository.existsById(departmentId)) {
             throw new IdInvalidException("Phòng ban không tồn tại");
@@ -150,6 +179,13 @@ public class DepartmentService {
 
     // 10. Get Inactive User in Department
     public ResultPaginationDTO getInactiveUserInDepartment(@NonNull String departmentId, @NonNull Pageable pageable) {
+        // Thêm sort mặc định theo ngày tạo mới nhất trước nếu chưa có sort
+        if (pageable.getSort().isUnsorted()) {
+            pageable = org.springframework.data.domain.PageRequest.of(
+                    pageable.getPageNumber(),
+                    pageable.getPageSize(),
+                    org.springframework.data.domain.Sort.by("createdAt").descending());
+        }
 
         if (!departmentRepository.existsById(departmentId)) {
             throw new IdInvalidException("Phòng ban không tồn tại");

@@ -66,6 +66,14 @@ public class InnovationDecisionService {
     // 3. Get All InnovationDecisions
     public ResultPaginationDTO getAllInnovationDecisions(Specification<InnovationDecision> specification,
             Pageable pageable) {
+        // Thêm sort mặc định theo ngày tạo mới nhất trước nếu chưa có sort
+        if (pageable.getSort().isUnsorted()) {
+            pageable = org.springframework.data.domain.PageRequest.of(
+                    pageable.getPageNumber(),
+                    pageable.getPageSize(),
+                    org.springframework.data.domain.Sort.by("createdAt").descending());
+        }
+
         Page<InnovationDecision> innovationDecisions = innovationDecisionRepository.findAll(specification, pageable);
         Page<InnovationDecisionResponse> responses = innovationDecisions
                 .map(innovationDecisionMapper::toInnovationDecisionResponse);
@@ -117,6 +125,14 @@ public class InnovationDecisionService {
     // 7. Get by date range
     public ResultPaginationDTO getInnovationDecisionsByDateRange(LocalDate startDate, LocalDate endDate,
             Pageable pageable) {
+
+        if (pageable.getSort().isUnsorted()) {
+            pageable = org.springframework.data.domain.PageRequest.of(
+                    pageable.getPageNumber(),
+                    pageable.getPageSize(),
+                    org.springframework.data.domain.Sort.by("createdAt").descending());
+        }
+
         Page<InnovationDecision> innovationDecisions = innovationDecisionRepository
                 .findByPromulgatedDateBetween(startDate, endDate, pageable);
         Page<InnovationDecisionResponse> responses = innovationDecisions

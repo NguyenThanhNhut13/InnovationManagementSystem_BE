@@ -107,6 +107,13 @@ public class InnovationRoundService {
             throw new IdInvalidException("Không tìm thấy InnovationDecision với ID: " + decisionId);
         }
 
+        if (pageable.getSort().isUnsorted()) {
+            pageable = org.springframework.data.domain.PageRequest.of(
+                    pageable.getPageNumber(),
+                    pageable.getPageSize(),
+                    org.springframework.data.domain.Sort.by("createdAt").descending());
+        }
+
         Specification<InnovationRound> decisionSpec = (root, query, criteriaBuilder) -> criteriaBuilder
                 .equal(root.get("innovationDecision").get("id"), decisionId);
 
@@ -247,6 +254,14 @@ public class InnovationRoundService {
     // 9. Get all innovation rounds with pagination and filtering
     public ResultPaginationDTO getAllInnovationRoundsWithPaginationAndFilter(
             Specification<InnovationRound> specification, Pageable pageable) {
+        // Thêm sort mặc định theo ngày tạo mới nhất trước nếu chưa có sort
+        if (pageable.getSort().isUnsorted()) {
+            pageable = org.springframework.data.domain.PageRequest.of(
+                    pageable.getPageNumber(),
+                    pageable.getPageSize(),
+                    org.springframework.data.domain.Sort.by("createdAt").descending());
+        }
+
         Page<InnovationRound> roundPage = innovationRoundRepository.findAll(specification, pageable);
         Page<InnovationRoundResponse> responsePage = roundPage.map(round -> {
             InnovationRoundResponse response = innovationRoundMapper.toInnovationRoundResponse(round);
@@ -260,6 +275,14 @@ public class InnovationRoundService {
     // filtering
     public ResultPaginationDTO getInnovationRoundsListForTable(
             Specification<InnovationRound> specification, Pageable pageable) {
+        // Thêm sort mặc định theo ngày tạo mới nhất trước nếu chưa có sort
+        if (pageable.getSort().isUnsorted()) {
+            pageable = org.springframework.data.domain.PageRequest.of(
+                    pageable.getPageNumber(),
+                    pageable.getPageSize(),
+                    org.springframework.data.domain.Sort.by("createdAt").descending());
+        }
+
         Page<InnovationRound> roundPage = innovationRoundRepository.findAll(specification, pageable);
         Page<InnovationRoundListResponse> responsePage = roundPage.map(this::convertToListResponse);
         return Utils.toResultPaginationDTO(responsePage, pageable);

@@ -58,6 +58,14 @@ public class InnovationService {
 
     // 1. Get All Innovations
     public ResultPaginationDTO getAllInnovations(Specification<Innovation> specification, Pageable pageable) {
+
+        if (pageable.getSort().isUnsorted()) {
+            pageable = org.springframework.data.domain.PageRequest.of(
+                    pageable.getPageNumber(),
+                    pageable.getPageSize(),
+                    org.springframework.data.domain.Sort.by("createdAt").descending());
+        }
+
         Page<Innovation> innovations = innovationRepository.findAll(specification, pageable);
         Page<InnovationResponse> responses = innovations.map(innovationMapper::toInnovationResponse);
         return Utils.toResultPaginationDTO(responses, pageable);
@@ -228,6 +236,14 @@ public class InnovationService {
         // Validate status parameter
         if (status == null || status.trim().isEmpty()) {
             throw new IdInvalidException("Status không được để trống");
+        }
+
+        // Thêm sort mặc định theo ngày tạo mới nhất trước nếu chưa có sort
+        if (pageable.getSort().isUnsorted()) {
+            pageable = org.springframework.data.domain.PageRequest.of(
+                    pageable.getPageNumber(),
+                    pageable.getPageSize(),
+                    org.springframework.data.domain.Sort.by("createdAt").descending());
         }
 
         try {

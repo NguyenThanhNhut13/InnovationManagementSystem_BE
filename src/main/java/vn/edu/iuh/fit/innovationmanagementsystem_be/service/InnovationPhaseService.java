@@ -247,6 +247,14 @@ public class InnovationPhaseService {
     // Get all innovation phases with pagination and filtering
     public ResultPaginationDTO getAllInnovationPhasesWithPaginationAndFilter(
             Specification<InnovationPhase> specification, Pageable pageable) {
+
+        if (pageable.getSort().isUnsorted()) {
+            pageable = org.springframework.data.domain.PageRequest.of(
+                    pageable.getPageNumber(),
+                    pageable.getPageSize(),
+                    org.springframework.data.domain.Sort.by("createdAt").descending());
+        }
+
         Page<InnovationPhase> phasePage = innovationPhaseRepository.findAll(specification, pageable);
         Page<InnovationPhaseResponse> responsePage = phasePage.map(innovationPhaseMapper::toInnovationPhaseResponse);
         return Utils.toResultPaginationDTO(responsePage, pageable);
