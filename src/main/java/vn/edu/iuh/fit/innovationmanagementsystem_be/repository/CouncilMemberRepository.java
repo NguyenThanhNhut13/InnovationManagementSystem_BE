@@ -30,10 +30,10 @@ public interface CouncilMemberRepository extends JpaRepository<CouncilMember, St
     @Query("SELECT COUNT(cm) FROM CouncilMember cm WHERE cm.council.id = :councilId")
     long countByCouncilId(@Param("councilId") String councilId);
 
-    @Query("SELECT cm FROM CouncilMember cm WHERE cm.council.id = :councilId AND cm.council.isActive = true")
+    @Query("SELECT cm FROM CouncilMember cm WHERE cm.council.id = :councilId")
     List<CouncilMember> findActiveCouncilMembersByCouncilId(@Param("councilId") String councilId);
 
-    @Query("SELECT cm FROM CouncilMember cm WHERE cm.user.id = :userId AND cm.council.isActive = true")
+    @Query("SELECT cm FROM CouncilMember cm WHERE cm.user.id = :userId")
     List<CouncilMember> findActiveCouncilMembersByUserId(@Param("userId") String userId);
 
     boolean existsByCouncilIdAndUserId(String councilId, String userId);
