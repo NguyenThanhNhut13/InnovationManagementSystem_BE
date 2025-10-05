@@ -2,6 +2,8 @@ package vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.ReviewLevelEnum;
 
@@ -10,6 +12,8 @@ import java.util.ArrayList;
 
 @Entity
 @Table(name = "councils")
+@Data
+@EqualsAndHashCode(callSuper = false)
 @NoArgsConstructor
 @AllArgsConstructor
 public class Council extends Auditable {
@@ -29,4 +33,5 @@ public class Council extends Auditable {
     // Relationships
     @OneToMany(mappedBy = "council", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<CouncilMember> councilMembers = new ArrayList<>();
+
 }
