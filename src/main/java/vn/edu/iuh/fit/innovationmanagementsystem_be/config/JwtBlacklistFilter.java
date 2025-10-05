@@ -40,7 +40,6 @@ public class JwtBlacklistFilter extends OncePerRequestFilter {
 
                     RestResponse<String> errorResponse = new RestResponse<>();
                     errorResponse.setStatusCode(401);
-                    errorResponse.setError("TOKEN_BLACKLISTED");
                     errorResponse.setMessage("Token đã bị vô hiệu hóa");
                     errorResponse.setData(null);
 

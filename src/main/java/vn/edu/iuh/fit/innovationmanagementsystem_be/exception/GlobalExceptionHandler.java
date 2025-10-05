@@ -26,8 +26,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<RestResponse<Object>> handleIdException(Exception ex) {
         RestResponse<Object> res = new RestResponse<Object>();
         res.setStatusCode(HttpStatus.BAD_REQUEST.value());
-        res.setError(ex.getMessage());
-        res.setMessage("Có lỗi xảy ra !");
+        res.setMessage(ex.getMessage());
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(res);
     }
 
@@ -42,7 +41,6 @@ public class GlobalExceptionHandler {
 
         RestResponse<Object> response = new RestResponse<>();
         response.setStatusCode(HttpStatus.BAD_REQUEST.value());
-        response.setError(ex.getBody().getDetail());
         response.setMessage(String.join(", ", errors));
 
         return ResponseEntity.badRequest().body(response);
@@ -53,7 +51,6 @@ public class GlobalExceptionHandler {
     public ResponseEntity<RestResponse<Object>> handleNotFoundException(Exception ex) {
         RestResponse<Object> res = new RestResponse<Object>();
         res.setStatusCode(HttpStatus.NOT_FOUND.value());
-        res.setError(ex.getMessage());
         res.setMessage("404 Not Found. URL có thể không tồn tại !");
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(res);
     }
@@ -63,7 +60,6 @@ public class GlobalExceptionHandler {
     public ResponseEntity<RestResponse<Object>> handleRuntimeException(RuntimeException ex) {
         RestResponse<Object> response = new RestResponse<>();
         response.setStatusCode(HttpStatus.INTERNAL_SERVER_ERROR.value());
-        response.setError("Internal Server Error");
         response.setMessage(ex.getMessage());
 
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
@@ -74,7 +70,6 @@ public class GlobalExceptionHandler {
     public ResponseEntity<RestResponse<Object>> handleMethodNotSupported(HttpRequestMethodNotSupportedException ex) {
         RestResponse<Object> response = new RestResponse<>();
         response.setStatusCode(HttpStatus.METHOD_NOT_ALLOWED.value());
-        response.setError("Method Not Allowed");
         response.setMessage(
                 String.format("Method %s không được hỗ trợ cho endpoint này. Method được hỗ trợ là %s",
                         ex.getMethod(), ex.getSupportedHttpMethods()));
@@ -90,7 +85,6 @@ public class GlobalExceptionHandler {
     public ResponseEntity<RestResponse<Object>> handleAuthenticationException(Exception ex) {
         RestResponse<Object> res = new RestResponse<Object>();
         res.setStatusCode(HttpStatus.UNAUTHORIZED.value());
-        res.setError("UNAUTHORIZED");
         res.setMessage(ex.getMessage());
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(res);
     }
@@ -99,7 +93,6 @@ public class GlobalExceptionHandler {
     public ResponseEntity<RestResponse<Object>> NotFoundException(NotFoundException ex) {
         RestResponse<Object> res = new RestResponse<Object>();
         res.setStatusCode(HttpStatus.NOT_FOUND.value());
-        res.setError("NOTFOUND");
         res.setMessage(ex.getMessage());
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(res);
     }

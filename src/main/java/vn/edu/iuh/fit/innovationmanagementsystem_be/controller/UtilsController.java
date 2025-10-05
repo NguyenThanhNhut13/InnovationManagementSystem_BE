@@ -46,10 +46,7 @@ public class UtilsController {
     }
 
     // 1. Upload single file to MinIO
-    @PostMapping(
-            value = "/upload",
-            consumes = MediaType.MULTIPART_FORM_DATA_VALUE
-    )
+    @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @ApiMessage("Upload file thành công")
     @Operation(summary = "Upload Single File", description = "Upload a single file to MinIO storage")
     @ApiResponses(value = {
@@ -60,11 +57,11 @@ public class UtilsController {
             @Parameter(description = "File to upload", required = true) @RequestParam("file") MultipartFile file)
             throws Exception {
 
-        System.out.println("file "+ file.getOriginalFilename());
+        System.out.println("file " + file.getOriginalFilename());
 
-//        if (file.isEmpty()) {
-//            throw new IdInvalidException("File is empty");
-//        }
+        // if (file.isEmpty()) {
+        // throw new IdInvalidException("File is empty");
+        // }
 
         if (file.getOriginalFilename() == null || file.getOriginalFilename().trim().isEmpty()) {
             throw new IdInvalidException("File name is required");
@@ -358,7 +355,6 @@ public class UtilsController {
             String url = fileService.getPresignedUrl(fileName, 60 * 5);
             RestResponse<String> response = RestResponse.<String>builder()
                     .statusCode(200)
-                    .error(null)
                     .message("Success")
                     .data(url)
                     .build();
@@ -366,8 +362,7 @@ public class UtilsController {
         } catch (Exception e) {
             RestResponse<String> errorResponse = RestResponse.<String>builder()
                     .statusCode(500)
-                    .error("Internal Server Error")
-                    .message(e.getMessage())
+                    .message("Internal Server Error: " + e.getMessage())
                     .data(null)
                     .build();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)

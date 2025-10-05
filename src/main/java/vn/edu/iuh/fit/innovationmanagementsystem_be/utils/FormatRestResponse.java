@@ -63,12 +63,12 @@ public class FormatRestResponse implements ResponseBodyAdvice<Object> {
             // Handle String responses by wrapping them in RestResponse
             res.setData(body);
             ApiMessage message = returnType.getMethodAnnotation(ApiMessage.class);
-            res.setMessage(message != null ? message.value() : "CALL API SUCCESS");
+            res.setMessage(message != null ? message.value() : "Thành công");
             return res;
         } else {
             res.setData(body);
             ApiMessage message = returnType.getMethodAnnotation(ApiMessage.class);
-            res.setMessage(message != null ? message.value() : "CALL API SUCCESS");
+            res.setMessage(message != null ? message.value() : "Thành công");
             return res;
         }
     }
