@@ -154,73 +154,115 @@ public class InnovationRoundService {
         InnovationRound round = innovationRoundRepository.findById(roundId)
                 .orElseThrow(() -> new IdInvalidException("Không tìm thấy InnovationRound với ID: " + roundId));
 
+        boolean hasChanges = false;
+
         // Update basic round information
-        if (request.getName() != null) {
+        if (request.getName() != null && !request.getName().equals(round.getName())) {
             round.setName(request.getName());
+            hasChanges = true;
         }
-        if (request.getRegistrationStartDate() != null) {
+        if (request.getRegistrationStartDate() != null
+                && !request.getRegistrationStartDate().equals(round.getRegistrationStartDate())) {
             round.setRegistrationStartDate(request.getRegistrationStartDate());
+            hasChanges = true;
         }
-        if (request.getRegistrationEndDate() != null) {
+        if (request.getRegistrationEndDate() != null
+                && !request.getRegistrationEndDate().equals(round.getRegistrationEndDate())) {
             round.setRegistrationEndDate(request.getRegistrationEndDate());
+            hasChanges = true;
         }
-        if (request.getStatus() != null) {
+        if (request.getStatus() != null && !request.getStatus().equals(round.getStatus())) {
             round.setStatus(request.getStatus());
+            hasChanges = true;
         }
-        if (request.getDescription() != null) {
+        if (request.getDescription() != null && !request.getDescription().equals(round.getDescription())) {
             round.setDescription(request.getDescription());
+            hasChanges = true;
         }
-        if (request.getAcademicYear() != null) {
+        if (request.getAcademicYear() != null && !request.getAcademicYear().equals(round.getAcademicYear())) {
             round.setAcademicYear(request.getAcademicYear());
+            hasChanges = true;
         }
 
         // Update InnovationDecision
         if (request.getInnovationDecision() != null) {
             if (round.getInnovationDecision() != null) {
-                // Update existing decision
+                // Update existing decisio
                 InnovationDecision existingDecision = round.getInnovationDecision();
+                boolean decisionHasChanges = false;
 
                 // Update decision fields
-                if (request.getInnovationDecision().getDecisionNumber() != null) {
+                if (request.getInnovationDecision().getDecisionNumber() != null
+                        && !request.getInnovationDecision().getDecisionNumber()
+                                .equals(existingDecision.getDecisionNumber())) {
                     existingDecision.setDecisionNumber(request.getInnovationDecision().getDecisionNumber());
+                    decisionHasChanges = true;
                 }
-                if (request.getInnovationDecision().getTitle() != null) {
+                if (request.getInnovationDecision().getTitle() != null
+                        && !request.getInnovationDecision().getTitle().equals(existingDecision.getTitle())) {
                     existingDecision.setTitle(request.getInnovationDecision().getTitle());
+                    decisionHasChanges = true;
                 }
-                if (request.getInnovationDecision().getPromulgatedDate() != null) {
+                if (request.getInnovationDecision().getPromulgatedDate() != null
+                        && !request.getInnovationDecision().getPromulgatedDate()
+                                .equals(existingDecision.getPromulgatedDate())) {
                     existingDecision.setPromulgatedDate(request.getInnovationDecision().getPromulgatedDate());
+                    decisionHasChanges = true;
                 }
-                if (request.getInnovationDecision().getFileName() != null) {
+                if (request.getInnovationDecision().getFileName() != null
+                        && !request.getInnovationDecision().getFileName().equals(existingDecision.getFileName())) {
                     existingDecision.setFileName(request.getInnovationDecision().getFileName());
+                    decisionHasChanges = true;
                 }
-                if (request.getInnovationDecision().getScoringCriteria() != null) {
+                if (request.getInnovationDecision().getScoringCriteria() != null
+                        && !request.getInnovationDecision().getScoringCriteria()
+                                .equals(existingDecision.getScoringCriteria())) {
                     existingDecision.setScoringCriteria(request.getInnovationDecision().getScoringCriteria());
+                    decisionHasChanges = true;
                 }
-                if (request.getInnovationDecision().getContentGuide() != null) {
+                if (request.getInnovationDecision().getContentGuide() != null
+                        && !request.getInnovationDecision().getContentGuide()
+                                .equals(existingDecision.getContentGuide())) {
                     existingDecision.setContentGuide(request.getInnovationDecision().getContentGuide());
+                    decisionHasChanges = true;
                 }
 
-                // Save updated decision
-                innovationDecisionRepository.save(existingDecision);
+                if (decisionHasChanges) {
+                    innovationDecisionRepository.save(existingDecision);
+                    hasChanges = true;
+                }
             } else {
                 // Create new decision if round doesn't have one
                 InnovationDecision decisionReq = innovationDecisionService
                         .createDecision(request.getInnovationDecision());
                 round.setInnovationDecision(decisionReq);
+                hasChanges = true;
             }
         }
 
-        // Save round to get ID before updating phases
-        round = innovationRoundRepository.save(round);
-
         // Update InnovationPhase
         if (request.getInnovationPhase() != null && !request.getInnovationPhase().isEmpty()) {
-            // Update existing phases or create new ones
-            updatePhasesForRound(round, new ArrayList<>(request.getInnovationPhase()));
+
+            boolean phasesChanged = checkPhasesChanged(round, new ArrayList<>(request.getInnovationPhase()));
+            if (phasesChanged) {
+                // Save round to get ID before updating phases
+                if (hasChanges) {
+                    round = innovationRoundRepository.save(round);
+                }
+                // Update existing phases or create new ones
+                updatePhasesForRound(round, new ArrayList<>(request.getInnovationPhase()));
+                hasChanges = true;
+            }
         }
 
-        // Final save with all updates
-        InnovationRound savedRound = innovationRoundRepository.save(round);
+        // Only save if there are actual changes
+        InnovationRound savedRound;
+        if (hasChanges) {
+            savedRound = innovationRoundRepository.save(round);
+        } else {
+            savedRound = round; // No changes, return existing round
+        }
+
         InnovationRoundResponse response = innovationRoundMapper.toInnovationRoundResponse(savedRound);
         setStatistics(response, savedRound);
         return response;
@@ -355,6 +397,61 @@ public class InnovationRoundService {
         return response;
     }
 
+    // Helper method to check if phases have changed
+    private boolean checkPhasesChanged(InnovationRound round, List<InnovationPhaseRequest> phaseRequests) {
+        Set<InnovationPhase> existingPhases = round.getInnovationPhases();
+
+        // If no existing phases and new phases provided, there are changes
+        if (existingPhases == null || existingPhases.isEmpty()) {
+            return !phaseRequests.isEmpty();
+        }
+
+        // If no new phases provided but existing phases exist, there are changes
+        // (removal)
+        if (phaseRequests.isEmpty()) {
+            return true;
+        }
+
+        // Create a map of existing phases by phaseType for quick lookup
+        Map<InnovationPhaseTypeEnum, InnovationPhase> existingPhaseMap = existingPhases.stream()
+                .collect(Collectors.toMap(InnovationPhase::getPhaseType, phase -> phase));
+
+        // Check if number of phases changed
+        if (existingPhaseMap.size() != phaseRequests.size()) {
+            return true;
+        }
+
+        // Check each phase request against existing phases
+        for (InnovationPhaseRequest phaseRequest : phaseRequests) {
+            InnovationPhaseTypeEnum phaseType = phaseRequest.getPhaseType();
+
+            if (!existingPhaseMap.containsKey(phaseType)) {
+                return true; // New phase type added
+            }
+
+            InnovationPhase existingPhase = existingPhaseMap.get(phaseType);
+
+            // Check if any field has changed
+            if (phaseRequest.getName() != null && !phaseRequest.getName().equals(existingPhase.getName())) {
+                return true;
+            }
+            if (phaseRequest.getPhaseStartDate() != null
+                    && !phaseRequest.getPhaseStartDate().equals(existingPhase.getPhaseStartDate())) {
+                return true;
+            }
+            if (phaseRequest.getPhaseEndDate() != null
+                    && !phaseRequest.getPhaseEndDate().equals(existingPhase.getPhaseEndDate())) {
+                return true;
+            }
+            if (phaseRequest.getDescription() != null
+                    && !phaseRequest.getDescription().equals(existingPhase.getDescription())) {
+                return true;
+            }
+        }
+
+        return false; // No changes detected
+    }
+
     // Helper method to update phases for a round
     private void updatePhasesForRound(InnovationRound round, List<InnovationPhaseRequest> phaseRequests) {
         // Get existing phases
@@ -369,24 +466,34 @@ public class InnovationRoundService {
             InnovationPhaseTypeEnum phaseType = phaseRequest.getPhaseType();
 
             if (existingPhaseMap.containsKey(phaseType)) {
-                // Update existing phase
+                // Update existing phase - chỉ cập nhật khi có thay đổi
                 InnovationPhase existingPhase = existingPhaseMap.get(phaseType);
+                boolean phaseHasChanges = false;
 
-                if (phaseRequest.getName() != null) {
+                if (phaseRequest.getName() != null && !phaseRequest.getName().equals(existingPhase.getName())) {
                     existingPhase.setName(phaseRequest.getName());
+                    phaseHasChanges = true;
                 }
-                if (phaseRequest.getPhaseStartDate() != null) {
+                if (phaseRequest.getPhaseStartDate() != null
+                        && !phaseRequest.getPhaseStartDate().equals(existingPhase.getPhaseStartDate())) {
                     existingPhase.setPhaseStartDate(phaseRequest.getPhaseStartDate());
+                    phaseHasChanges = true;
                 }
-                if (phaseRequest.getPhaseEndDate() != null) {
+                if (phaseRequest.getPhaseEndDate() != null
+                        && !phaseRequest.getPhaseEndDate().equals(existingPhase.getPhaseEndDate())) {
                     existingPhase.setPhaseEndDate(phaseRequest.getPhaseEndDate());
+                    phaseHasChanges = true;
                 }
-                if (phaseRequest.getDescription() != null) {
+                if (phaseRequest.getDescription() != null
+                        && !phaseRequest.getDescription().equals(existingPhase.getDescription())) {
                     existingPhase.setDescription(phaseRequest.getDescription());
+                    phaseHasChanges = true;
                 }
 
-                // Save updated phase
-                innovationPhaseRepository.save(existingPhase);
+                // Save updated phase only if there are changes
+                if (phaseHasChanges) {
+                    innovationPhaseRepository.save(existingPhase);
+                }
             } else {
                 // Create new phase
                 InnovationPhase newPhase = createPhaseFromRequest(round, phaseRequest);
