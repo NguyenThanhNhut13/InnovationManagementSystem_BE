@@ -8,21 +8,11 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.FieldType
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class FormFieldResponse {
+public class TableColumnResponse {
 
-    // Basic field info
     private String id;
-    private String fieldKey;
+    private String key;
     private String label;
-    private FieldTypeEnum fieldType;
+    private FieldTypeEnum type;
     private Boolean required;
-    private String placeholder;
-
-    // Template info
-    private String formTemplateId;
-    private String formTemplateName;
-
-    // Table config for TABLE field type
-    private TableConfigResponse tableConfig;
-
 }

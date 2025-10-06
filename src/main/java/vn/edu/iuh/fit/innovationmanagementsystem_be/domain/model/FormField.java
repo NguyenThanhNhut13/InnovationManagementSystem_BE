@@ -45,4 +45,7 @@ public class FormField {
     @OneToMany(mappedBy = "formField", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
     private List<FormData> formDataList = new ArrayList<>();
 
+    @OneToOne(mappedBy = "formField", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
+    private TableConfig tableConfig;
+
 }

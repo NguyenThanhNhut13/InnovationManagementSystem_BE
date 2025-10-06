@@ -1,5 +1,6 @@
 package vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO;
 
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
@@ -25,5 +26,8 @@ public class FormFieldRequest {
     private Boolean required = false;
 
     private String placeholder;
+
+    @Valid
+    private TableConfigRequest tableConfig;
 
 }
