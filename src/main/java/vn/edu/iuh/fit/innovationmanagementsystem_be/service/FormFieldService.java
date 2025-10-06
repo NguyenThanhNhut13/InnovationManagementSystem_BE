@@ -66,12 +66,12 @@ public class FormFieldService {
             formField.setFieldType(request.getFieldType());
         }
 
-        if (request.getIsRequired() != null) {
-            formField.setIsRequired(request.getIsRequired());
+        if (request.getRequired() != null) {
+            formField.setRequired(request.getRequired());
         }
 
-        if (request.getOrderInTemplate() != null) {
-            formField.setOrderInTemplate(request.getOrderInTemplate());
+        if (request.getPlaceholder() != null) {
+            formField.setPlaceholder(request.getPlaceholder());
         }
 
         this.formFieldRepository.save(formField);
@@ -101,23 +101,14 @@ public class FormFieldService {
                 .collect(Collectors.toList());
     }
 
-    // 7. Reorder Form Field
-    public FormFieldResponse reorderFormField(String id, FormFieldRequest request) {
-        FormField formField = formFieldRepository.findById(id)
-                .orElseThrow(() -> new IdInvalidException("Không tìm thấy form field với id: " + id));
-        formField.setOrderInTemplate(request.getOrderInTemplate());
-        this.formFieldRepository.save(formField);
-        return toResponse(formField);
-    }
-
     // Mapper
     private FormField toFormField(FormFieldRequest request, String templateId) {
         FormField formField = new FormField();
         formField.setLabel(request.getLabel());
         formField.setFieldKey(request.getFieldKey());
         formField.setFieldType(request.getFieldType());
-        formField.setIsRequired(request.getIsRequired());
-        formField.setOrderInTemplate(request.getOrderInTemplate());
+        formField.setRequired(request.getRequired());
+        formField.setPlaceholder(request.getPlaceholder());
         formField.setFormTemplate(formTemplateRepository.findById(templateId)
                 .orElseThrow(() -> new IdInvalidException("Không tìm thấy template với id: " + templateId)));
         return formField;
@@ -126,11 +117,11 @@ public class FormFieldService {
     private FormFieldResponse toResponse(FormField formField) {
         FormFieldResponse response = new FormFieldResponse();
         response.setId(formField.getId());
-        response.setLabel(formField.getLabel());
         response.setFieldKey(formField.getFieldKey());
+        response.setLabel(formField.getLabel());
         response.setFieldType(formField.getFieldType());
-        response.setIsRequired(formField.getIsRequired());
-        response.setOrderInTemplate(formField.getOrderInTemplate());
+        response.setRequired(formField.getRequired());
+        response.setPlaceholder(formField.getPlaceholder());
         response.setFormTemplateId(formField.getFormTemplate().getId());
         response.setFormTemplateName(formField.getFormTemplate().getName());
         return response;

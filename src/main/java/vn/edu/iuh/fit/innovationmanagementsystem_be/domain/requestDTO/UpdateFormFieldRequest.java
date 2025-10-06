@@ -18,8 +18,8 @@ public class UpdateFormFieldRequest {
 
     private FieldTypeEnum fieldType;
 
-    private Boolean isRequired;
+    private Boolean required;
 
-    private Integer orderInTemplate;
+    private String placeholder;
 
 }

@@ -22,9 +22,8 @@ public class FormFieldRequest {
     private FieldTypeEnum fieldType;
 
     @NotNull(message = "Trạng thái required không được để trống")
-    private Boolean isRequired = false;
+    private Boolean required = false;
 
-    @NotNull(message = "Thứ tự hiển thị không được để trống")
-    private Integer orderInTemplate;
+    private String placeholder;
 
 }

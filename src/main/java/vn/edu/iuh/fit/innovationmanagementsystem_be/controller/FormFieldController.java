@@ -127,19 +127,4 @@ public class FormFieldController {
         return ResponseEntity.ok(responses);
     }
 
-    // 7. Reorder Form Field
-    @PutMapping("/form-fields/{id}/reorder")
-    @ApiMessage("Sắp xếp lại Form Field thành công")
-    @Operation(summary = "Reorder Form Field", description = "Reorder form field position")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Form field reordered successfully", content = @Content(schema = @Schema(implementation = FormFieldResponse.class))),
-            @ApiResponse(responseCode = "400", description = "Invalid request data"),
-            @ApiResponse(responseCode = "404", description = "Form field not found")
-    })
-    public ResponseEntity<FormFieldResponse> reorderFormField(
-            @Parameter(description = "Form field reorder request", required = true) @Valid @RequestBody FormFieldRequest request,
-            @Parameter(description = "Form field ID", required = true) @PathVariable String id) {
-        FormFieldResponse response = formFieldService.reorderFormField(id, request);
-        return ResponseEntity.ok(response);
-    }
 }

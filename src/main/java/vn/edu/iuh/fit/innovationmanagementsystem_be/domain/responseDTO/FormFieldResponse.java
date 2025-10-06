@@ -12,11 +12,11 @@ public class FormFieldResponse {
 
     // Basic field info
     private String id;
-    private String label;
     private String fieldKey;
+    private String label;
     private FieldTypeEnum fieldType;
-    private Boolean isRequired;
-    private Integer orderInTemplate;
+    private Boolean required;
+    private String placeholder;
 
     // Template info
     private String formTemplateId;

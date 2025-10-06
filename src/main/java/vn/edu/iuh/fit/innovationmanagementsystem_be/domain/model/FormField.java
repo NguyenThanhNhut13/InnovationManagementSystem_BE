@@ -29,13 +29,13 @@ public class FormField {
     private FieldTypeEnum fieldType;
 
     @Column(name = "is_required", nullable = false)
-    private Boolean isRequired = false;
-
-    @Column(name = "order_in_template", nullable = false)
-    private Integer orderInTemplate;
+    private Boolean required = false;
 
     @Column(name = "field_key", nullable = false)
     private String fieldKey;
+
+    @Column(name = "placeholder", columnDefinition = "TEXT")
+    private String placeholder;
 
     // Relationships
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
