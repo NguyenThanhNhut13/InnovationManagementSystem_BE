@@ -58,25 +58,10 @@ services:
       timeout: 20s
       retries: 3
 
-  # Jenkins CI/CD
-  jenkins:
-    image: jenkins/jenkins:lts
-    container_name: jenkins
-    user: root
-    ports:
-      - "8081:8080" # Web UI Jenkins
-      - "50000:50000" # Jenkins agent
-    volumes:
-      - jenkins_home:/var/jenkins_home
-      - /var/run/docker.sock:/var/run/docker.sock # Jenkins có thể chạy docker build
-    restart: unless-stopped
-
 volumes:
   postgres_data:
     driver: local
   redis_data:
     driver: local
   minio_data:
-    driver: local
-  jenkins_home:
     driver: local

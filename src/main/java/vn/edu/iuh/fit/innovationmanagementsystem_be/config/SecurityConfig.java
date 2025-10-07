@@ -161,6 +161,4 @@ public class SecurityConfig {
         public PasswordEncoder passwordEncoder() {
                 return new BCryptPasswordEncoder();
         }
-
-        // JWT configuration moved to JwtConfig
 }
