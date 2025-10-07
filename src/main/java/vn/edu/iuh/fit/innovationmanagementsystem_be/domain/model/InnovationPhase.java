@@ -9,8 +9,6 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.PhaseStat
 import vn.edu.iuh.fit.innovationmanagementsystem_be.exception.IdInvalidException;
 
 import java.time.LocalDate;
-import java.util.List;
-import java.util.ArrayList;
 
 @Entity
 @Table(name = "innovation_phases", uniqueConstraints = {
@@ -19,8 +17,8 @@ import java.util.ArrayList;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@EqualsAndHashCode(callSuper = true, exclude = { "innovationRound", "departmentPhases" })
-@ToString(callSuper = true, exclude = { "innovationRound", "departmentPhases" })
+@EqualsAndHashCode(callSuper = true, exclude = { "innovationRound" })
+@ToString(callSuper = true, exclude = { "innovationRound" })
 public class InnovationPhase extends Auditable {
 
     @Id
@@ -66,9 +64,6 @@ public class InnovationPhase extends Auditable {
     @JoinColumn(name = "innovation_round_id", nullable = false)
     @JsonIgnore
     private InnovationRound innovationRound;
-
-    @OneToMany(mappedBy = "innovationPhase", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
-    private List<DepartmentPhase> departmentPhases = new ArrayList<>();
 
     // kiểm tra phase có nằm trong thời gian của round không
     public boolean isPhaseWithinRoundTimeframe(LocalDate startDate, LocalDate endDate) {
