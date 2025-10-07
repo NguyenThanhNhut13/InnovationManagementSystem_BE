@@ -72,6 +72,7 @@ public class FormTemplateService {
 
         FormTemplate template = new FormTemplate();
         template.setTemplateType(request.getTemplateType());
+        template.setTargetRole(request.getTargetRole());
         template.setTemplateContent(request.getTemplateContent());
         template.setInnovationRound(phase.getInnovationRound());
 
@@ -103,6 +104,7 @@ public class FormTemplateService {
                 .map(templateData -> {
                     FormTemplate template = new FormTemplate();
                     template.setTemplateType(templateData.getTemplateType());
+                    template.setTargetRole(templateData.getTargetRole());
                     template.setTemplateContent(templateData.getTemplateContent());
                     template.setInnovationRound(innovationPhase.getInnovationRound());
                     return template;
@@ -126,12 +128,16 @@ public class FormTemplateService {
         FormTemplate template = formTemplateRepository.findById(id)
                 .orElseThrow(() -> new IdInvalidException("Form template không tồn tại với ID: " + id));
 
-        if (request.getTemplateType() == null && request.getTemplateContent() == null) {
+        if (request.getTemplateType() == null && request.getTargetRole() == null
+                && request.getTemplateContent() == null) {
             throw new IdInvalidException("Ít nhất một trường phải được cung cấp để cập nhật");
         }
 
         if (request.getTemplateType() != null) {
             template.setTemplateType(request.getTemplateType());
+        }
+        if (request.getTargetRole() != null) {
+            template.setTargetRole(request.getTargetRole());
         }
         if (request.getTemplateContent() != null) {
             template.setTemplateContent(request.getTemplateContent());

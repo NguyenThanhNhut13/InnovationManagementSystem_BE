@@ -7,6 +7,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.TemplateTypeEnum;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.TargetRoleCode;
 
 import java.util.List;
 
@@ -29,6 +30,9 @@ public class CreateMultipleFormTemplatesRequest {
 
         @NotNull(message = "Loại template không được để trống")
         private TemplateTypeEnum templateType;
+
+        @NotNull(message = "Vai trò mục tiêu không được để trống")
+        private TargetRoleCode targetRole;
 
         private String templateContent;
     }

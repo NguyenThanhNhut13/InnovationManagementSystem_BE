@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.TemplateTypeEnum;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.TargetRoleCode;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -26,6 +27,10 @@ public class FormTemplate extends Auditable {
     @Enumerated(EnumType.STRING)
     @Column(name = "template_type", nullable = false)
     private TemplateTypeEnum templateType;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "target_role", nullable = false)
+    private TargetRoleCode targetRole;
 
     @Lob
     @Column(name = "template_content")
