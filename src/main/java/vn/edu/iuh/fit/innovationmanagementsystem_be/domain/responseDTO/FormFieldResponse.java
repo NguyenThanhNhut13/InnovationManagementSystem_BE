@@ -1,5 +1,6 @@
 package vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -23,6 +24,6 @@ public class FormFieldResponse {
     private String formTemplateName;
 
     // Table config for TABLE field type
-    private TableConfigResponse tableConfig;
+    private JsonNode tableConfig;
 
 }

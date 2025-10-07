@@ -38,12 +38,6 @@ public class InnovationDecision extends Auditable {
     @Column(name = "file_name", nullable = false)
     private String fileName;
 
-//    @Column(name = "signed_by", nullable = false, columnDefinition = "VARCHAR(255)")
-//    private String signedBy;
-//
-//    @Column(name = "bases", columnDefinition = "TEXT")
-//    private String bases;
-
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "scoring_criteria", columnDefinition = "JSON")
     private JsonNode scoringCriteria;

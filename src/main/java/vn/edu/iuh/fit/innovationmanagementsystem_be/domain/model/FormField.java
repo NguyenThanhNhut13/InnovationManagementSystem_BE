@@ -1,9 +1,12 @@
 package vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.FieldTypeEnum;
 
 import java.util.List;
@@ -45,7 +48,8 @@ public class FormField {
     @OneToMany(mappedBy = "formField", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
     private List<FormData> formDataList = new ArrayList<>();
 
-    @OneToOne(mappedBy = "formField", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
-    private TableConfig tableConfig;
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "table_config", columnDefinition = "JSON")
+    private JsonNode tableConfig;
 
 }

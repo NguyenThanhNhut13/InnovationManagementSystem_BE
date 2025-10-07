@@ -4,12 +4,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.FormField;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.TableConfig;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.FormFieldRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.UpdateFormFieldRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.FormFieldResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.exception.IdInvalidException;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.mapper.TableConfigMapper;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.FormFieldRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.FormTemplateRepository;
 
@@ -22,14 +20,11 @@ public class FormFieldService {
 
     private final FormFieldRepository formFieldRepository;
     private final FormTemplateRepository formTemplateRepository;
-    private final TableConfigMapper tableConfigMapper;
 
     public FormFieldService(FormFieldRepository formFieldRepository,
-            FormTemplateRepository formTemplateRepository,
-            TableConfigMapper tableConfigMapper) {
+            FormTemplateRepository formTemplateRepository) {
         this.formFieldRepository = formFieldRepository;
         this.formTemplateRepository = formTemplateRepository;
-        this.tableConfigMapper = tableConfigMapper;
     }
 
     // 1. Tạo Form Field
@@ -119,9 +114,7 @@ public class FormFieldService {
 
         // Handle table config for TABLE field type
         if (request.getTableConfig() != null && request.getFieldType().name().equals("TABLE")) {
-            TableConfig tableConfig = tableConfigMapper.toTableConfig(request.getTableConfig());
-            tableConfig.setFormField(formField);
-            formField.setTableConfig(tableConfig);
+            formField.setTableConfig(request.getTableConfig());
         }
 
         return formField;
@@ -140,7 +133,7 @@ public class FormFieldService {
 
         // Map table config if exists
         if (formField.getTableConfig() != null) {
-            response.setTableConfig(tableConfigMapper.toTableConfigResponse(formField.getTableConfig()));
+            response.setTableConfig(formField.getTableConfig());
         }
 
         return response;

@@ -5,12 +5,13 @@ import org.mapstruct.Mapping;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.FormField;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.FormFieldResponse;
 
-@Mapper(componentModel = "spring", uses = { TableConfigMapper.class })
+@Mapper(componentModel = "spring")
 public interface FormFieldMapper {
 
     FormFieldMapper INSTANCE = org.mapstruct.factory.Mappers.getMapper(FormFieldMapper.class);
 
     @Mapping(target = "formTemplateId", source = "formTemplate.id")
     @Mapping(target = "formTemplateName", source = "formTemplate.name")
+    @Mapping(target = "tableConfig", source = "tableConfig")
     FormFieldResponse toFormFieldResponse(FormField formField);
 }
