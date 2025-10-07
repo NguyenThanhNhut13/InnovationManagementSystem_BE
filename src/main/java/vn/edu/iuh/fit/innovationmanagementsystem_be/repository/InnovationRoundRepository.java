@@ -31,6 +31,4 @@ public interface InnovationRoundRepository
 
         List<InnovationRound> findByStatus(InnovationRoundStatusEnum status);
 
-        // List<InnovationRound> findByIsActiveTrue();
-
 }

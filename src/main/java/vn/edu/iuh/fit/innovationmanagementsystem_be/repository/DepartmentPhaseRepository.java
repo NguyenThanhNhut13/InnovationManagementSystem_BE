@@ -15,20 +15,18 @@ import java.util.Optional;
 public interface DepartmentPhaseRepository extends JpaRepository<DepartmentPhase, String> {
 
     List<DepartmentPhase> findByDepartmentIdAndInnovationPhaseIdOrderByPhaseOrder(String departmentId,
-                                                                                  String innovationPhaseId);
+            String innovationPhaseId);
 
     Optional<DepartmentPhase> findByDepartmentIdAndInnovationPhaseIdAndPhaseType(String departmentId,
-                                                                                 String innovationPhaseId, InnovationPhaseTypeEnum phaseType);
+            String innovationPhaseId, InnovationPhaseTypeEnum phaseType);
 
     @Query("SELECT p FROM DepartmentPhase p WHERE p.department.id = :departmentId " +
             "AND p.innovationPhase.id = :phaseId " +
             "AND :currentDate >= p.startDate " +
             "AND :currentDate <= p.endDate")
     Optional<DepartmentPhase> findCurrentActivePhase(@Param("departmentId") String departmentId,
-                                                     @Param("phaseId") String phaseId,
-                                                     @Param("currentDate") LocalDate currentDate);
-
-    List<DepartmentPhase> findByInnovationPhaseIdOrderByDepartmentIdAscPhaseOrderAsc(String innovationPhaseId);
+            @Param("phaseId") String phaseId,
+            @Param("currentDate") LocalDate currentDate);
 
     boolean existsByDepartmentIdAndInnovationPhaseId(String departmentId, String innovationPhaseId);
 }

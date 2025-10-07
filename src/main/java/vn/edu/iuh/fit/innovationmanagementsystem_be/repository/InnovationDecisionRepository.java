@@ -15,8 +15,6 @@ import java.time.LocalDate;
 public interface InnovationDecisionRepository
                 extends JpaRepository<InnovationDecision, String>, JpaSpecificationExecutor<InnovationDecision> {
 
-//        Page<InnovationDecision> findBySignedBy(String signedBy, Pageable pageable);
-
         boolean existsByDecisionNumber(String decisionNumber);
 
         @Query("SELECT id FROM InnovationDecision id WHERE id.promulgatedDate BETWEEN :startDate AND :endDate")

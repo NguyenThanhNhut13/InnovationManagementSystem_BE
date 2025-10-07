@@ -16,38 +16,30 @@ import java.util.Optional;
 @Repository
 public interface CouncilRepository extends JpaRepository<Council, String>, JpaSpecificationExecutor<Council> {
 
-    Optional<Council> findByName(String name);
+        Optional<Council> findByName(String name);
 
-    boolean existsByName(String name);
+        boolean existsByName(String name);
 
-    @Query("SELECT c FROM Council c WHERE c.name LIKE %:keyword%")
-    Page<Council> findByNameContaining(@Param("keyword") String keyword, Pageable pageable);
+        @Query("SELECT c FROM Council c WHERE c.name LIKE %:keyword%")
+        Page<Council> findByNameContaining(@Param("keyword") String keyword, Pageable pageable);
 
-    @Query("SELECT c FROM Council c WHERE c.reviewCouncilLevel = :level")
-    Page<Council> findByReviewLevel(@Param("level") ReviewLevelEnum level, Pageable pageable);
+        @Query("SELECT c FROM Council c WHERE c.reviewCouncilLevel = :level")
+        Page<Council> findByReviewLevel(@Param("level") ReviewLevelEnum level, Pageable pageable);
 
-    @Query("SELECT c FROM Council c WHERE c.name LIKE %:keyword% AND c.reviewCouncilLevel = :level")
-    Page<Council> findByNameContainingAndReviewLevel(@Param("keyword") String keyword,
-            @Param("level") ReviewLevelEnum level,
-            Pageable pageable);
+        @Query("SELECT c FROM Council c WHERE c.name LIKE %:keyword% AND c.reviewCouncilLevel = :level")
+        Page<Council> findByNameContainingAndReviewLevel(@Param("keyword") String keyword,
+                        @Param("level") ReviewLevelEnum level,
+                        Pageable pageable);
 
-    @Query("SELECT c FROM Council c")
-    Page<Council> findActiveCouncils(Pageable pageable);
+        @Query("SELECT c FROM Council c")
+        Page<Council> findActiveCouncils(Pageable pageable);
 
-    @Query("SELECT c FROM Council c WHERE c.name LIKE %:keyword%")
-    Page<Council> findActiveCouncilsByNameContaining(@Param("keyword") String keyword, Pageable pageable);
+        @Query("SELECT c FROM Council c WHERE c.reviewCouncilLevel = :level")
+        Page<Council> findActiveCouncilsByReviewLevel(@Param("level") ReviewLevelEnum level, Pageable pageable);
 
-    @Query("SELECT c FROM Council c WHERE c.reviewCouncilLevel = :level")
-    Page<Council> findActiveCouncilsByReviewLevel(@Param("level") ReviewLevelEnum level, Pageable pageable);
+        @Query("SELECT c FROM Council c")
+        List<Council> findAllActiveCouncils();
 
-    @Query("SELECT c FROM Council c WHERE c.name LIKE %:keyword% AND c.reviewCouncilLevel = :level")
-    Page<Council> findActiveCouncilsByNameContainingAndReviewLevel(@Param("keyword") String keyword,
-            @Param("level") ReviewLevelEnum level,
-            Pageable pageable);
-
-    @Query("SELECT c FROM Council c")
-    List<Council> findAllActiveCouncils();
-
-    @Query("SELECT c FROM Council c WHERE c.reviewCouncilLevel = :level")
-    List<Council> findActiveCouncilsByReviewLevel(@Param("level") ReviewLevelEnum level);
+        @Query("SELECT c FROM Council c WHERE c.reviewCouncilLevel = :level")
+        List<Council> findActiveCouncilsByReviewLevel(@Param("level") ReviewLevelEnum level);
 }
