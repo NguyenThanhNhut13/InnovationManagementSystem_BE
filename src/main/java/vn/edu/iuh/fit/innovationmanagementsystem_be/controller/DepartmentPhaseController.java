@@ -47,7 +47,6 @@ public class DepartmentPhaseController {
                         @Parameter(description = "Department ID", required = true) @PathVariable String departmentId,
                         @Parameter(description = "Department phase details", required = true) @Valid @RequestBody DepartmentPhaseRequest phaseRequest) {
 
-                // Kiểm tra user là trưởng khoa của phòng ban này
                 departmentPhaseService.validateDepartmentHeadAccess(departmentId);
 
                 DepartmentPhaseResponse createdPhase = departmentPhaseService.createDepartmentPhase(departmentId,
@@ -68,7 +67,6 @@ public class DepartmentPhaseController {
                         @Parameter(description = "Department ID", required = true) @PathVariable String departmentId,
                         @Parameter(description = "Innovation Phase ID", required = true) @PathVariable String innovationPhaseId) {
 
-                // Kiểm tra user là trưởng khoa của phòng ban này
                 departmentPhaseService.validateDepartmentHeadAccess(departmentId);
 
                 List<DepartmentPhaseResponse> createdPhases = departmentPhaseService
@@ -88,7 +86,6 @@ public class DepartmentPhaseController {
                         @Parameter(description = "Department ID", required = true) @PathVariable String departmentId,
                         @Parameter(description = "Innovation Phase ID", required = true) @PathVariable String phaseId) {
 
-                // Kiểm tra user là trưởng khoa của phòng ban này
                 departmentPhaseService.validateDepartmentHeadAccess(departmentId);
 
                 List<DepartmentPhaseResponse> phases = departmentPhaseService.getPhasesByDepartmentAndPhase(
@@ -110,7 +107,6 @@ public class DepartmentPhaseController {
                         @Parameter(description = "Department ID", required = true) @PathVariable String departmentId,
                         @Parameter(description = "Innovation Phase ID", required = true) @PathVariable String phaseId) {
 
-                // Kiểm tra user là trưởng khoa của phòng ban này
                 departmentPhaseService.validateDepartmentHeadAccess(departmentId);
 
                 DepartmentPhaseResponse currentPhase = departmentPhaseService.getCurrentPhase(departmentId, phaseId);
@@ -134,7 +130,6 @@ public class DepartmentPhaseController {
                         @Parameter(description = "Start date", required = true) @RequestParam LocalDate startDate,
                         @Parameter(description = "End date", required = true) @RequestParam LocalDate endDate) {
 
-                // Kiểm tra user là trưởng khoa của phòng ban này
                 departmentPhaseService.validateDepartmentHeadAccessForPhase(phaseId);
 
                 DepartmentPhaseResponse updatedPhase = departmentPhaseService.updatePhaseDates(phaseId, startDate,
@@ -156,7 +151,6 @@ public class DepartmentPhaseController {
                         @Parameter(description = "Phase ID", required = true) @PathVariable String phaseId,
                         @Parameter(description = "Phase update request", required = true) @Valid @RequestBody UpdateDepartmentPhaseRequest request) {
 
-                // Kiểm tra user là trưởng khoa của phòng ban này
                 departmentPhaseService.validateDepartmentHeadAccessForPhase(phaseId);
 
                 DepartmentPhaseResponse updatedPhase = departmentPhaseService.updatePhase(phaseId, request);
@@ -176,7 +170,6 @@ public class DepartmentPhaseController {
                         @Parameter(description = "Phase ID", required = true) @PathVariable String phaseId,
                         @Parameter(description = "Is Active", required = true) @RequestParam boolean isActive) {
 
-                // Kiểm tra user là trưởng khoa của phòng ban này
                 departmentPhaseService.validateDepartmentHeadAccessForPhase(phaseId);
 
                 DepartmentPhaseResponse updatedPhase = departmentPhaseService.togglePhaseStatus(phaseId, isActive);
@@ -197,7 +190,6 @@ public class DepartmentPhaseController {
                         @Parameter(description = "Department ID", required = true) @PathVariable String departmentId,
                         @Parameter(description = "Round ID", required = true) @PathVariable String roundId) {
 
-                // Kiểm tra user là trưởng khoa của phòng ban này
                 departmentPhaseService.validateDepartmentHeadAccess(departmentId);
 
                 List<DepartmentPhaseResponse> createdPhases = departmentPhaseService
@@ -217,7 +209,6 @@ public class DepartmentPhaseController {
                         @Parameter(description = "Department ID", required = true) @PathVariable String departmentId,
                         @Parameter(description = "Round ID", required = true) @PathVariable String roundId) {
 
-                // Kiểm tra user là trưởng khoa của phòng ban này
                 departmentPhaseService.validateDepartmentHeadAccess(departmentId);
 
                 List<DepartmentPhaseResponse> phases = departmentPhaseService
@@ -238,7 +229,6 @@ public class DepartmentPhaseController {
                         @Parameter(description = "Department ID", required = true) @PathVariable String departmentId,
                         @Parameter(description = "Round ID", required = true) @PathVariable String roundId) {
 
-                // Kiểm tra user là trưởng khoa của phòng ban này
                 departmentPhaseService.validateDepartmentHeadAccess(departmentId);
 
                 DepartmentPhaseResponse currentPhase = departmentPhaseService.getCurrentActivePhase(departmentId,
@@ -266,7 +256,6 @@ public class DepartmentPhaseController {
                         @Parameter(description = "End date", required = true) @RequestParam LocalDate endDate,
                         @Parameter(description = "Description", required = false) @RequestParam(required = false) String description) {
 
-                // Kiểm tra user là trưởng khoa của phòng ban này
                 departmentPhaseService.validateDepartmentHeadAccess(departmentId);
 
                 DepartmentPhaseResponse createdPhase = departmentPhaseService.createRequiredPhaseForDepartment(

@@ -219,14 +219,14 @@ public class UtilsController {
         File tempFile = null;
         File htmlFile = null;
         try {
-            // 1. Lưu file tạm
+            // Lưu file tạm
             tempFile = File.createTempFile("upload-", "-" + file.getOriginalFilename());
             file.transferTo(tempFile);
 
-            // 2. Thư mục output
+            // Thư mục output
             File outputDir = new File(System.getProperty("java.io.tmpdir"));
 
-            // 3. Copy file vào container
+            // Copy file vào container
             ProcessBuilder copyInPb = new ProcessBuilder(
                     "docker", "cp",
                     tempFile.getAbsolutePath(),
@@ -241,7 +241,7 @@ public class UtilsController {
                         .body("Failed to copy file to container");
             }
 
-            // 4. Gọi LibreOffice container để convert DOC/DOCX → HTML
+            // Gọi LibreOffice container để convert DOC/DOCX → HTML
             ProcessBuilder pb = new ProcessBuilder(
                     "docker", "exec", "libreoffice",
                     "libreoffice",
@@ -268,11 +268,11 @@ public class UtilsController {
                         .body("LibreOffice conversion failed with exit code: " + exitCode);
             }
 
-            // 5. Tìm file HTML đã sinh ra trong container
+            // Tìm file HTML đã sinh ra trong container
             String tempName = tempFile.getName();
             String htmlName = tempName.replaceAll("\\.[^.]+$", "") + ".html";
 
-            // 6. Copy file từ container về host
+            // Copy file từ container về host
             ProcessBuilder copyPb = new ProcessBuilder(
                     "docker", "cp",
                     "libreoffice:/tmp/" + htmlName,
@@ -294,10 +294,9 @@ public class UtilsController {
                         .body("Convert thất bại! Không tìm thấy file: " + htmlFile.getAbsolutePath());
             }
 
-            // 7. Đọc nội dung HTML
+            // Đọc nội dung HTML
             String html = new String(Files.readAllBytes(htmlFile.toPath()), StandardCharsets.UTF_8);
 
-            // 8. Trả về nội dung HTML
             return ResponseEntity.ok()
                     .contentType(MediaType.TEXT_HTML)
                     .body(html);
@@ -307,7 +306,7 @@ public class UtilsController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Lỗi khi convert: " + e.getMessage());
         } finally {
-            // 9. Dọn dẹp file tạm
+            // Dọn dẹp file tạm
             if (tempFile != null && tempFile.exists()) {
                 tempFile.delete();
             }
@@ -315,7 +314,7 @@ public class UtilsController {
                 htmlFile.delete();
             }
 
-            // 10. Dọn dẹp file trong container
+            // Dọn dẹp file trong container
             try {
                 String tempName = tempFile != null ? tempFile.getName() : "";
                 String htmlName = tempName.replaceAll("\\.[^.]+$", "") + ".html";
