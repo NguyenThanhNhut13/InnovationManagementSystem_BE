@@ -46,8 +46,7 @@ public final class EndpointConstants {
                         "/api/v1/departments/{id}/users/statistics",
                         "/api/v1/departments/{id}/users",
                         "/api/v1/departments/{id}/users/active",
-                        "/api/v1/departments/{id}/users/inactive",
-                        "/api/v1/departments/{id}/merge-history"
+                        "/api/v1/departments/{id}/users/inactive"
         };
 
         public static final String[] DEPARTMENT_POST = {

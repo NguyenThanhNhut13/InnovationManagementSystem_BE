@@ -23,10 +23,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.turkraft.springfilter.boot.Filter;
 import jakarta.validation.Valid;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.Department;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.DepartmentMergeHistory;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.DepartmentRequest;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.MergeDepartmentsRequest;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.SplitDepartmentRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.DepartmentResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.service.DepartmentService;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.ResultPaginationDTO;
@@ -196,48 +193,6 @@ public class DepartmentController {
                         @Parameter(description = "User ID", required = true) @PathVariable String userId) {
                 departmentService.removeUserFromDepartment(departmentId, userId);
                 return ResponseEntity.noContent().build();
-        }
-
-        // 12. Gộp phòng ban
-        @PostMapping("/departments/merge")
-        @ApiMessage("Gộp phòng ban thành công")
-        @Operation(summary = "Merge Departments", description = "Merge departments")
-        @ApiResponses(value = {
-                        @ApiResponse(responseCode = "200", description = "Departments merged successfully", content = @Content(schema = @Schema(implementation = DepartmentResponse.class))),
-                        @ApiResponse(responseCode = "400", description = "Invalid request data")
-        })
-        public ResponseEntity<DepartmentResponse> mergeDepartments(
-                        @Parameter(description = "Merge departments request", required = true) @Valid @RequestBody MergeDepartmentsRequest request) {
-                DepartmentResponse mergedDepartment = departmentService.mergeDepartments(request);
-                return ResponseEntity.ok(mergedDepartment);
-        }
-
-        // 13. Tách phòng ban
-        @PostMapping("/departments/split")
-        @ApiMessage("Tách phòng ban thành công")
-        @Operation(summary = "Split Department", description = "Split department")
-        @ApiResponses(value = {
-                        @ApiResponse(responseCode = "200", description = "Departments split successfully", content = @Content(schema = @Schema(implementation = List.class))),
-                        @ApiResponse(responseCode = "400", description = "Invalid request data")
-        })
-        public ResponseEntity<List<DepartmentResponse>> splitDepartment(
-                        @Parameter(description = "Split department request", required = true) @Valid @RequestBody SplitDepartmentRequest request) {
-                List<DepartmentResponse> newDepartments = departmentService.splitDepartment(request);
-                return ResponseEntity.ok(newDepartments);
-        }
-
-        // 14. Lấy lịch sử gộp phòng ban
-        @GetMapping("/departments/{id}/merge-history")
-        @ApiMessage("Lấy lịch sử gộp phòng ban thành công")
-        @Operation(summary = "Get Department Merge History", description = "Get department merge history")
-        @ApiResponses(value = {
-                        @ApiResponse(responseCode = "200", description = "Department merge history retrieved successfully", content = @Content(schema = @Schema(implementation = List.class))),
-                        @ApiResponse(responseCode = "400", description = "Invalid request data")
-        })
-        public ResponseEntity<List<DepartmentMergeHistory>> getDepartmentMergeHistory(
-                        @Parameter(description = "Department ID", required = true) @PathVariable String id) {
-                List<DepartmentMergeHistory> history = departmentService.getDepartmentMergeHistory(id);
-                return ResponseEntity.ok(history);
         }
 
 }
