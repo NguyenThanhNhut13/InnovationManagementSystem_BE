@@ -32,7 +32,7 @@ public class FormFieldService {
         this.tableConfigMapper = tableConfigMapper;
     }
 
-    // 1. Create Form Field
+    // 1. Tạo Form Field
     public FormFieldResponse createFormField(FormFieldRequest request, String templateId) {
 
         FormField formField = toFormField(request, templateId);
@@ -42,7 +42,7 @@ public class FormFieldService {
         return toResponse(formField);
     }
 
-    // 2. Create Multiple Form Fields
+    // 2. Tạo Multiple Form Fields
     public List<FormFieldResponse> createMultipleFormFields(List<FormFieldRequest> requests, String templateId) {
         List<FormField> formFields = requests.stream()
                 .map(request -> toFormField(request, templateId))
@@ -54,7 +54,7 @@ public class FormFieldService {
                 .collect(Collectors.toList());
     }
 
-    // 3. Update Form Field
+    // 3. Cập nhật Form Field
     public FormFieldResponse updateFormField(UpdateFormFieldRequest request) {
         FormField formField = formFieldRepository.findById(request.getId())
                 .orElseThrow(() -> new IdInvalidException("Không tìm thấy form field với id: " + request.getId()));
@@ -84,21 +84,21 @@ public class FormFieldService {
         return toResponse(formField);
     }
 
-    // 4. Delete Form Field
+    // 4. Xóa Form Field
     public void deleteFormField(String id) {
         FormField formField = formFieldRepository.findById(id)
                 .orElseThrow(() -> new IdInvalidException("Không tìm thấy form field với id: " + id));
         this.formFieldRepository.delete(formField);
     }
 
-    // 5. Get Form Field by Id
+    // 5. Lấy Form Field by Id
     public FormFieldResponse getFormFieldById(String id) {
         FormField formField = formFieldRepository.findById(id)
                 .orElseThrow(() -> new IdInvalidException("Không tìm thấy form field với id: " + id));
         return toResponse(formField);
     }
 
-    // 6. Get Form Fields by Template Id
+    // 6. Lấy Form Fields by Template Id
     public List<FormFieldResponse> getFormFieldsByTemplateId(String templateId) {
         List<FormField> formFields = formFieldRepository.findByFormTemplateId(templateId);
         return formFields.stream()

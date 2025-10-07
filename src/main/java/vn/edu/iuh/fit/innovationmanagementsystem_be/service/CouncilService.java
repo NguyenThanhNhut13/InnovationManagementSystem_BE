@@ -43,7 +43,7 @@ public class CouncilService {
         this.councilMapper = councilMapper;
     }
 
-    // 1. Create Council
+    // 1. Tạo Council
     @Transactional
     public CouncilResponse createCouncil(@NonNull CouncilRequest councilRequest) {
         if (councilRepository.existsByName(councilRequest.getName())) {
@@ -61,7 +61,7 @@ public class CouncilService {
         return councilMapper.toCouncilResponse(council);
     }
 
-    // 2. Get All Councils
+    // 2. Lấy tất cả Councils
     public ResultPaginationDTO getAllCouncils(@NonNull Specification<Council> specification,
             @NonNull Pageable pageable) {
         if (pageable.getSort().isUnsorted()) {
@@ -76,21 +76,20 @@ public class CouncilService {
         return Utils.toResultPaginationDTO(councilResponses, pageable);
     }
 
-    // 3. Get Council by Id
+    // 3. Lấy Council by Id
     public CouncilResponse getCouncilById(@NonNull String id) {
         Council council = councilRepository.findById(id)
                 .orElseThrow(() -> new IdInvalidException("Hội đồng không tồn tại"));
         return councilMapper.toCouncilResponse(council);
     }
 
-    // 4. Update Council
+    // 4. Cập nhật Council
     @Transactional
     public CouncilResponse updateCouncil(@NonNull String id, @NonNull CouncilRequest councilRequest) {
         Council council = councilRepository.findById(id)
                 .orElseThrow(() -> new IdInvalidException("Không tìm thấy hội đồng có ID: " + id));
 
         if (councilRequest.getName() != null) {
-            // Kiểm tra tên mới có trùng với hội đồng khác không
             if (!council.getName().equals(councilRequest.getName()) &&
                     councilRepository.existsByName(councilRequest.getName())) {
                 throw new IdInvalidException("Tên hội đồng đã tồn tại");
@@ -106,7 +105,7 @@ public class CouncilService {
         return councilMapper.toCouncilResponse(council);
     }
 
-    // 5. Search Councils by Name
+    // 5. Tìm kiếm Councils by Name
     public ResultPaginationDTO searchCouncilsByName(@NonNull String keyword, @NonNull Pageable pageable) {
         if (pageable.getSort().isUnsorted()) {
             pageable = org.springframework.data.domain.PageRequest.of(
@@ -120,7 +119,7 @@ public class CouncilService {
         return Utils.toResultPaginationDTO(councilResponses, pageable);
     }
 
-    // 6. Get Councils by Review Level
+    // 6. Lấy Councils by Review Level
     public ResultPaginationDTO getCouncilsByReviewLevel(@NonNull ReviewLevelEnum level, @NonNull Pageable pageable) {
         if (pageable.getSort().isUnsorted()) {
             pageable = org.springframework.data.domain.PageRequest.of(
@@ -134,7 +133,7 @@ public class CouncilService {
         return Utils.toResultPaginationDTO(councilResponses, pageable);
     }
 
-    // 7. Get Active Councils
+    // 7. Lấy Active Councils
     public ResultPaginationDTO getActiveCouncils(@NonNull Pageable pageable) {
         if (pageable.getSort().isUnsorted()) {
             pageable = org.springframework.data.domain.PageRequest.of(
@@ -148,7 +147,7 @@ public class CouncilService {
         return Utils.toResultPaginationDTO(councilResponses, pageable);
     }
 
-    // 8. Get All Active Councils (List)
+    // 8. Lấy tất cả Active Councils (List)
     public List<CouncilResponse> getAllActiveCouncils() {
         List<Council> councils = councilRepository.findAllActiveCouncils();
         return councils.stream()
@@ -156,7 +155,7 @@ public class CouncilService {
                 .collect(Collectors.toList());
     }
 
-    // 9. Get Councils by Review Level (List)
+    // 9. Lấy Councils by Review Level (List)
     public List<CouncilResponse> getActiveCouncilsByReviewLevel(@NonNull ReviewLevelEnum level) {
         List<Council> councils = councilRepository.findActiveCouncilsByReviewLevel(level);
         return councils.stream()
@@ -166,7 +165,7 @@ public class CouncilService {
 
     // COUNCIL MEMBER MANAGEMENT
 
-    // 10. Add Member to Council
+    // 10. Thêm Member vào Council
     @Transactional
     public CouncilMemberResponse addMemberToCouncil(@NonNull String councilId,
             @NonNull AddCouncilMemberRequest request) {
@@ -176,7 +175,6 @@ public class CouncilService {
         User user = userRepository.findById(request.getUserId())
                 .orElseThrow(() -> new IdInvalidException("Người dùng không tồn tại"));
 
-        // Kiểm tra user đã là thành viên của hội đồng chưa
         if (councilMemberRepository.existsByCouncilIdAndUserId(councilId, request.getUserId())) {
             throw new IdInvalidException("Người dùng đã là thành viên của hội đồng này");
         }
@@ -189,7 +187,7 @@ public class CouncilService {
         return councilMapper.toCouncilMemberResponse(councilMember);
     }
 
-    // 11. Remove Member from Council
+    // 11. Xóa Member khỏi Council
     @Transactional
     public void removeMemberFromCouncil(@NonNull String councilId, @NonNull String userId) {
         CouncilMember councilMember = councilMemberRepository
@@ -199,7 +197,7 @@ public class CouncilService {
         councilMemberRepository.delete(councilMember);
     }
 
-    // 12. Get Council Members
+    // 12. Lấy Council Members
     public ResultPaginationDTO getCouncilMembers(@NonNull String councilId, @NonNull Pageable pageable) {
         if (pageable.getSort().isUnsorted()) {
             pageable = org.springframework.data.domain.PageRequest.of(
@@ -217,7 +215,7 @@ public class CouncilService {
         return Utils.toResultPaginationDTO(memberResponses, pageable);
     }
 
-    // 13. Get All Council Members (List)
+    // 13. Lấy tất cả Council Members (List)
     public List<CouncilMemberResponse> getAllCouncilMembers(@NonNull String councilId) {
         if (!councilRepository.existsById(councilId)) {
             throw new IdInvalidException("Hội đồng không tồn tại");
@@ -229,7 +227,7 @@ public class CouncilService {
                 .collect(Collectors.toList());
     }
 
-    // 14. Get User's Councils
+    // 14. Lấy Councils của User
     public List<CouncilResponse> getUserCouncils(@NonNull String userId) {
         if (!userRepository.existsById(userId)) {
             throw new IdInvalidException("Người dùng không tồn tại");
@@ -242,7 +240,9 @@ public class CouncilService {
                 .collect(Collectors.toList());
     }
 
-    // Helper method để thêm nhiều thành viên
+    /*
+     * Helper method thêm nhiều thành viên
+     */
     private void addMembersToCouncil(String councilId, List<String> memberIds) {
         for (String memberId : memberIds) {
             if (!councilMemberRepository.existsByCouncilIdAndUserId(councilId, memberId)) {

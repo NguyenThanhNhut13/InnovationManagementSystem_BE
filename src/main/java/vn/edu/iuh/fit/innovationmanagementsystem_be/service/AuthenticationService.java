@@ -51,7 +51,7 @@ public class AuthenticationService {
         this.authenticationMapper = authenticationMapper;
     }
 
-    // 1. Login
+    // 1. Đăng nhập
     public LoginResponse authenticate(LoginRequest loginRequest) {
         try {
             Authentication authentication = authenticationManager.authenticate(
@@ -68,8 +68,7 @@ public class AuthenticationService {
             String refreshToken = jwtTokenUtil.generateRefreshToken(userDetails);
 
             // Lưu refresh token vào Redis với TTL
-            long refreshTokenTTL = jwtTokenUtil.getRefreshTokenExpiration() / 1000; // Convert từ milliseconds sang
-                                                                                    // seconds
+            long refreshTokenTTL = jwtTokenUtil.getRefreshTokenExpiration() / 1000; // Convert milliseconds to seconds
             redisTokenService.saveRefreshToken(user.getPersonnelId(), refreshToken, refreshTokenTTL);
 
             LoginResponse loginResponse = authenticationMapper.toLoginResponse(user);
@@ -78,10 +77,8 @@ public class AuthenticationService {
             return loginResponse;
 
         } catch (BadCredentialsException e) {
-
             throw new IdInvalidException("Thông tin đăng nhập không hợp lệ");
         } catch (Exception e) {
-
             throw new IdInvalidException("Xác thực thất bại: " + e.getMessage());
         }
     }
@@ -97,7 +94,7 @@ public class AuthenticationService {
             throw new IdInvalidException("Access token hiện tại đã bị vô hiệu hóa");
         }
 
-        // Sử dụng RefreshTokenValidationService để validate theo chuẩn enterprise
+        // RefreshTokenValidationService validate theo chuẩn enterprise
         RefreshTokenValidationService.ValidationResult validationResult = refreshTokenValidationService
                 .validateRefreshToken(refreshToken);
 
@@ -108,7 +105,7 @@ public class AuthenticationService {
         String username = validationResult.getUsername();
         User user = validationResult.getUser();
 
-        // Tạo UserDetails từ User object đã có (không cần query lại database)
+        // Tạo UserDetails từ User object đã có
         UserDetails userDetails = org.springframework.security.core.userdetails.User.builder()
                 .username(user.getPersonnelId())
                 .password(user.getPassword())
@@ -135,7 +132,6 @@ public class AuthenticationService {
                 redisTokenService.blacklistAccessToken(currentAccessToken, accessTokenTTL);
             }
 
-            // Cập nhật refresh token mới trong Redis
             long refreshTokenTTL = jwtTokenUtil.getRefreshTokenExpiration() / 1000;
             redisTokenService.updateRefreshToken(username, refreshToken, newRefreshToken, refreshTokenTTL);
 
@@ -147,7 +143,7 @@ public class AuthenticationService {
         }
     }
 
-    // 3. Logout - delete refresh token from Redis and blacklist access token
+    // 3. Đăng xuất - xóa refresh token từ Redis - blacklist access token
     public void logout(String accessToken, String refreshToken) {
         if (accessToken == null || accessToken.isEmpty()) {
             throw new IdInvalidException("Access token không được để trống");
@@ -168,21 +164,19 @@ public class AuthenticationService {
             throw new IdInvalidException("Refresh token không hợp lệ");
         }
 
-        // Delete refresh token from Redis
         redisTokenService.deleteRefreshToken(refreshToken);
 
-        // dụng TTL của access token + thêm 1 giờ để đảm bảo an toàn
         long accessTokenTTL = (jwtTokenUtil.getAccessTokenExpiration() / 1000) + 3600; // +1 giờ
         redisTokenService.blacklistAccessToken(accessToken, accessTokenTTL);
 
     }
 
-    // 4. Extract personnelId từ access token
+    // 4. Lấy personnelId từ access token
     public String extractPersonnelIdFromToken(String accessToken) {
         return jwtTokenUtil.extractUsername(accessToken);
     }
 
-    // 5. Change Password
+    // 5. Đổi mật khẩu
     public ChangePasswordResponse changePassword(ChangePasswordRequest request) {
         String currentUsername = getCurrentUsername();
         if (currentUsername == null) {
@@ -213,28 +207,12 @@ public class AuthenticationService {
                 java.time.LocalDateTime.now().toString());
     }
 
-    /**
-     * Get current username from SecurityContext
-     */
-    private String getCurrentUsername() {
-        try {
-            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-            if (authentication != null && authentication.isAuthenticated()) {
-                return authentication.getName();
-            }
-            return null;
-        } catch (Exception e) {
-            return null;
-        }
-    }
-
-    // 6. Forgot Password - Send OTP via email
+    // 6. Quên mật khẩu - Gửi OTP qua email
     public ForgotPasswordResponse forgotPassword(ForgotPasswordRequest request) {
         User user = userRepository.findByPersonnelId(request.getPersonnelId())
                 .orElseThrow(() -> new IdInvalidException(
                         "Không tìm thấy tài khoản với mã nhân sự: " + request.getPersonnelId()));
 
-        // Kiểm tra rate limiting (max 3 requests/hour per email)
         if (rateLimitingService.isOtpRateLimited(user.getEmail())) {
             RateLimitingService.RateLimitInfo rateLimitInfo = rateLimitingService.getRateLimitInfo(user.getEmail());
 
@@ -242,13 +220,8 @@ public class AuthenticationService {
                     (rateLimitInfo.getRemainingTimeSeconds() / 60) + " phút");
         }
 
-        // Generate OTP 6 số
         String otp = otpService.generateOtp();
-
-        // Save OTP to Redis with TTL 5 minutes
         otpService.saveOtp(user.getEmail(), otp);
-
-        // Send OTP email
         emailService.sendOtpEmail(user.getEmail(), otp, 5L, user.getFullName());
 
         return new ForgotPasswordResponse(
@@ -257,7 +230,7 @@ public class AuthenticationService {
                 300L); // 5 phút = 300 giây
     }
 
-    // 7. Reset Password - Use OTP
+    // 7. Đặt lại mật khẩu - Sử dụng OTP
     public ChangePasswordResponse resetPassword(ResetPasswordWithOtpRequest request) {
         if (!request.getNewPassword().equals(request.getConfirmPassword())) {
             throw new IdInvalidException("Mật khẩu mới và xác nhận mật khẩu không khớp");
@@ -275,7 +248,7 @@ public class AuthenticationService {
 
         userRepository.save(user);
 
-        // Send email notification password changed
+        // Gửi email thông báo mật khẩu đã được đổi
         emailService.sendPasswordChangedEmail(user.getEmail(), user.getPersonnelId());
 
         return new ChangePasswordResponse(
@@ -284,5 +257,20 @@ public class AuthenticationService {
                 user.getPersonnelId(),
                 user.getEmail(),
                 java.time.LocalDateTime.now().toString());
+    }
+
+    /**
+     * Get current username from SecurityContext
+     */
+    private String getCurrentUsername() {
+        try {
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            if (authentication != null && authentication.isAuthenticated()) {
+                return authentication.getName();
+            }
+            return null;
+        } catch (Exception e) {
+            return null;
+        }
     }
 }

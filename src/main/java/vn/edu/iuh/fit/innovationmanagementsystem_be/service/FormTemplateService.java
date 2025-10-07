@@ -40,7 +40,7 @@ public class FormTemplateService {
         this.formTemplateMapper = formTemplateMapper;
     }
 
-    // 1. Get form template by id
+    // 1. Lấy form template by id
     public FormTemplateResponse getFormTemplateById(String id) {
         FormTemplate template = formTemplateRepository.findById(id)
                 .orElseThrow(() -> new IdInvalidException("Form template không tồn tại với ID: " + id));
@@ -48,13 +48,13 @@ public class FormTemplateService {
         return formTemplateMapper.toFormTemplateResponse(template);
     }
 
-    // 2. Get all form templates by innovation phase (via innovation round)
+    // 2. Lấy tất cả form templates by innovation phase (via innovation round)
     public List<FormTemplateResponse> getFormTemplatesByInnovationPhase(String phaseId) {
-        // First get the innovation phase to find its innovation round
+        // Lấy innovation phase để tìm innovation round
         InnovationPhase phase = innovationPhaseRepository.findById(phaseId)
                 .orElseThrow(() -> new IdInvalidException("Innovation phase không tồn tại với ID: " + phaseId));
 
-        // Then get form templates by innovation round
+        // Lấy form templates by innovation round
         List<FormTemplate> templates = formTemplateRepository
                 .findByInnovationRoundIdOrderByName(phase.getInnovationRound().getId());
         return templates.stream()
@@ -62,7 +62,7 @@ public class FormTemplateService {
                 .collect(Collectors.toList());
     }
 
-    // 3. Create form template
+    // 3. Tạo form template
     public FormTemplateResponse createFormTemplate(CreateFormTemplateRequest request) {
 
         InnovationPhase phase = innovationPhaseRepository.findById(request.getInnovationPhaseId())
@@ -79,7 +79,7 @@ public class FormTemplateService {
         return formTemplateMapper.toFormTemplateResponse(savedTemplate);
     }
 
-    // 4. Create Multiple Form Templates
+    // 4. Tạo Multiple Form Templates
     @Transactional
     public CreateMultipleFormTemplatesResponse createMultipleFormTemplates(CreateMultipleFormTemplatesRequest request) {
 
@@ -122,7 +122,7 @@ public class FormTemplateService {
                 formTemplateResponses);
     }
 
-    // 5. Update form template
+    // 5. Cập nhật form template
     public FormTemplateResponse updateFormTemplate(String id, UpdateFormTemplateRequest request) {
         FormTemplate template = formTemplateRepository.findById(id)
                 .orElseThrow(() -> new IdInvalidException("Form template không tồn tại với ID: " + id));
@@ -131,7 +131,6 @@ public class FormTemplateService {
             throw new IdInvalidException("Ít nhất một trường phải được cung cấp để cập nhật");
         }
 
-        // Only update fields that are not null
         if (request.getName() != null) {
             template.setName(request.getName());
         }
@@ -146,7 +145,7 @@ public class FormTemplateService {
         return formTemplateMapper.toFormTemplateResponse(updatedTemplate);
     }
 
-    // 6. Get all form templates with pagination and search
+    // 6. Lấy tất cả form templates với phân trang và tìm kiếm
     public ResultPaginationDTO getAllFormTemplatesWithPaginationAndSearch(
             @NonNull Specification<FormTemplate> specification,
             @NonNull Pageable pageable) {

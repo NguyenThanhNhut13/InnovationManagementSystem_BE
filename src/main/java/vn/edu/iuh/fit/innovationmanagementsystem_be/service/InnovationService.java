@@ -56,7 +56,7 @@ public class InnovationService {
         this.digitalSignatureService = digitalSignatureService;
     }
 
-    // 1. Get All Innovations
+    // 1. Lấy tất cả sáng kiến
     public ResultPaginationDTO getAllInnovations(Specification<Innovation> specification, Pageable pageable) {
 
         if (pageable.getSort().isUnsorted()) {
@@ -71,14 +71,14 @@ public class InnovationService {
         return Utils.toResultPaginationDTO(responses, pageable);
     }
 
-    // 2. Get Innovation by Id
+    // 2. Lấy sáng kiến bởi ID
     public InnovationResponse getInnovationById(String id) {
         Innovation innovation = innovationRepository.findById(id)
                 .orElseThrow(() -> new IdInvalidException("Không tìm thấy sáng kiến với ID: " + id));
         return innovationMapper.toInnovationResponse(innovation);
     }
 
-    // 3. Create Innovation & Submit Form Data (Tạo sáng kiến tự động khi điền form)
+    // 3. Tạo sáng kiến & Submit Form Data (Tạo sáng kiến tự động khi điền form)
     public InnovationFormDataResponse createInnovationAndSubmitFormData(InnovationFormDataRequest request) {
 
         String actionType = request.getActionType() != null ? request.getActionType().toUpperCase() : "DRAFT";
@@ -130,7 +130,7 @@ public class InnovationService {
         return response;
     }
 
-    // 4. Update Innovation FormData (Update FormData cho innovation đã tồn tại)
+    // 4. Cập nhật FormData sáng kiến (Cập nhật FormData cho sáng kiến đã tồn tại)
     public InnovationFormDataResponse updateInnovationFormData(String innovationId, InnovationFormDataRequest request) {
 
         String actionType = request.getActionType() != null ? request.getActionType().toUpperCase() : "DRAFT";
@@ -153,7 +153,7 @@ public class InnovationService {
                             + innovation.getStatus());
         }
 
-        // Process form data items (update existing or create new)
+        // Xử lý các mục form data (cập nhật tồn tại hoặc tạo mới)
         List<FormDataResponse> formDataResponses = request.getFormDataItems().stream()
                 .<FormDataResponse>map(item -> {
                     if (item.getDataId() != null && !item.getDataId().trim().isEmpty()) {
@@ -174,7 +174,7 @@ public class InnovationService {
                 })
                 .collect(Collectors.toList());
 
-        // Update innovation status if SUBMITTED
+        // Cập nhật trạng thái sáng kiến nếu SUBMITTED
         if (InnovationStatusEnum.SUBMITTED.name().equals(actionType)) {
             // Kiểm tra xem đã điền đủ cả 2 mẫu chưa
             if (!hasCompletedBothTemplates(innovationId)) {
@@ -203,7 +203,7 @@ public class InnovationService {
         return response;
     }
 
-    // 5. Get Innovation Form Data
+    // 5. Lấy FormData sáng kiến
     public InnovationFormDataResponse getInnovationFormData(String innovationId, String templateId) {
 
         Innovation innovation = innovationRepository.findById(innovationId)
@@ -231,14 +231,12 @@ public class InnovationService {
         return response;
     }
 
-    // 6. Get Innovations by User and Status
+    // 6. Lấy sáng kiến bởi User và Status
     public ResultPaginationDTO getInnovationsByUserAndStatus(String status, Pageable pageable) {
-        // Validate status parameter
         if (status == null || status.trim().isEmpty()) {
             throw new IdInvalidException("Status không được để trống");
         }
 
-        // Thêm sort mặc định theo ngày tạo mới nhất trước nếu chưa có sort
         if (pageable.getSort().isUnsorted()) {
             pageable = org.springframework.data.domain.PageRequest.of(
                     pageable.getPageNumber(),
@@ -259,7 +257,9 @@ public class InnovationService {
         }
     }
 
-    // Helper method: Kiểm tra xem innovation đã có form data cho cả 2 template chưa
+    /*
+     * Helper method: Kiểm tra xem innovation đã có form data cho cả 2 template chưa
+     */
     private boolean hasCompletedBothTemplates(String innovationId) {
         // Lấy tất cả form data của innovation
         List<FormDataResponse> allFormData = formDataService.getFormDataByInnovationId(innovationId);
@@ -278,7 +278,9 @@ public class InnovationService {
         return completedTemplateIds.size() >= 2;
     }
 
-    // Helper method: Tạo documentHash từ dữ liệu form
+    /*
+     * Helper method: Tạo documentHash từ dữ liệu form
+     */
     private String generateDocumentHash(List<InnovationFormDataRequest.FormDataItemRequest> formDataItems,
             String templateId) {
         try {
@@ -307,7 +309,9 @@ public class InnovationService {
         }
     }
 
-    // Helper method: Tạo documentHash từ FormDataResponse
+    /*
+     * Helper method: Tạo documentHash từ FormDataResponse
+     */
     private String generateDocumentHashFromFormData(List<FormDataResponse> formDataList, String templateId) {
         try {
             // Tạo chuỗi dữ liệu để hash

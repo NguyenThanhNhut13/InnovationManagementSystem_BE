@@ -19,7 +19,7 @@ public class RedisTokenService {
     private static final String REFRESH_TOKEN_PREFIX = "refresh_token:";
     private static final String BLACKLIST_TOKEN_PREFIX = "blacklist_token:";
 
-    // 1. Lưu refresh token vào Redis với TTL
+    // 1. Lưu refresh token vào Redis
     public void saveRefreshToken(String userId, String refreshToken, long ttlInSeconds) {
         String key = REFRESH_TOKEN_PREFIX + refreshToken;
         try {
@@ -58,10 +58,8 @@ public class RedisTokenService {
     // 5. Cập nhật refresh token mới
     public void updateRefreshToken(String userId, String oldRefreshToken, String newRefreshToken, long ttlInSeconds) {
         try {
-            // Xóa token cũ
             deleteRefreshToken(oldRefreshToken);
 
-            // Lưu token mới
             saveRefreshToken(userId, newRefreshToken, ttlInSeconds);
 
         } catch (Exception e) {
@@ -69,7 +67,7 @@ public class RedisTokenService {
         }
     }
 
-    // 6. Blacklist access token (khi logout)
+    // 6. Blacklist access token
     public void blacklistAccessToken(String accessToken, long ttlInSeconds) {
         String key = BLACKLIST_TOKEN_PREFIX + accessToken;
         try {

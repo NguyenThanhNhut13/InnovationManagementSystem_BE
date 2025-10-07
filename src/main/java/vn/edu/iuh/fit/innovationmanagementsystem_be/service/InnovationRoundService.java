@@ -57,11 +57,11 @@ public class InnovationRoundService {
         this.innovationPhaseService = innovationPhaseService;
     }
 
-    // 1. Create innovation round
+    // 1. Tạo innovationRound
     @Transactional
     public InnovationRoundResponse createInnovationRound(CreateInnovationRoundRequest request) {
 
-        // 1. Create entity InnovationRound
+        // Tạo innovationRound
         InnovationRound round = new InnovationRound();
         round.setName(request.getName());
         round.setAcademicYear(request.getAcademicYear());
@@ -70,7 +70,7 @@ public class InnovationRoundService {
         round.setRegistrationEndDate(request.getRegistrationEndDate());
         round.setStatus(request.getStatus());
 
-        // 2. Create InnovationDecision (call other service)
+        // Tạo InnovationDecision
         if (request.getInnovationDecision() != null) {
             InnovationDecision decisionReq;
             if (request.getInnovationDecision().getId() != null) {
@@ -82,10 +82,10 @@ public class InnovationRoundService {
             round.setInnovationDecision(decisionReq);
         }
 
-        // 3. Save round to get ID
+        // Lưu innovationRound - lấy ID
         round = innovationRoundRepository.save(round);
 
-        // 4. Create InnovationPhase (call other service)
+        // Tạo InnovationPhase
         if (request.getInnovationPhase() != null && !request.getInnovationPhase().isEmpty()) {
             Set<InnovationPhase> phases = innovationPhaseService.createPhasesForRound(round,
                     request.getInnovationPhase());
@@ -94,11 +94,10 @@ public class InnovationRoundService {
             round.getInnovationPhases().addAll(phases);
         }
 
-        // 5. Save round with decision + phases
         return innovationRoundMapper.toInnovationRoundResponse(innovationRoundRepository.save(round));
     }
 
-    // 2. Get all rounds by decision with pagination and filtering
+    // 2. Lấy tất cả innovationRound bởi decision với pagination và filtering
     public ResultPaginationDTO getRoundsByDecision(@NonNull String decisionId,
             @NonNull Specification<InnovationRound> specification,
             @NonNull Pageable pageable) {
@@ -128,7 +127,7 @@ public class InnovationRoundService {
         return Utils.toResultPaginationDTO(responses, pageable);
     }
 
-    // 3. Get round by ID
+    // 3. Lấy innovationRound bởi ID
     public InnovationRoundResponse getRoundById(String roundId) {
         InnovationRound round = innovationRoundRepository.findById(roundId)
                 .orElseThrow(() -> new IdInvalidException("Không tìm thấy InnovationRound với ID: " + roundId));
@@ -137,7 +136,7 @@ public class InnovationRoundService {
         return response;
     }
 
-    // 4. Get current active round
+    // 4. Lấy innovationRound hiện tại
     public InnovationRoundResponse getCurrentActiveRound(String decisionId) {
         InnovationRound round = innovationRoundRepository.findCurrentActiveRound(decisionId, LocalDate.now())
                 .orElse(null);
@@ -149,14 +148,14 @@ public class InnovationRoundService {
         return null;
     }
 
-    // 5. Update round
+    // 5. Cập nhật innovationRound
     public InnovationRoundResponse updateRound(String roundId, CreateInnovationRoundRequest request) {
         InnovationRound round = innovationRoundRepository.findById(roundId)
                 .orElseThrow(() -> new IdInvalidException("Không tìm thấy InnovationRound với ID: " + roundId));
 
         boolean hasChanges = false;
 
-        // Update basic round information
+        // Cập nhập thông tin basic innovationRound
         if (request.getName() != null && !request.getName().equals(round.getName())) {
             round.setName(request.getName());
             hasChanges = true;
@@ -184,14 +183,14 @@ public class InnovationRoundService {
             hasChanges = true;
         }
 
-        // Update InnovationDecision
+        // Cập nhập InnovationDecision
         if (request.getInnovationDecision() != null) {
             if (round.getInnovationDecision() != null) {
-                // Update existing decisio
+                // Cập nhập existing decision
                 InnovationDecision existingDecision = round.getInnovationDecision();
                 boolean decisionHasChanges = false;
 
-                // Update decision fields
+                // Cập nhập fields decision
                 if (request.getInnovationDecision().getDecisionNumber() != null
                         && !request.getInnovationDecision().getDecisionNumber()
                                 .equals(existingDecision.getDecisionNumber())) {
@@ -232,7 +231,7 @@ public class InnovationRoundService {
                     hasChanges = true;
                 }
             } else {
-                // Create new decision if round doesn't have one
+                // Tạo new decision nếu innovationRound không có
                 InnovationDecision decisionReq = innovationDecisionService
                         .createDecision(request.getInnovationDecision());
                 round.setInnovationDecision(decisionReq);
@@ -240,27 +239,27 @@ public class InnovationRoundService {
             }
         }
 
-        // Update InnovationPhase
+        // Cập nhập InnovationPhase
         if (request.getInnovationPhase() != null && !request.getInnovationPhase().isEmpty()) {
 
             boolean phasesChanged = checkPhasesChanged(round, new ArrayList<>(request.getInnovationPhase()));
             if (phasesChanged) {
-                // Save round to get ID before updating phases
+                // Lưu innovationRound để lấy ID trước khi cập nhập phases
                 if (hasChanges) {
                     round = innovationRoundRepository.save(round);
                 }
-                // Update existing phases or create new ones
+                // Cập nhập existing phases hoặc tạo mới
                 updatePhasesForRound(round, new ArrayList<>(request.getInnovationPhase()));
                 hasChanges = true;
             }
         }
 
-        // Only save if there are actual changes
+        // Chỉ lưu nếu có thay đổi thực sự
         InnovationRound savedRound;
         if (hasChanges) {
             savedRound = innovationRoundRepository.save(round);
         } else {
-            savedRound = round; // No changes, return existing round
+            savedRound = round; // Không có thay đổi, trả về existing rounds
         }
 
         InnovationRoundResponse response = innovationRoundMapper.toInnovationRoundResponse(savedRound);
@@ -268,7 +267,7 @@ public class InnovationRoundService {
         return response;
     }
 
-    // 7. Toggle round status
+    // 7. Toggle status innovationRound
     public InnovationRoundResponse toggleRoundStatus(String roundId, boolean isActive) {
         InnovationRound round = innovationRoundRepository.findById(roundId)
                 .orElseThrow(() -> new IdInvalidException("Không tìm thấy InnovationRound với ID: " + roundId));
@@ -279,7 +278,7 @@ public class InnovationRoundService {
         return response;
     }
 
-    // 8. Get rounds by status
+    // 8. Lấy innovationRound bởi status
     public List<InnovationRoundResponse> getRoundsByStatus(String status) {
         List<InnovationRound> rounds = innovationRoundRepository.findByStatus(
                 vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationRoundStatusEnum
@@ -293,10 +292,10 @@ public class InnovationRoundService {
                 .collect(Collectors.toList());
     }
 
-    // 9. Get all innovation rounds with pagination and filtering
+    // 9. Lấy tất cả innovationRound với pagination và filtering
     public ResultPaginationDTO getAllInnovationRoundsWithPaginationAndFilter(
             Specification<InnovationRound> specification, Pageable pageable) {
-        // Thêm sort mặc định theo ngày tạo mới nhất trước nếu chưa có sort
+
         if (pageable.getSort().isUnsorted()) {
             pageable = org.springframework.data.domain.PageRequest.of(
                     pageable.getPageNumber(),
@@ -313,11 +312,10 @@ public class InnovationRoundService {
         return Utils.toResultPaginationDTO(responsePage, pageable);
     }
 
-    // 10. Get innovation rounds list for table display with pagination and
-    // filtering
+    // 10. Lấy innovationRound list với pagination và filtering
     public ResultPaginationDTO getInnovationRoundsListForTable(
             Specification<InnovationRound> specification, Pageable pageable) {
-        // Thêm sort mặc định theo ngày tạo mới nhất trước nếu chưa có sort
+
         if (pageable.getSort().isUnsorted()) {
             pageable = org.springframework.data.domain.PageRequest.of(
                     pageable.getPageNumber(),
@@ -330,7 +328,9 @@ public class InnovationRoundService {
         return Utils.toResultPaginationDTO(responsePage, pageable);
     }
 
-    // Helper method to convert InnovationRound to InnovationRoundListResponse
+    /*
+     * Helper method: Chuyển đổi InnovationRound sang InnovationRoundListResponse
+     */
     private InnovationRoundListResponse convertToListResponse(InnovationRound round) {
         InnovationRoundListResponse response = new InnovationRoundListResponse();
         response.setId(round.getId());
@@ -340,10 +340,10 @@ public class InnovationRoundService {
         response.setRegistrationEndDate(round.getRegistrationEndDate());
         response.setStatus(round.getStatus());
 
-        // Count innovation phases
+        // Đếm innovation phases
         response.setPhaseCount(round.getInnovationPhases() != null ? round.getInnovationPhases().size() : 0);
 
-        // Count scoring criteria from InnovationDecision
+        // Đếm scoring criteria từ InnovationDecision
         int criteriaCount = 0;
         if (round.getInnovationDecision() != null && round.getInnovationDecision().getScoringCriteria() != null) {
             JsonNode scoringCriteria = round.getInnovationDecision().getScoringCriteria();
@@ -358,22 +358,21 @@ public class InnovationRoundService {
         return response;
     }
 
-    // Helper method to set statistics for InnovationRoundResponse
+    /*
+     * Helper method: Đặt thống kê cho InnovationRoundResponse
+     */
     private void setStatistics(InnovationRoundResponse response, InnovationRound round) {
         if (round.getInnovations() != null) {
-            // Count submissions (innovations with SUBMITTED status)
             int submissionCount = (int) round.getInnovations().stream()
                     .filter(innovation -> innovation.getStatus() == InnovationStatusEnum.SUBMITTED)
                     .count();
             response.setSubmissionCount(submissionCount);
 
-            // Count reviewed innovations (innovations with PENDING_TRUONG_REVIEW status)
             int reviewedCount = (int) round.getInnovations().stream()
                     .filter(innovation -> innovation.getStatus() == InnovationStatusEnum.PENDING_TRUONG_REVIEW)
                     .count();
             response.setReviewedCount(reviewedCount);
 
-            // Count approved innovations (FINAL_APPROVED status)
             int approvedCount = (int) round.getInnovations().stream()
                     .filter(innovation -> innovation.getStatus() == InnovationStatusEnum.FINAL_APPROVED)
                     .count();
@@ -397,41 +396,42 @@ public class InnovationRoundService {
         return response;
     }
 
-    // Helper method to check if phases have changed
+    /*
+     * Helper method: Kiểm tra nếu phases có thay đổi
+     */
     private boolean checkPhasesChanged(InnovationRound round, List<InnovationPhaseRequest> phaseRequests) {
         Set<InnovationPhase> existingPhases = round.getInnovationPhases();
 
-        // If no existing phases and new phases provided, there are changes
+        // Nếu không có phases tồn tại và new phases được cung cấp, có thay đổi
         if (existingPhases == null || existingPhases.isEmpty()) {
             return !phaseRequests.isEmpty();
         }
 
-        // If no new phases provided but existing phases exist, there are changes
-        // (removal)
+        // Nếu không có new phases được cung cấp nhưng phases tồn tại, có thay đổi
         if (phaseRequests.isEmpty()) {
             return true;
         }
 
-        // Create a map of existing phases by phaseType for quick lookup
+        // Tạo a map of existing phases by phaseType for quick lookup
         Map<InnovationPhaseTypeEnum, InnovationPhase> existingPhaseMap = existingPhases.stream()
                 .collect(Collectors.toMap(InnovationPhase::getPhaseType, phase -> phase));
 
-        // Check if number of phases changed
+        // Kiểm tra nếu số lượng phases thay đổi
         if (existingPhaseMap.size() != phaseRequests.size()) {
             return true;
         }
 
-        // Check each phase request against existing phases
+        // Kiểm tra mỗi phase request từ existing phases
         for (InnovationPhaseRequest phaseRequest : phaseRequests) {
             InnovationPhaseTypeEnum phaseType = phaseRequest.getPhaseType();
 
             if (!existingPhaseMap.containsKey(phaseType)) {
-                return true; // New phase type added
+                return true; // New phase type được thêm
             }
 
             InnovationPhase existingPhase = existingPhaseMap.get(phaseType);
 
-            // Check if any field has changed
+            // Kiểm tra nếu bất kỳ field nào có thay đổi
             if (phaseRequest.getName() != null && !phaseRequest.getName().equals(existingPhase.getName())) {
                 return true;
             }
@@ -449,24 +449,26 @@ public class InnovationRoundService {
             }
         }
 
-        return false; // No changes detected
+        return false;
     }
 
-    // Helper method to update phases for a round
+    /*
+     * Helper method: Cập nhập phases cho một round
+     */
     private void updatePhasesForRound(InnovationRound round, List<InnovationPhaseRequest> phaseRequests) {
-        // Get existing phases
+        // Lấy existing phases
         Set<InnovationPhase> existingPhases = round.getInnovationPhases();
 
-        // Create a map of existing phases by phaseType for quick lookup
+        // Tạo a map of existing phases by phaseType for quick lookup
         Map<InnovationPhaseTypeEnum, InnovationPhase> existingPhaseMap = existingPhases.stream()
                 .collect(Collectors.toMap(InnovationPhase::getPhaseType, phase -> phase));
 
-        // Process each phase request
+        // Xử lý mỗi phase request
         for (InnovationPhaseRequest phaseRequest : phaseRequests) {
             InnovationPhaseTypeEnum phaseType = phaseRequest.getPhaseType();
 
             if (existingPhaseMap.containsKey(phaseType)) {
-                // Update existing phase - chỉ cập nhật khi có thay đổi
+                // Cập nhập existing phase - chỉ cập nhật khi có thay đổi
                 InnovationPhase existingPhase = existingPhaseMap.get(phaseType);
                 boolean phaseHasChanges = false;
 
@@ -490,19 +492,19 @@ public class InnovationRoundService {
                     phaseHasChanges = true;
                 }
 
-                // Save updated phase only if there are changes
                 if (phaseHasChanges) {
                     innovationPhaseRepository.save(existingPhase);
                 }
             } else {
-                // Create new phase
                 InnovationPhase newPhase = createPhaseFromRequest(round, phaseRequest);
                 round.getInnovationPhases().add(newPhase);
             }
         }
     }
 
-    // Helper method to create phase from request
+    /*
+     * Helper method: Tạo phase từ request
+     */
     private InnovationPhase createPhaseFromRequest(InnovationRound round, InnovationPhaseRequest request) {
         InnovationPhase phase = new InnovationPhase();
         phase.setInnovationRound(round);
