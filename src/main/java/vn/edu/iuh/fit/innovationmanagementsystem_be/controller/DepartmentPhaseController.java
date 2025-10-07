@@ -34,7 +34,7 @@ public class DepartmentPhaseController {
                 this.departmentPhaseService = departmentPhaseService;
         }
 
-        // 1. Create department phase (for department head)
+        // 1. Tạo giai đoạn khoa (for department head)
         @PostMapping("/department/{departmentId}/create-phase")
         @ApiMessage("Tạo giai đoạn cho khoa thành công")
         @Operation(summary = "Create Department Phase", description = "Create a phase for specific department with custom dates. Only TRUONG_KHOA of that department can create phases for their department.")
@@ -47,7 +47,7 @@ public class DepartmentPhaseController {
                         @Parameter(description = "Department ID", required = true) @PathVariable String departmentId,
                         @Parameter(description = "Department phase details", required = true) @Valid @RequestBody DepartmentPhaseRequest phaseRequest) {
 
-                // Validate user is department head of this department
+                // Kiểm tra user là trưởng khoa của phòng ban này
                 departmentPhaseService.validateDepartmentHeadAccess(departmentId);
 
                 DepartmentPhaseResponse createdPhase = departmentPhaseService.createDepartmentPhase(departmentId,
@@ -55,7 +55,7 @@ public class DepartmentPhaseController {
                 return ResponseEntity.ok(createdPhase);
         }
 
-        // 2. Create department phase based on InnovationPhase (copy timeframe)
+        // 2. Tạo giai đoạn khoa dựa trên InnovationPhase (copy thời gian)
         @PostMapping("/department/{departmentId}/copy-from-innovation-phase/{innovationPhaseId}")
         @ApiMessage("Tạo giai đoạn khoa từ InnovationPhase thành công")
         @Operation(summary = "Create Department Phase from Innovation Phase", description = "Create department phase with same timeframe as InnovationPhase. Only TRUONG_KHOA of that department can create phases for their department.")
@@ -68,7 +68,7 @@ public class DepartmentPhaseController {
                         @Parameter(description = "Department ID", required = true) @PathVariable String departmentId,
                         @Parameter(description = "Innovation Phase ID", required = true) @PathVariable String innovationPhaseId) {
 
-                // Validate user is department head of this department
+                // Kiểm tra user là trưởng khoa của phòng ban này
                 departmentPhaseService.validateDepartmentHeadAccess(departmentId);
 
                 List<DepartmentPhaseResponse> createdPhases = departmentPhaseService
@@ -76,7 +76,7 @@ public class DepartmentPhaseController {
                 return ResponseEntity.ok(createdPhases);
         }
 
-        // 3. Get phases by department and InnovationPhase
+        // 3. Lấy danh sách giai đoạn khoa theo phòng ban và InnovationPhase
         @GetMapping("/department/{departmentId}/phase/{phaseId}")
         @ApiMessage("Lấy danh sách giai đoạn khoa thành công")
         @Operation(summary = "Get Department Phases", description = "Get all phases of a department in a specific InnovationPhase")
@@ -88,7 +88,7 @@ public class DepartmentPhaseController {
                         @Parameter(description = "Department ID", required = true) @PathVariable String departmentId,
                         @Parameter(description = "Innovation Phase ID", required = true) @PathVariable String phaseId) {
 
-                // Validate user is department head of this department
+                // Kiểm tra user là trưởng khoa của phòng ban này
                 departmentPhaseService.validateDepartmentHeadAccess(departmentId);
 
                 List<DepartmentPhaseResponse> phases = departmentPhaseService.getPhasesByDepartmentAndPhase(
@@ -97,7 +97,7 @@ public class DepartmentPhaseController {
                 return ResponseEntity.ok(phases);
         }
 
-        // 4. Get current phase of department
+        // 4. Lấy giai đoạn hiện tại của khoa
         @GetMapping("/department/{departmentId}/phase/{phaseId}/current")
         @ApiMessage("Lấy giai đoạn hiện tại của khoa thành công")
         @Operation(summary = "Get Current Department Phase", description = "Get current active phase of a department")
@@ -110,7 +110,7 @@ public class DepartmentPhaseController {
                         @Parameter(description = "Department ID", required = true) @PathVariable String departmentId,
                         @Parameter(description = "Innovation Phase ID", required = true) @PathVariable String phaseId) {
 
-                // Validate user is department head of this department
+                // Kiểm tra user là trưởng khoa của phòng ban này
                 departmentPhaseService.validateDepartmentHeadAccess(departmentId);
 
                 DepartmentPhaseResponse currentPhase = departmentPhaseService.getCurrentPhase(departmentId, phaseId);
@@ -120,7 +120,7 @@ public class DepartmentPhaseController {
                 return ResponseEntity.ok(currentPhase);
         }
 
-        // 5. Update phase dates
+        // 5. Cập nhật thời gian giai đoạn khoa
         @PutMapping("/{phaseId}/dates")
         @ApiMessage("Cập nhật thời gian giai đoạn khoa thành công")
         @Operation(summary = "Update Department Phase Dates", description = "Update start and end dates of a department phase")
@@ -134,7 +134,7 @@ public class DepartmentPhaseController {
                         @Parameter(description = "Start date", required = true) @RequestParam LocalDate startDate,
                         @Parameter(description = "End date", required = true) @RequestParam LocalDate endDate) {
 
-                // Validate user is department head of this phase's department
+                // Kiểm tra user là trưởng khoa của phòng ban này
                 departmentPhaseService.validateDepartmentHeadAccessForPhase(phaseId);
 
                 DepartmentPhaseResponse updatedPhase = departmentPhaseService.updatePhaseDates(phaseId, startDate,
@@ -142,7 +142,7 @@ public class DepartmentPhaseController {
                 return ResponseEntity.ok(updatedPhase);
         }
 
-        // 6. Update phase
+        // 6. Cập nhật giai đoạn khoa
         @PutMapping("/{phaseId}")
         @ApiMessage("Cập nhật giai đoạn khoa thành công")
         @Operation(summary = "Update Department Phase", description = "Update department phase details")
@@ -156,14 +156,14 @@ public class DepartmentPhaseController {
                         @Parameter(description = "Phase ID", required = true) @PathVariable String phaseId,
                         @Parameter(description = "Phase update request", required = true) @Valid @RequestBody UpdateDepartmentPhaseRequest request) {
 
-                // Validate user is department head of this phase's department
+                // Kiểm tra user là trưởng khoa của phòng ban này
                 departmentPhaseService.validateDepartmentHeadAccessForPhase(phaseId);
 
                 DepartmentPhaseResponse updatedPhase = departmentPhaseService.updatePhase(phaseId, request);
                 return ResponseEntity.ok(updatedPhase);
         }
 
-        // 7. Toggle phase status
+        // 7. Chuyển đổi trạng thái giai đoạn khoa
         @PutMapping("/{phaseId}/toggle-status")
         @ApiMessage("Cập nhật trạng thái giai đoạn khoa thành công")
         @Operation(summary = "Toggle Department Phase Status", description = "Enable or disable a department phase")
@@ -176,14 +176,14 @@ public class DepartmentPhaseController {
                         @Parameter(description = "Phase ID", required = true) @PathVariable String phaseId,
                         @Parameter(description = "Is Active", required = true) @RequestParam boolean isActive) {
 
-                // Validate user is department head of this phase's department
+                // Kiểm tra user là trưởng khoa của phòng ban này
                 departmentPhaseService.validateDepartmentHeadAccessForPhase(phaseId);
 
                 DepartmentPhaseResponse updatedPhase = departmentPhaseService.togglePhaseStatus(phaseId, isActive);
                 return ResponseEntity.ok(updatedPhase);
         }
 
-        // 8. Create all 3 required phases for department (SUBMISSION,
+        // 8. Tạo tất cả 3 giai đoạn cần thiết cho khoa (SUBMISSION,
         // DEPARTMENT_EVALUATION, DOCUMENT_SUBMISSION)
         @PostMapping("/department/{departmentId}/round/{roundId}/create-all-phases")
         @ApiMessage("Tạo tất cả 3 giai đoạn cần thiết cho khoa thành công")
@@ -197,7 +197,7 @@ public class DepartmentPhaseController {
                         @Parameter(description = "Department ID", required = true) @PathVariable String departmentId,
                         @Parameter(description = "Round ID", required = true) @PathVariable String roundId) {
 
-                // Validate user is department head of this department
+                // Kiểm tra user là trưởng khoa của phòng ban này
                 departmentPhaseService.validateDepartmentHeadAccess(departmentId);
 
                 List<DepartmentPhaseResponse> createdPhases = departmentPhaseService
@@ -205,7 +205,7 @@ public class DepartmentPhaseController {
                 return ResponseEntity.ok(createdPhases);
         }
 
-        // 9. Get phases by department and round
+        // 9. Lấy danh sách giai đoạn khoa theo phòng ban và round
         @GetMapping("/department/{departmentId}/round/{roundId}")
         @ApiMessage("Lấy danh sách giai đoạn khoa theo round thành công")
         @Operation(summary = "Get Department Phases by Round", description = "Get all phases of a department in a specific round")
@@ -217,7 +217,7 @@ public class DepartmentPhaseController {
                         @Parameter(description = "Department ID", required = true) @PathVariable String departmentId,
                         @Parameter(description = "Round ID", required = true) @PathVariable String roundId) {
 
-                // Validate user is department head of this department
+                // Kiểm tra user là trưởng khoa của phòng ban này
                 departmentPhaseService.validateDepartmentHeadAccess(departmentId);
 
                 List<DepartmentPhaseResponse> phases = departmentPhaseService
@@ -225,7 +225,7 @@ public class DepartmentPhaseController {
                 return ResponseEntity.ok(phases);
         }
 
-        // 10. Get current active phase of department in round
+        // 10. Lấy giai đoạn hiện tại đang hoạt động của khoa trong round
         @GetMapping("/department/{departmentId}/round/{roundId}/current")
         @ApiMessage("Lấy giai đoạn hiện tại đang hoạt động của khoa thành công")
         @Operation(summary = "Get Current Active Department Phase", description = "Get current active phase of a department in a specific round")
@@ -238,7 +238,7 @@ public class DepartmentPhaseController {
                         @Parameter(description = "Department ID", required = true) @PathVariable String departmentId,
                         @Parameter(description = "Round ID", required = true) @PathVariable String roundId) {
 
-                // Validate user is department head of this department
+                // Kiểm tra user là trưởng khoa của phòng ban này
                 departmentPhaseService.validateDepartmentHeadAccess(departmentId);
 
                 DepartmentPhaseResponse currentPhase = departmentPhaseService.getCurrentActivePhase(departmentId,
@@ -249,7 +249,7 @@ public class DepartmentPhaseController {
                 return ResponseEntity.ok(currentPhase);
         }
 
-        // 11. Create single required phase for department
+        // 11. Tạo giai đoạn cần thiết cho khoa
         @PostMapping("/department/{departmentId}/round/{roundId}/create-phase/{phaseType}")
         @ApiMessage("Tạo giai đoạn cần thiết cho khoa thành công")
         @Operation(summary = "Create Single Required Phase for Department", description = "Create a single required phase (SUBMISSION, DEPARTMENT_EVALUATION, or DOCUMENT_SUBMISSION) for a department. Only TRUONG_KHOA can create phases for their department.")
@@ -266,7 +266,7 @@ public class DepartmentPhaseController {
                         @Parameter(description = "End date", required = true) @RequestParam LocalDate endDate,
                         @Parameter(description = "Description", required = false) @RequestParam(required = false) String description) {
 
-                // Validate user is department head of this department
+                // Kiểm tra user là trưởng khoa của phòng ban này
                 departmentPhaseService.validateDepartmentHeadAccess(departmentId);
 
                 DepartmentPhaseResponse createdPhase = departmentPhaseService.createRequiredPhaseForDepartment(

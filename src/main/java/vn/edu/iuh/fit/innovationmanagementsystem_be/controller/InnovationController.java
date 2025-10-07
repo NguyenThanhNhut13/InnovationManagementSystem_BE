@@ -35,7 +35,7 @@ public class InnovationController {
         this.innovationService = innovationService;
     }
 
-    // 1. Get All Innovations
+    // 1. Lấy danh sách sáng kiến
     @GetMapping("/innovations")
     @ApiMessage("Lấy danh sách sáng kiến thành công")
     @Operation(summary = "Get All Innovations", description = "Get paginated list of all innovations with filtering")
@@ -49,7 +49,7 @@ public class InnovationController {
         return ResponseEntity.ok(innovationService.getAllInnovations(specification, pageable));
     }
 
-    // 2. Get Innovation by Id
+    // 2. Lấy sáng kiến by Id
     @GetMapping("/innovations/{id}")
     @ApiMessage("Lấy thông tin sáng kiến bằng id thành công")
     @Operation(summary = "Get Innovation by ID", description = "Get innovation details by innovation ID")
@@ -63,7 +63,7 @@ public class InnovationController {
         return ResponseEntity.ok(innovationService.getInnovationById(id));
     }
 
-    // 3. Create Innovation & Submit Form Data (Tạo sáng kiến tự động khi điền form)
+    // 3. Tạo sáng kiến & Submit Form Data (Tạo sáng kiến tự động khi điền form)
     @PostMapping("/innovations/form-data")
     @ApiMessage("Tạo sáng kiến và điền thông tin thành công")
     @Operation(summary = "Create Innovation with Form Data", description = "Create a new innovation and submit form data")
@@ -78,7 +78,7 @@ public class InnovationController {
         return ResponseEntity.ok(response);
     }
 
-    // 4. Update Innovation FormData (Update FormData cho innovation đã tồn tại)
+    // 4. Cập nhật FormData sáng kiến
     @PutMapping("/innovations/{innovationId}/form-data")
     @ApiMessage("Cập nhật thông tin form thành công")
     public ResponseEntity<InnovationFormDataResponse> updateInnovationFormData(
@@ -88,7 +88,7 @@ public class InnovationController {
         return ResponseEntity.ok(response);
     }
 
-    // 5. Get Innovation Form Data
+    // 5. Lấy FormData sáng kiến
     @GetMapping("/innovations/{innovationId}/form-data")
     @ApiMessage("Lấy FormData của sáng kiến thành công")
     public ResponseEntity<InnovationFormDataResponse> getInnovationFormData(
@@ -98,7 +98,7 @@ public class InnovationController {
         return ResponseEntity.ok(response);
     }
 
-    // 6. Get My Innovations by Status
+    // 6. Lấy danh sách sáng kiến của tôi theo trạng thái
     @GetMapping("/innovations/my-innovations")
     @ApiMessage("Lấy danh sách sáng kiến của tôi theo trạng thái thành công")
     public ResponseEntity<ResultPaginationDTO> getMyInnovationsByStatus(

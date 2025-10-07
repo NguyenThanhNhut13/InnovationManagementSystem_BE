@@ -40,7 +40,7 @@ public class FormTemplateController {
                 this.formTemplateService = formTemplateService;
         }
 
-        // 1. Get form template by id
+        // 1. Lấy form template by id
         @GetMapping("/{id}")
         @ApiMessage("Lấy form template theo id thành công")
         @Operation(summary = "Get Form Template by ID", description = "Get form template details by ID")
@@ -53,7 +53,7 @@ public class FormTemplateController {
                 return ResponseEntity.ok(formTemplateService.getFormTemplateById(id));
         }
 
-        // 2. Get form templates by innovation phase
+        // 2. Lấy form templates by innovation phase
         @GetMapping("/innovation-phase/{phaseId}")
         @ApiMessage("Lấy form templates theo innovation phase thành công")
         @Operation(summary = "Get Form Templates by Innovation Phase", description = "Get form templates filtered by innovation phase ID")
@@ -65,7 +65,7 @@ public class FormTemplateController {
                 return ResponseEntity.ok(formTemplateService.getFormTemplatesByInnovationPhase(phaseId));
         }
 
-        // 3. Create form template
+        // 3. Tạo form template
         @PostMapping
         @ApiMessage("Tạo form template thành công")
         @Operation(summary = "Create Form Template", description = "Create a new form template")
@@ -78,7 +78,7 @@ public class FormTemplateController {
                 return ResponseEntity.ok(formTemplateService.createFormTemplate(request));
         }
 
-        // 4. Create Multiple Form Templates
+        // 4. Tạo nhiều form templates
         @PostMapping("/bulk")
         @ApiMessage("Tạo nhiều form templates thành công")
         @Operation(summary = "Create Multiple Form Templates", description = "Create multiple form templates")
@@ -91,7 +91,7 @@ public class FormTemplateController {
                 return ResponseEntity.ok(formTemplateService.createMultipleFormTemplates(request));
         }
 
-        // 5. Update form template
+        // 5. Cập nhật form template
         @PutMapping("/{id}")
         @ApiMessage("Cập nhật form template thành công")
         @Operation(summary = "Update Form Template", description = "Update form template by ID")
@@ -106,7 +106,7 @@ public class FormTemplateController {
                 return ResponseEntity.ok(formTemplateService.updateFormTemplate(id, request));
         }
 
-        // 6. Get all form templates with pagination and search
+        // 6. Lấy danh sách form templates với phân trang và tìm kiếm
         @GetMapping
         @ApiMessage("Lấy danh sách form templates với phân trang và tìm kiếm")
         @Operation(summary = "Get All Form Templates", description = "Get all form templates with pagination and filtering")

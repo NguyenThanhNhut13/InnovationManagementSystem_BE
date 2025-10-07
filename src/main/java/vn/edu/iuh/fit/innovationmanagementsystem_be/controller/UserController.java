@@ -45,7 +45,7 @@ public class UserController {
         this.userService = userService;
     }
 
-    // 1. Create User
+    // 1. Tạo User
     @PostMapping("/users")
     @ApiMessage("Tạo người dùng thành công")
     @Operation(summary = "Create User", description = "Create a new user account")
@@ -74,7 +74,7 @@ public class UserController {
         return ResponseEntity.ok(userService.getUsersWithPagination(spec, pageable));
     }
 
-    // 3. Get User By Id
+    // 3. Lấy User By Id
     @GetMapping("/users/{id}")
     @ApiMessage("Lấy thông tin người dùng thành công")
     @Operation(summary = "Get User by ID", description = "Get user details by user ID")
@@ -88,7 +88,7 @@ public class UserController {
         return ResponseEntity.ok(userService.getUserById(id));
     }
 
-    // 4. Update User
+    // 4. Cập nhật User
     @PutMapping("/users/{id}")
     @ApiMessage("Cập nhật thông tin người dùng thành công")
     @Operation(summary = "Update User", description = "Update user information by ID")
@@ -104,7 +104,7 @@ public class UserController {
         return ResponseEntity.ok(userService.updateUser(id, userRequest));
     }
 
-    // 5. Get Users By Status With Pagination
+    // 5. Lấy Users By Status với Pagination
     @GetMapping("/users/status")
     @ApiMessage("Lấy danh sách người dùng theo status thành công")
     public ResponseEntity<ResultPaginationDTO> getUsersByStatusWithPagination(
@@ -113,14 +113,14 @@ public class UserController {
         return ResponseEntity.ok(userService.getUsersByStatusWithPagination(status, pageable));
     }
 
-    // 6. Assign Role To User
+    // 6. Gán Role To User
     @PostMapping("/users/{userId}/roles/{roleId}")
     @ApiMessage("Gán vai trò cho người dùng thành công")
     public ResponseEntity<UserRoleResponse> assignRoleToUser(@PathVariable String userId, @PathVariable String roleId) {
         return ResponseEntity.ok(userService.assignRoleToUser(userId, roleId));
     }
 
-    // 7. Remove Role From User
+    // 7. Xóa Role From User
     @DeleteMapping("/users/{userId}/roles/{roleId}")
     @ApiMessage("Xóa vai trò khỏi người dùng thành công")
     public ResponseEntity<Void> removeRoleFromUser(@PathVariable String userId, @PathVariable String roleId) {
@@ -128,7 +128,7 @@ public class UserController {
         return ResponseEntity.ok().build();
     }
 
-    // 8. Get Users By Role With Pagination
+    // 8. Lấy Users By Role với Pagination
     @GetMapping("/roles/{roleId}/users")
     @ApiMessage("Lấy danh sách người dùng theo vai trò thành công")
     public ResponseEntity<ResultPaginationDTO> getUsersByRoleWithPagination(@Filter @PathVariable String roleId,
@@ -136,7 +136,7 @@ public class UserController {
         return ResponseEntity.ok(userService.getUsersByRoleWithPagination(roleId, pageable));
     }
 
-    // 9. Get Users By Department With Pagination
+    // 9. Lấy Users By Department với Pagination
     @GetMapping("/users/departments/{departmentId}/users")
     @ApiMessage("Lấy danh sách người dùng theo phòng ban thành công")
     public ResponseEntity<ResultPaginationDTO> getUsersByDepartmentWithPagination(
@@ -145,7 +145,7 @@ public class UserController {
         return ResponseEntity.ok(userService.getUsersByDepartmentWithPagination(departmentId, pageable));
     }
 
-    // 10. Search Users By Full Name, Email or Personnel ID
+    // 10. Tìm kiếm Users By Full Name, Email or Personnel ID
     @GetMapping("/users/search")
     @ApiMessage("Tìm kiếm người dùng thành công")
     public ResponseEntity<ResultPaginationDTO> searchUsers(

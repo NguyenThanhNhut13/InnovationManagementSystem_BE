@@ -45,7 +45,7 @@ public class UtilsController {
         this.fileService = fileService;
     }
 
-    // 1. Upload single file to MinIO
+    // 1. Upload một file to MinIO
     @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @ApiMessage("Upload file thành công")
     @Operation(summary = "Upload Single File", description = "Upload a single file to MinIO storage")
@@ -58,10 +58,6 @@ public class UtilsController {
             throws Exception {
 
         System.out.println("file " + file.getOriginalFilename());
-
-        // if (file.isEmpty()) {
-        // throw new IdInvalidException("File is empty");
-        // }
 
         if (file.getOriginalFilename() == null || file.getOriginalFilename().trim().isEmpty()) {
             throw new IdInvalidException("File name is required");
@@ -83,7 +79,7 @@ public class UtilsController {
         return ResponseEntity.ok(response);
     }
 
-    // 2. Upload multiple files to MinIO
+    // 2. Upload nhiều file to MinIO
     @PostMapping("/upload-multiple")
     @ApiMessage("Upload nhiều file thành công")
     @Operation(summary = "Upload Multiple Files", description = "Upload multiple files to MinIO storage")
@@ -139,7 +135,7 @@ public class UtilsController {
         return ResponseEntity.ok(response);
     }
 
-    // 3. Download file from MinIO
+    // 3. Download file từ MinIO
     @GetMapping("/download/{fileName}")
     @ApiMessage("Download file thành công")
     @Operation(summary = "Download File", description = "Download a file from MinIO storage")
@@ -170,7 +166,7 @@ public class UtilsController {
                 .body(resource);
     }
 
-    // 4. Get file info without downloading
+    // 4. Lấy thông tin file & không download
     @GetMapping("/info/{fileName}")
     @ApiMessage("Lấy thông tin file thành công")
     public ResponseEntity<FileInfoResponse> getFileInfo(@PathVariable String fileName) throws Exception {
@@ -191,7 +187,7 @@ public class UtilsController {
         return ResponseEntity.ok(response);
     }
 
-    // 5. Delete file from MinIO
+    // 5. Xóa file từ MinIO
     @DeleteMapping("/delete/{fileName}")
     @ApiMessage("Xóa file thành công")
     public ResponseEntity<Void> deleteFile(@PathVariable String fileName) throws Exception {
@@ -230,7 +226,7 @@ public class UtilsController {
             // 2. Thư mục output
             File outputDir = new File(System.getProperty("java.io.tmpdir"));
 
-            // 3. Copy file vào container trước
+            // 3. Copy file vào container
             ProcessBuilder copyInPb = new ProcessBuilder(
                     "docker", "cp",
                     tempFile.getAbsolutePath(),
@@ -257,7 +253,7 @@ public class UtilsController {
 
             Process process = pb.start();
 
-            // Đọc output để debug nếu cần
+            // Đọc output & debug
             try (var reader = new java.io.BufferedReader(new java.io.InputStreamReader(process.getInputStream()))) {
                 String line;
                 while ((line = reader.readLine()) != null) {
