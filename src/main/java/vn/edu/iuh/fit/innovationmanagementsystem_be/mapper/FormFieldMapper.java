@@ -11,7 +11,6 @@ public interface FormFieldMapper {
     FormFieldMapper INSTANCE = org.mapstruct.factory.Mappers.getMapper(FormFieldMapper.class);
 
     @Mapping(target = "formTemplateId", source = "formTemplate.id")
-    @Mapping(target = "formTemplateName", source = "formTemplate.name")
     @Mapping(target = "tableConfig", source = "tableConfig")
     FormFieldResponse toFormFieldResponse(FormField formField);
 }

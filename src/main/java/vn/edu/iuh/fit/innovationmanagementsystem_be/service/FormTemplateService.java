@@ -9,6 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.FormTemplate;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.InnovationPhase;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.TemplateTypeEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.CreateFormTemplateRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.CreateMultipleFormTemplatesRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.UpdateFormTemplateRequest;
@@ -56,7 +57,7 @@ public class FormTemplateService {
 
         // Lấy form templates by innovation round
         List<FormTemplate> templates = formTemplateRepository
-                .findByInnovationRoundIdOrderByName(phase.getInnovationRound().getId());
+                .findByInnovationRoundIdOrderByTemplateType(phase.getInnovationRound().getId());
         return templates.stream()
                 .map(formTemplateMapper::toFormTemplateResponse)
                 .collect(Collectors.toList());
@@ -70,8 +71,7 @@ public class FormTemplateService {
                         "Innovation phase không tồn tại với ID: " + request.getInnovationPhaseId()));
 
         FormTemplate template = new FormTemplate();
-        template.setName(request.getName());
-        template.setDescription(request.getDescription());
+        template.setTemplateType(request.getTemplateType());
         template.setTemplateContent(request.getTemplateContent());
         template.setInnovationRound(phase.getInnovationRound());
 
@@ -91,19 +91,18 @@ public class FormTemplateService {
             throw new IdInvalidException("Danh sách form templates không được để trống");
         }
 
-        List<String> templateNames = request.getFormTemplates().stream()
-                .map(CreateMultipleFormTemplatesRequest.FormTemplateData::getName)
+        List<TemplateTypeEnum> templateTypes = request.getFormTemplates().stream()
+                .map(CreateMultipleFormTemplatesRequest.FormTemplateData::getTemplateType)
                 .collect(Collectors.toList());
 
-        if (templateNames.size() != templateNames.stream().distinct().count()) {
-            throw new IdInvalidException("Danh sách form templates có tên trùng lặp");
+        if (templateTypes.size() != templateTypes.stream().distinct().count()) {
+            throw new IdInvalidException("Danh sách form templates có loại template trùng lặp");
         }
 
         List<FormTemplate> formTemplates = request.getFormTemplates().stream()
                 .map(templateData -> {
                     FormTemplate template = new FormTemplate();
-                    template.setName(templateData.getName());
-                    template.setDescription(templateData.getDescription());
+                    template.setTemplateType(templateData.getTemplateType());
                     template.setTemplateContent(templateData.getTemplateContent());
                     template.setInnovationRound(innovationPhase.getInnovationRound());
                     return template;
@@ -127,15 +126,12 @@ public class FormTemplateService {
         FormTemplate template = formTemplateRepository.findById(id)
                 .orElseThrow(() -> new IdInvalidException("Form template không tồn tại với ID: " + id));
 
-        if (request.getName() == null && request.getDescription() == null && request.getTemplateContent() == null) {
+        if (request.getTemplateType() == null && request.getTemplateContent() == null) {
             throw new IdInvalidException("Ít nhất một trường phải được cung cấp để cập nhật");
         }
 
-        if (request.getName() != null) {
-            template.setName(request.getName());
-        }
-        if (request.getDescription() != null) {
-            template.setDescription(request.getDescription());
+        if (request.getTemplateType() != null) {
+            template.setTemplateType(request.getTemplateType());
         }
         if (request.getTemplateContent() != null) {
             template.setTemplateContent(request.getTemplateContent());

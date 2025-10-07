@@ -129,7 +129,6 @@ public class FormFieldService {
         response.setRequired(formField.getRequired());
         response.setPlaceholder(formField.getPlaceholder());
         response.setFormTemplateId(formField.getFormTemplate().getId());
-        response.setFormTemplateName(formField.getFormTemplate().getName());
 
         // Map table config if exists
         if (formField.getTableConfig() != null) {

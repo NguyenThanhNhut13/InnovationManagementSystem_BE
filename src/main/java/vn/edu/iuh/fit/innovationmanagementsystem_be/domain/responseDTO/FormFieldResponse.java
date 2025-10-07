@@ -21,7 +21,6 @@ public class FormFieldResponse {
 
     // Template info
     private String formTemplateId;
-    private String formTemplateName;
 
     // Table config for TABLE field type
     private JsonNode tableConfig;

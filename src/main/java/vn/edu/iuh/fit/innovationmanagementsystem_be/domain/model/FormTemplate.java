@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.TemplateTypeEnum;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -22,11 +23,9 @@ public class FormTemplate extends Auditable {
     @Column(name = "id")
     private String id;
 
-    @Column(name = "name", nullable = false)
-    private String name;
-
-    @Column(name = "description", columnDefinition = "TEXT")
-    private String description;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "template_type", nullable = false)
+    private TemplateTypeEnum templateType;
 
     @Lob
     @Column(name = "template_content")
