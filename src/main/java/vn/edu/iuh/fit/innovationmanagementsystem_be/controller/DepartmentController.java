@@ -25,6 +25,7 @@ import jakarta.validation.Valid;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.Department;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.DepartmentRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.DepartmentResponse;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.DepartmentInnovationStatisticsResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.service.DepartmentService;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.ResultPaginationDTO;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.annotation.ApiMessage;
@@ -193,6 +194,20 @@ public class DepartmentController {
                         @Parameter(description = "User ID", required = true) @PathVariable String userId) {
                 departmentService.removeUserFromDepartment(departmentId, userId);
                 return ResponseEntity.noContent().build();
+        }
+
+        // 12. Lấy thống kê số lượng sáng kiến của tất cả các khoa
+        @GetMapping("/departments/innovations/statistics")
+        @ApiMessage("Lấy thống kê số lượng sáng kiến của tất cả các khoa thành công")
+        @Operation(summary = "Get Department Innovation Statistics", description = "Get innovation statistics for all departments")
+        @ApiResponses(value = {
+                        @ApiResponse(responseCode = "200", description = "Department innovation statistics retrieved successfully", content = @Content(schema = @Schema(implementation = DepartmentInnovationStatisticsResponse.class))),
+                        @ApiResponse(responseCode = "400", description = "Invalid request data")
+        })
+        public ResponseEntity<List<DepartmentInnovationStatisticsResponse>> getDepartmentInnovationStatistics() {
+                List<DepartmentInnovationStatisticsResponse> statistics = departmentService
+                                .getDepartmentInnovationStatistics();
+                return ResponseEntity.ok(statistics);
         }
 
 }

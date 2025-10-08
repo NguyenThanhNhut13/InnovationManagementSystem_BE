@@ -10,6 +10,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.Department;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.User;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.DepartmentRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.DepartmentResponse;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.DepartmentInnovationStatisticsResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.UserDepartmentResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.exception.IdInvalidException;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.DepartmentRepository;
@@ -187,5 +188,29 @@ public class DepartmentService {
         }
         user.setDepartment(null);
         userRepository.save(user);
+    }
+
+    // 12. Lấy thống kê số lượng sáng kiến của tất cả các khoa
+    public List<DepartmentInnovationStatisticsResponse> getDepartmentInnovationStatistics() {
+        List<Department> departments = departmentRepository.findAll();
+
+        return departments.stream()
+                .map(department -> {
+                    DepartmentInnovationStatisticsResponse stats = new DepartmentInnovationStatisticsResponse();
+                    stats.setDepartmentId(department.getId());
+                    stats.setDepartmentName(department.getDepartmentName());
+                    stats.setDepartmentCode(department.getDepartmentCode());
+                    stats.setTotalInnovations(departmentRepository.countInnovationsByDepartmentId(department.getId()));
+                    stats.setDraftInnovations(
+                            departmentRepository.countDraftInnovationsByDepartmentId(department.getId()));
+                    stats.setSubmittedInnovations(
+                            departmentRepository.countSubmittedInnovationsByDepartmentId(department.getId()));
+                    stats.setApprovedInnovations(
+                            departmentRepository.countApprovedInnovationsByDepartmentId(department.getId()));
+                    stats.setRejectedInnovations(
+                            departmentRepository.countRejectedInnovationsByDepartmentId(department.getId()));
+                    return stats;
+                })
+                .collect(Collectors.toList());
     }
 }

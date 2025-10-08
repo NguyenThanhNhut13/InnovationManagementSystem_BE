@@ -32,4 +32,20 @@ public interface DepartmentRepository extends JpaRepository<Department, String>,
 
     @Query("SELECT u FROM User u WHERE u.department.id = :departmentId AND u.status != 'ACTIVE'")
     Page<User> findInactiveUsersByDepartmentId(@Param("departmentId") String departmentId, Pageable pageable);
+
+    // Innovation statistics methods
+    @Query("SELECT COUNT(i) FROM Innovation i WHERE i.department.id = :departmentId")
+    Long countInnovationsByDepartmentId(@Param("departmentId") String departmentId);
+
+    @Query("SELECT COUNT(i) FROM Innovation i WHERE i.department.id = :departmentId AND i.status = 'DRAFT'")
+    Long countDraftInnovationsByDepartmentId(@Param("departmentId") String departmentId);
+
+    @Query("SELECT COUNT(i) FROM Innovation i WHERE i.department.id = :departmentId AND i.status = 'SUBMITTED'")
+    Long countSubmittedInnovationsByDepartmentId(@Param("departmentId") String departmentId);
+
+    @Query("SELECT COUNT(i) FROM Innovation i WHERE i.department.id = :departmentId AND i.status = 'APPROVED'")
+    Long countApprovedInnovationsByDepartmentId(@Param("departmentId") String departmentId);
+
+    @Query("SELECT COUNT(i) FROM Innovation i WHERE i.department.id = :departmentId AND i.status = 'REJECTED'")
+    Long countRejectedInnovationsByDepartmentId(@Param("departmentId") String departmentId);
 }
