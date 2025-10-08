@@ -42,11 +42,12 @@ public class CouncilController {
         // 1. Tạo hội đồng
         @PostMapping("/councils")
         @ApiMessage("Tạo hội đồng thành công")
-        @Operation(summary = "Create Council", description = "Create a new council")
+        @Operation(summary = "Create Council", description = "Create a new council - Only QUAN_TRI_VIEN, THU_KY_QLKH_HTQT, TRUONG_KHOA can access")
         @ApiResponses(value = {
                         @ApiResponse(responseCode = "200", description = "Council created successfully", content = @Content(schema = @Schema(implementation = CouncilResponse.class))),
                         @ApiResponse(responseCode = "400", description = "Invalid request data"),
-                        @ApiResponse(responseCode = "409", description = "Council name already exists")
+                        @ApiResponse(responseCode = "409", description = "Council name already exists"),
+                        @ApiResponse(responseCode = "403", description = "Access denied - Insufficient permissions")
         })
         public ResponseEntity<CouncilResponse> createCouncil(
                         @Parameter(description = "Council creation request", required = true) @Valid @RequestBody CouncilRequest councilRequest) {
@@ -85,12 +86,13 @@ public class CouncilController {
         // 4. Update hội đồng
         @PutMapping("/councils/{id}")
         @ApiMessage("Cập nhật thông tin hội đồng thành công")
-        @Operation(summary = "Update Council", description = "Update council information by ID")
+        @Operation(summary = "Update Council", description = "Update council information by ID - Only QUAN_TRI_VIEN, THU_KY_QLKH_HTQT, TRUONG_KHOA can access")
         @ApiResponses(value = {
                         @ApiResponse(responseCode = "200", description = "Council updated successfully", content = @Content(schema = @Schema(implementation = CouncilResponse.class))),
                         @ApiResponse(responseCode = "404", description = "Council not found"),
                         @ApiResponse(responseCode = "400", description = "Invalid request data"),
-                        @ApiResponse(responseCode = "401", description = "Unauthorized")
+                        @ApiResponse(responseCode = "401", description = "Unauthorized"),
+                        @ApiResponse(responseCode = "403", description = "Access denied - Insufficient permissions")
         })
         public ResponseEntity<CouncilResponse> updateCouncil(
                         @Parameter(description = "Council ID", required = true) @PathVariable String id,
@@ -169,12 +171,13 @@ public class CouncilController {
         // 10. Thêm thành viên vào hội đồng
         @PostMapping("/councils/{councilId}/members")
         @ApiMessage("Thêm thành viên vào hội đồng thành công")
-        @Operation(summary = "Add Member to Council", description = "Add a member to council")
+        @Operation(summary = "Add Member to Council", description = "Add a member to council - Only QUAN_TRI_VIEN, THU_KY_QLKH_HTQT, TRUONG_KHOA can access")
         @ApiResponses(value = {
                         @ApiResponse(responseCode = "200", description = "Member added successfully", content = @Content(schema = @Schema(implementation = CouncilMemberResponse.class))),
                         @ApiResponse(responseCode = "400", description = "Invalid request data"),
                         @ApiResponse(responseCode = "404", description = "Council or user not found"),
-                        @ApiResponse(responseCode = "409", description = "User already a member")
+                        @ApiResponse(responseCode = "409", description = "User already a member"),
+                        @ApiResponse(responseCode = "403", description = "Access denied - Insufficient permissions")
         })
         public ResponseEntity<CouncilMemberResponse> addMemberToCouncil(
                         @Parameter(description = "Council ID", required = true) @PathVariable String councilId,

@@ -134,6 +134,14 @@ public class SecurityConfig {
                                                 .requestMatchers(HttpMethod.DELETE, EndpointConstants.FORM_FIELD_DELETE)
                                                 .hasAnyRole(QUAN_TRI_VIEN, THU_KY_QLKH_HTQT)
 
+                                                // Council Management
+                                                .requestMatchers(HttpMethod.POST, EndpointConstants.COUNCIL_POST)
+                                                .hasAnyRole(QUAN_TRI_VIEN, THU_KY_QLKH_HTQT, TRUONG_KHOA)
+                                                .requestMatchers(HttpMethod.PUT, EndpointConstants.COUNCIL_PUT)
+                                                .hasAnyRole(QUAN_TRI_VIEN, THU_KY_QLKH_HTQT, TRUONG_KHOA)
+                                                .requestMatchers(HttpMethod.DELETE, EndpointConstants.COUNCIL_DELETE)
+                                                .hasAnyRole(QUAN_TRI_VIEN, THU_KY_QLKH_HTQT, TRUONG_KHOA)
+
                                                 .anyRequest().authenticated())
                                 .oauth2ResourceServer(oauth2 -> oauth2
                                                 .jwt(jwt -> jwt
