@@ -14,5 +14,6 @@ public enum FieldTypeEnum {
     EMAIL, // Email input
     URL, // URL input
     TABLE, // Table input
-    SIGNATURE // Digital signature
+    SIGNATURE, // Digital signature
+    SECTION
 }

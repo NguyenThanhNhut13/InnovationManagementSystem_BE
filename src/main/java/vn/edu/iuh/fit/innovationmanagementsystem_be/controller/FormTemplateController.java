@@ -19,8 +19,10 @@ import com.turkraft.springfilter.boot.Filter;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.FormTemplate;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.CreateFormTemplateRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.CreateMultipleFormTemplatesRequest;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.CreateTemplateWithFieldsRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.UpdateFormTemplateRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.CreateMultipleFormTemplatesResponse;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.CreateTemplateWithFieldsResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.FormTemplateResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.service.FormTemplateService;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.ResultPaginationDTO;
@@ -106,7 +108,20 @@ public class FormTemplateController {
                 return ResponseEntity.ok(formTemplateService.updateFormTemplate(id, request));
         }
 
-        // 6. Lấy danh sách form templates với phân trang và tìm kiếm
+        // 6. Tạo form template với fields
+        @PostMapping("/with-fields")
+        @ApiMessage("Tạo form template với fields thành công")
+        @Operation(summary = "Create Form Template with Fields", description = "Create a new form template with fields and table configuration")
+        @ApiResponses(value = {
+                        @ApiResponse(responseCode = "200", description = "Form template with fields created successfully", content = @Content(schema = @Schema(implementation = CreateTemplateWithFieldsResponse.class))),
+                        @ApiResponse(responseCode = "400", description = "Invalid request data")
+        })
+        public ResponseEntity<CreateTemplateWithFieldsResponse> createTemplateWithFields(
+                        @Parameter(description = "Form template with fields creation request", required = true) @Valid @RequestBody CreateTemplateWithFieldsRequest request) {
+                return ResponseEntity.ok(formTemplateService.createTemplateWithFields(request));
+        }
+
+        // 7. Lấy danh sách form templates với pagination và filtering
         @GetMapping
         @ApiMessage("Lấy danh sách form templates với phân trang và tìm kiếm")
         @Operation(summary = "Get All Form Templates", description = "Get all form templates with pagination and filtering")
