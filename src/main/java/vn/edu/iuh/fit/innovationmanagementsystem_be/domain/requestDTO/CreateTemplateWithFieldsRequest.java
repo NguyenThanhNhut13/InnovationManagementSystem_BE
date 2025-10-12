@@ -39,6 +39,8 @@ public class CreateTemplateWithFieldsRequest {
     @AllArgsConstructor
     public static class FieldData {
 
+        private String id;
+
         @NotBlank(message = "Field key không được để trống")
         private String fieldKey;
 
@@ -58,6 +60,8 @@ public class CreateTemplateWithFieldsRequest {
         private List<String> options;
 
         private Boolean repeatable = false;
+
+        @Valid
         private List<FieldData> children;
     }
 

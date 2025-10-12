@@ -56,4 +56,11 @@ public class FormField {
     @Column(name = "options", columnDefinition = "JSON")
     private JsonNode options;
 
+    @Column(name = "is_repeatable")
+    private Boolean repeatable = false;
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "children", columnDefinition = "JSON")
+    private JsonNode children;
+
 }

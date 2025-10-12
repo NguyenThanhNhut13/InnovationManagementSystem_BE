@@ -194,6 +194,7 @@ public class FormTemplateService {
         field.setRequired(fieldData.getRequired());
         field.setPlaceholder(fieldData.getPlaceholder());
         field.setFormTemplate(template);
+        field.setRepeatable(fieldData.getRepeatable() != null ? fieldData.getRepeatable() : false);
 
         // Xử lý table config nếu field type là TABLE
         if (fieldData.getType() == FieldTypeEnum.TABLE && fieldData.getTableConfig() != null) {
@@ -214,6 +215,17 @@ public class FormTemplateService {
                 field.setOptions(optionsJson);
             } catch (Exception e) {
                 throw new IdInvalidException("Lỗi khi xử lý options: " + e.getMessage());
+            }
+        }
+
+        // Xử lý children nếu field có children (SECTION type)
+        if (fieldData.getChildren() != null && !fieldData.getChildren().isEmpty()) {
+            try {
+                ObjectMapper mapper = new ObjectMapper();
+                JsonNode childrenJson = mapper.valueToTree(fieldData.getChildren());
+                field.setChildren(childrenJson);
+            } catch (Exception e) {
+                throw new IdInvalidException("Lỗi khi xử lý children: " + e.getMessage());
             }
         }
 
@@ -250,7 +262,43 @@ public class FormTemplateService {
         fieldResponse.setPlaceholder(field.getPlaceholder());
         fieldResponse.setTableConfig(field.getTableConfig());
         fieldResponse.setOptions(field.getOptions());
+        fieldResponse.setRepeatable(field.getRepeatable());
+        fieldResponse.setChildren(convertChildrenToFieldResponse(field.getChildren()));
         return fieldResponse;
+    }
+
+    private List<CreateTemplateWithFieldsResponse.FieldResponse> convertChildrenToFieldResponse(JsonNode childrenJson) {
+        if (childrenJson == null || childrenJson.isNull()) {
+            return null;
+        }
+
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            List<CreateTemplateWithFieldsRequest.FieldData> childrenData = mapper.treeToValue(childrenJson,
+                    mapper.getTypeFactory().constructCollectionType(List.class,
+                            CreateTemplateWithFieldsRequest.FieldData.class));
+
+            return childrenData.stream()
+                    .map(childData -> {
+                        CreateTemplateWithFieldsResponse.FieldResponse childResponse = new CreateTemplateWithFieldsResponse.FieldResponse();
+                        childResponse.setId(childData.getId());
+                        childResponse.setFieldKey(childData.getFieldKey());
+                        childResponse.setLabel(childData.getLabel());
+                        childResponse.setType(childData.getType());
+                        childResponse.setRequired(childData.getRequired());
+                        childResponse.setPlaceholder(childData.getPlaceholder());
+                        childResponse.setRepeatable(childData.getRepeatable());
+                        childResponse.setOptions(
+                                childData.getOptions() != null ? mapper.valueToTree(childData.getOptions()) : null);
+                        childResponse.setChildren(convertChildrenToFieldResponse(
+                                childData.getChildren() != null ? mapper.valueToTree(childData.getChildren()) : null));
+                        return childResponse;
+                    })
+                    .collect(Collectors.toList());
+        } catch (Exception e) {
+            // Nếu có lỗi khi parse children, trả về null
+            return null;
+        }
     }
 
     // 7. Lấy tất cả form templates với phân trang và tìm kiếm
