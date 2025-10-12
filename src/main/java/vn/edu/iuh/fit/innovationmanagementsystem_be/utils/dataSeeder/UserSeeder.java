@@ -87,7 +87,7 @@ public class UserSeeder implements DatabaseSeeder {
         UserRoleEnum roleEnum = role.getRoleName();
 
         User user = new User();
-        user.setPersonnelId("USR_" + roleEnum.name());
+        user.setPersonnelId(String.format("%08d", 10000000 + index));
         user.setFullName("User " + roleEnum.name().replace('_', ' '));
         user.setEmail(roleEnum.name().toLowerCase() + "@iuh.edu.vn");
         user.setPhoneNumber(String.format("090%07d", index));
