@@ -42,7 +42,7 @@ public class CouncilController {
         // 1. Tạo hội đồng
         @PostMapping("/councils")
         @ApiMessage("Tạo hội đồng thành công")
-        @Operation(summary = "Create Council", description = "Create a new council - Only QUAN_TRI_VIEN, THU_KY_QLKH_HTQT, TRUONG_KHOA can access")
+        @Operation(summary = "Create Council", description = "Create a new council - Only QUAN_TRI_VIEN_HE_THONG, QUAN_TRI_VIEN_QLKH_HTQT, TRUONG_KHOA can access")
         @ApiResponses(value = {
                         @ApiResponse(responseCode = "200", description = "Council created successfully", content = @Content(schema = @Schema(implementation = CouncilResponse.class))),
                         @ApiResponse(responseCode = "400", description = "Invalid request data"),
@@ -86,7 +86,7 @@ public class CouncilController {
         // 4. Update hội đồng
         @PutMapping("/councils/{id}")
         @ApiMessage("Cập nhật thông tin hội đồng thành công")
-        @Operation(summary = "Update Council", description = "Update council information by ID - Only QUAN_TRI_VIEN, THU_KY_QLKH_HTQT, TRUONG_KHOA can access")
+        @Operation(summary = "Update Council", description = "Update council information by ID - Only QUAN_TRI_VIEN_HE_THONG, QUAN_TRI_VIEN_QLKH_HTQT, TRUONG_KHOA can access")
         @ApiResponses(value = {
                         @ApiResponse(responseCode = "200", description = "Council updated successfully", content = @Content(schema = @Schema(implementation = CouncilResponse.class))),
                         @ApiResponse(responseCode = "404", description = "Council not found"),
@@ -171,7 +171,7 @@ public class CouncilController {
         // 10. Thêm thành viên vào hội đồng
         @PostMapping("/councils/{councilId}/members")
         @ApiMessage("Thêm thành viên vào hội đồng thành công")
-        @Operation(summary = "Add Member to Council", description = "Add a member to council - Only QUAN_TRI_VIEN, THU_KY_QLKH_HTQT, TRUONG_KHOA can access")
+        @Operation(summary = "Add Member to Council", description = "Add a member to council - Only QUAN_TRI_VIEN_HE_THONG, QUAN_TRI_VIEN_QLKH_HTQT, TRUONG_KHOA can access")
         @ApiResponses(value = {
                         @ApiResponse(responseCode = "200", description = "Member added successfully", content = @Content(schema = @Schema(implementation = CouncilMemberResponse.class))),
                         @ApiResponse(responseCode = "400", description = "Invalid request data"),

@@ -182,7 +182,7 @@ public class InnovationRoundController {
         // 10. Lấy current round
         @GetMapping("/current")
         @ApiMessage("Lấy thông tin đợt sáng kiến hiện tại thành công")
-        @Operation(summary = "Get Current Round", description = "Get current active innovation round (restricted to TRUONG_KHOA, THU_KY_QLKH_HTQT, QUAN_TRI_VIEN)")
+        @Operation(summary = "Get Current Round", description = "Get current active innovation round (restricted to TRUONG_KHOA, QUAN_TRI_VIEN_QLKH_HTQT, QUAN_TRI_VIEN_HE_THONG)")
         @ApiResponses(value = {
                         @ApiResponse(responseCode = "200", description = "Current round retrieved successfully", content = @Content(schema = @Schema(implementation = InnovationRoundResponse.class))),
                         @ApiResponse(responseCode = "404", description = "No current round found"),

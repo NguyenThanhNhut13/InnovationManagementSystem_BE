@@ -24,10 +24,10 @@ import org.springframework.security.web.SecurityFilterChain;
 @EnableMethodSecurity
 public class SecurityConfig {
 
-        private final String QUAN_TRI_VIEN = UserRoleEnum.QUAN_TRI_VIEN.name();
-        private final String THU_KY_QLKH_HTQT = UserRoleEnum.THU_KY_QLKH_HTQT.name();
+        private final String QUAN_TRI_VIEN_HE_THONG = UserRoleEnum.QUAN_TRI_VIEN_HE_THONG.name();
+        private final String QUAN_TRI_VIEN_QLKH_HTQT = UserRoleEnum.QUAN_TRI_VIEN_QLKH_HTQT.name();
         private final String TRUONG_KHOA = UserRoleEnum.TRUONG_KHOA.name();
-        // private final String THU_KY_KHOA = UserRoleEnum.THU_KY_KHOA.name();
+        private final String QUAN_TRI_VIEN_KHOA = UserRoleEnum.QUAN_TRI_VIEN_KHOA.name();
         // private final String TV_HOI_DONG_KHOA = UserRoleEnum.TV_HOI_DONG_KHOA.name();
         // private final String TV_HOI_DONG_TRUONG =
         // UserRoleEnum.TV_HOI_DONG_TRUONG.name();
@@ -71,76 +71,82 @@ public class SecurityConfig {
 
                                                 // User
                                                 .requestMatchers(HttpMethod.GET, EndpointConstants.USER_GET)
-                                                .hasAnyRole(QUAN_TRI_VIEN, THU_KY_QLKH_HTQT)
+                                                .hasAnyRole(QUAN_TRI_VIEN_HE_THONG, QUAN_TRI_VIEN_QLKH_HTQT)
 
                                                 // Role Management
                                                 .requestMatchers(HttpMethod.POST,
                                                                 EndpointConstants.ROLE_MANAGEMENT_POST)
-                                                .hasRole(THU_KY_QLKH_HTQT)
+                                                .hasRole(QUAN_TRI_VIEN_QLKH_HTQT)
                                                 .requestMatchers(HttpMethod.DELETE,
                                                                 EndpointConstants.ROLE_MANAGEMENT_DELETE)
-                                                .hasRole(THU_KY_QLKH_HTQT)
+                                                .hasRole(QUAN_TRI_VIEN_QLKH_HTQT)
 
                                                 // Department
                                                 .requestMatchers(HttpMethod.GET, EndpointConstants.DEPARTMENT_GET)
-                                                .hasAnyRole(QUAN_TRI_VIEN, THU_KY_QLKH_HTQT)
+                                                .hasAnyRole(QUAN_TRI_VIEN_HE_THONG, QUAN_TRI_VIEN_QLKH_HTQT)
                                                 .requestMatchers(HttpMethod.POST, EndpointConstants.DEPARTMENT_POST)
-                                                .hasAnyRole(QUAN_TRI_VIEN, THU_KY_QLKH_HTQT)
+                                                .hasAnyRole(QUAN_TRI_VIEN_HE_THONG, QUAN_TRI_VIEN_QLKH_HTQT)
                                                 .requestMatchers(HttpMethod.PUT, EndpointConstants.DEPARTMENT_PUT)
-                                                .hasAnyRole(QUAN_TRI_VIEN, THU_KY_QLKH_HTQT)
+                                                .hasAnyRole(QUAN_TRI_VIEN_HE_THONG, QUAN_TRI_VIEN_QLKH_HTQT)
 
                                                 // Innovation Decision
                                                 .requestMatchers(HttpMethod.POST,
                                                                 EndpointConstants.INNOVATION_DECISION_POST)
-                                                .hasAnyRole(QUAN_TRI_VIEN, THU_KY_QLKH_HTQT)
+                                                .hasAnyRole(QUAN_TRI_VIEN_HE_THONG, QUAN_TRI_VIEN_QLKH_HTQT)
                                                 .requestMatchers(HttpMethod.PUT,
                                                                 EndpointConstants.INNOVATION_DECISION_PUT)
-                                                .hasAnyRole(QUAN_TRI_VIEN, THU_KY_QLKH_HTQT)
+                                                .hasAnyRole(QUAN_TRI_VIEN_HE_THONG, QUAN_TRI_VIEN_QLKH_HTQT)
 
                                                 // Innovation Round
                                                 .requestMatchers(HttpMethod.POST,
                                                                 EndpointConstants.INNOVATION_ROUND_POST)
-                                                .hasAnyRole(QUAN_TRI_VIEN, THU_KY_QLKH_HTQT)
+                                                .hasAnyRole(QUAN_TRI_VIEN_HE_THONG, QUAN_TRI_VIEN_QLKH_HTQT)
                                                 .requestMatchers(HttpMethod.PUT, EndpointConstants.INNOVATION_ROUND_PUT)
-                                                .hasAnyRole(QUAN_TRI_VIEN, THU_KY_QLKH_HTQT)
+                                                .hasAnyRole(QUAN_TRI_VIEN_HE_THONG, QUAN_TRI_VIEN_QLKH_HTQT)
 
                                                 // Innovation Phase
                                                 .requestMatchers(HttpMethod.POST,
                                                                 EndpointConstants.INNOVATION_PHASE_POST)
-                                                .hasAnyRole(QUAN_TRI_VIEN, THU_KY_QLKH_HTQT)
+                                                .hasAnyRole(QUAN_TRI_VIEN_HE_THONG, QUAN_TRI_VIEN_QLKH_HTQT)
                                                 .requestMatchers(HttpMethod.PUT, EndpointConstants.INNOVATION_PHASE_PUT)
-                                                .hasAnyRole(QUAN_TRI_VIEN, THU_KY_QLKH_HTQT)
+                                                .hasAnyRole(QUAN_TRI_VIEN_HE_THONG, QUAN_TRI_VIEN_QLKH_HTQT)
 
                                                 // Innovation Department Phase
                                                 .requestMatchers(HttpMethod.POST,
                                                                 EndpointConstants.DEPARTMENT_PHASE_POST)
-                                                .hasAnyRole(TRUONG_KHOA, THU_KY_QLKH_HTQT, QUAN_TRI_VIEN)
+                                                .hasAnyRole(TRUONG_KHOA, QUAN_TRI_VIEN_QLKH_HTQT,
+                                                                QUAN_TRI_VIEN_HE_THONG)
                                                 .requestMatchers(HttpMethod.GET, EndpointConstants.DEPARTMENT_PHASE_GET)
-                                                .hasAnyRole(TRUONG_KHOA, THU_KY_QLKH_HTQT, QUAN_TRI_VIEN)
+                                                .hasAnyRole(TRUONG_KHOA, QUAN_TRI_VIEN_QLKH_HTQT,
+                                                                QUAN_TRI_VIEN_HE_THONG)
                                                 .requestMatchers(HttpMethod.PUT, EndpointConstants.DEPARTMENT_PHASE_PUT)
-                                                .hasAnyRole(TRUONG_KHOA, THU_KY_QLKH_HTQT, QUAN_TRI_VIEN)
+                                                .hasAnyRole(TRUONG_KHOA, QUAN_TRI_VIEN_QLKH_HTQT,
+                                                                QUAN_TRI_VIEN_HE_THONG)
 
                                                 // Form Template
                                                 .requestMatchers(HttpMethod.POST, EndpointConstants.FORM_TEMPLATE_POST)
-                                                .hasAnyRole(QUAN_TRI_VIEN, THU_KY_QLKH_HTQT)
+                                                .hasAnyRole(QUAN_TRI_VIEN_HE_THONG, QUAN_TRI_VIEN_QLKH_HTQT)
                                                 .requestMatchers(HttpMethod.PUT, EndpointConstants.FORM_TEMPLATE_PUT)
-                                                .hasAnyRole(QUAN_TRI_VIEN, THU_KY_QLKH_HTQT)
+                                                .hasAnyRole(QUAN_TRI_VIEN_HE_THONG, QUAN_TRI_VIEN_QLKH_HTQT)
 
                                                 // Form Field
                                                 .requestMatchers(HttpMethod.POST, EndpointConstants.FORM_FIELD_POST)
-                                                .hasAnyRole(QUAN_TRI_VIEN, THU_KY_QLKH_HTQT)
+                                                .hasAnyRole(QUAN_TRI_VIEN_HE_THONG, QUAN_TRI_VIEN_QLKH_HTQT)
                                                 .requestMatchers(HttpMethod.PUT, EndpointConstants.FORM_FIELD_PUT)
-                                                .hasAnyRole(QUAN_TRI_VIEN, THU_KY_QLKH_HTQT)
+                                                .hasAnyRole(QUAN_TRI_VIEN_HE_THONG, QUAN_TRI_VIEN_QLKH_HTQT)
                                                 .requestMatchers(HttpMethod.DELETE, EndpointConstants.FORM_FIELD_DELETE)
-                                                .hasAnyRole(QUAN_TRI_VIEN, THU_KY_QLKH_HTQT)
+                                                .hasAnyRole(QUAN_TRI_VIEN_HE_THONG, QUAN_TRI_VIEN_QLKH_HTQT)
 
                                                 // Council Management
                                                 .requestMatchers(HttpMethod.POST, EndpointConstants.COUNCIL_POST)
-                                                .hasAnyRole(QUAN_TRI_VIEN, THU_KY_QLKH_HTQT, TRUONG_KHOA)
+                                                .hasAnyRole(QUAN_TRI_VIEN_HE_THONG, QUAN_TRI_VIEN_QLKH_HTQT,
+                                                                TRUONG_KHOA)
                                                 .requestMatchers(HttpMethod.PUT, EndpointConstants.COUNCIL_PUT)
-                                                .hasAnyRole(QUAN_TRI_VIEN, THU_KY_QLKH_HTQT, TRUONG_KHOA)
+                                                .hasAnyRole(QUAN_TRI_VIEN_HE_THONG, QUAN_TRI_VIEN_QLKH_HTQT,
+                                                                TRUONG_KHOA)
                                                 .requestMatchers(HttpMethod.DELETE, EndpointConstants.COUNCIL_DELETE)
-                                                .hasAnyRole(QUAN_TRI_VIEN, THU_KY_QLKH_HTQT, TRUONG_KHOA)
+                                                .hasAnyRole(QUAN_TRI_VIEN_HE_THONG, QUAN_TRI_VIEN_QLKH_HTQT,
+                                                                TRUONG_KHOA)
 
                                                 .anyRequest().authenticated())
                                 .oauth2ResourceServer(oauth2 -> oauth2
