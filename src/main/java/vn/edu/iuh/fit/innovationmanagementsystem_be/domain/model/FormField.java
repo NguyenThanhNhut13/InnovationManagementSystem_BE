@@ -52,4 +52,8 @@ public class FormField {
     @Column(name = "table_config", columnDefinition = "JSON")
     private JsonNode tableConfig;
 
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "options", columnDefinition = "JSON")
+    private JsonNode options;
+
 }

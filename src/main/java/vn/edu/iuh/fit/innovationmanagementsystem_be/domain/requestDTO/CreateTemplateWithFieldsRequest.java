@@ -55,6 +55,8 @@ public class CreateTemplateWithFieldsRequest {
 
         private TableConfigData tableConfig;
 
+        private List<String> options;
+
         private Boolean repeatable = false;
         private List<FieldData> children;
     }
@@ -92,6 +94,8 @@ public class CreateTemplateWithFieldsRequest {
 
             @NotNull(message = "Column required status không được để trống")
             private Boolean required = false;
+
+            private List<String> options;
         }
     }
 }

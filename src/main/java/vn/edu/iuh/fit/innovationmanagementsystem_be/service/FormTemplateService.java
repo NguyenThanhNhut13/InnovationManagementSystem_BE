@@ -206,6 +206,17 @@ public class FormTemplateService {
             }
         }
 
+        // Xử lý options nếu field có options (DROPDOWN, RADIO, CHECKBOX)
+        if (fieldData.getOptions() != null && !fieldData.getOptions().isEmpty()) {
+            try {
+                ObjectMapper mapper = new ObjectMapper();
+                JsonNode optionsJson = mapper.valueToTree(fieldData.getOptions());
+                field.setOptions(optionsJson);
+            } catch (Exception e) {
+                throw new IdInvalidException("Lỗi khi xử lý options: " + e.getMessage());
+            }
+        }
+
         return field;
     }
 
@@ -238,6 +249,7 @@ public class FormTemplateService {
         fieldResponse.setRequired(field.getRequired());
         fieldResponse.setPlaceholder(field.getPlaceholder());
         fieldResponse.setTableConfig(field.getTableConfig());
+        fieldResponse.setOptions(field.getOptions());
         return fieldResponse;
     }
 

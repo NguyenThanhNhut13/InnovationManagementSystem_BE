@@ -39,6 +39,7 @@ public class CreateTemplateWithFieldsResponse {
         private Boolean required;
         private String placeholder;
         private JsonNode tableConfig;
+        private JsonNode options;
         private Boolean repeatable;
         private List<FieldResponse> children;
     }
