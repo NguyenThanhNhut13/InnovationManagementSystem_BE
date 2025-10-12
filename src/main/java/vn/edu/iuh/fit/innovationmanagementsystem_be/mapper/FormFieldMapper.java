@@ -12,5 +12,8 @@ public interface FormFieldMapper {
 
     @Mapping(target = "formTemplateId", source = "formTemplate.id")
     @Mapping(target = "tableConfig", source = "tableConfig")
+    @Mapping(target = "options", source = "options")
+    @Mapping(target = "repeatable", source = "repeatable")
+    @Mapping(target = "children", source = "children")
     FormFieldResponse toFormFieldResponse(FormField formField);
 }
