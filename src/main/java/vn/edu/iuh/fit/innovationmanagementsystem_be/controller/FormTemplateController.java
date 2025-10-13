@@ -77,7 +77,19 @@ public class FormTemplateController {
                 return ResponseEntity.ok(formTemplateService.getFormTemplatesByInnovationRound(roundId));
         }
 
-        // 4. Cập nhật form template
+        // 4. Lấy form templates theo innovation round hiện tại
+        @GetMapping("/innovation-round/current")
+        @ApiMessage("Lấy form templates theo innovation round hiện tại thành công")
+        @Operation(summary = "Get Form Templates by Current Round", description = "Get form templates for the current active innovation round")
+        @ApiResponses(value = {
+                        @ApiResponse(responseCode = "200", description = "Form templates retrieved successfully", content = @Content(schema = @Schema(implementation = List.class))),
+                        @ApiResponse(responseCode = "404", description = "No current round found")
+        })
+        public ResponseEntity<List<FormTemplateResponse>> getFormTemplatesByCurrentRound() {
+                return ResponseEntity.ok(formTemplateService.getFormTemplatesByCurrentRound());
+        }
+
+        // 5. Cập nhật form template
         @PutMapping("/{id}")
         @ApiMessage("Cập nhật form template thành công")
         @Operation(summary = "Update Form Template", description = "Update form template by ID")
@@ -92,7 +104,7 @@ public class FormTemplateController {
                 return ResponseEntity.ok(formTemplateService.updateFormTemplate(id, request));
         }
 
-        // 5. Tạo form template với fields
+        // 6. Tạo form template với fields
         @PostMapping("/with-fields")
         @ApiMessage("Tạo form template với fields thành công")
         @Operation(summary = "Create Form Template with Fields", description = "Create a new form template with fields and table configuration")
@@ -105,7 +117,7 @@ public class FormTemplateController {
                 return ResponseEntity.ok(formTemplateService.createTemplateWithFields(request));
         }
 
-        // 6. Lấy danh sách form templates với pagination và filtering
+        // 7. Lấy danh sách form templates với pagination và filtering
         @GetMapping
         @ApiMessage("Lấy danh sách form templates với phân trang và tìm kiếm")
         @Operation(summary = "Get All Form Templates", description = "Get all form templates with pagination and filtering")

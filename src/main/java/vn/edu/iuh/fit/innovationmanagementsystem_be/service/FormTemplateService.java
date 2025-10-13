@@ -27,6 +27,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.ResultPaginationDTO;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.Utils;
 
 import java.util.List;
+import java.time.LocalDate;
 import java.util.stream.Collectors;
 
 @Service
@@ -81,7 +82,19 @@ public class FormTemplateService {
                 .collect(Collectors.toList());
     }
 
-    // 4. Cập nhật form template
+    // 4. Lấy tất cả form templates theo innovation round hiện tại
+    public List<FormTemplateResponse> getFormTemplatesByCurrentRound() {
+        InnovationRound currentRound = innovationRoundRepository.findCurrentActiveRound(LocalDate.now())
+                .orElseThrow(() -> new IdInvalidException("Không có innovation round hiện tại"));
+
+        List<FormTemplate> templates = formTemplateRepository
+                .findByInnovationRoundIdOrderByTemplateType(currentRound.getId());
+        return templates.stream()
+                .map(formTemplateMapper::toFormTemplateResponse)
+                .collect(Collectors.toList());
+    }
+
+    // 5. Cập nhật form template
     public FormTemplateResponse updateFormTemplate(String id, UpdateFormTemplateRequest request) {
         FormTemplate template = formTemplateRepository.findById(id)
                 .orElseThrow(() -> new IdInvalidException("Form template không tồn tại với ID: " + id));
@@ -105,7 +118,7 @@ public class FormTemplateService {
         return formTemplateMapper.toFormTemplateResponse(updatedTemplate);
     }
 
-    // 5. Tạo form template với fields
+    // 6. Tạo form template với fields
     @Transactional
     public CreateTemplateWithFieldsResponse createTemplateWithFields(CreateTemplateWithFieldsRequest request) {
         InnovationRound innovationRound = innovationRoundRepository.findById(request.getRoundId().trim())
@@ -128,6 +141,14 @@ public class FormTemplateService {
         formTemplateRepository.save(savedTemplate);
 
         return createTemplateWithFieldsResponse(savedTemplate);
+    }
+
+    // 7. Lấy tất cả form templates với phân trang và tìm kiếm
+    public ResultPaginationDTO getAllFormTemplatesWithPaginationAndSearch(
+            @NonNull Specification<FormTemplate> specification,
+            @NonNull Pageable pageable) {
+        Page<FormTemplate> templates = formTemplateRepository.findAll(specification, pageable);
+        return Utils.toResultPaginationDTO(templates.map(formTemplateMapper::toFormTemplateResponse), pageable);
     }
 
     private FormField createFormField(CreateTemplateWithFieldsRequest.FieldData fieldData, FormTemplate template) {
@@ -242,14 +263,6 @@ public class FormTemplateService {
         } catch (Exception e) {
             return null;
         }
-    }
-
-    // 6. Lấy tất cả form templates với phân trang và tìm kiếm
-    public ResultPaginationDTO getAllFormTemplatesWithPaginationAndSearch(
-            @NonNull Specification<FormTemplate> specification,
-            @NonNull Pageable pageable) {
-        Page<FormTemplate> templates = formTemplateRepository.findAll(specification, pageable);
-        return Utils.toResultPaginationDTO(templates.map(formTemplateMapper::toFormTemplateResponse), pageable);
     }
 
 }
