@@ -17,11 +17,8 @@ import org.springframework.web.bind.annotation.*;
 import com.turkraft.springfilter.boot.Filter;
 
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.FormTemplate;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.CreateFormTemplateRequest;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.CreateMultipleFormTemplatesRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.CreateTemplateWithFieldsRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.UpdateFormTemplateRequest;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.CreateMultipleFormTemplatesResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.CreateTemplateWithFieldsResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.FormTemplateResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.service.FormTemplateService;
@@ -67,7 +64,7 @@ public class FormTemplateController {
                 return ResponseEntity.ok(formTemplateService.getFormTemplatesByInnovationPhase(phaseId));
         }
 
-        // 2.1. Lấy form templates by innovation round
+        // 3. Lấy form templates by innovation round
         @GetMapping("/innovation-round/{roundId}")
         @ApiMessage("Lấy form templates theo innovation round thành công")
         @Operation(summary = "Get Form Templates by Innovation Round", description = "Get form templates filtered by innovation round ID")
@@ -80,33 +77,7 @@ public class FormTemplateController {
                 return ResponseEntity.ok(formTemplateService.getFormTemplatesByInnovationRound(roundId));
         }
 
-        // 3. Tạo form template
-        @PostMapping
-        @ApiMessage("Tạo form template thành công")
-        @Operation(summary = "Create Form Template", description = "Create a new form template")
-        @ApiResponses(value = {
-                        @ApiResponse(responseCode = "200", description = "Form template created successfully", content = @Content(schema = @Schema(implementation = FormTemplateResponse.class))),
-                        @ApiResponse(responseCode = "400", description = "Invalid request data")
-        })
-        public ResponseEntity<FormTemplateResponse> createFormTemplate(
-                        @Parameter(description = "Form template creation request", required = true) @Valid @RequestBody CreateFormTemplateRequest request) {
-                return ResponseEntity.ok(formTemplateService.createFormTemplate(request));
-        }
-
-        // 4. Tạo nhiều form templates
-        @PostMapping("/bulk")
-        @ApiMessage("Tạo nhiều form templates thành công")
-        @Operation(summary = "Create Multiple Form Templates", description = "Create multiple form templates")
-        @ApiResponses(value = {
-                        @ApiResponse(responseCode = "200", description = "Multiple form templates created successfully", content = @Content(schema = @Schema(implementation = CreateMultipleFormTemplatesResponse.class))),
-                        @ApiResponse(responseCode = "400", description = "Invalid request data")
-        })
-        public ResponseEntity<CreateMultipleFormTemplatesResponse> createMultipleFormTemplates(
-                        @Parameter(description = "Multiple form templates creation request", required = true) @Valid @RequestBody CreateMultipleFormTemplatesRequest request) {
-                return ResponseEntity.ok(formTemplateService.createMultipleFormTemplates(request));
-        }
-
-        // 5. Cập nhật form template
+        // 4. Cập nhật form template
         @PutMapping("/{id}")
         @ApiMessage("Cập nhật form template thành công")
         @Operation(summary = "Update Form Template", description = "Update form template by ID")
@@ -121,7 +92,7 @@ public class FormTemplateController {
                 return ResponseEntity.ok(formTemplateService.updateFormTemplate(id, request));
         }
 
-        // 6. Tạo form template với fields
+        // 5. Tạo form template với fields
         @PostMapping("/with-fields")
         @ApiMessage("Tạo form template với fields thành công")
         @Operation(summary = "Create Form Template with Fields", description = "Create a new form template with fields and table configuration")
@@ -134,7 +105,7 @@ public class FormTemplateController {
                 return ResponseEntity.ok(formTemplateService.createTemplateWithFields(request));
         }
 
-        // 7. Lấy danh sách form templates với pagination và filtering
+        // 6. Lấy danh sách form templates với pagination và filtering
         @GetMapping
         @ApiMessage("Lấy danh sách form templates với phân trang và tìm kiếm")
         @Operation(summary = "Get All Form Templates", description = "Get all form templates with pagination and filtering")

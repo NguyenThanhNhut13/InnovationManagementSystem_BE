@@ -27,7 +27,8 @@ public class SecurityConfig {
         private final String QUAN_TRI_VIEN_HE_THONG = UserRoleEnum.QUAN_TRI_VIEN_HE_THONG.name();
         private final String QUAN_TRI_VIEN_QLKH_HTQT = UserRoleEnum.QUAN_TRI_VIEN_QLKH_HTQT.name();
         private final String TRUONG_KHOA = UserRoleEnum.TRUONG_KHOA.name();
-        private final String QUAN_TRI_VIEN_KHOA = UserRoleEnum.QUAN_TRI_VIEN_KHOA.name();
+        // private final String QUAN_TRI_VIEN_KHOA =
+        // UserRoleEnum.QUAN_TRI_VIEN_KHOA.name();
         // private final String TV_HOI_DONG_KHOA = UserRoleEnum.TV_HOI_DONG_KHOA.name();
         // private final String TV_HOI_DONG_TRUONG =
         // UserRoleEnum.TV_HOI_DONG_TRUONG.name();
