@@ -74,6 +74,19 @@ public class FormTemplateService {
                 .collect(Collectors.toList());
     }
 
+    // 2.1. Lấy tất cả form templates by innovation round
+    public List<FormTemplateResponse> getFormTemplatesByInnovationRound(String roundId) {
+        // Kiểm tra innovation round có tồn tại không
+        InnovationRound round = innovationRoundRepository.findById(roundId)
+                .orElseThrow(() -> new IdInvalidException("Innovation round không tồn tại với ID: " + roundId));
+
+        List<FormTemplate> templates = formTemplateRepository
+                .findByInnovationRoundIdOrderByTemplateType(roundId);
+        return templates.stream()
+                .map(formTemplateMapper::toFormTemplateResponse)
+                .collect(Collectors.toList());
+    }
+
     // 3. Tạo form template
     public FormTemplateResponse createFormTemplate(CreateFormTemplateRequest request) {
 
