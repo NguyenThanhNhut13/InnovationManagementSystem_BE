@@ -79,7 +79,9 @@ public class AuthenticationService {
         } catch (BadCredentialsException e) {
             throw new IdInvalidException("Thông tin đăng nhập không hợp lệ");
         } catch (Exception e) {
-            throw new IdInvalidException("Xác thực thất bại: " + e.getMessage());
+            throw new IdInvalidException(
+                    "Đăng nhập thất bại, vui lòng kiểm tra lại thông tin đăng nhập hoặc liên hệ với quản trị viên - "
+                            + e.getMessage());
         }
     }
 
