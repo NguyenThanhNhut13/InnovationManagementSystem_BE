@@ -131,4 +131,19 @@ public class FormTemplateController {
                                 .ok(formTemplateService.getAllFormTemplatesWithPaginationAndSearch(specification,
                                                 pageable));
         }
+
+        // 8. Xóa form template (chỉ khi round đang DRAFT)
+        @DeleteMapping("/{id}")
+        @ApiMessage("Xóa form template thành công")
+        @Operation(summary = "Delete Form Template", description = "Delete a form template by ID (only when round is DRAFT)")
+        @ApiResponses(value = {
+                        @ApiResponse(responseCode = "200", description = "Form template deleted successfully"),
+                        @ApiResponse(responseCode = "400", description = "Invalid request"),
+                        @ApiResponse(responseCode = "404", description = "Form template not found")
+        })
+        public ResponseEntity<Void> deleteFormTemplate(
+                        @Parameter(description = "Form template ID", required = true) @PathVariable String id) {
+                formTemplateService.deleteFormTemplate(id);
+                return ResponseEntity.ok().build();
+        }
 }

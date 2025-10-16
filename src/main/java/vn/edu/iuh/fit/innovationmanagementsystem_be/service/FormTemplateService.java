@@ -234,6 +234,19 @@ public class FormTemplateService {
         return Utils.toResultPaginationDTO(templates.map(formTemplateMapper::toFormTemplateResponse), pageable);
     }
 
+    // 8. Xóa form template (chỉ khi round đang DRAFT)
+    public void deleteFormTemplate(String id) {
+        FormTemplate template = formTemplateRepository.findById(id)
+                .orElseThrow(() -> new IdInvalidException("Form template không tồn tại với ID: " + id));
+
+        InnovationRound round = template.getInnovationRound();
+        if (round == null || round.getStatus() != InnovationRoundStatusEnum.DRAFT) {
+            throw new IdInvalidException("Chỉ được xóa form template khi vòng đang ở trạng thái DRAFT");
+        }
+
+        formTemplateRepository.delete(template);
+    }
+
     private FormField createFormField(CreateTemplateWithFieldsRequest.FieldData fieldData, FormTemplate template) {
         FormField field = new FormField();
         field.setFieldKey(fieldData.getFieldKey());
