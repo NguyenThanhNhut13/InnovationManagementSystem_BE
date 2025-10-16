@@ -10,12 +10,20 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.core.io.InputStreamResource;
+import org.springframework.core.io.FileSystemResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
+import org.springframework.web.client.RestTemplate;
+import org.springframework.beans.factory.annotation.Value;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.FileExistsResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.FileInfoResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.FileUploadResponse;
@@ -40,6 +48,9 @@ import java.util.List;
 public class UtilsController {
 
     private final FileService fileService;
+
+    @Value("${CONVERTAPI_TOKEN:}")
+    private String convertApiToken;
 
     public UtilsController(FileService fileService) {
         this.fileService = fileService;
@@ -362,6 +373,65 @@ public class UtilsController {
                     .build();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(errorResponse);
+        }
+    }
+
+    // 9. ConvertAPI: DOC/DOCX -> HTML
+    @PostMapping(value = "/convert-word-to-html", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @Operation(summary = "Convert Word to HTML via ConvertAPI", description = "Proxy qua backend để ẩn token. Trả về base64 'FileData' từ ConvertAPI.")
+    public ResponseEntity<?> convertWordToHtmlViaThirdParty(
+            @RequestParam("file") MultipartFile file) {
+        File tempFile = null;
+        try {
+            if (file == null || file.isEmpty()) {
+                throw new IdInvalidException("Vui lòng chọn file DOC/DOCX");
+            }
+
+            if (convertApiToken == null || convertApiToken.isBlank()) {
+                throw new IdInvalidException("Thiếu CONVERTAPI_TOKEN trong môi trường/.env");
+            }
+
+            // Lưu file tạm để gửi multipart qua RestTemplate
+            tempFile = File.createTempFile("convert-", "-" + file.getOriginalFilename());
+            file.transferTo(tempFile);
+
+            String url = "https://v2.convertapi.com/convert/docx/to/html";
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+            headers.setBearerAuth(convertApiToken);
+
+            MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
+            body.add("file", new FileSystemResource(tempFile));
+
+            HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
+
+            // Tăng timeout upload file lớn
+            SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
+            requestFactory.setConnectTimeout(30_000);
+            requestFactory.setReadTimeout(120_000);
+
+            RestTemplate restTemplate = new RestTemplate(requestFactory);
+            ResponseEntity<String> thirdPartyResp = restTemplate.exchange(
+                    url,
+                    HttpMethod.POST,
+                    requestEntity,
+                    String.class);
+
+            return ResponseEntity.status(thirdPartyResp.getStatusCode())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(thirdPartyResp.getBody());
+
+        } catch (Exception ex) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(java.util.Map.of(
+                            "statusCode", 500,
+                            "message", "Lỗi proxy ConvertAPI: " + ex.getMessage()));
+        } finally {
+            if (tempFile != null && tempFile.exists()) {
+                tempFile.delete();
+            }
         }
     }
 
