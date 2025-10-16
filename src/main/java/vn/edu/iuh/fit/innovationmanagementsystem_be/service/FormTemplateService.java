@@ -13,6 +13,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.FormField;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.FormTemplate;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.InnovationPhase;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.InnovationRound;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationRoundStatusEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.FieldTypeEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.CreateTemplateWithFieldsRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.UpdateFormTemplateRequest;
@@ -27,6 +28,8 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.ResultPaginationDTO;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.Utils;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.time.LocalDate;
 import java.util.stream.Collectors;
 
@@ -99,8 +102,13 @@ public class FormTemplateService {
         FormTemplate template = formTemplateRepository.findById(id)
                 .orElseThrow(() -> new IdInvalidException("Form template không tồn tại với ID: " + id));
 
+        InnovationRound round = template.getInnovationRound();
+        if (round == null || round.getStatus() != InnovationRoundStatusEnum.DRAFT) {
+            throw new IdInvalidException("Chỉ được cập nhật form template khi vòng đang ở trạng thái DRAFT");
+        }
+
         if (request.getTemplateType() == null && request.getTargetRole() == null
-                && request.getTemplateContent() == null) {
+                && request.getTemplateContent() == null && (request.getFields() == null)) {
             throw new IdInvalidException("Ít nhất một trường phải được cung cấp để cập nhật");
         }
 
@@ -112,6 +120,81 @@ public class FormTemplateService {
         }
         if (request.getTemplateContent() != null) {
             template.setTemplateContent(request.getTemplateContent());
+        }
+
+        // Upsert danh sách FormField nếu có
+        if (request.getFields() != null) {
+            // Map các field hiện có theo id để tiện cập nhật/xóa
+            Map<String, FormField> existingById = template.getFormFields().stream()
+                    .filter(f -> f.getId() != null)
+                    .collect(java.util.stream.Collectors.toMap(FormField::getId, f -> f));
+
+            Set<String> incomingIds = new java.util.HashSet<>();
+
+            List<FormField> newList = new java.util.ArrayList<>();
+            for (UpdateFormTemplateRequest.FieldData fd : request.getFields()) {
+                FormField entity = null;
+                if (fd.getId() != null && existingById.containsKey(fd.getId())) {
+                    entity = existingById.get(fd.getId());
+                    incomingIds.add(fd.getId());
+                } else {
+                    entity = new FormField();
+                    entity.setFormTemplate(template);
+                }
+
+                if (fd.getFieldKey() != null)
+                    entity.setFieldKey(fd.getFieldKey());
+                if (fd.getLabel() != null)
+                    entity.setLabel(fd.getLabel());
+                if (fd.getType() != null)
+                    entity.setFieldType(fd.getType());
+                if (fd.getRequired() != null)
+                    entity.setRequired(fd.getRequired());
+                if (fd.getPlaceholder() != null)
+                    entity.setPlaceholder(fd.getPlaceholder());
+                if (fd.getRepeatable() != null)
+                    entity.setRepeatable(fd.getRepeatable());
+
+                // tableConfig/options/children: tận dụng mapper như create
+                if (fd.getType() == FieldTypeEnum.TABLE && fd.getTableConfig() != null) {
+                    try {
+                        ObjectMapper mapper = new ObjectMapper();
+                        JsonNode tableConfigJson = mapper
+                                .valueToTree(fd.getTableConfig());
+                        entity.setTableConfig(tableConfigJson);
+                    } catch (Exception e) {
+                        throw new IdInvalidException("Lỗi khi xử lý table config: " + e.getMessage());
+                    }
+                } else if (fd.getType() != FieldTypeEnum.TABLE) {
+                    entity.setTableConfig(null);
+                }
+
+                if (fd.getOptions() != null) {
+                    try {
+                        ObjectMapper mapper = new ObjectMapper();
+                        JsonNode optionsJson = mapper.valueToTree(fd.getOptions());
+                        entity.setOptions(optionsJson);
+                    } catch (Exception e) {
+                        throw new IdInvalidException("Lỗi khi xử lý options: " + e.getMessage());
+                    }
+                }
+
+                if (fd.getChildren() != null) {
+                    try {
+                        ObjectMapper mapper = new ObjectMapper();
+                        JsonNode childrenJson = mapper.valueToTree(fd.getChildren());
+                        entity.setChildren(childrenJson);
+                    } catch (Exception e) {
+                        throw new IdInvalidException("Lỗi khi xử lý children: " + e.getMessage());
+                    }
+                }
+
+                newList.add(entity);
+            }
+
+            // Xóa các field không còn trong request (orphanRemoval - db)
+            template.getFormFields().clear();
+            template.getFormFields().addAll(newList);
         }
 
         FormTemplate updatedTemplate = formTemplateRepository.save(template);

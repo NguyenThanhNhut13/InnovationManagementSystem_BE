@@ -43,7 +43,7 @@ public class InnovationDecisionService {
         return innovationDecisionMapper.toInnovationDecisionResponse(innovationDecision);
     }
 
-    // 2. Tạo Decision
+    // 2. Tạo InnovationDecision - Using InnovationRoundService
     @Transactional
     public InnovationDecision createDecision(InnovationDecisionRequest req) {
 
@@ -111,7 +111,7 @@ public class InnovationDecisionService {
         return innovationDecisionMapper.toInnovationDecisionResponse(innovationDecision);
     }
 
-    // 7. Lấy by date range
+    // 6. Lấy InnovationDecision by date range
     public ResultPaginationDTO getInnovationDecisionsByDateRange(LocalDate startDate, LocalDate endDate,
             Pageable pageable) {
 
