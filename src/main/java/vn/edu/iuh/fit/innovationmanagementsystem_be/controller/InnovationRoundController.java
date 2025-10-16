@@ -51,7 +51,7 @@ public class InnovationRoundController {
                                 .getAllInnovationRoundsWithPaginationAndFilter(specification, pageable));
         }
 
-        // 2. Get Innovation Rounds List
+        // 2. Get Innovation Rounds List - No InnovationDecision and InnovationPhase
         @GetMapping("/list")
         @ApiMessage("Lấy danh sách đợt sáng kiến cho hiển thị bảng thành công")
         @Operation(summary = "Get Innovation Rounds List for Table", description = "Get paginated list of innovation rounds with specific fields for table display")

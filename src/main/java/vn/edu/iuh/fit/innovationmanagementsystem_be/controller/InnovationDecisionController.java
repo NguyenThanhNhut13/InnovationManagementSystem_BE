@@ -62,7 +62,7 @@ public class InnovationDecisionController {
                 return ResponseEntity.ok(innovationDecisionService.getAllInnovationDecisions(specification, pageable));
         }
 
-        // 3. Lấy quyết định by Id
+        // 3. Lấy InnovationDecision by Id
         @GetMapping("/innovation-decisions/{id}")
         @ApiMessage("Lấy quyết định thành công")
         @Operation(summary = "Get Innovation Decision by ID", description = "Get innovation decision details by ID")
@@ -90,7 +90,7 @@ public class InnovationDecisionController {
                 return ResponseEntity.ok(innovationDecisionService.updateInnovationDecision(id, request));
         }
 
-        // 6. Lấy quyết định theo khoảng thời gian
+        // 5. Lấy quyết định theo khoảng thời gian
         @GetMapping("/innovation-decisions/date-range")
         @ApiMessage("Lấy quyết định theo khoảng thời gian thành công")
         @Operation(summary = "Get Innovation Decisions by Date Range", description = "Get innovation decisions filtered by date range")
