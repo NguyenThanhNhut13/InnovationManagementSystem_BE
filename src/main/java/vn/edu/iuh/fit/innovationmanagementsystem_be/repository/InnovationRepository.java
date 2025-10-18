@@ -33,4 +33,8 @@ public interface InnovationRepository extends JpaRepository<Innovation, String>,
     @Query("SELECT COUNT(i) FROM Innovation i WHERE i.user.id = :userId AND i.innovationRound.id = :roundId AND i.status = :status")
     long countByUserIdAndRoundIdAndStatus(@Param("userId") String userId, @Param("roundId") String roundId,
             @Param("status") InnovationStatusEnum status);
+
+    // Thống kê phần trăm kết quả sáng kiến đã nộp
+    @Query("SELECT COUNT(i) FROM Innovation i WHERE i.user.id = :userId AND i.status IN ('SUBMITTED', 'DRAFT')")
+    long countPendingInnovationsByUserId(@Param("userId") String userId);
 }

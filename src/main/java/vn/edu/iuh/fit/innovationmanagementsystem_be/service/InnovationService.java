@@ -264,6 +264,7 @@ public class InnovationService {
         User currentUser = userService.getCurrentUser();
         String userId = currentUser.getId();
 
+        // Thống kê cơ bản
         long totalInnovations = innovationRepository.countByUserId(userId);
         long submittedInnovations = innovationRepository.countByUserIdAndStatus(userId, InnovationStatusEnum.SUBMITTED);
         long approvedInnovations = innovationRepository.countByUserIdAndStatus(userId,
@@ -273,11 +274,24 @@ public class InnovationService {
                 InnovationStatusEnum.TRUONG_REJECTED);
         long rejectedInnovations = innovationRepository.countByUserIdAndStatusIn(userId, rejectedStatuses);
 
+        // Thống kê phần trăm kết quả sáng kiến đã nộp
+        long pendingCount = innovationRepository.countPendingInnovationsByUserId(userId);
+
+        // Tính phần trăm dựa trên tổng số sáng kiến
+        double achievedPercentage = totalInnovations > 0 ? (double) approvedInnovations / totalInnovations * 100 : 0.0;
+        double notAchievedPercentage = totalInnovations > 0 ? (double) rejectedInnovations / totalInnovations * 100
+                : 0.0;
+        double pendingPercentage = totalInnovations > 0 ? (double) pendingCount / totalInnovations * 100 : 0.0;
+
         return InnovationStatisticsDTO.builder()
                 .totalInnovations(totalInnovations)
                 .submittedInnovations(submittedInnovations)
                 .approvedInnovations(approvedInnovations)
                 .rejectedInnovations(rejectedInnovations)
+                .pendingCount(pendingCount)
+                .achievedPercentage(Math.round(achievedPercentage * 100.0) / 100.0)
+                .notAchievedPercentage(Math.round(notAchievedPercentage * 100.0) / 100.0)
+                .pendingPercentage(Math.round(pendingPercentage * 100.0) / 100.0)
                 .build();
     }
 
