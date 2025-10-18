@@ -16,6 +16,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.Innovation
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.FormDataResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationFormDataResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationResponse;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationStatisticsDTO;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.exception.IdInvalidException;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.mapper.InnovationMapper;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.InnovationRepository;
@@ -30,6 +31,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.Arrays;
 
 @Service
 @Transactional
@@ -255,6 +257,28 @@ public class InnovationService {
             throw new IdInvalidException("Status không hợp lệ: " + status + ". Các status hợp lệ: " +
                     java.util.Arrays.toString(InnovationStatusEnum.values()));
         }
+    }
+
+    // 7. Thống kê innovation cho giảng viên
+    public InnovationStatisticsDTO getInnovationStatisticsForCurrentUser() {
+        User currentUser = userService.getCurrentUser();
+        String userId = currentUser.getId();
+
+        long totalInnovations = innovationRepository.countByUserId(userId);
+        long submittedInnovations = innovationRepository.countByUserIdAndStatus(userId, InnovationStatusEnum.SUBMITTED);
+        long approvedInnovations = innovationRepository.countByUserIdAndStatus(userId,
+                InnovationStatusEnum.TRUONG_APPROVED);
+        List<InnovationStatusEnum> rejectedStatuses = Arrays.asList(
+                InnovationStatusEnum.KHOA_REJECTED,
+                InnovationStatusEnum.TRUONG_REJECTED);
+        long rejectedInnovations = innovationRepository.countByUserIdAndStatusIn(userId, rejectedStatuses);
+
+        return InnovationStatisticsDTO.builder()
+                .totalInnovations(totalInnovations)
+                .submittedInnovations(submittedInnovations)
+                .approvedInnovations(approvedInnovations)
+                .rejectedInnovations(rejectedInnovations)
+                .build();
     }
 
     /*

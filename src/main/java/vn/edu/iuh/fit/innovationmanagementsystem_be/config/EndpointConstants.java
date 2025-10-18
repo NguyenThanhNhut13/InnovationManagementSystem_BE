@@ -68,6 +68,11 @@ public final class EndpointConstants {
                         "/api/v1/innovation-decisions/{id}"
         };
 
+        // ================== INNOVATION ==================
+        public static final String[] INNOVATION_GET = {
+                        "/api/v1/innovations/statistics"
+        };
+
         // ================== INNOVATION ROUND ==================
         public static final String[] INNOVATION_ROUND_POST = {
                         "/api/v1/innovation-rounds"

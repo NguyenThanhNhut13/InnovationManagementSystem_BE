@@ -19,6 +19,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.Innovation;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.InnovationFormDataRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationFormDataResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationResponse;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationStatisticsDTO;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.service.InnovationService;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.ResultPaginationDTO;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.annotation.ApiMessage;
@@ -105,5 +106,19 @@ public class InnovationController {
             @RequestParam String status,
             Pageable pageable) {
         return ResponseEntity.ok(innovationService.getInnovationsByUserAndStatus(status, pageable));
+    }
+
+    // 7. Lấy thống kê sáng kiến của giảng viên
+    @GetMapping("/innovations/statistics")
+    @ApiMessage("Lấy thống kê sáng kiến thành công")
+    @Operation(summary = "Get Innovation Statistics", description = "Get innovation statistics for current user (GIANG_VIEN role)")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Statistics retrieved successfully", content = @Content(schema = @Schema(implementation = InnovationStatisticsDTO.class))),
+            @ApiResponse(responseCode = "401", description = "Unauthorized"),
+            @ApiResponse(responseCode = "403", description = "Forbidden - GIANG_VIEN role required")
+    })
+    public ResponseEntity<InnovationStatisticsDTO> getInnovationStatistics() {
+        InnovationStatisticsDTO statistics = innovationService.getInnovationStatisticsForCurrentUser();
+        return ResponseEntity.ok(statistics);
     }
 }

@@ -27,6 +27,7 @@ public class SecurityConfig {
         private final String QUAN_TRI_VIEN_HE_THONG = UserRoleEnum.QUAN_TRI_VIEN_HE_THONG.name();
         private final String QUAN_TRI_VIEN_QLKH_HTQT = UserRoleEnum.QUAN_TRI_VIEN_QLKH_HTQT.name();
         private final String TRUONG_KHOA = UserRoleEnum.TRUONG_KHOA.name();
+        private final String GIANG_VIEN = UserRoleEnum.GIANG_VIEN.name();
         // private final String QUAN_TRI_VIEN_KHOA =
         // UserRoleEnum.QUAN_TRI_VIEN_KHOA.name();
         // private final String TV_HOI_DONG_KHOA = UserRoleEnum.TV_HOI_DONG_KHOA.name();
@@ -97,6 +98,10 @@ public class SecurityConfig {
                                                 .requestMatchers(HttpMethod.PUT,
                                                                 EndpointConstants.INNOVATION_DECISION_PUT)
                                                 .hasAnyRole(QUAN_TRI_VIEN_HE_THONG, QUAN_TRI_VIEN_QLKH_HTQT)
+
+                                                // Innovation Statistics
+                                                .requestMatchers(HttpMethod.GET, EndpointConstants.INNOVATION_GET)
+                                                .hasRole(GIANG_VIEN)
 
                                                 // Innovation Round
                                                 .requestMatchers(HttpMethod.POST,
