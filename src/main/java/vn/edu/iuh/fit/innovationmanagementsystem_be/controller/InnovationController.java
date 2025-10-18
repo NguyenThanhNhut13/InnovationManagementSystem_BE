@@ -20,6 +20,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.Innovation
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationFormDataResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationStatisticsDTO;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationAcademicYearStatisticsDTO;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.service.InnovationService;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.ResultPaginationDTO;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.annotation.ApiMessage;
@@ -119,6 +120,21 @@ public class InnovationController {
     })
     public ResponseEntity<InnovationStatisticsDTO> getInnovationStatistics() {
         InnovationStatisticsDTO statistics = innovationService.getInnovationStatisticsForCurrentUser();
+        return ResponseEntity.ok(statistics);
+    }
+
+    // 8. Lấy thống kê sáng kiến theo năm học
+    @GetMapping("/innovations/statistics/academic-year")
+    @ApiMessage("Lấy thống kê sáng kiến theo năm học thành công")
+    @Operation(summary = "Get Innovation Statistics by Academic Year", description = "Get innovation statistics grouped by academic year for current user")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Academic year statistics retrieved successfully", content = @Content(schema = @Schema(implementation = InnovationAcademicYearStatisticsDTO.class))),
+            @ApiResponse(responseCode = "401", description = "Unauthorized"),
+            @ApiResponse(responseCode = "403", description = "Forbidden - GIANG_VIEN role required")
+    })
+    public ResponseEntity<InnovationAcademicYearStatisticsDTO> getInnovationStatisticsByAcademicYear() {
+        InnovationAcademicYearStatisticsDTO statistics = innovationService
+                .getInnovationStatisticsByAcademicYearForCurrentUser();
         return ResponseEntity.ok(statistics);
     }
 }

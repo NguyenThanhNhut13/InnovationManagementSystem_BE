@@ -17,6 +17,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.FormDataR
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationFormDataResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationStatisticsDTO;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationAcademicYearStatisticsDTO;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.exception.IdInvalidException;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.mapper.InnovationMapper;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.InnovationRepository;
@@ -28,6 +29,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -266,33 +268,155 @@ public class InnovationService {
 
         // Thống kê cơ bản
         long totalInnovations = innovationRepository.countByUserId(userId);
-        long submittedInnovations = innovationRepository.countByUserIdAndStatus(userId, InnovationStatusEnum.SUBMITTED);
-        long approvedInnovations = innovationRepository.countByUserIdAndStatus(userId,
-                InnovationStatusEnum.TRUONG_APPROVED);
+
+        // Các status cho từng loại
+        List<InnovationStatusEnum> submittedStatuses = Arrays.asList(
+                InnovationStatusEnum.DRAFT,
+                InnovationStatusEnum.SUBMITTED,
+                InnovationStatusEnum.PENDING_KHOA_REVIEW,
+                InnovationStatusEnum.KHOA_REVIEWED,
+                InnovationStatusEnum.KHOA_APPROVED,
+                InnovationStatusEnum.PENDING_TRUONG_REVIEW,
+                InnovationStatusEnum.TRUONG_REVIEWED);
+
+        List<InnovationStatusEnum> approvedStatuses = Arrays.asList(
+                InnovationStatusEnum.TRUONG_APPROVED,
+                InnovationStatusEnum.FINAL_APPROVED);
+
         List<InnovationStatusEnum> rejectedStatuses = Arrays.asList(
-                InnovationStatusEnum.KHOA_REJECTED,
-                InnovationStatusEnum.TRUONG_REJECTED);
+                InnovationStatusEnum.TRUONG_REJECTED,
+                InnovationStatusEnum.KHOA_REJECTED);
+
+        // Đếm số lượng
+        long submittedInnovations = innovationRepository.countByUserIdAndStatusIn(userId, submittedStatuses);
+        long approvedInnovations = innovationRepository.countByUserIdAndStatusIn(userId, approvedStatuses);
         long rejectedInnovations = innovationRepository.countByUserIdAndStatusIn(userId, rejectedStatuses);
 
-        // Thống kê phần trăm kết quả sáng kiến đã nộp
-        long pendingCount = innovationRepository.countPendingInnovationsByUserId(userId);
-
-        // Tính phần trăm dựa trên tổng số sáng kiến
+        // Tính phần trăm
         double achievedPercentage = totalInnovations > 0 ? (double) approvedInnovations / totalInnovations * 100 : 0.0;
         double notAchievedPercentage = totalInnovations > 0 ? (double) rejectedInnovations / totalInnovations * 100
                 : 0.0;
-        double pendingPercentage = totalInnovations > 0 ? (double) pendingCount / totalInnovations * 100 : 0.0;
+        double pendingPercentage = totalInnovations > 0 ? (double) submittedInnovations / totalInnovations * 100 : 0.0;
 
         return InnovationStatisticsDTO.builder()
                 .totalInnovations(totalInnovations)
                 .submittedInnovations(submittedInnovations)
                 .approvedInnovations(approvedInnovations)
                 .rejectedInnovations(rejectedInnovations)
-                .pendingCount(pendingCount)
                 .achievedPercentage(Math.round(achievedPercentage * 100.0) / 100.0)
                 .notAchievedPercentage(Math.round(notAchievedPercentage * 100.0) / 100.0)
                 .pendingPercentage(Math.round(pendingPercentage * 100.0) / 100.0)
                 .build();
+
+        /**
+         * pendingPercentage = DRAFT + SUBMITTED + PENDING_KHOA_REVIEW + KHOA_REVIEWED +
+         * KHOA_APPROVED + PENDING_TRUONG_REVIEW + TRUONG_REVIEWED
+         * achievedPercentage = FINAL_APPROVED + TRUONG_APPROVED
+         * notAchievedPercentage = KHOA_REJECTED + TRUONG_REJECTED
+         */
+    }
+
+    // 8.Lấy thống kê sáng kiến theo năm học cho user hiện tại
+    public InnovationAcademicYearStatisticsDTO getInnovationStatisticsByAcademicYear(String userId) {
+        // Lấy thống kê tổng số sáng kiến theo năm học
+        List<Object[]> totalInnovationsByYear = innovationRepository.countInnovationsByAcademicYearAndUserId(userId);
+        List<Object[]> submittedInnovationsByYear = innovationRepository
+                .countSubmittedInnovationsByAcademicYearAndUserId(userId);
+        List<Object[]> approvedInnovationsByYear = innovationRepository
+                .countApprovedInnovationsByAcademicYearAndUserId(userId);
+        List<Object[]> rejectedInnovationsByYear = innovationRepository
+                .countRejectedInnovationsByAcademicYearAndUserId(userId);
+        List<Object[]> pendingInnovationsByYear = innovationRepository
+                .countPendingInnovationsByAcademicYearAndUserId(userId);
+
+        Map<String, Long> totalMap = totalInnovationsByYear.stream()
+                .collect(Collectors.toMap(
+                        arr -> (String) arr[0],
+                        arr -> (Long) arr[1]));
+
+        Map<String, Long> submittedMap = submittedInnovationsByYear.stream()
+                .collect(Collectors.toMap(
+                        arr -> (String) arr[0],
+                        arr -> (Long) arr[1]));
+
+        Map<String, Long> approvedMap = approvedInnovationsByYear.stream()
+                .collect(Collectors.toMap(
+                        arr -> (String) arr[0],
+                        arr -> (Long) arr[1]));
+
+        Map<String, Long> rejectedMap = rejectedInnovationsByYear.stream()
+                .collect(Collectors.toMap(
+                        arr -> (String) arr[0],
+                        arr -> (Long) arr[1]));
+
+        Map<String, Long> pendingMap = pendingInnovationsByYear.stream()
+                .collect(Collectors.toMap(
+                        arr -> (String) arr[0],
+                        arr -> (Long) arr[1]));
+
+        // Tạo danh sách tất cả năm học
+        Set<String> allAcademicYears = new java.util.HashSet<>();
+        allAcademicYears.addAll(totalMap.keySet());
+        allAcademicYears.addAll(submittedMap.keySet());
+        allAcademicYears.addAll(approvedMap.keySet());
+        allAcademicYears.addAll(rejectedMap.keySet());
+        allAcademicYears.addAll(pendingMap.keySet());
+
+        // Sắp xếp năm học
+        List<String> sortedAcademicYears = allAcademicYears.stream()
+                .sorted()
+                .collect(Collectors.toList());
+
+        // Tạo danh sách dữ liệu theo năm học
+        List<InnovationAcademicYearStatisticsDTO.AcademicYearData> academicYearDataList = sortedAcademicYears.stream()
+                .map(academicYear -> {
+                    long totalInnovations = totalMap.getOrDefault(academicYear, 0L);
+                    long submittedInnovations = submittedMap.getOrDefault(academicYear, 0L);
+                    long approvedInnovations = approvedMap.getOrDefault(academicYear, 0L);
+                    long rejectedInnovations = rejectedMap.getOrDefault(academicYear, 0L);
+                    long pendingInnovations = pendingMap.getOrDefault(academicYear, 0L);
+
+                    // Tính phần trăm
+                    double approvedPercentage = totalInnovations > 0
+                            ? Math.round((double) approvedInnovations / totalInnovations * 100 * 100.0) / 100.0
+                            : 0.0;
+                    double rejectedPercentage = totalInnovations > 0
+                            ? Math.round((double) rejectedInnovations / totalInnovations * 100 * 100.0) / 100.0
+                            : 0.0;
+                    double pendingPercentage = totalInnovations > 0
+                            ? Math.round((double) pendingInnovations / totalInnovations * 100 * 100.0) / 100.0
+                            : 0.0;
+
+                    return InnovationAcademicYearStatisticsDTO.AcademicYearData.builder()
+                            .academicYear(academicYear)
+                            .totalInnovations(totalInnovations)
+                            .submittedInnovations(submittedInnovations)
+                            .approvedInnovations(approvedInnovations)
+                            .rejectedInnovations(rejectedInnovations)
+                            .pendingInnovations(pendingInnovations)
+                            .approvedPercentage(approvedPercentage)
+                            .rejectedPercentage(rejectedPercentage)
+                            .pendingPercentage(pendingPercentage)
+                            .build();
+                })
+                .collect(Collectors.toList());
+
+        // Tính tổng số sáng kiến và số năm học
+        long totalInnovations = totalMap.values().stream().mapToLong(Long::longValue).sum();
+
+        return InnovationAcademicYearStatisticsDTO.builder()
+                .academicYearData(academicYearDataList)
+                .totalInnovations(totalInnovations)
+                .totalAcademicYears(sortedAcademicYears.size())
+                .build();
+    }
+
+    /**
+     * Lấy thống kê sáng kiến theo năm học cho user hiện tại
+     */
+    public InnovationAcademicYearStatisticsDTO getInnovationStatisticsByAcademicYearForCurrentUser() {
+        String currentUserId = userService.getCurrentUserId();
+        return getInnovationStatisticsByAcademicYear(currentUserId);
     }
 
     /*

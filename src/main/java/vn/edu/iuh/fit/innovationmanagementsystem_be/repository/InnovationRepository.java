@@ -37,4 +37,20 @@ public interface InnovationRepository extends JpaRepository<Innovation, String>,
     // Thống kê phần trăm kết quả sáng kiến đã nộp
     @Query("SELECT COUNT(i) FROM Innovation i WHERE i.user.id = :userId AND i.status IN ('SUBMITTED', 'DRAFT')")
     long countPendingInnovationsByUserId(@Param("userId") String userId);
+
+    // Thống kê sáng kiến theo năm học
+    @Query("SELECT ir.academicYear, COUNT(i) FROM Innovation i JOIN i.innovationRound ir WHERE i.user.id = :userId GROUP BY ir.academicYear ORDER BY ir.academicYear")
+    List<Object[]> countInnovationsByAcademicYearAndUserId(@Param("userId") String userId);
+
+    @Query("SELECT ir.academicYear, COUNT(i) FROM Innovation i JOIN i.innovationRound ir WHERE i.user.id = :userId AND i.status IN ('SUBMITTED', 'DRAFT', 'PENDING_KHOA_REVIEW', 'KHOA_REVIEWED', 'KHOA_APPROVED', 'PENDING_TRUONG_REVIEW', 'TRUONG_REVIEWED', 'TRUONG_APPROVED', 'TRUONG_REJECTED', 'KHOA_REJECTED', 'FINAL_APPROVED') GROUP BY ir.academicYear ORDER BY ir.academicYear")
+    List<Object[]> countSubmittedInnovationsByAcademicYearAndUserId(@Param("userId") String userId);
+
+    @Query("SELECT ir.academicYear, COUNT(i) FROM Innovation i JOIN i.innovationRound ir WHERE i.user.id = :userId AND i.status = 'TRUONG_APPROVED' GROUP BY ir.academicYear ORDER BY ir.academicYear")
+    List<Object[]> countApprovedInnovationsByAcademicYearAndUserId(@Param("userId") String userId);
+
+    @Query("SELECT ir.academicYear, COUNT(i) FROM Innovation i JOIN i.innovationRound ir WHERE i.user.id = :userId AND i.status IN ('KHOA_REJECTED', 'TRUONG_REJECTED') GROUP BY ir.academicYear ORDER BY ir.academicYear")
+    List<Object[]> countRejectedInnovationsByAcademicYearAndUserId(@Param("userId") String userId);
+
+    @Query("SELECT ir.academicYear, COUNT(i) FROM Innovation i JOIN i.innovationRound ir WHERE i.user.id = :userId AND i.status IN ('SUBMITTED', 'DRAFT') GROUP BY ir.academicYear ORDER BY ir.academicYear")
+    List<Object[]> countPendingInnovationsByAcademicYearAndUserId(@Param("userId") String userId);
 }
