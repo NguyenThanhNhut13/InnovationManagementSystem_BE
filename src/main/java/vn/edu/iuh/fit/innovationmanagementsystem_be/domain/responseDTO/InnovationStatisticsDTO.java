@@ -16,9 +16,6 @@ public class InnovationStatisticsDTO {
     private long approvedInnovations; // Sáng kiến được duyệt (TRUONG_APPROVED)
     private long rejectedInnovations; // Sáng kiến bị trả lại (KHOA_REJECTED hoặc TRUONG_REJECTED)
 
-    // Thống kê phần trăm kết quả sáng kiến đã nộp
-    private long pendingCount; // Số sáng kiến đang chờ duyệt (SUBMITTED + DRAFT)
-
     // Phần trăm
     private double achievedPercentage; // % đạt
     private double notAchievedPercentage; // % không đạt
