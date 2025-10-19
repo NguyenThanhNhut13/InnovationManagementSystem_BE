@@ -295,8 +295,9 @@ public class InnovationService {
                 }
         }
 
-        // 7. Lấy tất cả sáng kiến của user hiện tại
-        public ResultPaginationDTO getAllInnovationsByCurrentUser(Pageable pageable) {
+        // 7. Lấy tất cả sáng kiến của user hiện tại với filter
+        public ResultPaginationDTO getAllInnovationsByCurrentUserWithFilter(Specification<Innovation> specification,
+                        Pageable pageable) {
                 if (pageable.getSort().isUnsorted()) {
                         pageable = PageRequest.of(
                                         pageable.getPageNumber(),
@@ -305,7 +306,16 @@ public class InnovationService {
                 }
 
                 String currentUserId = userService.getCurrentUserId();
-                Page<Innovation> innovations = innovationRepository.findByUserId(currentUserId, pageable);
+
+                // Tạo Specification để filter theo user hiện tại
+                Specification<Innovation> userSpec = Specification.where(
+                                (root, query, criteriaBuilder) -> criteriaBuilder.equal(root.get("user").get("id"),
+                                                currentUserId));
+
+                // Kết hợp với specification từ SpringFilter
+                Specification<Innovation> combinedSpec = userSpec.and(specification);
+
+                Page<Innovation> innovations = innovationRepository.findAll(combinedSpec, pageable);
                 Page<InnovationResponse> responses = innovations.map(innovationMapper::toInnovationResponse);
                 return Utils.toResultPaginationDTO(responses, pageable);
         }
