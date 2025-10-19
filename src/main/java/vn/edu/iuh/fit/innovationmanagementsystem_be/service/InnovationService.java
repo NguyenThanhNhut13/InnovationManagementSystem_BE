@@ -18,6 +18,8 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.Innovatio
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationStatisticsDTO;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationAcademicYearStatisticsDTO;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.UpcomingDeadlineResponse;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.UpcomingDeadlinesResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.exception.IdInvalidException;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.mapper.InnovationMapper;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.InnovationRepository;
@@ -34,6 +36,9 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.Arrays;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 
 @Service
 @Transactional
@@ -45,19 +50,22 @@ public class InnovationService {
         private final InnovationMapper innovationMapper;
         private final UserService userService;
         private final DigitalSignatureService digitalSignatureService;
+        private final InnovationRoundService innovationRoundService;
 
         public InnovationService(InnovationRepository innovationRepository,
                         InnovationPhaseRepository innovationPhaseRepository,
                         FormDataService formDataService,
                         InnovationMapper innovationMapper,
                         UserService userService,
-                        DigitalSignatureService digitalSignatureService) {
+                        DigitalSignatureService digitalSignatureService,
+                        InnovationRoundService innovationRoundService) {
                 this.innovationRepository = innovationRepository;
                 this.innovationPhaseRepository = innovationPhaseRepository;
                 this.formDataService = formDataService;
                 this.innovationMapper = innovationMapper;
                 this.userService = userService;
                 this.digitalSignatureService = digitalSignatureService;
+                this.innovationRoundService = innovationRoundService;
         }
 
         // 1. Lấy tất cả sáng kiến
@@ -429,6 +437,74 @@ public class InnovationService {
                 User currentUser = userService.getCurrentUser();
                 String userId = currentUser.getId();
                 return getInnovationStatisticsByAcademicYear(userId);
+        }
+
+        // 10. Lấy hạn chót sắp tới từ round hiện tại
+        public UpcomingDeadlinesResponse getUpcomingDeadlines() {
+                // Lấy round hiện tại
+                var currentRound = innovationRoundService.getCurrentRound();
+                if (currentRound == null) {
+                        return UpcomingDeadlinesResponse.builder()
+                                        .upcomingDeadlines(List.of())
+                                        .totalDeadlines(0)
+                                        .currentRoundName("Không có đợt sáng kiến nào đang diễn ra")
+                                        .academicYear("")
+                                        .build();
+                }
+
+                // Lấy tất cả phases của round hiện tại
+                List<InnovationPhase> phases = innovationPhaseRepository
+                                .findByInnovationRoundIdOrderByPhaseOrder(currentRound.getId());
+
+                LocalDate today = LocalDate.now();
+                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+
+                List<UpcomingDeadlineResponse> upcomingDeadlines = phases.stream()
+                                .filter(phase -> phase.getPhaseEndDate().isAfter(today)
+                                                || phase.getPhaseEndDate().isEqual(today))
+                                .map(phase -> {
+                                        long daysRemaining = ChronoUnit.DAYS.between(today, phase.getPhaseEndDate());
+
+                                        return UpcomingDeadlineResponse.builder()
+                                                        .id(phase.getId())
+                                                        .title(generateDeadlineTitle(phase))
+                                                        .deadlineDate(phase.getPhaseEndDate())
+                                                        .formattedDate(phase.getPhaseEndDate().format(formatter))
+                                                        .daysRemaining(daysRemaining)
+                                                        .phaseType(phase.getPhaseType().getValue())
+                                                        .level(phase.getLevel() != null ? phase.getLevel().getValue()
+                                                                        : "")
+                                                        .description(phase.getDescription())
+                                                        .isDeadline(phase.getIsDeadline())
+                                                        .build();
+                                })
+                                .sorted((a, b) -> a.getDeadlineDate().compareTo(b.getDeadlineDate()))
+                                .collect(Collectors.toList());
+
+                return UpcomingDeadlinesResponse.builder()
+                                .upcomingDeadlines(upcomingDeadlines)
+                                .totalDeadlines(upcomingDeadlines.size())
+                                .currentRoundName(currentRound.getName())
+                                .academicYear(currentRound.getAcademicYear())
+                                .build();
+        }
+
+        /*
+         * Helper method: Tạo tiêu đề cho deadline dựa trên phase
+         */
+        private String generateDeadlineTitle(InnovationPhase phase) {
+                String baseTitle = phase.getName();
+
+                switch (phase.getPhaseType()) {
+                        case SUBMISSION:
+                                return "Hạn nộp " + baseTitle;
+                        case SCORING:
+                                return "Hạn chấm điểm " + baseTitle;
+                        case ANNOUNCEMENT:
+                                return "Hạn công bố " + baseTitle;
+                        default:
+                                return baseTitle;
+                }
         }
 
         /*

@@ -21,6 +21,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.Innovatio
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationStatisticsDTO;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationAcademicYearStatisticsDTO;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.UpcomingDeadlinesResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.service.InnovationService;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.ResultPaginationDTO;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.annotation.ApiMessage;
@@ -136,5 +137,19 @@ public class InnovationController {
         InnovationAcademicYearStatisticsDTO statistics = innovationService
                 .getInnovationStatisticsByAcademicYearForCurrentUser();
         return ResponseEntity.ok(statistics);
+    }
+
+    // 9. Lấy hạn chót sắp tới
+    @GetMapping("/innovations/upcoming-deadlines")
+    @ApiMessage("Lấy danh sách hạn chót sắp tới thành công")
+    @Operation(summary = "Get Upcoming Deadlines", description = "Get upcoming deadlines from current active innovation round")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Upcoming deadlines retrieved successfully", content = @Content(schema = @Schema(implementation = UpcomingDeadlinesResponse.class))),
+            @ApiResponse(responseCode = "401", description = "Unauthorized"),
+            @ApiResponse(responseCode = "404", description = "No active round found")
+    })
+    public ResponseEntity<UpcomingDeadlinesResponse> getUpcomingDeadlines() {
+        UpcomingDeadlinesResponse deadlines = innovationService.getUpcomingDeadlines();
+        return ResponseEntity.ok(deadlines);
     }
 }
