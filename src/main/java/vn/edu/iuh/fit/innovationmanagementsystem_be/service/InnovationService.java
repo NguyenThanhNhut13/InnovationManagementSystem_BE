@@ -1,7 +1,9 @@
 package vn.edu.iuh.fit.innovationmanagementsystem_be.service;
 
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -293,7 +295,22 @@ public class InnovationService {
                 }
         }
 
-        // 7. Thống kê innovation cho giảng viên
+        // 7. Lấy tất cả sáng kiến của user hiện tại
+        public ResultPaginationDTO getAllInnovationsByCurrentUser(Pageable pageable) {
+                if (pageable.getSort().isUnsorted()) {
+                        pageable = PageRequest.of(
+                                        pageable.getPageNumber(),
+                                        pageable.getPageSize(),
+                                        Sort.by("createdAt").descending());
+                }
+
+                String currentUserId = userService.getCurrentUserId();
+                Page<Innovation> innovations = innovationRepository.findByUserId(currentUserId, pageable);
+                Page<InnovationResponse> responses = innovations.map(innovationMapper::toInnovationResponse);
+                return Utils.toResultPaginationDTO(responses, pageable);
+        }
+
+        // 8. Thống kê innovation cho giảng viên
         public InnovationStatisticsDTO getInnovationStatisticsForCurrentUser() {
                 User currentUser = userService.getCurrentUser();
                 String userId = currentUser.getId();

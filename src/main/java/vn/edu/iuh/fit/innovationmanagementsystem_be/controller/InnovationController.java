@@ -113,8 +113,21 @@ public class InnovationController {
                 return ResponseEntity.ok(response);
         }
 
-        // 6. Lấy danh sách sáng kiến của tôi theo trạng thái
+        // 6. Lấy tất cả sáng kiến của user hiện tại
         @GetMapping("/innovations/my-innovations")
+        @ApiMessage("Lấy danh sách sáng kiến của tôi thành công")
+        @Operation(summary = "Get My Innovations", description = "Get paginated list of all innovations for current user")
+        @ApiResponses(value = {
+                        @ApiResponse(responseCode = "200", description = "User innovations retrieved successfully", content = @Content(schema = @Schema(implementation = ResultPaginationDTO.class))),
+                        @ApiResponse(responseCode = "401", description = "Unauthorized")
+        })
+        public ResponseEntity<ResultPaginationDTO> getMyInnovations(
+                        @Parameter(description = "Pagination parameters") Pageable pageable) {
+                return ResponseEntity.ok(innovationService.getAllInnovationsByCurrentUser(pageable));
+        }
+
+        // 7. Lấy danh sách sáng kiến của tôi theo trạng thái
+        @GetMapping("/innovations/my-innovations/by-status")
         @ApiMessage("Lấy danh sách sáng kiến của tôi theo trạng thái thành công")
         public ResponseEntity<ResultPaginationDTO> getMyInnovationsByStatus(
                         @RequestParam String status,
