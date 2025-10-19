@@ -33,6 +33,7 @@ public class InnovationResponse {
     // Innovation Round info
     private String innovationRoundId;
     private String innovationRoundName;
+    private String academicYear;
 
     // Audit info
     private LocalDateTime createdAt;

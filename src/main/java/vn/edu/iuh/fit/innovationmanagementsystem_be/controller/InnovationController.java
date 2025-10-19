@@ -16,12 +16,7 @@ import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
 import java.util.List;
-import java.util.Map;
-import java.util.HashMap;
-import java.util.stream.Collectors;
-import org.springframework.data.domain.PageRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.Innovation;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.ActivityLog;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.InnovationFormDataRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationFormDataResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationResponse;
@@ -34,7 +29,6 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.service.InnovationService;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.service.ActivityLogService;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.ActivityLogRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.service.UserService;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationStatusEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.ResultPaginationDTO;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.annotation.ApiMessage;
 
@@ -47,14 +41,13 @@ public class InnovationController {
         private final InnovationService innovationService;
         private final ActivityLogService activityLogService;
         private final UserService userService;
-        private final ActivityLogRepository activityLogRepository;
 
         public InnovationController(InnovationService innovationService, ActivityLogService activityLogService,
                         UserService userService, ActivityLogRepository activityLogRepository) {
                 this.innovationService = innovationService;
                 this.activityLogService = activityLogService;
                 this.userService = userService;
-                this.activityLogRepository = activityLogRepository;
+
         }
 
         // 1. Lấy danh sách sáng kiến
