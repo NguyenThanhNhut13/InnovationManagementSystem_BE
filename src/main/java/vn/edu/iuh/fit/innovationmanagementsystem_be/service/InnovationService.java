@@ -51,6 +51,7 @@ public class InnovationService {
         private final UserService userService;
         private final DigitalSignatureService digitalSignatureService;
         private final InnovationRoundService innovationRoundService;
+        private final ActivityLogService activityLogService;
 
         public InnovationService(InnovationRepository innovationRepository,
                         InnovationPhaseRepository innovationPhaseRepository,
@@ -58,7 +59,8 @@ public class InnovationService {
                         InnovationMapper innovationMapper,
                         UserService userService,
                         DigitalSignatureService digitalSignatureService,
-                        InnovationRoundService innovationRoundService) {
+                        InnovationRoundService innovationRoundService,
+                        ActivityLogService activityLogService) {
                 this.innovationRepository = innovationRepository;
                 this.innovationPhaseRepository = innovationPhaseRepository;
                 this.formDataService = formDataService;
@@ -66,6 +68,7 @@ public class InnovationService {
                 this.userService = userService;
                 this.digitalSignatureService = digitalSignatureService;
                 this.innovationRoundService = innovationRoundService;
+                this.activityLogService = activityLogService;
         }
 
         // 1. Lấy tất cả sáng kiến
@@ -121,6 +124,14 @@ public class InnovationService {
                 }
 
                 Innovation savedInnovation = innovationRepository.save(innovation);
+
+                // Tạo activity log
+                activityLogService.createActivityLog(
+                                currentUser.getId(),
+                                savedInnovation.getId(),
+                                savedInnovation.getInnovationName(),
+                                InnovationStatusEnum.DRAFT,
+                                "Bạn đã tạo sáng kiến mới '" + savedInnovation.getInnovationName() + "'");
 
                 List<FormDataResponse> formDataResponses = request.getFormDataItems().stream()
                                 .map(item -> {
@@ -205,6 +216,14 @@ public class InnovationService {
 
                         innovation.setStatus(InnovationStatusEnum.SUBMITTED);
                         innovationRepository.save(innovation);
+
+                        // Tạo activity log
+                        activityLogService.createActivityLog(
+                                        innovation.getUser().getId(),
+                                        innovation.getId(),
+                                        innovation.getInnovationName(),
+                                        InnovationStatusEnum.SUBMITTED,
+                                        "Bạn đã nộp sáng kiến '" + innovation.getInnovationName() + "'");
                 }
 
                 // Tạo documentHash từ dữ liệu form
@@ -589,6 +608,83 @@ public class InnovationService {
                 } catch (NoSuchAlgorithmException e) {
                         throw new IdInvalidException("Không thể tạo document hash: " + e.getMessage(), e);
                 }
+        }
+
+        // 10. Duyệt sáng kiến
+        public InnovationResponse approveInnovation(String innovationId, String reason) {
+                Innovation innovation = innovationRepository.findById(innovationId)
+                                .orElseThrow(() -> new IdInvalidException(
+                                                "Không tìm thấy sáng kiến với ID: " + innovationId));
+
+                // Cập nhật status dựa trên level hiện tại
+                InnovationStatusEnum currentStatus = innovation.getStatus();
+                InnovationStatusEnum newStatus;
+
+                switch (currentStatus) {
+                        case SUBMITTED:
+                                newStatus = InnovationStatusEnum.KHOA_APPROVED;
+                                break;
+                        case KHOA_APPROVED:
+                                newStatus = InnovationStatusEnum.TRUONG_APPROVED;
+                                break;
+                        case TRUONG_APPROVED:
+                                newStatus = InnovationStatusEnum.FINAL_APPROVED;
+                                break;
+                        default:
+                                throw new IdInvalidException(
+                                                "Không thể duyệt sáng kiến ở trạng thái hiện tại: " + currentStatus);
+                }
+
+                innovation.setStatus(newStatus);
+                Innovation savedInnovation = innovationRepository.save(innovation);
+
+                // Tạo activity log
+                activityLogService.createActivityLog(
+                                innovation.getUser().getId(),
+                                innovation.getId(),
+                                innovation.getInnovationName(),
+                                InnovationStatusEnum.KHOA_APPROVED,
+                                "Sáng kiến '" + innovation.getInnovationName() + "' đã được duyệt" +
+                                                (reason != null ? " - " + reason : ""));
+
+                return innovationMapper.toInnovationResponse(savedInnovation);
+        }
+
+        // 11. Từ chối sáng kiến
+        public InnovationResponse rejectInnovation(String innovationId, String reason) {
+                Innovation innovation = innovationRepository.findById(innovationId)
+                                .orElseThrow(() -> new IdInvalidException(
+                                                "Không tìm thấy sáng kiến với ID: " + innovationId));
+
+                // Cập nhật status dựa trên level hiện tại
+                InnovationStatusEnum currentStatus = innovation.getStatus();
+                InnovationStatusEnum newStatus;
+
+                switch (currentStatus) {
+                        case SUBMITTED:
+                                newStatus = InnovationStatusEnum.KHOA_REJECTED;
+                                break;
+                        case KHOA_APPROVED:
+                                newStatus = InnovationStatusEnum.TRUONG_REJECTED;
+                                break;
+                        default:
+                                throw new IdInvalidException(
+                                                "Không thể từ chối sáng kiến ở trạng thái hiện tại: " + currentStatus);
+                }
+
+                innovation.setStatus(newStatus);
+                Innovation savedInnovation = innovationRepository.save(innovation);
+
+                // Tạo activity log
+                activityLogService.createActivityLog(
+                                innovation.getUser().getId(),
+                                innovation.getId(),
+                                innovation.getInnovationName(),
+                                InnovationStatusEnum.KHOA_REJECTED,
+                                "Sáng kiến '" + innovation.getInnovationName() + "' đã bị từ chối" +
+                                                (reason != null ? " - " + reason : ""));
+
+                return innovationMapper.toInnovationResponse(savedInnovation);
         }
 
 }

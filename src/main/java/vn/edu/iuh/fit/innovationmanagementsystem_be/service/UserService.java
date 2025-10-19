@@ -301,7 +301,18 @@ public class UserService {
             }
 
             String token = authHeader.substring(7);
-            return jwtTokenUtil.extractUsername(token);
+            String personnelId = jwtTokenUtil.extractUsername(token);
+
+            if (personnelId == null) {
+                throw new IdInvalidException("Không thể extract personnel ID từ token");
+            }
+
+            Optional<User> userOpt = userRepository.findByPersonnelId(personnelId);
+            if (userOpt.isEmpty()) {
+                throw new IdInvalidException("Không tìm thấy người dùng với personnel ID: " + personnelId);
+            }
+
+            return userOpt.get().getId();
 
         } catch (Exception e) {
             throw new IdInvalidException("Lỗi khi lấy user ID: " + e.getMessage());
