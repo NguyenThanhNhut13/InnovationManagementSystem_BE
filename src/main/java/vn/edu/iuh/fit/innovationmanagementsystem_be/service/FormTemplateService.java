@@ -15,8 +15,10 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.InnovationPhase
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.InnovationRound;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationRoundStatusEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.FieldTypeEnum;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.CreateTemplateRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.CreateTemplateWithFieldsRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.UpdateFormTemplateRequest;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.CreateTemplateResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.CreateTemplateWithFieldsResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.FormTemplateResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.exception.IdInvalidException;
@@ -247,6 +249,18 @@ public class FormTemplateService {
         formTemplateRepository.delete(template);
     }
 
+    // 9. Lấy FormTemplate (không gắn round cụ thể) với pagination và filtering
+    public ResultPaginationDTO getTemplateLibraryWithPaginationAndSearch(
+            @NonNull Specification<FormTemplate> specification,
+            @NonNull Pageable pageable) {
+
+        Specification<FormTemplate> librarySpecification = specification
+                .and((root, query, criteriaBuilder) -> criteriaBuilder.isNull(root.get("innovationRound")));
+
+        Page<FormTemplate> templates = formTemplateRepository.findAll(librarySpecification, pageable);
+        return Utils.toResultPaginationDTO(templates.map(formTemplateMapper::toFormTemplateResponse), pageable);
+    }
+
     private FormField createFormField(CreateTemplateWithFieldsRequest.FieldData fieldData, FormTemplate template) {
         FormField field = new FormField();
         field.setFieldKey(fieldData.getFieldKey());
@@ -361,4 +375,146 @@ public class FormTemplateService {
         }
     }
 
+    // 10. Tạo form template không gắn round cụ thể (template chung)
+    @Transactional
+    public CreateTemplateResponse createTemplate(CreateTemplateRequest request) {
+        FormTemplate template = new FormTemplate();
+        template.setTemplateType(request.getTemplateType());
+        template.setTargetRole(request.getTargetRole());
+        template.setTemplateContent(request.getTemplateContent());
+
+        if (request.getRoundId() != null && !request.getRoundId().trim().isEmpty()) {
+            InnovationRound innovationRound = innovationRoundRepository.findById(request.getRoundId().trim())
+                    .orElseThrow(() -> new IdInvalidException(
+                            "Innovation round không tồn tại với ID: " + request.getRoundId()));
+            template.setInnovationRound(innovationRound);
+        } else {
+            template.setInnovationRound(null);
+        }
+
+        FormTemplate savedTemplate = formTemplateRepository.save(template);
+
+        List<FormField> formFields = request.getFields().stream()
+                .map(fieldData -> createFormFieldFromTemplateRequest(fieldData, savedTemplate))
+                .collect(Collectors.toList());
+
+        savedTemplate.setFormFields(formFields);
+        formTemplateRepository.save(savedTemplate);
+
+        return createTemplateResponse(savedTemplate);
+    }
+
+    private FormField createFormFieldFromTemplateRequest(CreateTemplateRequest.FieldData fieldData,
+            FormTemplate template) {
+        FormField field = new FormField();
+        field.setFieldKey(fieldData.getFieldKey());
+        field.setLabel(fieldData.getLabel());
+        field.setFieldType(fieldData.getType());
+        field.setRequired(fieldData.getRequired());
+        field.setPlaceholder(fieldData.getPlaceholder());
+        field.setFormTemplate(template);
+        field.setRepeatable(fieldData.getRepeatable() != null ? fieldData.getRepeatable() : false);
+
+        // Xử lý table config nếu field type là TABLE
+        if (fieldData.getType() == FieldTypeEnum.TABLE && fieldData.getTableConfig() != null) {
+            try {
+                ObjectMapper mapper = new ObjectMapper();
+                JsonNode tableConfigJson = mapper.valueToTree(fieldData.getTableConfig());
+                field.setTableConfig(tableConfigJson);
+            } catch (Exception e) {
+                throw new IdInvalidException("Lỗi khi xử lý table config: " + e.getMessage());
+            }
+        }
+
+        // Xử lý options nếu field có options (DROPDOWN, RADIO, CHECKBOX)
+        if (fieldData.getOptions() != null && !fieldData.getOptions().isEmpty()) {
+            try {
+                ObjectMapper mapper = new ObjectMapper();
+                JsonNode optionsJson = mapper.valueToTree(fieldData.getOptions());
+                field.setOptions(optionsJson);
+            } catch (Exception e) {
+                throw new IdInvalidException("Lỗi khi xử lý options: " + e.getMessage());
+            }
+        }
+
+        // Xử lý children nếu field có children (SECTION type)
+        if (fieldData.getChildren() != null && !fieldData.getChildren().isEmpty()) {
+            try {
+                ObjectMapper mapper = new ObjectMapper();
+                JsonNode childrenJson = mapper.valueToTree(fieldData.getChildren());
+                field.setChildren(childrenJson);
+            } catch (Exception e) {
+                throw new IdInvalidException("Lỗi khi xử lý children: " + e.getMessage());
+            }
+        }
+
+        return field;
+    }
+
+    private CreateTemplateResponse createTemplateResponse(FormTemplate template) {
+        CreateTemplateResponse response = new CreateTemplateResponse();
+        response.setId(template.getId());
+        response.setTemplateContent(template.getTemplateContent());
+        response.setTemplateType(template.getTemplateType());
+        response.setTargetRole(template.getTargetRole());
+        response.setRoundId(template.getInnovationRound() != null ? template.getInnovationRound().getId() : null);
+        response.setCreatedAt(template.getCreatedAt());
+        response.setUpdatedAt(template.getUpdatedAt());
+        response.setCreatedBy(template.getCreatedBy());
+        response.setUpdatedBy(template.getUpdatedBy());
+
+        List<CreateTemplateResponse.FieldResponse> fieldResponses = template.getFormFields().stream()
+                .map(this::convertToTemplateFieldResponse)
+                .collect(Collectors.toList());
+
+        response.setFields(fieldResponses);
+        return response;
+    }
+
+    private CreateTemplateResponse.FieldResponse convertToTemplateFieldResponse(FormField field) {
+        CreateTemplateResponse.FieldResponse fieldResponse = new CreateTemplateResponse.FieldResponse();
+        fieldResponse.setId(field.getId());
+        fieldResponse.setFieldKey(field.getFieldKey());
+        fieldResponse.setLabel(field.getLabel());
+        fieldResponse.setType(field.getFieldType());
+        fieldResponse.setRequired(field.getRequired());
+        fieldResponse.setPlaceholder(field.getPlaceholder());
+        fieldResponse.setTableConfig(field.getTableConfig());
+        fieldResponse.setOptions(field.getOptions());
+        fieldResponse.setRepeatable(field.getRepeatable());
+        fieldResponse.setChildren(convertChildrenToTemplateFieldResponse(field.getChildren()));
+        return fieldResponse;
+    }
+
+    private List<CreateTemplateResponse.FieldResponse> convertChildrenToTemplateFieldResponse(JsonNode childrenJson) {
+        if (childrenJson == null || childrenJson.isNull()) {
+            return null;
+        }
+
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            List<CreateTemplateRequest.FieldData> childrenData = mapper.treeToValue(childrenJson,
+                    mapper.getTypeFactory().constructCollectionType(List.class,
+                            CreateTemplateRequest.FieldData.class));
+
+            return childrenData.stream()
+                    .map(childData -> {
+                        CreateTemplateResponse.FieldResponse childResponse = new CreateTemplateResponse.FieldResponse();
+                        childResponse.setId(childData.getId());
+                        childResponse.setFieldKey(childData.getFieldKey());
+                        childResponse.setLabel(childData.getLabel());
+                        childResponse.setType(childData.getType());
+                        childResponse.setRequired(childData.getRequired());
+                        childResponse.setPlaceholder(childData.getPlaceholder());
+                        childResponse.setRepeatable(childData.getRepeatable());
+                        childResponse.setOptions(childData.getOptions());
+                        childResponse.setChildren(convertChildrenToTemplateFieldResponse(
+                                childData.getChildren() != null ? mapper.valueToTree(childData.getChildren()) : null));
+                        return childResponse;
+                    })
+                    .collect(Collectors.toList());
+        } catch (Exception e) {
+            return null;
+        }
+    }
 }

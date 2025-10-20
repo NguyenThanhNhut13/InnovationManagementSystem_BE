@@ -17,8 +17,10 @@ import org.springframework.web.bind.annotation.*;
 import com.turkraft.springfilter.boot.Filter;
 
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.FormTemplate;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.CreateTemplateRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.CreateTemplateWithFieldsRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.UpdateFormTemplateRequest;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.CreateTemplateResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.CreateTemplateWithFieldsResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.FormTemplateResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.service.FormTemplateService;
@@ -145,5 +147,32 @@ public class FormTemplateController {
                         @Parameter(description = "Form template ID", required = true) @PathVariable String id) {
                 formTemplateService.deleteFormTemplate(id);
                 return ResponseEntity.ok().build();
+        }
+
+        // 9. Tạo form template (không gắn round cụ thể)
+        @PostMapping
+        @ApiMessage("Tạo form template không gắn với round cụ thể thành công")
+        @Operation(summary = "Create Form Template", description = "Create a new form template with optional round association")
+        @ApiResponses(value = {
+                        @ApiResponse(responseCode = "200", description = "Form template created successfully", content = @Content(schema = @Schema(implementation = CreateTemplateResponse.class))),
+                        @ApiResponse(responseCode = "400", description = "Invalid request data")
+        })
+        public ResponseEntity<CreateTemplateResponse> createTemplate(
+                        @Parameter(description = "Form template creation request", required = true) @Valid @RequestBody CreateTemplateRequest request) {
+                return ResponseEntity.ok(formTemplateService.createTemplate(request));
+        }
+
+        // 10. Lấy formTemplate (không gắn round cụ thể) với pagination và filtering
+        @GetMapping("/library")
+        @ApiMessage("Lấy thư viện form templates với phân trang và tìm kiếm thành công")
+        @Operation(summary = "Get Template Library", description = "Get all form templates that are not associated with any specific round (template library) with pagination and filtering")
+        @ApiResponses(value = {
+                        @ApiResponse(responseCode = "200", description = "Template library retrieved successfully", content = @Content(schema = @Schema(implementation = ResultPaginationDTO.class)))
+        })
+        public ResponseEntity<ResultPaginationDTO> getTemplateLibraryWithPaginationAndSearch(
+                        @Parameter(description = "Filter specification for template library") @Filter Specification<FormTemplate> specification,
+                        @Parameter(description = "Pagination parameters") Pageable pageable) {
+                return ResponseEntity.ok(
+                                formTemplateService.getTemplateLibraryWithPaginationAndSearch(specification, pageable));
         }
 }
