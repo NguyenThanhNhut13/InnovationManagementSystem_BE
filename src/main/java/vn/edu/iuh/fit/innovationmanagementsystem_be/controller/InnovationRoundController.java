@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.*;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.InnovationRound;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.CreateInnovationRoundRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.UpdateInnovationRoundRequest;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationRoundStatusEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationRoundResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.service.InnovationRoundService;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.ResultPaginationDTO;
@@ -152,7 +153,7 @@ public class InnovationRoundController {
         // 8. Toggle round status
         @PutMapping("/{roundId}/toggle-status")
         @ApiMessage("Cập nhật trạng thái đợt sáng kiến thành công")
-        @Operation(summary = "Toggle Round Status", description = "Enable or disable innovation round")
+        @Operation(summary = "Toggle Round Status", description = "Update innovation round status (DRAFT, OPEN, CLOSED, COMPLETED)")
         @ApiResponses(value = {
                         @ApiResponse(responseCode = "200", description = "Round status updated successfully", content = @Content(schema = @Schema(implementation = InnovationRoundResponse.class))),
                         @ApiResponse(responseCode = "400", description = "Invalid request data"),
@@ -160,9 +161,9 @@ public class InnovationRoundController {
         })
         public ResponseEntity<InnovationRoundResponse> toggleRoundStatus(
                         @Parameter(description = "Round ID", required = true) @PathVariable String roundId,
-                        @Parameter(description = "Is Active", required = true) @RequestParam boolean isActive) {
+                        @Parameter(description = "New Status", required = true) @RequestParam InnovationRoundStatusEnum status) {
 
-                InnovationRoundResponse updatedRound = innovationRoundService.toggleRoundStatus(roundId, isActive);
+                InnovationRoundResponse updatedRound = innovationRoundService.toggleRoundStatus(roundId, status);
                 return ResponseEntity.ok(updatedRound);
         }
 

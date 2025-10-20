@@ -17,6 +17,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.Innovatio
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationStatusEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationPhaseTypeEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.PhaseStatusEnum;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationRoundStatusEnum;
 import com.fasterxml.jackson.databind.JsonNode;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.mapper.InnovationRoundMapper;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.exception.IdInvalidException;
@@ -269,9 +270,11 @@ public class InnovationRoundService {
     }
 
     // 7. Toggle status innovationRound
-    public InnovationRoundResponse toggleRoundStatus(String roundId, boolean isActive) {
+    public InnovationRoundResponse toggleRoundStatus(String roundId, InnovationRoundStatusEnum status) {
         InnovationRound round = innovationRoundRepository.findById(roundId)
                 .orElseThrow(() -> new IdInvalidException("Không tìm thấy InnovationRound với ID: " + roundId));
+
+        round.setStatus(status);
 
         InnovationRound savedRound = innovationRoundRepository.save(round);
         InnovationRoundResponse response = innovationRoundMapper.toInnovationRoundResponse(savedRound);
