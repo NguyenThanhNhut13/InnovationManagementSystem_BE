@@ -137,7 +137,7 @@ public class InnovationController {
                 return ResponseEntity.ok(innovationService.getInnovationsByUserAndStatus(status, pageable));
         }
 
-        // 7. Lấy thống kê sáng kiến của giảng viên
+        // 7. Lấy thống kê sáng kiến của Current User - OK
         @GetMapping("/innovations/statistics")
         @ApiMessage("Lấy thống kê sáng kiến thành công")
         @Operation(summary = "Get Innovation Statistics", description = "Get innovation statistics for current user (GIANG_VIEN role)")
