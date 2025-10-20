@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.*;
 
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.InnovationRound;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.CreateInnovationRoundRequest;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.UpdateInnovationRoundRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationRoundResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.service.InnovationRoundService;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.ResultPaginationDTO;
@@ -142,7 +143,7 @@ public class InnovationRoundController {
         })
         public ResponseEntity<InnovationRoundResponse> updateRound(
                         @Parameter(description = "Round ID", required = true) @PathVariable String roundId,
-                        @Parameter(description = "Round update request", required = true) @Valid @RequestBody CreateInnovationRoundRequest request) {
+                        @Parameter(description = "Round update request", required = true) @Valid @RequestBody UpdateInnovationRoundRequest request) {
 
                 InnovationRoundResponse updatedRound = innovationRoundService.updateRound(roundId, request);
                 return ResponseEntity.ok(updatedRound);
