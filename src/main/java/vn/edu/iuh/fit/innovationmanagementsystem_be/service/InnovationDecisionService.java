@@ -33,9 +33,11 @@ public class InnovationDecisionService {
     // 1. Tạo InnovationDecision
     @Transactional
     public InnovationDecisionResponse createInnovationDecision(InnovationDecisionRequest request) {
-        if (innovationDecisionRepository.existsByDecisionNumber(request.getDecisionNumber())) {
-            throw new IdInvalidException("Số hiệu quyết định đã tồn tại");
-        }
+        // if
+        // (innovationDecisionRepository.existsByDecisionNumber(request.getDecisionNumber()))
+        // {
+        // throw new IdInvalidException("Số hiệu quyết định đã tồn tại");
+        // }
 
         InnovationDecision innovationDecision = innovationDecisionMapper.toInnovationDecision(request);
 
@@ -47,9 +49,11 @@ public class InnovationDecisionService {
     @Transactional
     public InnovationDecision createDecision(InnovationDecisionRequest req) {
 
-        if (innovationDecisionRepository.existsByDecisionNumber(req.getDecisionNumber())) {
-            throw new IdInvalidException("Số hiệu quyết định đã tồn tại");
-        }
+        // if
+        // (innovationDecisionRepository.existsByDecisionNumber(req.getDecisionNumber()))
+        // {
+        // throw new IdInvalidException("Số hiệu quyết định đã tồn tại");
+        // }
 
         InnovationDecision decision = new InnovationDecision();
         decision.setDecisionNumber(req.getDecisionNumber());
@@ -94,9 +98,11 @@ public class InnovationDecisionService {
 
         if (request.getDecisionNumber() != null
                 && !request.getDecisionNumber().equals(innovationDecision.getDecisionNumber())) {
-            if (innovationDecisionRepository.existsByDecisionNumber(request.getDecisionNumber())) {
-                throw new IdInvalidException("Số hiệu quyết định đã tồn tại");
-            }
+            // if
+            // (innovationDecisionRepository.existsByDecisionNumber(request.getDecisionNumber()))
+            // {
+            // throw new IdInvalidException("Số hiệu quyết định đã tồn tại");
+            // }
             innovationDecision.setDecisionNumber(request.getDecisionNumber());
         }
 
