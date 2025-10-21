@@ -7,6 +7,7 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.UserStatusEnum;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.ArrayList;
 
@@ -41,6 +42,15 @@ public class User extends Auditable {
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
     private UserStatusEnum status = UserStatusEnum.ACTIVE;
+
+    @Column(name = "date_of_birth", columnDefinition = "DATE")
+    private LocalDate dateOfBirth;
+
+    @Column(name = "qualification", columnDefinition = "VARCHAR(255)")
+    private String qualification;
+
+    @Column(name = "title", columnDefinition = "VARCHAR(255)")
+    private String title;
 
     // Relationships
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
