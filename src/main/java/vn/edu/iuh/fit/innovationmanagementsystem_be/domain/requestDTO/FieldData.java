@@ -38,5 +38,8 @@ public class FieldData {
     private Boolean repeatable = false;
 
     @Valid
+    private UserDataConfig userDataConfig;
+
+    @Valid
     private List<FieldData> children;
 }

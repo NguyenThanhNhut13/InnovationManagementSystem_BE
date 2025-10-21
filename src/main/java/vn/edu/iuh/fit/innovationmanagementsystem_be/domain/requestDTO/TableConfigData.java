@@ -1,5 +1,6 @@
 package vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO;
 
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
@@ -41,5 +42,8 @@ public class TableConfigData {
         private Boolean required = false;
 
         private List<String> options;
+
+        @Valid
+        private UserDataConfig userDataConfig;
     }
 }

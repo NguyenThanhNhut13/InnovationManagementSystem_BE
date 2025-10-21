@@ -197,6 +197,16 @@ public class FormTemplateService {
                     }
                 }
 
+                if (fd.getUserDataConfig() != null) {
+                    try {
+                        ObjectMapper mapper = new ObjectMapper();
+                        JsonNode userDataConfigJson = mapper.valueToTree(fd.getUserDataConfig());
+                        entity.setUserDataConfig(userDataConfigJson);
+                    } catch (Exception e) {
+                        throw new IdInvalidException("Lỗi khi xử lý userDataConfig: " + e.getMessage());
+                    }
+                }
+
                 newList.add(entity);
             }
 
@@ -310,6 +320,17 @@ public class FormTemplateService {
                 field.setChildren(childrenJson);
             } catch (Exception e) {
                 throw new IdInvalidException("Lỗi khi xử lý children: " + e.getMessage());
+            }
+        }
+
+        // Xử lý userDataConfig nếu field có userDataConfig (USER_DATA type)
+        if (fieldData.getUserDataConfig() != null) {
+            try {
+                ObjectMapper mapper = new ObjectMapper();
+                JsonNode userDataConfigJson = mapper.valueToTree(fieldData.getUserDataConfig());
+                field.setUserDataConfig(userDataConfigJson);
+            } catch (Exception e) {
+                throw new IdInvalidException("Lỗi khi xử lý userDataConfig: " + e.getMessage());
             }
         }
 
@@ -456,6 +477,17 @@ public class FormTemplateService {
                 field.setChildren(childrenJson);
             } catch (Exception e) {
                 throw new IdInvalidException("Lỗi khi xử lý children: " + e.getMessage());
+            }
+        }
+
+        // Xử lý userDataConfig nếu field có userDataConfig (USER_DATA type)
+        if (fieldData.getUserDataConfig() != null) {
+            try {
+                ObjectMapper mapper = new ObjectMapper();
+                JsonNode userDataConfigJson = mapper.valueToTree(fieldData.getUserDataConfig());
+                field.setUserDataConfig(userDataConfigJson);
+            } catch (Exception e) {
+                throw new IdInvalidException("Lỗi khi xử lý userDataConfig: " + e.getMessage());
             }
         }
 
