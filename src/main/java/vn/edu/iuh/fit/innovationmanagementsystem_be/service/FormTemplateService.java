@@ -20,6 +20,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.CreateTemp
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.UpdateFormTemplateRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.FieldData;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.TableConfigData;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.UserDataConfig;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.CreateTemplateResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.CreateTemplateWithFieldsResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.FormTemplateResponse;
@@ -369,6 +370,18 @@ public class FormTemplateService {
         fieldResponse.setOptions(field.getOptions());
         fieldResponse.setRepeatable(field.getRepeatable());
         fieldResponse.setChildren(convertChildrenToFieldResponse(field.getChildren()));
+
+        // Convert userDataConfig from JsonNode to UserDataConfig object
+        if (field.getUserDataConfig() != null) {
+            try {
+                ObjectMapper mapper = new ObjectMapper();
+                UserDataConfig userDataConfig = mapper.treeToValue(field.getUserDataConfig(), UserDataConfig.class);
+                fieldResponse.setUserDataConfig(userDataConfig);
+            } catch (Exception e) {
+                fieldResponse.setUserDataConfig(null);
+            }
+        }
+
         return fieldResponse;
     }
 
@@ -397,6 +410,10 @@ public class FormTemplateService {
                                 childData.getOptions() != null ? mapper.valueToTree(childData.getOptions()) : null);
                         childResponse.setChildren(convertChildrenToFieldResponse(
                                 childData.getChildren() != null ? mapper.valueToTree(childData.getChildren()) : null));
+
+                        // Set userDataConfig from FieldData
+                        childResponse.setUserDataConfig(childData.getUserDataConfig());
+
                         return childResponse;
                     })
                     .collect(Collectors.toList());
@@ -526,6 +543,18 @@ public class FormTemplateService {
         fieldResponse.setOptions(field.getOptions());
         fieldResponse.setRepeatable(field.getRepeatable());
         fieldResponse.setChildren(convertChildrenToTemplateFieldResponse(field.getChildren()));
+
+        // Convert userDataConfig from JsonNode to UserDataConfig object
+        if (field.getUserDataConfig() != null) {
+            try {
+                ObjectMapper mapper = new ObjectMapper();
+                UserDataConfig userDataConfig = mapper.treeToValue(field.getUserDataConfig(), UserDataConfig.class);
+                fieldResponse.setUserDataConfig(userDataConfig);
+            } catch (Exception e) {
+                fieldResponse.setUserDataConfig(null);
+            }
+        }
+
         return fieldResponse;
     }
 
@@ -553,6 +582,8 @@ public class FormTemplateService {
                         childResponse.setOptions(childData.getOptions());
                         childResponse.setChildren(convertChildrenToTemplateFieldResponse(
                                 childData.getChildren() != null ? mapper.valueToTree(childData.getChildren()) : null));
+                        childResponse.setUserDataConfig(childData.getUserDataConfig());
+
                         return childResponse;
                     })
                     .collect(Collectors.toList());
