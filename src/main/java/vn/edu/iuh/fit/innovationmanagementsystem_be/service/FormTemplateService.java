@@ -130,19 +130,29 @@ public class FormTemplateService {
 
         // Upsert danh sách FormField nếu có
         if (request.getFields() != null) {
-            // Map các field hiện có theo id để tiện cập nhật/xóa
+            // Map các field hiện có theo id và fieldKey để tiện cập nhật/xóa
             Map<String, FormField> existingById = template.getFormFields().stream()
                     .filter(f -> f.getId() != null)
                     .collect(java.util.stream.Collectors.toMap(FormField::getId, f -> f));
 
+            Map<String, FormField> existingByFieldKey = template.getFormFields().stream()
+                    .filter(f -> f.getFieldKey() != null)
+                    .collect(java.util.stream.Collectors.toMap(FormField::getFieldKey, f -> f));
+
             Set<String> incomingIds = new java.util.HashSet<>();
+            Set<String> incomingFieldKeys = new java.util.HashSet<>();
 
             List<FormField> newList = new java.util.ArrayList<>();
             for (FieldData fd : request.getFields()) {
                 FormField entity = null;
+
+                // Ưu tiên tìm theo ID trước, sau đó tìm theo fieldKey
                 if (fd.getId() != null && existingById.containsKey(fd.getId())) {
                     entity = existingById.get(fd.getId());
                     incomingIds.add(fd.getId());
+                } else if (fd.getFieldKey() != null && existingByFieldKey.containsKey(fd.getFieldKey())) {
+                    entity = existingByFieldKey.get(fd.getFieldKey());
+                    incomingFieldKeys.add(fd.getFieldKey());
                 } else {
                     entity = new FormField();
                     entity.setFormTemplate(template);
@@ -211,8 +221,25 @@ public class FormTemplateService {
                 newList.add(entity);
             }
 
-            // Xóa các field không còn trong request (orphanRemoval - db)
-            template.getFormFields().clear();
+            List<FormField> fieldsToRemove = template.getFormFields().stream()
+                    .filter(field -> {
+                        // Giữ lại field nếu có ID trong incomingIds
+                        if (field.getId() != null && incomingIds.contains(field.getId())) {
+                            return false;
+                        }
+                        // Giữ lại field nếu có fieldKey trong incomingFieldKeys
+                        if (field.getFieldKey() != null && incomingFieldKeys.contains(field.getFieldKey())) {
+                            return false;
+                        }
+                        // Xóa field nếu không có trong cả hai danh sách
+                        return true;
+                    })
+                    .collect(java.util.stream.Collectors.toList());
+
+            // Xóa các field không còn được sử dụng
+            template.getFormFields().removeAll(fieldsToRemove);
+
+            // Thêm các field mới/cập nhật
             template.getFormFields().addAll(newList);
         }
 
