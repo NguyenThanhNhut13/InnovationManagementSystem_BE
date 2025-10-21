@@ -18,6 +18,8 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.FieldType
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.CreateTemplateRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.CreateTemplateWithFieldsRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.UpdateFormTemplateRequest;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.FieldData;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.TableConfigData;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.CreateTemplateResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.CreateTemplateWithFieldsResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.FormTemplateResponse;
@@ -32,6 +34,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.Utils;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.time.LocalDate;
 import java.util.stream.Collectors;
 
@@ -134,7 +137,7 @@ public class FormTemplateService {
             Set<String> incomingIds = new java.util.HashSet<>();
 
             List<FormField> newList = new java.util.ArrayList<>();
-            for (UpdateFormTemplateRequest.FieldData fd : request.getFields()) {
+            for (FieldData fd : request.getFields()) {
                 FormField entity = null;
                 if (fd.getId() != null && existingById.containsKey(fd.getId())) {
                     entity = existingById.get(fd.getId());
@@ -160,6 +163,9 @@ public class FormTemplateService {
                 // tableConfig/options/children: tận dụng mapper như create
                 if (fd.getType() == FieldTypeEnum.TABLE && fd.getTableConfig() != null) {
                     try {
+                        // Tự sinh UUID cho các column nếu chưa có
+                        generateColumnIdsIfNeeded(fd.getTableConfig());
+
                         ObjectMapper mapper = new ObjectMapper();
                         JsonNode tableConfigJson = mapper
                                 .valueToTree(fd.getTableConfig());
@@ -261,7 +267,7 @@ public class FormTemplateService {
         return Utils.toResultPaginationDTO(templates.map(formTemplateMapper::toFormTemplateResponse), pageable);
     }
 
-    private FormField createFormField(CreateTemplateWithFieldsRequest.FieldData fieldData, FormTemplate template) {
+    private FormField createFormField(FieldData fieldData, FormTemplate template) {
         FormField field = new FormField();
         field.setFieldKey(fieldData.getFieldKey());
         field.setLabel(fieldData.getLabel());
@@ -274,6 +280,9 @@ public class FormTemplateService {
         // Xử lý table config nếu field type là TABLE
         if (fieldData.getType() == FieldTypeEnum.TABLE && fieldData.getTableConfig() != null) {
             try {
+                // Tự sinh UUID cho các column nếu chưa có
+                generateColumnIdsIfNeeded(fieldData.getTableConfig());
+
                 ObjectMapper mapper = new ObjectMapper();
                 JsonNode tableConfigJson = mapper.valueToTree(fieldData.getTableConfig());
                 field.setTableConfig(tableConfigJson);
@@ -349,9 +358,9 @@ public class FormTemplateService {
 
         try {
             ObjectMapper mapper = new ObjectMapper();
-            List<CreateTemplateWithFieldsRequest.FieldData> childrenData = mapper.treeToValue(childrenJson,
+            List<FieldData> childrenData = mapper.treeToValue(childrenJson,
                     mapper.getTypeFactory().constructCollectionType(List.class,
-                            CreateTemplateWithFieldsRequest.FieldData.class));
+                            FieldData.class));
 
             return childrenData.stream()
                     .map(childData -> {
@@ -404,8 +413,7 @@ public class FormTemplateService {
         return createTemplateResponse(savedTemplate);
     }
 
-    private FormField createFormFieldFromTemplateRequest(CreateTemplateRequest.FieldData fieldData,
-            FormTemplate template) {
+    private FormField createFormFieldFromTemplateRequest(FieldData fieldData, FormTemplate template) {
         FormField field = new FormField();
         field.setFieldKey(fieldData.getFieldKey());
         field.setLabel(fieldData.getLabel());
@@ -418,6 +426,9 @@ public class FormTemplateService {
         // Xử lý table config nếu field type là TABLE
         if (fieldData.getType() == FieldTypeEnum.TABLE && fieldData.getTableConfig() != null) {
             try {
+                // Tự sinh UUID cho các column nếu chưa có
+                generateColumnIdsIfNeeded(fieldData.getTableConfig());
+
                 ObjectMapper mapper = new ObjectMapper();
                 JsonNode tableConfigJson = mapper.valueToTree(fieldData.getTableConfig());
                 field.setTableConfig(tableConfigJson);
@@ -493,9 +504,9 @@ public class FormTemplateService {
 
         try {
             ObjectMapper mapper = new ObjectMapper();
-            List<CreateTemplateRequest.FieldData> childrenData = mapper.treeToValue(childrenJson,
+            List<FieldData> childrenData = mapper.treeToValue(childrenJson,
                     mapper.getTypeFactory().constructCollectionType(List.class,
-                            CreateTemplateRequest.FieldData.class));
+                            FieldData.class));
 
             return childrenData.stream()
                     .map(childData -> {
@@ -515,6 +526,19 @@ public class FormTemplateService {
                     .collect(Collectors.toList());
         } catch (Exception e) {
             return null;
+        }
+    }
+
+    /**
+     * Tự sinh UUID cho các column trong TableConfigData nếu chưa có ID
+     */
+    private void generateColumnIdsIfNeeded(TableConfigData tableConfig) {
+        if (tableConfig != null && tableConfig.getColumns() != null) {
+            for (TableConfigData.ColumnData column : tableConfig.getColumns()) {
+                if (column.getId() == null || column.getId().trim().isEmpty()) {
+                    column.setId(UUID.randomUUID().toString());
+                }
+            }
         }
     }
 }
