@@ -62,7 +62,7 @@ public class UserService {
         this.userSignatureProfileService = userSignatureProfileService;
     }
 
-    // 1. Cretae User
+    // 1. Tạo User
     public UserResponse createUser(@NonNull UserRequest userRequest) {
         if (userRepository.existsByPersonnelId(userRequest.getPersonnelId())) {
             throw new IdInvalidException("Mã nhân viên đã tồn tại");
@@ -84,13 +84,13 @@ public class UserService {
         // Tạo UserSignatureProfile cho user mới
         UserSignatureProfileRequest request = new UserSignatureProfileRequest();
         request.setUserId(user.getId());
-        request.setPathUrl(null); // Để null cho user mới
+        request.setPathUrl(null);
         this.userSignatureProfileService.createUserSignatureProfile(request);
 
         return userMapper.toUserResponse(user);
     }
 
-    // 2. Get All Users With Pagination
+    // 2. Lấy All Users với Pagination
     public ResultPaginationDTO getUsersWithPagination(@NonNull Specification<User> specification,
             @NonNull Pageable pageable) {
         Page<User> users = userRepository.findAll(specification, pageable);
@@ -100,14 +100,14 @@ public class UserService {
         return Utils.toResultPaginationDTO(userResponses, pageable);
     }
 
-    // 3. Get User By Id
+    // 3. Lấy User By Id
     public UserResponse getUserById(@NonNull String id) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new IdInvalidException("Người dùng không tồn tại với ID: " + id));
         return userMapper.toUserResponse(user);
     }
 
-    // 4. Update User
+    // 4. Cập nhật User
     public UserResponse updateUser(@NonNull String id, @NonNull UserRequest userRequest) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new IdInvalidException("Người dùng không tồn tại với ID: " + id));
@@ -139,7 +139,7 @@ public class UserService {
         return userMapper.toUserResponse(user);
     }
 
-    // 5. Get Users By Status With Pagination
+    // 5. Lấy Users By Status với Pagination
     public ResultPaginationDTO getUsersByStatusWithPagination(@NonNull UserStatusEnum status,
             @NonNull Pageable pageable) {
         Specification<User> statusSpec = (root, query, criteriaBuilder) -> criteriaBuilder.equal(root.get("status"),
@@ -151,7 +151,7 @@ public class UserService {
         return Utils.toResultPaginationDTO(userResponses, pageable);
     }
 
-    // 6. Assign Role To User
+    // 6. Gán Role To User
     public UserRoleResponse assignRoleToUser(@NonNull String userId, @NonNull String roleId) {
 
         User user = userRepository.findById(userId)
@@ -179,7 +179,7 @@ public class UserService {
         return userMapper.toUserRoleResponse(userRole);
     }
 
-    // 7. Delete Role From User
+    // 7. Xóa Role From User
     public void removeRoleFromUser(@NonNull String userId, @NonNull String roleId) {
 
         if (!userRepository.existsById(userId)) {
@@ -197,7 +197,7 @@ public class UserService {
 
     }
 
-    // 8. Get Users By Role With Pagination
+    // 8. Lấy Users By Role với Pagination
     public ResultPaginationDTO getUsersByRoleWithPagination(@NonNull String roleId, @NonNull Pageable pageable) {
         Page<UserRole> userRolePage = userRoleRepository.findByRoleId(roleId, pageable);
 
@@ -209,24 +209,7 @@ public class UserService {
 
     }
 
-    // Assign Default Role To User (GIANG_VIEN)
-    private void assignDefaultRoleToUser(User user) {
-        Role giangVienRole = roleRepository.findByRoleName(UserRoleEnum.GIANG_VIEN)
-                .orElseThrow(() -> new IdInvalidException("Không tìm thấy role GIANG_VIEN"));
-
-        UserRole userRole = new UserRole();
-        userRole.setUser(user);
-        userRole.setRole(giangVienRole);
-        userRoleRepository.save(userRole);
-
-        if (user.getUserRoles() == null) {
-            user.setUserRoles(new ArrayList<>());
-        }
-        user.getUserRoles().add(userRole);
-
-    }
-
-    // 9. Get Users By Department With Pagination
+    // 9. Lấy Users By Department với Pagination
     public ResultPaginationDTO getUsersByDepartmentWithPagination(@NonNull String departmentId,
             @NonNull Pageable pageable) {
 
@@ -239,7 +222,7 @@ public class UserService {
         return Utils.toResultPaginationDTO(userResponsePage, pageable);
     }
 
-    // 10. Search Users By Full Name, Email or Personnel ID
+    // 10. Tìm kiếm Users By Full Name, Email or Personnel ID
     public ResultPaginationDTO searchUsersByFullNameOrEmailOrPersonnelId(@NonNull String searchTerm,
             @NonNull Pageable pageable) {
         if (searchTerm == null || searchTerm.trim().isEmpty()) {
@@ -251,10 +234,10 @@ public class UserService {
         return Utils.toResultPaginationDTO(userResponsePage, pageable);
     }
 
-    // 11. Get Current User from JWT Token
+    // 11. Lấy Current User từ JWT Token
     public User getCurrentUser() {
         try {
-            // Get JWT token from request header
+            // Lấy JWT token từ request header
             ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder
                     .getRequestAttributes();
             if (attributes == null) {
@@ -263,7 +246,7 @@ public class UserService {
 
             HttpServletRequest request = attributes.getRequest();
 
-            // Check if user is already cached in request
+            // Kiểm tra nếu user đã được cache trong request
             User cachedUser = (User) request.getAttribute("currentUser");
             if (cachedUser != null) {
                 return cachedUser;
@@ -281,15 +264,10 @@ public class UserService {
                 throw new IdInvalidException("Không thể extract user ID từ token");
             }
 
-            // Try to find user by ID first (most common case)
             Optional<User> userOpt = userRepository.findById(userId);
-
-            // If not found by ID, try to find by personnelId
             if (userOpt.isEmpty()) {
                 userOpt = userRepository.findByPersonnelId(userId);
             }
-
-            // If not found by personnelId, try to find by email
             if (userOpt.isEmpty()) {
                 userOpt = userRepository.findByEmail(userId);
             }
@@ -297,7 +275,6 @@ public class UserService {
             User user = userOpt
                     .orElseThrow(() -> new IdInvalidException("Không tìm thấy người dùng hiện tại với ID: " + userId));
 
-            // Cache user in request scope
             request.setAttribute("currentUser", user);
 
             return user;
@@ -307,7 +284,7 @@ public class UserService {
         }
     }
 
-    // 12. Get Current User ID (without database query)
+    // 12. Lấy Current User ID
     public String getCurrentUserId() {
         try {
             ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder
@@ -324,21 +301,31 @@ public class UserService {
             }
 
             String token = authHeader.substring(7);
-            return jwtTokenUtil.extractUsername(token);
+            String personnelId = jwtTokenUtil.extractUsername(token);
+
+            if (personnelId == null) {
+                throw new IdInvalidException("Không thể extract personnel ID từ token");
+            }
+
+            Optional<User> userOpt = userRepository.findByPersonnelId(personnelId);
+            if (userOpt.isEmpty()) {
+                throw new IdInvalidException("Không tìm thấy người dùng với personnel ID: " + personnelId);
+            }
+
+            return userOpt.get().getId();
 
         } catch (Exception e) {
             throw new IdInvalidException("Lỗi khi lấy user ID: " + e.getMessage());
         }
     }
 
-    // 13. Check if current user is owner of innovation
+    // 13. Kiểm tra nếu current user là owner của innovation
     public boolean isOwnerOfInnovation(String innovationUserId) {
         User currentUser = getCurrentUser();
-        // So sánh với ID trong database của current user
         return currentUser.getId().equals(innovationUserId);
     }
 
-    // 14. Tạo UserSignatureProfile cho user hiện có (API endpoint)
+    // 14. Tạo UserSignatureProfile cho user hiện có
     public UserSignatureProfile createUserSignatureProfileForExistingUser(String userId) {
         // Validate user exists
         userRepository.findById(userId)
@@ -347,10 +334,28 @@ public class UserService {
         return userSignatureProfileService.createUserSignatureProfileForExistingUser(userId);
     }
 
-    // 15. Get Current User Response (for API endpoint)
+    // 15. Lấy Current User Response
     public UserResponse getCurrentUserResponse() {
         User currentUser = getCurrentUser();
         return userMapper.toUserResponse(currentUser);
     }
 
+    /**
+     * Gán Default Role To User (GIANG_VIEN)
+     */
+    private void assignDefaultRoleToUser(User user) {
+        Role giangVienRole = roleRepository.findByRoleName(UserRoleEnum.GIANG_VIEN)
+                .orElseThrow(() -> new IdInvalidException("Không tìm thấy role GIANG_VIEN"));
+
+        UserRole userRole = new UserRole();
+        userRole.setUser(user);
+        userRole.setRole(giangVienRole);
+        userRoleRepository.save(userRole);
+
+        if (user.getUserRoles() == null) {
+            user.setUserRoles(new ArrayList<>());
+        }
+        user.getUserRoles().add(userRole);
+
+    }
 }

@@ -16,8 +16,8 @@ public class FormDataResponse {
     private String fieldValue;
     private String formFieldKey;
     private FieldTypeEnum fieldType;
-    private Boolean isRequired;
-    private Integer orderInTemplate;
+    private Boolean required;
+    private String placeholder;
     private String templateId;
 
 }

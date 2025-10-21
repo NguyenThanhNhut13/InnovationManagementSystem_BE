@@ -30,7 +30,7 @@ public class InnovationDecisionService {
         this.innovationDecisionMapper = innovationDecisionMapper;
     }
 
-    // 1. Create InnovationDecision
+    // 1. Tạo InnovationDecision
     @Transactional
     public InnovationDecisionResponse createInnovationDecision(InnovationDecisionRequest request) {
         if (innovationDecisionRepository.existsByDecisionNumber(request.getDecisionNumber())) {
@@ -43,11 +43,10 @@ public class InnovationDecisionService {
         return innovationDecisionMapper.toInnovationDecisionResponse(innovationDecision);
     }
 
-    // 2. Create Decision
+    // 2. Tạo InnovationDecision - Using InnovationRoundService
     @Transactional
     public InnovationDecision createDecision(InnovationDecisionRequest req) {
 
-        // validate
         if (innovationDecisionRepository.existsByDecisionNumber(req.getDecisionNumber())) {
             throw new IdInvalidException("Số hiệu quyết định đã tồn tại");
         }
@@ -63,16 +62,24 @@ public class InnovationDecisionService {
         return innovationDecisionRepository.save(decision);
     }
 
-    // 3. Get All InnovationDecisions
+    // 3. Lấy tất cả InnovationDecisions
     public ResultPaginationDTO getAllInnovationDecisions(Specification<InnovationDecision> specification,
             Pageable pageable) {
+
+        if (pageable.getSort().isUnsorted()) {
+            pageable = org.springframework.data.domain.PageRequest.of(
+                    pageable.getPageNumber(),
+                    pageable.getPageSize(),
+                    org.springframework.data.domain.Sort.by("createdAt").descending());
+        }
+
         Page<InnovationDecision> innovationDecisions = innovationDecisionRepository.findAll(specification, pageable);
         Page<InnovationDecisionResponse> responses = innovationDecisions
                 .map(innovationDecisionMapper::toInnovationDecisionResponse);
         return Utils.toResultPaginationDTO(responses, pageable);
     }
 
-    // 4. Get InnovationDecision by Id
+    // 4. Lấy InnovationDecision by Id
     public InnovationDecisionResponse getInnovationDecisionById(String id) {
         InnovationDecision innovationDecision = innovationDecisionRepository.findById(id)
                 .orElseThrow(() -> new IdInvalidException("Quyết định không tồn tại"));
@@ -104,19 +111,17 @@ public class InnovationDecisionService {
         return innovationDecisionMapper.toInnovationDecisionResponse(innovationDecision);
     }
 
-    // 6. Get by signed by
-    // public ResultPaginationDTO getInnovationDecisionsBySignedBy(String signedBy,
-    // Pageable pageable) {
-    // Page<InnovationDecision> innovationDecisions = innovationDecisionRepository
-    // .findBySignedBy(signedBy, pageable);
-    // Page<InnovationDecisionResponse> responses = innovationDecisions
-    // .map(innovationDecisionMapper::toInnovationDecisionResponse);
-    // return Utils.toResultPaginationDTO(responses, pageable);
-    // }
-
-    // 7. Get by date range
+    // 6. Lấy InnovationDecision by date range
     public ResultPaginationDTO getInnovationDecisionsByDateRange(LocalDate startDate, LocalDate endDate,
             Pageable pageable) {
+
+        if (pageable.getSort().isUnsorted()) {
+            pageable = org.springframework.data.domain.PageRequest.of(
+                    pageable.getPageNumber(),
+                    pageable.getPageSize(),
+                    org.springframework.data.domain.Sort.by("createdAt").descending());
+        }
+
         Page<InnovationDecision> innovationDecisions = innovationDecisionRepository
                 .findByPromulgatedDateBetween(startDate, endDate, pageable);
         Page<InnovationDecisionResponse> responses = innovationDecisions
@@ -124,7 +129,7 @@ public class InnovationDecisionService {
         return Utils.toResultPaginationDTO(responses, pageable);
     }
 
-    // 8. Get Entity By ID
+    // 7. Lấy Entity By ID
     public Optional<InnovationDecision> getEntityById(String id) {
         return innovationDecisionRepository.findById(id);
     }

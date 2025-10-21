@@ -24,7 +24,7 @@ public class UserSignatureProfileService {
         this.keyManagementService = keyManagementService;
     }
 
-    // 1. Create UserSignatureProfile for user
+    // 1. Tạo UserSignatureProfile cho user
     public UserSignatureProfile createUserSignatureProfile(UserSignatureProfileRequest request) {
         try {
 
@@ -53,11 +53,11 @@ public class UserSignatureProfileService {
         }
     }
 
-    // 2. Create UserSignatureProfile for existing user with default path
+    // 2. Tạo UserSignatureProfile cho existing user với default path
     public UserSignatureProfile createUserSignatureProfileForExistingUser(String userId) {
         UserSignatureProfileRequest request = new UserSignatureProfileRequest();
         request.setUserId(userId);
-        request.setPathUrl(null); // Không set pathUrl, để null
+        request.setPathUrl(null);
 
         return createUserSignatureProfile(request);
     }

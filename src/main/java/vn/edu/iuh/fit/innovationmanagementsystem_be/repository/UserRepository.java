@@ -19,12 +19,10 @@ public interface UserRepository extends JpaRepository<User, String>, JpaSpecific
 
         boolean existsByEmail(String email);
 
-        // Tìm user theo department
         @Query("SELECT u FROM User u WHERE u.department.id = :departmentId")
         Page<User> findByDepartmentId(@Param("departmentId") String departmentId,
                         Pageable pageable);
 
-        // Tìm kiếm user theo tên, email hoặc personnel_id
         @Query("SELECT u FROM User u WHERE " +
                         "LOWER(u.fullName) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
                         "LOWER(u.email) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +

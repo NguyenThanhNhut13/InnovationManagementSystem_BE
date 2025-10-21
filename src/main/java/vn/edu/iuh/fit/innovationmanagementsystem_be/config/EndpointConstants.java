@@ -46,8 +46,7 @@ public final class EndpointConstants {
                         "/api/v1/departments/{id}/users/statistics",
                         "/api/v1/departments/{id}/users",
                         "/api/v1/departments/{id}/users/active",
-                        "/api/v1/departments/{id}/users/inactive",
-                        "/api/v1/departments/{id}/merge-history"
+                        "/api/v1/departments/{id}/users/inactive"
         };
 
         public static final String[] DEPARTMENT_POST = {
@@ -69,6 +68,11 @@ public final class EndpointConstants {
                         "/api/v1/innovation-decisions/{id}"
         };
 
+        // ================== INNOVATION ==================
+        public static final String[] INNOVATION_GET = {
+                        "/api/v1/innovations/statistics"
+        };
+
         // ================== INNOVATION ROUND ==================
         public static final String[] INNOVATION_ROUND_POST = {
                         "/api/v1/innovation-rounds"
@@ -77,10 +81,6 @@ public final class EndpointConstants {
         public static final String[] INNOVATION_ROUND_PUT = {
                         "/api/v1/innovation-rounds/{roundId}",
                         "/api/v1/innovation-rounds/{roundId}/toggle-status"
-        };
-
-        public static final String[] INNOVATION_ROUND_GET_RESTRICTED = {
-                        "/api/v1/innovation-rounds/current"
         };
 
         // ================== INNOVATION PHASE ==================
@@ -150,6 +150,20 @@ public final class EndpointConstants {
                         "/api/v1/utils/download/{fileName}",
                         "/api/v1/utils/info/{fileName}",
                         "/api/v1/utils/ping"
+        };
+
+        // ================== COUNCIL ==================
+        public static final String[] COUNCIL_POST = {
+                        "/api/v1/councils",
+                        "/api/v1/councils/{councilId}/members"
+        };
+
+        public static final String[] COUNCIL_PUT = {
+                        "/api/v1/councils/{id}"
+        };
+
+        public static final String[] COUNCIL_DELETE = {
+                        "/api/v1/councils/{councilId}/members/{userId}"
         };
 
         // ================== SWAGGER ==================

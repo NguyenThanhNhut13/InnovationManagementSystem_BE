@@ -28,10 +28,8 @@ public class FileService {
         List<String> uploadedFileNames = new ArrayList<>();
 
         try {
-            // Check if bucket exists, create if not
             ensureBucketExists();
 
-            // Validate total request size
             long totalSize = files.stream().mapToLong(MultipartFile::getSize).sum();
             if (totalSize > 50 * 1024 * 1024) { // 50MB limit
                 throw new Exception("Total request size exceeds 50MB limit");
@@ -55,10 +53,8 @@ public class FileService {
     // 2. Upload file to MinIO
     public String uploadFile(MultipartFile file) throws Exception {
         try {
-            // Check if bucket exists, create if not
             ensureBucketExists();
 
-            // Validate file size (10MB limit per file)
             if (file.getSize() > 10 * 1024 * 1024) {
                 throw new Exception("File size exceeds 10MB limit");
             }
@@ -68,7 +64,7 @@ public class FileService {
             String fileExtension = getFileExtension(originalFilename);
             String uniqueFileName = generateUniqueFileName(fileExtension);
 
-            // Upload file to MinIO
+            // Tạo file trong MinIO
             minioClient.putObject(
                     PutObjectArgs.builder()
                             .bucket(bucketName)
@@ -97,7 +93,7 @@ public class FileService {
         }
     }
 
-    // 4. Delete file from MinIO
+    // 4. Xóa file trong MinIO
     public void deleteFile(String fileName) throws Exception {
         try {
             minioClient.removeObject(
@@ -110,7 +106,7 @@ public class FileService {
         }
     }
 
-    // 5. Check if file exists in MinIO
+    // 5. Kiểm tra nếu file tồn tại trong MinIO
     public boolean fileExists(String fileName) {
         try {
             minioClient.statObject(
@@ -124,7 +120,7 @@ public class FileService {
         }
     }
 
-    // 6. Get file info from MinIO
+    // 6. Lấy thông tin file từ MinIO
     public StatObjectResponse getFileInfo(String fileName) throws Exception {
         try {
             return minioClient.statObject(
@@ -160,9 +156,6 @@ public class FileService {
 
     /**
      * Generate unique file name with timestamp and UUID
-     *
-     * @param fileExtension file extension
-     * @return unique file name
      */
     private String generateUniqueFileName(String fileExtension) {
         String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
@@ -172,9 +165,6 @@ public class FileService {
 
     /**
      * Get file extension from filename
-     *
-     * @param filename original filename
-     * @return file extension with dot
      */
     private String getFileExtension(String filename) {
         if (filename == null || filename.isEmpty()) {

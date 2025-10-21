@@ -35,12 +35,11 @@ public class JwtBlacklistFilter extends OncePerRequestFilter {
             String token = extractTokenFromRequest(request);
 
             if (StringUtils.hasText(token)) {
-                // Check if token is blacklisted
+                // Kiểm tra token có bị blacklist không
                 if (redisTokenService.isAccessTokenBlacklisted(token)) {
 
                     RestResponse<String> errorResponse = new RestResponse<>();
                     errorResponse.setStatusCode(401);
-                    errorResponse.setError("TOKEN_BLACKLISTED");
                     errorResponse.setMessage("Token đã bị vô hiệu hóa");
                     errorResponse.setData(null);
 
@@ -48,7 +47,6 @@ public class JwtBlacklistFilter extends OncePerRequestFilter {
                     response.setContentType(MediaType.APPLICATION_JSON_VALUE);
                     response.setCharacterEncoding("UTF-8");
 
-                    // Convert RestResponse thành JSON và trả về
                     String jsonResponse = objectMapper.writeValueAsString(errorResponse);
                     response.getWriter().write(jsonResponse);
                     return;

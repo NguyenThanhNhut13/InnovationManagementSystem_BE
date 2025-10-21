@@ -29,6 +29,8 @@ public class RefreshTokenValidationService {
      * 5. User status check
      * 6. Rate limiting check
      */
+
+    //
     public ValidationResult validateRefreshToken(String refreshToken) {
         try {
             if (refreshToken == null || refreshToken.isEmpty()) {
@@ -45,7 +47,6 @@ public class RefreshTokenValidationService {
                 return ValidationResult.invalid("Refresh token không tồn tại hoặc đã hết hạn");
             }
             if (jwtTokenUtil.isTokenExpired(refreshToken)) {
-                // Auto-cleanup expired token
                 redisTokenService.deleteRefreshToken(refreshToken);
                 return ValidationResult.invalid("Refresh token đã hết hạn");
             }

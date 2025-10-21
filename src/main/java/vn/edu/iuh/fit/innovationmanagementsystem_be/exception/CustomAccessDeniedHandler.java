@@ -22,7 +22,6 @@ public class CustomAccessDeniedHandler implements AccessDeniedHandler {
 
         RestResponse<Object> body = new RestResponse<>();
         body.setStatusCode(403);
-        body.setError("Forbidden Error");
         body.setMessage("Bạn không có quyền truy cập tài nguyên này !");
         mapper.writeValue(res.getWriter(), body);
     }

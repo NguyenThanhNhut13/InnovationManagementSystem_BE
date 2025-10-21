@@ -37,8 +37,7 @@ public class CustomAuthenticationEntryPoint implements AuthenticationEntryPoint 
         String errorMessage = Optional.ofNullable(authException.getCause())
                 .map(Throwable::getMessage)
                 .orElse(authException.getMessage());
-        restResponse.setError(errorMessage);
-        restResponse.setMessage("Token Đã hết hạn hoặc không hợp lệ");
+        restResponse.setMessage(errorMessage);
 
         mapper.writeValue(response.getWriter(), restResponse);
     }

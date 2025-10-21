@@ -15,7 +15,6 @@ import org.springframework.web.bind.annotation.*;
 
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.InnovationRound;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.CreateInnovationRoundRequest;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.UpdateInnovationRoundRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationRoundResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.service.InnovationRoundService;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.ResultPaginationDTO;
@@ -37,7 +36,7 @@ public class InnovationRoundController {
                 this.innovationRoundService = innovationRoundService;
         }
 
-        // 1. Get All Innovation Rounds with Pagination and Filtering
+        // 1. Get All Innovation Rounds với Pagination và Filtering
         @GetMapping
         @ApiMessage("Lấy danh sách tất cả đợt sáng kiến với phân trang và lọc thành công")
         @Operation(summary = "Get All Innovation Rounds", description = "Get paginated list of all innovation rounds with filtering")
@@ -52,7 +51,7 @@ public class InnovationRoundController {
                                 .getAllInnovationRoundsWithPaginationAndFilter(specification, pageable));
         }
 
-        // 2. Get Innovation Rounds List for Table Display
+        // 2. Get Innovation Rounds List - No InnovationDecision and InnovationPhase
         @GetMapping("/list")
         @ApiMessage("Lấy danh sách đợt sáng kiến cho hiển thị bảng thành công")
         @Operation(summary = "Get Innovation Rounds List for Table", description = "Get paginated list of innovation rounds with specific fields for table display")
@@ -67,7 +66,7 @@ public class InnovationRoundController {
                                 .ok(innovationRoundService.getInnovationRoundsListForTable(specification, pageable));
         }
 
-        // 3. Create innovation round
+        // 3. Tạo innovationRound
         @PostMapping
         @ApiMessage("Tạo đợt sáng kiến thành công")
         @Operation(summary = "Create Innovation Round", description = "Create a new innovation round")
@@ -82,7 +81,7 @@ public class InnovationRoundController {
                 return ResponseEntity.ok(createdRound);
         }
 
-        // 4. Get all rounds by decision with pagination and filtering
+        // 4. Lấy all rounds by decision với Pagination và Filtering
         @GetMapping("/decision/{decisionId}")
         @ApiMessage("Lấy danh sách đợt sáng kiến thành công")
         @Operation(summary = "Get Rounds by Decision", description = "Get all innovation rounds for a specific decision with pagination and filtering")
@@ -99,7 +98,7 @@ public class InnovationRoundController {
                 return ResponseEntity.ok(rounds);
         }
 
-        // 5. Get round by ID
+        // 5. Lấy round by ID
         @GetMapping("/{roundId}")
         @ApiMessage("Lấy thông tin đợt sáng kiến thành công")
         @Operation(summary = "Get Round by ID", description = "Get innovation round by ID")
@@ -114,7 +113,7 @@ public class InnovationRoundController {
                 return ResponseEntity.ok(round);
         }
 
-        // 6. Get current active round
+        // 6. Lấy current active round
         @GetMapping("/decision/{decisionId}/current")
         @ApiMessage("Lấy đợt sáng kiến hiện tại thành công")
         @Operation(summary = "Get Current Active Round", description = "Get current active innovation round for a decision")
@@ -132,7 +131,7 @@ public class InnovationRoundController {
                 return ResponseEntity.ok(currentRound);
         }
 
-        // 7. Update round
+        // 7. Cập nhật round
         @PutMapping("/{roundId}")
         @ApiMessage("Cập nhật đợt sáng kiến thành công")
         @Operation(summary = "Update Innovation Round", description = "Update innovation round details")
@@ -143,7 +142,7 @@ public class InnovationRoundController {
         })
         public ResponseEntity<InnovationRoundResponse> updateRound(
                         @Parameter(description = "Round ID", required = true) @PathVariable String roundId,
-                        @Parameter(description = "Round update request", required = true) @Valid @RequestBody UpdateInnovationRoundRequest request) {
+                        @Parameter(description = "Round update request", required = true) @Valid @RequestBody CreateInnovationRoundRequest request) {
 
                 InnovationRoundResponse updatedRound = innovationRoundService.updateRound(roundId, request);
                 return ResponseEntity.ok(updatedRound);
@@ -166,7 +165,7 @@ public class InnovationRoundController {
                 return ResponseEntity.ok(updatedRound);
         }
 
-        // 9. Get rounds by status
+        // 9. Lấy rounds by status
         @GetMapping("/status/{status}")
         @ApiMessage("Lấy danh sách đợt sáng kiến theo trạng thái thành công")
         @Operation(summary = "Get Rounds by Status", description = "Get innovation rounds by status")
@@ -180,10 +179,10 @@ public class InnovationRoundController {
                 return ResponseEntity.ok(rounds);
         }
 
-        // 10. Get current round (only for authorized roles)
+        // 10. Lấy current round
         @GetMapping("/current")
         @ApiMessage("Lấy thông tin đợt sáng kiến hiện tại thành công")
-        @Operation(summary = "Get Current Round", description = "Get current active innovation round (restricted to TRUONG_KHOA, THU_KY_QLKH_HTQT, QUAN_TRI_VIEN)")
+        @Operation(summary = "Get Current Round", description = "Get current active innovation round (restricted to TRUONG_KHOA, QUAN_TRI_VIEN_QLKH_HTQT, QUAN_TRI_VIEN_HE_THONG)")
         @ApiResponses(value = {
                         @ApiResponse(responseCode = "200", description = "Current round retrieved successfully", content = @Content(schema = @Schema(implementation = InnovationRoundResponse.class))),
                         @ApiResponse(responseCode = "404", description = "No current round found"),

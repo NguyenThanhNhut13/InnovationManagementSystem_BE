@@ -43,7 +43,7 @@ public class DigitalSignatureService {
         this.keyManagementService = keyManagementService;
     }
 
-    // 1. Create digital signature
+    // 1. Tạo digital signature
     public DigitalSignatureResponse createDigitalSignature(DigitalSignatureRequest request) {
 
         Innovation innovation = innovationRepository.findById(request.getInnovationId())
@@ -52,10 +52,10 @@ public class DigitalSignatureService {
 
         User currentUser = userService.getCurrentUser();
 
-        // Validate user has permission to sign
+        // Validate user có quyền ký
         validateSigningPermission(innovation, currentUser, request.getSignedAsRole());
 
-        // Get user signature profile
+        // Lấy user signature profile
         UserSignatureProfile signatureProfile = this.userSignatureProfileRepository.findByUserId(currentUser.getId())
                 .orElseThrow(() -> new IdInvalidException("Người dùng chưa có hồ sơ chữ ký số"));
 
@@ -75,7 +75,7 @@ public class DigitalSignatureService {
             throw new IdInvalidException("Chữ ký không hợp lệ");
         }
 
-        // Create digital signature
+        // Tạo digital signature
         DigitalSignature digitalSignature = new DigitalSignature();
         digitalSignature.setDocumentType(request.getDocumentType());
         digitalSignature.setSignedAsRole(request.getSignedAsRole());
@@ -91,19 +91,19 @@ public class DigitalSignatureService {
         return mapToResponse(savedSignature);
     }
 
-    // 2. Get signature status of innovation
+    // 2. Lấy signature status của innovation
     public SignatureStatusResponse getSignatureStatus(String innovationId, DocumentTypeEnum documentType) {
         Innovation innovation = innovationRepository.findById(innovationId)
                 .orElseThrow(() -> new IdInvalidException("Không tìm thấy sáng kiến với ID: " + innovationId));
 
-        // Get all signatures for this document type
+        // Lấy tất cả signatures cho document type này
         List<DigitalSignature> signatures = digitalSignatureRepository
                 .findByInnovationIdAndDocumentTypeWithRelations(innovationId, documentType);
 
-        // Determine required signatures based on document type
+        // Xác định required signatures dựa trên document type
         List<SignatureStatusResponse.RequiredSignatureInfo> requiredSignatures = getRequiredSignatures(documentType);
 
-        // Check which signatures are completed
+        // Kiểm tra signatures nào đã được hoàn thành
         for (SignatureStatusResponse.RequiredSignatureInfo required : requiredSignatures) {
             UserRoleEnum role = UserRoleEnum.valueOf(required.getRoleCode());
             boolean isSigned = signatures.stream()
@@ -123,11 +123,11 @@ public class DigitalSignatureService {
             }
         }
 
-        // Check if fully signed
+        // Kiểm tra nếu đã được ký đầy đủ
         boolean isFullySigned = requiredSignatures.stream()
                 .allMatch(SignatureStatusResponse.RequiredSignatureInfo::isSigned);
 
-        // Check if can submit (both forms must be fully signed)
+        // Kiểm tra nếu có thể submit (cả 2 forms phải được ký đầy đủ)
         boolean canSubmit = isFullySigned && isBothFormsFullySigned(innovationId);
 
         SignatureStatusResponse response = new SignatureStatusResponse();
@@ -145,14 +145,14 @@ public class DigitalSignatureService {
         return response;
     }
 
-    // 3. Check if both forms are fully signed
+    // 3. Kiểm tra nếu cả 2 forms đã được ký đầy đủ
     public boolean isBothFormsFullySigned(String innovationId) {
         boolean form1Signed = isFormFullySigned(innovationId, DocumentTypeEnum.FORM_1);
         boolean form2Signed = isFormFullySigned(innovationId, DocumentTypeEnum.FORM_2);
         return form1Signed && form2Signed;
     }
 
-    // 4. Check if a form is fully signed
+    // 4. Kiểm tra nếu một form đã được ký đầy đủ
     public boolean isFormFullySigned(String innovationId, DocumentTypeEnum documentType) {
         List<SignatureStatusResponse.RequiredSignatureInfo> requiredSignatures = getRequiredSignatures(documentType);
 
@@ -272,15 +272,19 @@ public class DigitalSignatureService {
         return response;
     }
 
-    // Helper method: Kiểm tra user có phải là trưởng khoa của phòng ban cụ thể
-    // không
+    /*
+     * Helper method: Kiểm tra user có phải là trưởng khoa của phòng ban cụ thể
+     * không
+     */
     private boolean isDepartmentHeadOf(User user, String departmentId) {
         return user.getUserRoles().stream()
                 .anyMatch(userRole -> userRole.getRole().getRoleName() == UserRoleEnum.TRUONG_KHOA
                         && user.getDepartment().getId().equals(departmentId));
     }
 
-    // Method để tạo chữ ký từ document hash bằng private key của user hiện tại
+    /*
+     * Method để tạo chữ ký từ document hash bằng private key của user hiện tại
+     */
     public String generateSignatureForDocument(String documentHash) {
         User currentUser = userService.getCurrentUser();
         UserSignatureProfile signatureProfile = this.userSignatureProfileRepository.findByUserId(currentUser.getId())
@@ -289,7 +293,9 @@ public class DigitalSignatureService {
         return keyManagementService.generateSignature(documentHash, signatureProfile.getPrivateKey());
     }
 
-    // Method để xác thực chữ ký bằng public key của user
+    /*
+     * Method để xác thực chữ ký bằng public key của user
+     */
     public boolean verifyDocumentSignature(String documentHash, String signatureHash, String userId) {
         UserSignatureProfile signatureProfile = userSignatureProfileRepository.findByUserId(userId)
                 .orElseThrow(() -> new IdInvalidException("Không tìm thấy hồ sơ chữ ký số của user"));
@@ -297,7 +303,9 @@ public class DigitalSignatureService {
         return keyManagementService.verifySignature(documentHash, signatureHash, signatureProfile.getPublicKey());
     }
 
-    // Method để tạo hash cho file content
+    /*
+     * Method để tạo hash cho file content
+     */
     public String generateDocumentHash(byte[] fileContent) {
         return keyManagementService.generateDocumentHash(fileContent);
     }

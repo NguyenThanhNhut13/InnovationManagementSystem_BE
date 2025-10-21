@@ -32,8 +32,10 @@ public class FormatRestResponse implements ResponseBodyAdvice<Object> {
             return false;
         }
 
-        // Skip formatting for file conversion endpoints that return raw content
-        if (methodName.contains("convertDocToHtml") || methodName.contains("downloadFile")) {
+        // Skip formatting for file conversion/proxy endpoints that return raw content
+        if (methodName.contains("convertDocToHtml")
+                || methodName.contains("convertWordToHtmlViaThirdParty")
+                || methodName.contains("downloadFile")) {
             return false;
         }
 
@@ -63,12 +65,12 @@ public class FormatRestResponse implements ResponseBodyAdvice<Object> {
             // Handle String responses by wrapping them in RestResponse
             res.setData(body);
             ApiMessage message = returnType.getMethodAnnotation(ApiMessage.class);
-            res.setMessage(message != null ? message.value() : "CALL API SUCCESS");
+            res.setMessage(message != null ? message.value() : "Thành công");
             return res;
         } else {
             res.setData(body);
             ApiMessage message = returnType.getMethodAnnotation(ApiMessage.class);
-            res.setMessage(message != null ? message.value() : "CALL API SUCCESS");
+            res.setMessage(message != null ? message.value() : "Thành công");
             return res;
         }
     }

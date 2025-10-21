@@ -23,11 +23,9 @@ import org.springframework.web.bind.annotation.RestController;
 import com.turkraft.springfilter.boot.Filter;
 import jakarta.validation.Valid;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.Department;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.DepartmentMergeHistory;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.DepartmentRequest;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.MergeDepartmentsRequest;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.SplitDepartmentRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.DepartmentResponse;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.DepartmentInnovationStatisticsResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.service.DepartmentService;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.ResultPaginationDTO;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.annotation.ApiMessage;
@@ -45,7 +43,7 @@ public class DepartmentController {
                 this.departmentService = departmentService;
         }
 
-        // 1. Create Department
+        // 1. Tạo phòng ban
         @PostMapping("/departments")
         @ApiMessage("Tạo phòng ban thành công")
         @Operation(summary = "Create Department", description = "Create a new department")
@@ -59,7 +57,7 @@ public class DepartmentController {
                 return ResponseEntity.ok(departmentResponse);
         }
 
-        // 2. Get All Departments
+        // 2. Lấy danh sách phòng ban
         @GetMapping("/departments")
         @ApiMessage("Lấy danh sách phòng ban thành công")
         @Operation(summary = "Get All Departments", description = "Get all departments")
@@ -73,7 +71,7 @@ public class DepartmentController {
                 return ResponseEntity.ok(departmentService.getAllDepartments(specification, pageable));
         }
 
-        // 3. Get Department by Id
+        // 3. Lấy thông tin phòng ban by Id
         @GetMapping("/departments/{id}")
         @ApiMessage("Lấy phòng ban thành công")
         @Operation(summary = "Get Department by Id", description = "Get department details by department ID")
@@ -86,7 +84,7 @@ public class DepartmentController {
                 return ResponseEntity.ok(departmentService.getDepartmentById(id));
         }
 
-        // 4. Update Department
+        // 4. Cập nhật phòng ban
         @PutMapping("/departments/{id}")
         @ApiMessage("Cập nhật phòng ban thành công")
         @Operation(summary = "Update Department", description = "Update department details by department ID")
@@ -100,7 +98,7 @@ public class DepartmentController {
                 return ResponseEntity.ok(departmentService.updateDepartment(id, departmentRequest));
         }
 
-        // 5. Get Department User Statistics (All Departments)
+        // 5. Lấy thống kê users theo phòng ban (Tất cả phòng ban)
         @GetMapping("/departments/users/statistics")
         @ApiMessage("Lấy thống kê users theo department thành công")
         @Operation(summary = "Get Department User Statistics", description = "Get department user statistics")
@@ -113,7 +111,7 @@ public class DepartmentController {
                 return ResponseEntity.ok(statistics);
         }
 
-        // 6. Get Department User Statistics by Department ID
+        // 6. Lấy thống kê users theo phòng ban by ID
         @GetMapping("/departments/{id}/users/statistics")
         @ApiMessage("Lấy thống kê users của phòng ban thành công")
         @Operation(summary = "Get Department User Statistics by Department ID", description = "Get department user statistics by department ID")
@@ -127,7 +125,7 @@ public class DepartmentController {
                 return ResponseEntity.ok(statistics);
         }
 
-        // 7. Search Departments By Keyword With Pagination
+        // 7. Tìm kiếm phòng ban by từ khóa với phân trang
         @GetMapping("/departments/search")
         @ApiMessage("Tìm kiếm phòng ban thành công")
         @Operation(summary = "Search Departments By Keyword With Pagination", description = "Search departments by keyword with pagination")
@@ -141,7 +139,7 @@ public class DepartmentController {
                 return ResponseEntity.ok(departmentService.searchDepartmentsByKeywordWithPagination(keyword, pageable));
         }
 
-        // 8. Get all User in Department
+        // 8. Lấy danh sách người dùng trong phòng ban
         @GetMapping("/departments/{id}/users")
         @ApiMessage("Lấy danh sách người dùng trong phòng ban thành công")
         @Operation(summary = "Get all User in Department", description = "Get all users in department")
@@ -155,7 +153,7 @@ public class DepartmentController {
                 return ResponseEntity.ok(departmentService.getAllUserInDepartment(id, pageable));
         }
 
-        // 9. Get Active User in Department
+        // 9. Lấy danh sách người dùng đang hoạt động trong phòng ban
         @GetMapping("/departments/{id}/users/active")
         @ApiMessage("Lấy danh sách người dùng đang hoạt động trong phòng ban thành công")
         @Operation(summary = "Get Active User in Department", description = "Get active users in department")
@@ -169,7 +167,7 @@ public class DepartmentController {
                 return ResponseEntity.ok(departmentService.getActiveUserInDepartment(id, pageable));
         }
 
-        // 10. Get Inactive User in Department
+        // 10. Lấy danh sách người dùng không hoạt động trong phòng ban
         @GetMapping("/departments/{id}/users/inactive")
         @ApiMessage("Lấy danh sách người dùng không hoạt động trong phòng ban thành công")
         @Operation(summary = "Get Inactive User in Department", description = "Get inactive users in department")
@@ -183,7 +181,7 @@ public class DepartmentController {
                 return ResponseEntity.ok(departmentService.getInactiveUserInDepartment(id, pageable));
         }
 
-        // 11. Remove User from Department
+        // 11. Xóa người dùng khỏi phòng ban
         @DeleteMapping("/departments/{departmentId}/users/{userId}")
         @ApiMessage("Xóa người dùng khỏi phòng ban thành công")
         @Operation(summary = "Remove User from Department", description = "Remove user from department")
@@ -198,46 +196,18 @@ public class DepartmentController {
                 return ResponseEntity.noContent().build();
         }
 
-        // 12. Merge departments
-        @PostMapping("/departments/merge")
-        @ApiMessage("Gộp phòng ban thành công")
-        @Operation(summary = "Merge Departments", description = "Merge departments")
+        // 12. Lấy thống kê số lượng sáng kiến của tất cả các khoa
+        @GetMapping("/departments/innovations/statistics")
+        @ApiMessage("Lấy thống kê số lượng sáng kiến của tất cả các khoa thành công")
+        @Operation(summary = "Get Department Innovation Statistics", description = "Get innovation statistics for all departments")
         @ApiResponses(value = {
-                        @ApiResponse(responseCode = "200", description = "Departments merged successfully", content = @Content(schema = @Schema(implementation = DepartmentResponse.class))),
+                        @ApiResponse(responseCode = "200", description = "Department innovation statistics retrieved successfully", content = @Content(schema = @Schema(implementation = DepartmentInnovationStatisticsResponse.class))),
                         @ApiResponse(responseCode = "400", description = "Invalid request data")
         })
-        public ResponseEntity<DepartmentResponse> mergeDepartments(
-                        @Parameter(description = "Merge departments request", required = true) @Valid @RequestBody MergeDepartmentsRequest request) {
-                DepartmentResponse mergedDepartment = departmentService.mergeDepartments(request);
-                return ResponseEntity.ok(mergedDepartment);
-        }
-
-        // 13. Split department
-        @PostMapping("/departments/split")
-        @ApiMessage("Tách phòng ban thành công")
-        @Operation(summary = "Split Department", description = "Split department")
-        @ApiResponses(value = {
-                        @ApiResponse(responseCode = "200", description = "Departments split successfully", content = @Content(schema = @Schema(implementation = List.class))),
-                        @ApiResponse(responseCode = "400", description = "Invalid request data")
-        })
-        public ResponseEntity<List<DepartmentResponse>> splitDepartment(
-                        @Parameter(description = "Split department request", required = true) @Valid @RequestBody SplitDepartmentRequest request) {
-                List<DepartmentResponse> newDepartments = departmentService.splitDepartment(request);
-                return ResponseEntity.ok(newDepartments);
-        }
-
-        // 14. Get department merge history
-        @GetMapping("/departments/{id}/merge-history")
-        @ApiMessage("Lấy lịch sử gộp phòng ban thành công")
-        @Operation(summary = "Get Department Merge History", description = "Get department merge history")
-        @ApiResponses(value = {
-                        @ApiResponse(responseCode = "200", description = "Department merge history retrieved successfully", content = @Content(schema = @Schema(implementation = List.class))),
-                        @ApiResponse(responseCode = "400", description = "Invalid request data")
-        })
-        public ResponseEntity<List<DepartmentMergeHistory>> getDepartmentMergeHistory(
-                        @Parameter(description = "Department ID", required = true) @PathVariable String id) {
-                List<DepartmentMergeHistory> history = departmentService.getDepartmentMergeHistory(id);
-                return ResponseEntity.ok(history);
+        public ResponseEntity<List<DepartmentInnovationStatisticsResponse>> getDepartmentInnovationStatistics() {
+                List<DepartmentInnovationStatisticsResponse> statistics = departmentService
+                                .getDepartmentInnovationStatistics();
+                return ResponseEntity.ok(statistics);
         }
 
 }

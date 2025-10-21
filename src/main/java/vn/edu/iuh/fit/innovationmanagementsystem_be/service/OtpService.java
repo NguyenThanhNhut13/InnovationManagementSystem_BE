@@ -20,7 +20,7 @@ public class OtpService {
     private static final int OTP_LENGTH = 6;
     private static final long OTP_TTL = 5 * 60; // 5 phút
 
-    // 1. Generate OTP 6 numbers randomly
+    // 1. Tạo OTP 6 số ngẫu nhiên
     public String generateOtp() {
         StringBuilder otp = new StringBuilder();
         for (int i = 0; i < OTP_LENGTH; i++) {
@@ -29,7 +29,7 @@ public class OtpService {
         return otp.toString();
     }
 
-    // 2. Save OTP to Redis with TTL 5 minutes
+    // 2. Lưu OTP vào Redis với TTL 5 phút
     public void saveOtp(String personnelId, String otp) {
         String key = OTP_PREFIX + personnelId;
         try {
@@ -39,13 +39,12 @@ public class OtpService {
         }
     }
 
-    // 3. Validate OTP from user
+    // 3. Kiểm tra OTP từ user
     public boolean validateOtp(String personnelId, String otp) {
         String key = OTP_PREFIX + personnelId;
         try {
             Object savedOtp = redisTemplate.opsForValue().get(key);
             if (savedOtp != null && savedOtp.toString().equals(otp)) {
-                // Xóa OTP sau khi validate thành công
                 redisTemplate.delete(key);
                 return true;
             }
@@ -65,7 +64,7 @@ public class OtpService {
         }
     }
 
-    // 5. Delete OTP from Redis
+    // 5. Xóa OTP khỏi Redis
     public void deleteOtp(String personnelId) {
         String key = OTP_PREFIX + personnelId;
         try {
@@ -75,7 +74,7 @@ public class OtpService {
         }
     }
 
-    // 6. Check if OTP exists
+    // 6. Kiểm tra nếu OTP tồn tại
     public boolean isOtpExists(String personnelId) {
         String key = OTP_PREFIX + personnelId;
         try {

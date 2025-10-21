@@ -34,112 +34,97 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.annotation.ApiMessage;
 @SecurityRequirement(name = "Bearer Authentication")
 public class FormFieldController {
 
-    private final FormFieldService formFieldService;
+        private final FormFieldService formFieldService;
 
-    public FormFieldController(FormFieldService formFieldService) {
-        this.formFieldService = formFieldService;
-    }
+        public FormFieldController(FormFieldService formFieldService) {
+                this.formFieldService = formFieldService;
+        }
 
-    // 1. Create Form Field
-    @PostMapping("/form-fields")
-    @ApiMessage("Tạo Form Field thành công")
-    @Operation(summary = "Create Form Field", description = "Create a new form field")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Form field created successfully", content = @Content(schema = @Schema(implementation = FormFieldResponse.class))),
-            @ApiResponse(responseCode = "400", description = "Invalid request data")
-    })
-    public ResponseEntity<FormFieldResponse> createFormField(
-            @Parameter(description = "Form field creation request", required = true) @Valid @RequestBody FormFieldRequest request,
-            @Parameter(description = "Template ID", required = true) @RequestParam String templateId) {
-        FormFieldResponse response = formFieldService.createFormField(request, templateId);
-        return ResponseEntity.ok(response);
-    }
+        // 1. Tạo Form Field
+        @PostMapping("/form-fields")
+        @ApiMessage("Tạo Form Field thành công")
+        @Operation(summary = "Create Form Field", description = "Create a new form field")
+        @ApiResponses(value = {
+                        @ApiResponse(responseCode = "200", description = "Form field created successfully", content = @Content(schema = @Schema(implementation = FormFieldResponse.class))),
+                        @ApiResponse(responseCode = "400", description = "Invalid request data")
+        })
+        public ResponseEntity<FormFieldResponse> createFormField(
+                        @Parameter(description = "Form field creation request", required = true) @Valid @RequestBody FormFieldRequest request,
+                        @Parameter(description = "Template ID", required = true) @RequestParam String templateId) {
+                FormFieldResponse response = formFieldService.createFormField(request, templateId);
+                return ResponseEntity.ok(response);
+        }
 
-    // 2. Create Multiple Form Fields
-    @PostMapping("/form-fields/bulk")
-    @ApiMessage("Tạo nhiều Form Field thành công")
-    @Operation(summary = "Create Multiple Form Fields", description = "Create multiple form fields")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Multiple form fields created successfully", content = @Content(schema = @Schema(implementation = List.class))),
-            @ApiResponse(responseCode = "400", description = "Invalid request data")
-    })
-    public ResponseEntity<List<FormFieldResponse>> createMultipleFormFields(
-            @Parameter(description = "List of form field creation requests", required = true) @Valid @RequestBody List<FormFieldRequest> requests,
-            @Parameter(description = "Template ID", required = true) @RequestParam String templateId) {
-        List<FormFieldResponse> responses = formFieldService.createMultipleFormFields(requests, templateId);
-        return ResponseEntity.ok(responses);
-    }
+        // 2. Tạo nhiều Form Field
+        @PostMapping("/form-fields/bulk")
+        @ApiMessage("Tạo nhiều Form Field thành công")
+        @Operation(summary = "Create Multiple Form Fields", description = "Create multiple form fields")
+        @ApiResponses(value = {
+                        @ApiResponse(responseCode = "200", description = "Multiple form fields created successfully", content = @Content(schema = @Schema(implementation = List.class))),
+                        @ApiResponse(responseCode = "400", description = "Invalid request data")
+        })
+        public ResponseEntity<List<FormFieldResponse>> createMultipleFormFields(
+                        @Parameter(description = "List of form field creation requests", required = true) @Valid @RequestBody List<FormFieldRequest> requests,
+                        @Parameter(description = "Template ID", required = true) @RequestParam String templateId) {
+                List<FormFieldResponse> responses = formFieldService.createMultipleFormFields(requests, templateId);
+                return ResponseEntity.ok(responses);
+        }
 
-    // 3. Update Form Field
-    @PutMapping("/form-fields/{id}")
-    @ApiMessage("Cập nhật Form Field thành công")
-    @Operation(summary = "Update Form Field", description = "Update form field by ID")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Form field updated successfully", content = @Content(schema = @Schema(implementation = FormFieldResponse.class))),
-            @ApiResponse(responseCode = "400", description = "Invalid request data"),
-            @ApiResponse(responseCode = "404", description = "Form field not found")
-    })
-    public ResponseEntity<FormFieldResponse> updateFormField(
-            @Parameter(description = "Form field update request", required = true) @Valid @RequestBody UpdateFormFieldRequest request) {
-        FormFieldResponse response = formFieldService.updateFormField(request);
-        return ResponseEntity.ok(response);
-    }
+        // 3. Cập nhật Form Field
+        @PutMapping("/form-fields/{id}")
+        @ApiMessage("Cập nhật Form Field thành công")
+        @Operation(summary = "Update Form Field", description = "Update form field by ID")
+        @ApiResponses(value = {
+                        @ApiResponse(responseCode = "200", description = "Form field updated successfully", content = @Content(schema = @Schema(implementation = FormFieldResponse.class))),
+                        @ApiResponse(responseCode = "400", description = "Invalid request data"),
+                        @ApiResponse(responseCode = "404", description = "Form field not found")
+        })
+        public ResponseEntity<FormFieldResponse> updateFormField(
+                        @Parameter(description = "Form field update request", required = true) @Valid @RequestBody UpdateFormFieldRequest request) {
+                FormFieldResponse response = formFieldService.updateFormField(request);
+                return ResponseEntity.ok(response);
+        }
 
-    // 4. Delete Form Field
-    @DeleteMapping("/form-fields/{id}")
-    @ApiMessage("Xóa Form Field thành công")
-    @Operation(summary = "Delete Form Field", description = "Delete form field by ID")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "204", description = "Form field deleted successfully"),
-            @ApiResponse(responseCode = "404", description = "Form field not found")
-    })
-    public ResponseEntity<Void> deleteFormField(
-            @Parameter(description = "Form field ID", required = true) @PathVariable String id) {
-        formFieldService.deleteFormField(id);
-        return ResponseEntity.noContent().build();
-    }
+        // 4. Xóa Form Field
+        @DeleteMapping("/form-fields/{id}")
+        @ApiMessage("Xóa Form Field thành công")
+        @Operation(summary = "Delete Form Field", description = "Delete form field by ID")
+        @ApiResponses(value = {
+                        @ApiResponse(responseCode = "204", description = "Form field deleted successfully"),
+                        @ApiResponse(responseCode = "404", description = "Form field not found")
+        })
+        public ResponseEntity<Void> deleteFormField(
+                        @Parameter(description = "Form field ID", required = true) @PathVariable String id) {
+                formFieldService.deleteFormField(id);
+                return ResponseEntity.noContent().build();
+        }
 
-    // 5. Get Form Field By Id
-    @GetMapping("/form-fields/{id}")
-    @ApiMessage("Lấy Form Field thành công")
-    @Operation(summary = "Get Form Field by ID", description = "Get form field details by ID")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Form field retrieved successfully", content = @Content(schema = @Schema(implementation = FormFieldResponse.class))),
-            @ApiResponse(responseCode = "404", description = "Form field not found")
-    })
-    public ResponseEntity<FormFieldResponse> getFormFieldById(
-            @Parameter(description = "Form field ID", required = true) @PathVariable String id) {
-        FormFieldResponse response = formFieldService.getFormFieldById(id);
-        return ResponseEntity.ok(response);
-    }
+        // 5. Lấy Form Field By Id
+        @GetMapping("/form-fields/{id}")
+        @ApiMessage("Lấy Form Field thành công")
+        @Operation(summary = "Get Form Field by ID", description = "Get form field details by ID")
+        @ApiResponses(value = {
+                        @ApiResponse(responseCode = "200", description = "Form field retrieved successfully", content = @Content(schema = @Schema(implementation = FormFieldResponse.class))),
+                        @ApiResponse(responseCode = "404", description = "Form field not found")
+        })
+        public ResponseEntity<FormFieldResponse> getFormFieldById(
+                        @Parameter(description = "Form field ID", required = true) @PathVariable String id) {
+                FormFieldResponse response = formFieldService.getFormFieldById(id);
+                return ResponseEntity.ok(response);
+        }
 
-    // 6. Get Form Fields By Template Id
-    @GetMapping("/form-fields/template/{templateId}")
-    @ApiMessage("Lấy danh sách Form Field thành công")
-    @Operation(summary = "Get Form Fields by Template ID", description = "Get all form fields by template ID")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Form fields retrieved successfully", content = @Content(schema = @Schema(implementation = List.class))),
-            @ApiResponse(responseCode = "404", description = "Template not found")
-    })
-    public ResponseEntity<List<FormFieldResponse>> getFormFieldsByTemplateId(
-            @Parameter(description = "Template ID", required = true) @PathVariable String templateId) {
-        List<FormFieldResponse> responses = formFieldService.getFormFieldsByTemplateId(templateId);
-        return ResponseEntity.ok(responses);
-    }
+        // 6. Lấy danh sách Form Field By Template Id
+        @GetMapping("/form-fields/template/{templateId}")
+        @ApiMessage("Lấy danh sách Form Field thành công")
+        @Operation(summary = "Get Form Fields by Template ID", description = "Get all form fields by template ID")
+        @ApiResponses(value = {
+                        @ApiResponse(responseCode = "200", description = "Form fields retrieved successfully", content = @Content(schema = @Schema(implementation = List.class))),
+                        @ApiResponse(responseCode = "404", description = "Template not found")
+        })
+        public ResponseEntity<List<FormFieldResponse>> getFormFieldsByTemplateId(
+                        @Parameter(description = "Template ID", required = true) @PathVariable String templateId) {
+                List<FormFieldResponse> responses = formFieldService.getFormFieldsByTemplateId(templateId);
+                return ResponseEntity.ok(responses);
+        }
 
-    // 7. Reorder Form Field
-    @PutMapping("/form-fields/{id}/reorder")
-    @ApiMessage("Sắp xếp lại Form Field thành công")
-    @Operation(summary = "Reorder Form Field", description = "Reorder form field position")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Form field reordered successfully", content = @Content(schema = @Schema(implementation = FormFieldResponse.class))),
-            @ApiResponse(responseCode = "400", description = "Invalid request data"),
-            @ApiResponse(responseCode = "404", description = "Form field not found")
-    })
-    public ResponseEntity<FormFieldResponse> reorderFormField(
-            @Parameter(description = "Form field reorder request", required = true) @Valid @RequestBody FormFieldRequest request,
-            @Parameter(description = "Form field ID", required = true) @PathVariable String id) {
-        FormFieldResponse response = formFieldService.reorderFormField(id, request);
-        return ResponseEntity.ok(response);
-    }
 }

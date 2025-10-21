@@ -11,6 +11,6 @@ public interface FormTemplateMapper {
     FormTemplateMapper INSTANCE = org.mapstruct.factory.Mappers.getMapper(FormTemplateMapper.class);
 
     @Mapping(target = "innovationRoundId", source = "innovationRound.id")
-    @Mapping(target = "innovationRoundName", source = "innovationRound.name")
+    @Mapping(target = "innovationRoundName", source = "innovationRound.name", defaultValue = "")
     FormTemplateResponse toFormTemplateResponse(FormTemplate formTemplate);
 }

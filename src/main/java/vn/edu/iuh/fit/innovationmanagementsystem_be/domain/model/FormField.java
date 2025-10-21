@@ -1,9 +1,12 @@
 package vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.FieldTypeEnum;
 
 import java.util.List;
@@ -29,13 +32,13 @@ public class FormField {
     private FieldTypeEnum fieldType;
 
     @Column(name = "is_required", nullable = false)
-    private Boolean isRequired = false;
-
-    @Column(name = "order_in_template", nullable = false)
-    private Integer orderInTemplate;
+    private Boolean required = false;
 
     @Column(name = "field_key", nullable = false)
     private String fieldKey;
+
+    @Column(name = "placeholder", columnDefinition = "TEXT")
+    private String placeholder;
 
     // Relationships
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
@@ -44,5 +47,20 @@ public class FormField {
 
     @OneToMany(mappedBy = "formField", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
     private List<FormData> formDataList = new ArrayList<>();
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "table_config", columnDefinition = "JSON")
+    private JsonNode tableConfig;
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "options", columnDefinition = "JSON")
+    private JsonNode options;
+
+    @Column(name = "is_repeatable")
+    private Boolean repeatable = false;
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "children", columnDefinition = "JSON")
+    private JsonNode children;
 
 }

@@ -45,7 +45,7 @@ public class InnovationPhaseService {
         this.phaseTransitionService = phaseTransitionService;
     }
 
-    // 1. Create phases for an InnovationRound
+    // 1. Tạo phases cho InnovationRound
     public List<InnovationPhaseResponse> createPhasesForRound(String roundId,
             List<InnovationPhaseRequest> phaseRequests) {
         InnovationRound round = innovationRoundRepository.findById(roundId)
@@ -66,7 +66,7 @@ public class InnovationPhaseService {
                 .collect(Collectors.toList());
     }
 
-    // 1.1
+    // 2. Tạo phases cho InnovationRound
     public Set<InnovationPhase> createPhasesForRound(InnovationRound round,
             Set<InnovationPhaseRequest> phaseRequests) {
 
@@ -79,7 +79,7 @@ public class InnovationPhaseService {
         return phases;
     }
 
-    // 2. Create single phase
+    // 3. Tạo single phase
     public InnovationPhaseResponse createSinglePhase(String roundId, InnovationPhaseRequest phaseRequest) {
         InnovationRound round = innovationRoundRepository.findById(roundId)
                 .orElseThrow(() -> new IdInvalidException("Không tìm thấy InnovationRound với ID: " + roundId));
@@ -88,32 +88,7 @@ public class InnovationPhaseService {
         return innovationPhaseMapper.toInnovationPhaseResponse(phase);
     }
 
-    // Create phase from request
-    private InnovationPhase createPhaseFromRequest(InnovationRound round, InnovationPhaseRequest phaseRequest) {
-        // Set default values if not provided
-        if (phaseRequest.getName() == null) {
-            phaseRequest.setName(round.getName() + " - " + phaseRequest.getPhaseType().name());
-        }
-
-        if (innovationPhaseRepository.existsByInnovationRound_IdAndPhaseOrder(round.getId(),
-                phaseRequest.getPhaseOrder())) {
-            throw new IdInvalidException("Phase order " + phaseRequest.getPhaseOrder()
-                    + " already exists in this round");
-        }
-
-        InnovationPhase phase = innovationPhaseMapper.toInnovationPhase(phaseRequest);
-        phase.setInnovationRound(round);
-
-        // Validate phase dates are within round timeframe
-        if (!round.isPhaseWithinRoundTimeframe(phaseRequest.getPhaseStartDate(), phaseRequest.getPhaseEndDate())) {
-            throw new IdInvalidException("Thời gian giai đoạn phải nằm trong thời gian của InnovationRound: " +
-                    round.getRegistrationStartDate() + " đến " + round.getRegistrationEndDate());
-        }
-
-        return innovationPhaseRepository.save(phase);
-    }
-
-    // 3. Get phases by round
+    // 3. Lấy phases by round
     public List<InnovationPhaseResponse> getPhasesByRound(String roundId) {
         List<InnovationPhase> phases = innovationPhaseRepository.findByInnovationRoundIdOrderByPhaseOrder(roundId);
         return phases.stream()
@@ -121,21 +96,21 @@ public class InnovationPhaseService {
                 .collect(Collectors.toList());
     }
 
-    // 4. Get current active phase
+    // 4. Lấy current active phase
     public InnovationPhaseResponse getCurrentActivePhase(String roundId) {
         InnovationPhase phase = innovationPhaseRepository.findCurrentActivePhase(roundId, LocalDate.now())
                 .orElse(null);
         return phase != null ? innovationPhaseMapper.toInnovationPhaseResponse(phase) : null;
     }
 
-    // 5. Get phase by type
+    // 5. Lấy phase by type
     public InnovationPhaseResponse getPhaseByType(String roundId, InnovationPhaseTypeEnum phaseType) {
         InnovationPhase phase = innovationPhaseRepository.findByInnovationRoundIdAndPhaseType(roundId, phaseType)
                 .orElse(null);
         return phase != null ? innovationPhaseMapper.toInnovationPhaseResponse(phase) : null;
     }
 
-    // 6. Update phase
+    // 6. Cập nhật phase
     public InnovationPhaseResponse updatePhase(String phaseId, UpdateInnovationPhaseRequest request) {
         InnovationPhase phase = innovationPhaseRepository.findById(phaseId)
                 .orElseThrow(() -> new IdInvalidException("Không tìm thấy InnovationPhase với ID: " + phaseId));
@@ -156,7 +131,7 @@ public class InnovationPhaseService {
             phase.setDescription(request.getDescription());
         }
 
-        // Validate phase dates are within round timeframe
+        // Kiểm tra thời gian giai đoạn
         if (request.getPhaseStartDate() != null || request.getPhaseEndDate() != null) {
             if (!phase.getInnovationRound().isPhaseWithinRoundTimeframe(phase.getPhaseStartDate(),
                     phase.getPhaseEndDate())) {
@@ -170,12 +145,12 @@ public class InnovationPhaseService {
         return innovationPhaseMapper.toInnovationPhaseResponse(savedPhase);
     }
 
-    // 7. Update phase dates
+    // 7. Cập nhật phase dates
     public InnovationPhaseResponse updatePhaseDates(String phaseId, LocalDate startDate, LocalDate endDate) {
         InnovationPhase phase = innovationPhaseRepository.findById(phaseId)
                 .orElseThrow(() -> new IdInvalidException("Không tìm thấy InnovationPhase với ID: " + phaseId));
 
-        // Validate dates
+        // Kiểm tra thời gian giai đoạn
         validatePhaseDates(startDate, endDate, phase.getInnovationRound());
 
         phase.setPhaseStartDate(startDate);
@@ -186,6 +161,7 @@ public class InnovationPhaseService {
     }
 
     // 8. Toggle phase status
+    @Transactional
     public InnovationPhaseResponse togglePhaseStatus(String phaseId, boolean isActive) {
         InnovationPhase phase = innovationPhaseRepository.findById(phaseId)
                 .orElseThrow(() -> new IdInvalidException("Không tìm thấy InnovationPhase với ID: " + phaseId));
@@ -194,7 +170,52 @@ public class InnovationPhaseService {
         return innovationPhaseMapper.toInnovationPhaseResponse(savedPhase);
     }
 
-    // Helper method to validate phase dates
+    // 9. Lấy tất cả innovation phases với pagination và filtering
+    public ResultPaginationDTO getAllInnovationPhasesWithPaginationAndFilter(
+            Specification<InnovationPhase> specification, Pageable pageable) {
+
+        if (pageable.getSort().isUnsorted()) {
+            pageable = org.springframework.data.domain.PageRequest.of(
+                    pageable.getPageNumber(),
+                    pageable.getPageSize(),
+                    org.springframework.data.domain.Sort.by("createdAt").descending());
+        }
+
+        Page<InnovationPhase> phasePage = innovationPhaseRepository.findAll(specification, pageable);
+        Page<InnovationPhaseResponse> responsePage = phasePage.map(innovationPhaseMapper::toInnovationPhaseResponse);
+        return Utils.toResultPaginationDTO(responsePage, pageable);
+    }
+
+    /*
+     * Create phase from request
+     */
+    private InnovationPhase createPhaseFromRequest(InnovationRound round, InnovationPhaseRequest phaseRequest) {
+        // Set default values if not provided
+        if (phaseRequest.getName() == null) {
+            phaseRequest.setName(round.getName() + " - " + phaseRequest.getPhaseType().name());
+        }
+
+        if (innovationPhaseRepository.existsByInnovationRound_IdAndPhaseOrder(round.getId(),
+                phaseRequest.getPhaseOrder())) {
+            throw new IdInvalidException("Phase order " + phaseRequest.getPhaseOrder()
+                    + " already exists in this round");
+        }
+
+        InnovationPhase phase = innovationPhaseMapper.toInnovationPhase(phaseRequest);
+        phase.setInnovationRound(round);
+
+        // Kiểm tra thời gian giai đoạn
+        if (!round.isPhaseWithinRoundTimeframe(phaseRequest.getPhaseStartDate(), phaseRequest.getPhaseEndDate())) {
+            throw new IdInvalidException("Thời gian giai đoạn phải nằm trong thời gian của InnovationRound: " +
+                    round.getRegistrationStartDate() + " đến " + round.getRegistrationEndDate());
+        }
+
+        return innovationPhaseRepository.save(phase);
+    }
+
+    /*
+     * Helper method to validate phase dates
+     */
     private void validatePhaseDates(LocalDate startDate, LocalDate endDate, InnovationRound round) {
         if (startDate.isAfter(endDate)) {
             throw new IdInvalidException("Ngày bắt đầu phải trước ngày kết thúc");
@@ -244,11 +265,4 @@ public class InnovationPhaseService {
                         Collectors.counting()));
     }
 
-    // Get all innovation phases with pagination and filtering
-    public ResultPaginationDTO getAllInnovationPhasesWithPaginationAndFilter(
-            Specification<InnovationPhase> specification, Pageable pageable) {
-        Page<InnovationPhase> phasePage = innovationPhaseRepository.findAll(specification, pageable);
-        Page<InnovationPhaseResponse> responsePage = phasePage.map(innovationPhaseMapper::toInnovationPhaseResponse);
-        return Utils.toResultPaginationDTO(responsePage, pageable);
-    }
 }

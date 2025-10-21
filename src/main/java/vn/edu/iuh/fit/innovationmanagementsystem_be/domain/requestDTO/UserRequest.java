@@ -14,7 +14,8 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.UserStatu
 @AllArgsConstructor
 public class UserRequest {
 
-    @NotBlank(message = "Mã nhân viên không được để trống")
+    @NotBlank(message = "Mã nhân sự không được để trống")
+    @Pattern(regexp = "^[0-9]{8}$", message = "Mã nhân sự chỉ được chứa số và phải có đúng 8 chữ số")
     private String personnelId;
 
     @NotBlank(message = "Họ và tên không được để trống")
@@ -30,7 +31,7 @@ public class UserRequest {
     private String phoneNumber;
 
     @NotBlank(message = "Mật khẩu không được để trống")
-    @Size(min = 8, max = 255, message = "Mật khẩu phải có ít nhất 8 ký tự và tối đa 255 ký tự")
+    @Size(min = 8, message = "Mật khẩu phải có ít nhất 8 ký tự")
     private String password;
 
     @NotBlank(message = "ID phòng ban không được để trống")

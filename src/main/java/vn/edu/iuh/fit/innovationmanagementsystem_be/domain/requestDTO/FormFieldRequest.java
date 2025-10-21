@@ -1,5 +1,6 @@
 package vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
@@ -22,9 +23,10 @@ public class FormFieldRequest {
     private FieldTypeEnum fieldType;
 
     @NotNull(message = "Trạng thái required không được để trống")
-    private Boolean isRequired = false;
+    private Boolean required = false;
 
-    @NotNull(message = "Thứ tự hiển thị không được để trống")
-    private Integer orderInTemplate;
+    private String placeholder;
+
+    private JsonNode tableConfig;
 
 }

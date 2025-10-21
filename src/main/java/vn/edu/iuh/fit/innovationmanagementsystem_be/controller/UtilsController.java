@@ -10,12 +10,20 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.core.io.InputStreamResource;
+import org.springframework.core.io.FileSystemResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
+import org.springframework.web.client.RestTemplate;
+import org.springframework.beans.factory.annotation.Value;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.FileExistsResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.FileInfoResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.FileUploadResponse;
@@ -41,15 +49,15 @@ public class UtilsController {
 
     private final FileService fileService;
 
+    @Value("${CONVERTAPI_TOKEN:}")
+    private String convertApiToken;
+
     public UtilsController(FileService fileService) {
         this.fileService = fileService;
     }
 
-    // 1. Upload single file to MinIO
-    @PostMapping(
-            value = "/upload",
-            consumes = MediaType.MULTIPART_FORM_DATA_VALUE
-    )
+    // 1. Upload một file to MinIO
+    @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @ApiMessage("Upload file thành công")
     @Operation(summary = "Upload Single File", description = "Upload a single file to MinIO storage")
     @ApiResponses(value = {
@@ -60,11 +68,7 @@ public class UtilsController {
             @Parameter(description = "File to upload", required = true) @RequestParam("file") MultipartFile file)
             throws Exception {
 
-        System.out.println("file "+ file.getOriginalFilename());
-
-//        if (file.isEmpty()) {
-//            throw new IdInvalidException("File is empty");
-//        }
+        System.out.println("file " + file.getOriginalFilename());
 
         if (file.getOriginalFilename() == null || file.getOriginalFilename().trim().isEmpty()) {
             throw new IdInvalidException("File name is required");
@@ -86,7 +90,7 @@ public class UtilsController {
         return ResponseEntity.ok(response);
     }
 
-    // 2. Upload multiple files to MinIO
+    // 2. Upload nhiều file to MinIO
     @PostMapping("/upload-multiple")
     @ApiMessage("Upload nhiều file thành công")
     @Operation(summary = "Upload Multiple Files", description = "Upload multiple files to MinIO storage")
@@ -142,7 +146,7 @@ public class UtilsController {
         return ResponseEntity.ok(response);
     }
 
-    // 3. Download file from MinIO
+    // 3. Download file từ MinIO
     @GetMapping("/download/{fileName}")
     @ApiMessage("Download file thành công")
     @Operation(summary = "Download File", description = "Download a file from MinIO storage")
@@ -173,7 +177,7 @@ public class UtilsController {
                 .body(resource);
     }
 
-    // 4. Get file info without downloading
+    // 4. Lấy thông tin file & không download
     @GetMapping("/info/{fileName}")
     @ApiMessage("Lấy thông tin file thành công")
     public ResponseEntity<FileInfoResponse> getFileInfo(@PathVariable String fileName) throws Exception {
@@ -194,7 +198,7 @@ public class UtilsController {
         return ResponseEntity.ok(response);
     }
 
-    // 5. Delete file from MinIO
+    // 5. Xóa file từ MinIO
     @DeleteMapping("/delete/{fileName}")
     @ApiMessage("Xóa file thành công")
     public ResponseEntity<Void> deleteFile(@PathVariable String fileName) throws Exception {
@@ -226,14 +230,14 @@ public class UtilsController {
         File tempFile = null;
         File htmlFile = null;
         try {
-            // 1. Lưu file tạm
+            // Lưu file tạm
             tempFile = File.createTempFile("upload-", "-" + file.getOriginalFilename());
             file.transferTo(tempFile);
 
-            // 2. Thư mục output
+            // Thư mục output
             File outputDir = new File(System.getProperty("java.io.tmpdir"));
 
-            // 3. Copy file vào container trước
+            // Copy file vào container
             ProcessBuilder copyInPb = new ProcessBuilder(
                     "docker", "cp",
                     tempFile.getAbsolutePath(),
@@ -248,7 +252,7 @@ public class UtilsController {
                         .body("Failed to copy file to container");
             }
 
-            // 4. Gọi LibreOffice container để convert DOC/DOCX → HTML
+            // Gọi LibreOffice container để convert DOC/DOCX → HTML
             ProcessBuilder pb = new ProcessBuilder(
                     "docker", "exec", "libreoffice",
                     "libreoffice",
@@ -260,7 +264,7 @@ public class UtilsController {
 
             Process process = pb.start();
 
-            // Đọc output để debug nếu cần
+            // Đọc output & debug
             try (var reader = new java.io.BufferedReader(new java.io.InputStreamReader(process.getInputStream()))) {
                 String line;
                 while ((line = reader.readLine()) != null) {
@@ -275,11 +279,11 @@ public class UtilsController {
                         .body("LibreOffice conversion failed with exit code: " + exitCode);
             }
 
-            // 5. Tìm file HTML đã sinh ra trong container
+            // Tìm file HTML đã sinh ra trong container
             String tempName = tempFile.getName();
             String htmlName = tempName.replaceAll("\\.[^.]+$", "") + ".html";
 
-            // 6. Copy file từ container về host
+            // Copy file từ container về host
             ProcessBuilder copyPb = new ProcessBuilder(
                     "docker", "cp",
                     "libreoffice:/tmp/" + htmlName,
@@ -301,10 +305,9 @@ public class UtilsController {
                         .body("Convert thất bại! Không tìm thấy file: " + htmlFile.getAbsolutePath());
             }
 
-            // 7. Đọc nội dung HTML
+            // Đọc nội dung HTML
             String html = new String(Files.readAllBytes(htmlFile.toPath()), StandardCharsets.UTF_8);
 
-            // 8. Trả về nội dung HTML
             return ResponseEntity.ok()
                     .contentType(MediaType.TEXT_HTML)
                     .body(html);
@@ -314,7 +317,7 @@ public class UtilsController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Lỗi khi convert: " + e.getMessage());
         } finally {
-            // 9. Dọn dẹp file tạm
+            // Dọn dẹp file tạm
             if (tempFile != null && tempFile.exists()) {
                 tempFile.delete();
             }
@@ -322,7 +325,7 @@ public class UtilsController {
                 htmlFile.delete();
             }
 
-            // 10. Dọn dẹp file trong container
+            // Dọn dẹp file trong container
             try {
                 String tempName = tempFile != null ? tempFile.getName() : "";
                 String htmlName = tempName.replaceAll("\\.[^.]+$", "") + ".html";
@@ -358,7 +361,6 @@ public class UtilsController {
             String url = fileService.getPresignedUrl(fileName, 60 * 5);
             RestResponse<String> response = RestResponse.<String>builder()
                     .statusCode(200)
-                    .error(null)
                     .message("Success")
                     .data(url)
                     .build();
@@ -366,12 +368,70 @@ public class UtilsController {
         } catch (Exception e) {
             RestResponse<String> errorResponse = RestResponse.<String>builder()
                     .statusCode(500)
-                    .error("Internal Server Error")
-                    .message(e.getMessage())
+                    .message("Internal Server Error: " + e.getMessage())
                     .data(null)
                     .build();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(errorResponse);
+        }
+    }
+
+    // 9. ConvertAPI: DOC/DOCX -> HTML
+    @PostMapping(value = "/convert-word-to-html", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @Operation(summary = "Convert Word to HTML via ConvertAPI", description = "Proxy qua backend để ẩn token. Trả về base64 'FileData' từ ConvertAPI.")
+    public ResponseEntity<?> convertWordToHtmlViaThirdParty(
+            @RequestParam("file") MultipartFile file) {
+        File tempFile = null;
+        try {
+            if (file == null || file.isEmpty()) {
+                throw new IdInvalidException("Vui lòng chọn file DOC/DOCX");
+            }
+
+            if (convertApiToken == null || convertApiToken.isBlank()) {
+                throw new IdInvalidException("Thiếu CONVERTAPI_TOKEN trong môi trường/.env");
+            }
+
+            // Lưu file tạm để gửi multipart qua RestTemplate
+            tempFile = File.createTempFile("convert-", "-" + file.getOriginalFilename());
+            file.transferTo(tempFile);
+
+            String url = "https://v2.convertapi.com/convert/docx/to/html";
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+            headers.setBearerAuth(convertApiToken);
+
+            MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
+            body.add("file", new FileSystemResource(tempFile));
+
+            HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
+
+            // Tăng timeout upload file lớn
+            SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
+            requestFactory.setConnectTimeout(30_000);
+            requestFactory.setReadTimeout(120_000);
+
+            RestTemplate restTemplate = new RestTemplate(requestFactory);
+            ResponseEntity<String> thirdPartyResp = restTemplate.exchange(
+                    url,
+                    HttpMethod.POST,
+                    requestEntity,
+                    String.class);
+
+            return ResponseEntity.status(thirdPartyResp.getStatusCode())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(thirdPartyResp.getBody());
+
+        } catch (Exception ex) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(java.util.Map.of(
+                            "statusCode", 500,
+                            "message", "Lỗi proxy ConvertAPI: " + ex.getMessage()));
+        } finally {
+            if (tempFile != null && tempFile.exists()) {
+                tempFile.delete();
+            }
         }
     }
 

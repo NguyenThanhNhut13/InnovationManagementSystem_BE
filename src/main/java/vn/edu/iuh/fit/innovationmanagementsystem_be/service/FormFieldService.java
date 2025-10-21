@@ -27,7 +27,7 @@ public class FormFieldService {
         this.formTemplateRepository = formTemplateRepository;
     }
 
-    // 1. Create Form Field
+    // 1. Tạo Form Field
     public FormFieldResponse createFormField(FormFieldRequest request, String templateId) {
 
         FormField formField = toFormField(request, templateId);
@@ -37,7 +37,7 @@ public class FormFieldService {
         return toResponse(formField);
     }
 
-    // 2. Create Multiple Form Fields
+    // 2. Tạo Multiple Form Fields
     public List<FormFieldResponse> createMultipleFormFields(List<FormFieldRequest> requests, String templateId) {
         List<FormField> formFields = requests.stream()
                 .map(request -> toFormField(request, templateId))
@@ -49,7 +49,7 @@ public class FormFieldService {
                 .collect(Collectors.toList());
     }
 
-    // 3. Update Form Field
+    // 3. Cập nhật Form Field
     public FormFieldResponse updateFormField(UpdateFormFieldRequest request) {
         FormField formField = formFieldRepository.findById(request.getId())
                 .orElseThrow(() -> new IdInvalidException("Không tìm thấy form field với id: " + request.getId()));
@@ -66,12 +66,12 @@ public class FormFieldService {
             formField.setFieldType(request.getFieldType());
         }
 
-        if (request.getIsRequired() != null) {
-            formField.setIsRequired(request.getIsRequired());
+        if (request.getRequired() != null) {
+            formField.setRequired(request.getRequired());
         }
 
-        if (request.getOrderInTemplate() != null) {
-            formField.setOrderInTemplate(request.getOrderInTemplate());
+        if (request.getPlaceholder() != null) {
+            formField.setPlaceholder(request.getPlaceholder());
         }
 
         this.formFieldRepository.save(formField);
@@ -79,35 +79,26 @@ public class FormFieldService {
         return toResponse(formField);
     }
 
-    // 4. Delete Form Field
+    // 4. Xóa Form Field
     public void deleteFormField(String id) {
         FormField formField = formFieldRepository.findById(id)
                 .orElseThrow(() -> new IdInvalidException("Không tìm thấy form field với id: " + id));
         this.formFieldRepository.delete(formField);
     }
 
-    // 5. Get Form Field by Id
+    // 5. Lấy Form Field by Id
     public FormFieldResponse getFormFieldById(String id) {
         FormField formField = formFieldRepository.findById(id)
                 .orElseThrow(() -> new IdInvalidException("Không tìm thấy form field với id: " + id));
         return toResponse(formField);
     }
 
-    // 6. Get Form Fields by Template Id
+    // 6. Lấy Form Fields by Template Id
     public List<FormFieldResponse> getFormFieldsByTemplateId(String templateId) {
         List<FormField> formFields = formFieldRepository.findByFormTemplateId(templateId);
         return formFields.stream()
                 .map(this::toResponse)
                 .collect(Collectors.toList());
-    }
-
-    // 7. Reorder Form Field
-    public FormFieldResponse reorderFormField(String id, FormFieldRequest request) {
-        FormField formField = formFieldRepository.findById(id)
-                .orElseThrow(() -> new IdInvalidException("Không tìm thấy form field với id: " + id));
-        formField.setOrderInTemplate(request.getOrderInTemplate());
-        this.formFieldRepository.save(formField);
-        return toResponse(formField);
     }
 
     // Mapper
@@ -116,23 +107,34 @@ public class FormFieldService {
         formField.setLabel(request.getLabel());
         formField.setFieldKey(request.getFieldKey());
         formField.setFieldType(request.getFieldType());
-        formField.setIsRequired(request.getIsRequired());
-        formField.setOrderInTemplate(request.getOrderInTemplate());
+        formField.setRequired(request.getRequired());
+        formField.setPlaceholder(request.getPlaceholder());
         formField.setFormTemplate(formTemplateRepository.findById(templateId)
                 .orElseThrow(() -> new IdInvalidException("Không tìm thấy template với id: " + templateId)));
+
+        // Handle table config for TABLE field type
+        if (request.getTableConfig() != null && request.getFieldType().name().equals("TABLE")) {
+            formField.setTableConfig(request.getTableConfig());
+        }
+
         return formField;
     }
 
     private FormFieldResponse toResponse(FormField formField) {
         FormFieldResponse response = new FormFieldResponse();
         response.setId(formField.getId());
-        response.setLabel(formField.getLabel());
         response.setFieldKey(formField.getFieldKey());
+        response.setLabel(formField.getLabel());
         response.setFieldType(formField.getFieldType());
-        response.setIsRequired(formField.getIsRequired());
-        response.setOrderInTemplate(formField.getOrderInTemplate());
+        response.setRequired(formField.getRequired());
+        response.setPlaceholder(formField.getPlaceholder());
         response.setFormTemplateId(formField.getFormTemplate().getId());
-        response.setFormTemplateName(formField.getFormTemplate().getName());
+
+        // Map table config if exists
+        if (formField.getTableConfig() != null) {
+            response.setTableConfig(formField.getTableConfig());
+        }
+
         return response;
     }
 }

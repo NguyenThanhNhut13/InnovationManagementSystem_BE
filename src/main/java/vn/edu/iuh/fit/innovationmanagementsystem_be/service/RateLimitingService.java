@@ -31,7 +31,6 @@ public class RateLimitingService {
                 return true; // Bị rate limit
             }
 
-            // Tăng counter
             if (count == 0) {
                 // Lần đầu tiên, set counter = 1 và TTL = 1 giờ
                 redisTemplate.opsForValue().set(key, 1, RATE_LIMIT_WINDOW, TimeUnit.SECONDS);
@@ -43,12 +42,11 @@ public class RateLimitingService {
             return false; // Không bị rate limit
 
         } catch (Exception e) {
-            // Nếu có lỗi, cho phép request (fail-safe)
             return false;
         }
     }
 
-    // 2. Reset rate limit counter cho personnelId (dùng để test hoặc admin reset)
+    // 2. Reset rate limit counter cho personnelId
     public void resetRateLimit(String personnelId) {
         String key = OTP_RATE_LIMIT_PREFIX + personnelId;
         try {

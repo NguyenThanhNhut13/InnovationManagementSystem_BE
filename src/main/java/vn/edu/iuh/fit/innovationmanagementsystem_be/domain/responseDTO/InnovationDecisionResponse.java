@@ -19,6 +19,7 @@ public class InnovationDecisionResponse {
     private LocalDate promulgatedDate;
     private String fileName;
     private JsonNode scoringCriteria;
+    private String contentGuide;
 
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

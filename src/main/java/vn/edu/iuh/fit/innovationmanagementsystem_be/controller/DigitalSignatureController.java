@@ -112,7 +112,7 @@ public class DigitalSignatureController {
                 return ResponseEntity.ok(canSubmit);
         }
 
-        // 6. Generate signature for document hash
+        // 6. Tạo signature cho document hash
         @PostMapping("/generate-signature")
         @ApiMessage("Tạo chữ ký từ document hash thành công")
         @Operation(summary = "Generate Signature for Document Hash", description = "Generate signature for document hash")
@@ -142,7 +142,7 @@ public class DigitalSignatureController {
                                 digitalSignatureService.verifyDocumentSignature(documentHash, signatureHash, userId));
         }
 
-        // 8. Generate document hash from file content
+        // 8. Tạo document hash cho file content
         @PostMapping("/generate-hash")
         @ApiMessage("Tạo hash cho file thành công")
         @Operation(summary = "Generate Document Hash", description = "Generate document hash from file content")
