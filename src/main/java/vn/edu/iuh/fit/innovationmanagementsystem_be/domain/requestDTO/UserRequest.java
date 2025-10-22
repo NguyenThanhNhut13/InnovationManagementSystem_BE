@@ -4,10 +4,14 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.Past;
+import jakarta.validation.constraints.AssertTrue;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.UserStatusEnum;
+
+import java.time.LocalDate;
 
 @Data
 @NoArgsConstructor
@@ -37,5 +41,23 @@ public class UserRequest {
     @NotBlank(message = "ID phòng ban không được để trống")
     private String departmentId;
 
+    @Past(message = "Ngày sinh phải là ngày trong quá khứ")
+    private LocalDate dateOfBirth;
+
+    @Size(max = 255, message = "Trình độ học vấn không được vượt quá 255 ký tự")
+    private String qualification;
+
+    @Size(max = 255, message = "Chức danh không được vượt quá 255 ký tự")
+    private String title;
+
     private UserStatusEnum status = UserStatusEnum.ACTIVE;
+
+    @AssertTrue(message = "Người dùng phải lớn hơn 18 tuổi")
+    public boolean isAgeValid() {
+        if (dateOfBirth == null) {
+            return true;
+        }
+        LocalDate eighteenYearsAgo = LocalDate.now().minusYears(18);
+        return dateOfBirth.isBefore(eighteenYearsAgo) || dateOfBirth.isEqual(eighteenYearsAgo);
+    }
 }

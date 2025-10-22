@@ -16,6 +16,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.RoleRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.UserRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.service.UserSignatureProfileService;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -93,6 +94,9 @@ public class UserSeeder implements DatabaseSeeder {
         user.setPhoneNumber(String.format("090%07d", index));
         user.setPassword(passwordEncoder.encode("password123"));
         user.setDepartment(department);
+        user.setDateOfBirth(LocalDate.of(1980 + (index % 20), (index % 12) + 1, (index % 28) + 1));
+        user.setQualification(getQualificationByRole(roleEnum));
+        user.setTitle(getTitleByRole(roleEnum));
 
         List<UserRole> userRoles = new ArrayList<>();
         UserRole userRole = new UserRole();
@@ -135,5 +139,37 @@ public class UserSeeder implements DatabaseSeeder {
             throw new IdInvalidException(
                     "Không thể tạo hồ sơ chữ ký số cho user " + user.getPersonnelId() + ": " + e.getMessage());
         }
+    }
+
+    /**
+     * Lấy trình độ học vấn dựa trên role
+     */
+    private String getQualificationByRole(UserRoleEnum roleEnum) {
+        return switch (roleEnum) {
+            case QUAN_TRI_VIEN_HE_THONG -> "Thạc sĩ Quản trị Hệ thống";
+            case TRUONG_KHOA -> "Tiến sĩ Quản lý Giáo dục";
+            case QUAN_TRI_VIEN_KHOA -> "Thạc sĩ Quản lý Khoa";
+            case GIANG_VIEN -> "Thạc sĩ Công nghệ Thông tin";
+            case TV_HOI_DONG_KHOA -> "Thạc sĩ Chuyên ngành";
+            case QUAN_TRI_VIEN_QLKH_HTQT -> "Thạc sĩ Quản lý Khoa học";
+            case TV_HOI_DONG_TRUONG -> "Thạc sĩ Chuyên ngành";
+            case CHU_TICH_HD_TRUONG -> "Tiến sĩ Chuyên ngành";
+        };
+    }
+
+    /**
+     * Lấy chức danh dựa trên role
+     */
+    private String getTitleByRole(UserRoleEnum roleEnum) {
+        return switch (roleEnum) {
+            case QUAN_TRI_VIEN_HE_THONG -> "Quản trị viên hệ thống";
+            case TRUONG_KHOA -> "Trưởng khoa";
+            case QUAN_TRI_VIEN_KHOA -> "Quản trị viên khoa";
+            case GIANG_VIEN -> "Giảng viên";
+            case TV_HOI_DONG_KHOA -> "Thành viên hội đồng khoa";
+            case QUAN_TRI_VIEN_QLKH_HTQT -> "Quản trị viên QLKH-HTQT";
+            case TV_HOI_DONG_TRUONG -> "Thành viên hội đồng trường";
+            case CHU_TICH_HD_TRUONG -> "Chủ tịch hội đồng trường";
+        };
     }
 }

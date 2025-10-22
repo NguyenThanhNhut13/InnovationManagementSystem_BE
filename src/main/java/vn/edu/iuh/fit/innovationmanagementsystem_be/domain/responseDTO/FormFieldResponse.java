@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.FieldTypeEnum;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.UserDataConfig;
 
 @Data
 @NoArgsConstructor
@@ -25,5 +26,6 @@ public class FormFieldResponse {
     private JsonNode options;
     private Boolean repeatable;
     private JsonNode children;
+    private UserDataConfig userDataConfig;
 
 }

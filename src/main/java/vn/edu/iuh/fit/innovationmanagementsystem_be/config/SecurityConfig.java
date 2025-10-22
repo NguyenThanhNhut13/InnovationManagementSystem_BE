@@ -24,15 +24,14 @@ import org.springframework.security.web.SecurityFilterChain;
 @EnableMethodSecurity
 public class SecurityConfig {
 
-        private final String QUAN_TRI_VIEN_HE_THONG = UserRoleEnum.QUAN_TRI_VIEN_HE_THONG.name();
-        private final String QUAN_TRI_VIEN_QLKH_HTQT = UserRoleEnum.QUAN_TRI_VIEN_QLKH_HTQT.name();
-        private final String TRUONG_KHOA = UserRoleEnum.TRUONG_KHOA.name();
         private final String GIANG_VIEN = UserRoleEnum.GIANG_VIEN.name();
-        // private final String QUAN_TRI_VIEN_KHOA =
-        // UserRoleEnum.QUAN_TRI_VIEN_KHOA.name();
-        // private final String TV_HOI_DONG_KHOA = UserRoleEnum.TV_HOI_DONG_KHOA.name();
-        // private final String TV_HOI_DONG_TRUONG =
-        // UserRoleEnum.TV_HOI_DONG_TRUONG.name();
+        private final String QUAN_TRI_VIEN_KHOA = UserRoleEnum.QUAN_TRI_VIEN_KHOA.name();
+        private final String TRUONG_KHOA = UserRoleEnum.TRUONG_KHOA.name();
+        private final String TV_HOI_DONG_KHOA = UserRoleEnum.TV_HOI_DONG_KHOA.name();
+        private final String QUAN_TRI_VIEN_QLKH_HTQT = UserRoleEnum.QUAN_TRI_VIEN_QLKH_HTQT.name();
+        private final String TV_HOI_DONG_TRUONG = UserRoleEnum.TV_HOI_DONG_TRUONG.name();
+        private final String CHU_TICH_HD_TRUONG = UserRoleEnum.CHU_TICH_HD_TRUONG.name();
+        private final String QUAN_TRI_VIEN_HE_THONG = UserRoleEnum.QUAN_TRI_VIEN_HE_THONG.name();
 
         private final JwtBlacklistFilter jwtBlacklistFilter;
         private final JwtDecoder jwtDecoder;
@@ -131,7 +130,7 @@ public class SecurityConfig {
 
                                                 // Form Template
                                                 .requestMatchers(HttpMethod.POST, EndpointConstants.FORM_TEMPLATE_POST)
-                                                .hasAnyRole(QUAN_TRI_VIEN_HE_THONG, QUAN_TRI_VIEN_QLKH_HTQT)
+                                                .hasAnyRole(QUAN_TRI_VIEN_HE_THONG)
                                                 .requestMatchers(HttpMethod.PUT, EndpointConstants.FORM_TEMPLATE_PUT)
                                                 .hasAnyRole(QUAN_TRI_VIEN_HE_THONG, QUAN_TRI_VIEN_QLKH_HTQT)
 

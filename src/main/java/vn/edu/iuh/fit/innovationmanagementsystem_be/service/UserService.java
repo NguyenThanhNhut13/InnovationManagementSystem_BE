@@ -133,6 +133,15 @@ public class UserService {
                     .orElseThrow(() -> new IdInvalidException("Phòng ban không tồn tại"));
             user.setDepartment(department);
         }
+        if (userRequest.getDateOfBirth() != null) {
+            user.setDateOfBirth(userRequest.getDateOfBirth());
+        }
+        if (userRequest.getQualification() != null) {
+            user.setQualification(userRequest.getQualification());
+        }
+        if (userRequest.getTitle() != null) {
+            user.setTitle(userRequest.getTitle());
+        }
         user.setStatus(userRequest.getStatus() != null ? userRequest.getStatus() : UserStatusEnum.ACTIVE);
 
         userRepository.save(user);

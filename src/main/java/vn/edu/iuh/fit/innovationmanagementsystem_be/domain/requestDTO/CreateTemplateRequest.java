@@ -15,7 +15,7 @@ import java.util.List;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class CreateTemplateWithFieldsRequest {
+public class CreateTemplateRequest {
 
     @NotBlank(message = "Template content không được để trống")
     private String templateContent;
@@ -26,7 +26,6 @@ public class CreateTemplateWithFieldsRequest {
     @NotNull(message = "Target role không được để trống")
     private TargetRoleCode targetRole;
 
-    @NotBlank(message = "Round ID không được để trống")
     private String roundId;
 
     @NotEmpty(message = "Danh sách fields không được để trống")

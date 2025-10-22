@@ -2,18 +2,24 @@ package vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums;
 
 public enum FieldTypeEnum {
     TEXT,
-    TEXTAREA,
+    LONG_TEXT,
     NUMBER,
     DATE,
-    DATETIME,
-    BOOLEAN,
     DROPDOWN,
     RADIO,
-    CHECKBOX_GROUP,
+    CHECKBOX,
     FILE,
-    EMAIL,
-    URL,
     TABLE,
+    SECTION,
+
+    LOCATION_DATE,
+    ACADEMIC_YEAR,
+
+    CONTRIBUTED,
+    REFERENCE,
+
+    INNOVATION_DATA,
+    USER_DATA,
+
     SIGNATURE,
-    SECTION
 }

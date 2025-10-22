@@ -63,4 +63,8 @@ public class FormField {
     @Column(name = "children", columnDefinition = "JSON")
     private JsonNode children;
 
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "user_data_config", columnDefinition = "JSON")
+    private JsonNode userDataConfig;
+
 }

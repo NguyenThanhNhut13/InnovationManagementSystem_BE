@@ -15,8 +15,13 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.InnovationPhase
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.InnovationRound;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationRoundStatusEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.FieldTypeEnum;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.CreateTemplateRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.CreateTemplateWithFieldsRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.UpdateFormTemplateRequest;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.FieldData;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.TableConfigData;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.UserDataConfig;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.CreateTemplateResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.CreateTemplateWithFieldsResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.FormTemplateResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.exception.IdInvalidException;
@@ -30,6 +35,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.Utils;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.time.LocalDate;
 import java.util.stream.Collectors;
 
@@ -124,19 +130,29 @@ public class FormTemplateService {
 
         // Upsert danh sách FormField nếu có
         if (request.getFields() != null) {
-            // Map các field hiện có theo id để tiện cập nhật/xóa
+            // Map các field hiện có theo id và fieldKey để tiện cập nhật/xóa
             Map<String, FormField> existingById = template.getFormFields().stream()
                     .filter(f -> f.getId() != null)
                     .collect(java.util.stream.Collectors.toMap(FormField::getId, f -> f));
 
+            Map<String, FormField> existingByFieldKey = template.getFormFields().stream()
+                    .filter(f -> f.getFieldKey() != null)
+                    .collect(java.util.stream.Collectors.toMap(FormField::getFieldKey, f -> f));
+
             Set<String> incomingIds = new java.util.HashSet<>();
+            Set<String> incomingFieldKeys = new java.util.HashSet<>();
 
             List<FormField> newList = new java.util.ArrayList<>();
-            for (UpdateFormTemplateRequest.FieldData fd : request.getFields()) {
+            for (FieldData fd : request.getFields()) {
                 FormField entity = null;
+
+                // Ưu tiên tìm theo ID trước, sau đó tìm theo fieldKey
                 if (fd.getId() != null && existingById.containsKey(fd.getId())) {
                     entity = existingById.get(fd.getId());
                     incomingIds.add(fd.getId());
+                } else if (fd.getFieldKey() != null && existingByFieldKey.containsKey(fd.getFieldKey())) {
+                    entity = existingByFieldKey.get(fd.getFieldKey());
+                    incomingFieldKeys.add(fd.getFieldKey());
                 } else {
                     entity = new FormField();
                     entity.setFormTemplate(template);
@@ -158,6 +174,9 @@ public class FormTemplateService {
                 // tableConfig/options/children: tận dụng mapper như create
                 if (fd.getType() == FieldTypeEnum.TABLE && fd.getTableConfig() != null) {
                     try {
+                        // Tự sinh UUID cho các column nếu chưa có
+                        generateColumnIdsIfNeeded(fd.getTableConfig());
+
                         ObjectMapper mapper = new ObjectMapper();
                         JsonNode tableConfigJson = mapper
                                 .valueToTree(fd.getTableConfig());
@@ -189,11 +208,38 @@ public class FormTemplateService {
                     }
                 }
 
+                if (fd.getUserDataConfig() != null) {
+                    try {
+                        ObjectMapper mapper = new ObjectMapper();
+                        JsonNode userDataConfigJson = mapper.valueToTree(fd.getUserDataConfig());
+                        entity.setUserDataConfig(userDataConfigJson);
+                    } catch (Exception e) {
+                        throw new IdInvalidException("Lỗi khi xử lý userDataConfig: " + e.getMessage());
+                    }
+                }
+
                 newList.add(entity);
             }
 
-            // Xóa các field không còn trong request (orphanRemoval - db)
-            template.getFormFields().clear();
+            List<FormField> fieldsToRemove = template.getFormFields().stream()
+                    .filter(field -> {
+                        // Giữ lại field nếu có ID trong incomingIds
+                        if (field.getId() != null && incomingIds.contains(field.getId())) {
+                            return false;
+                        }
+                        // Giữ lại field nếu có fieldKey trong incomingFieldKeys
+                        if (field.getFieldKey() != null && incomingFieldKeys.contains(field.getFieldKey())) {
+                            return false;
+                        }
+                        // Xóa field nếu không có trong cả hai danh sách
+                        return true;
+                    })
+                    .collect(java.util.stream.Collectors.toList());
+
+            // Xóa các field không còn được sử dụng
+            template.getFormFields().removeAll(fieldsToRemove);
+
+            // Thêm các field mới/cập nhật
             template.getFormFields().addAll(newList);
         }
 
@@ -247,7 +293,19 @@ public class FormTemplateService {
         formTemplateRepository.delete(template);
     }
 
-    private FormField createFormField(CreateTemplateWithFieldsRequest.FieldData fieldData, FormTemplate template) {
+    // 9. Lấy FormTemplate (không gắn round cụ thể) với pagination và filtering
+    public ResultPaginationDTO getTemplateLibraryWithPaginationAndSearch(
+            @NonNull Specification<FormTemplate> specification,
+            @NonNull Pageable pageable) {
+
+        Specification<FormTemplate> librarySpecification = specification
+                .and((root, query, criteriaBuilder) -> criteriaBuilder.isNull(root.get("innovationRound")));
+
+        Page<FormTemplate> templates = formTemplateRepository.findAll(librarySpecification, pageable);
+        return Utils.toResultPaginationDTO(templates.map(formTemplateMapper::toFormTemplateResponse), pageable);
+    }
+
+    private FormField createFormField(FieldData fieldData, FormTemplate template) {
         FormField field = new FormField();
         field.setFieldKey(fieldData.getFieldKey());
         field.setLabel(fieldData.getLabel());
@@ -260,6 +318,9 @@ public class FormTemplateService {
         // Xử lý table config nếu field type là TABLE
         if (fieldData.getType() == FieldTypeEnum.TABLE && fieldData.getTableConfig() != null) {
             try {
+                // Tự sinh UUID cho các column nếu chưa có
+                generateColumnIdsIfNeeded(fieldData.getTableConfig());
+
                 ObjectMapper mapper = new ObjectMapper();
                 JsonNode tableConfigJson = mapper.valueToTree(fieldData.getTableConfig());
                 field.setTableConfig(tableConfigJson);
@@ -287,6 +348,17 @@ public class FormTemplateService {
                 field.setChildren(childrenJson);
             } catch (Exception e) {
                 throw new IdInvalidException("Lỗi khi xử lý children: " + e.getMessage());
+            }
+        }
+
+        // Xử lý userDataConfig nếu field có userDataConfig (USER_DATA type)
+        if (fieldData.getUserDataConfig() != null) {
+            try {
+                ObjectMapper mapper = new ObjectMapper();
+                JsonNode userDataConfigJson = mapper.valueToTree(fieldData.getUserDataConfig());
+                field.setUserDataConfig(userDataConfigJson);
+            } catch (Exception e) {
+                throw new IdInvalidException("Lỗi khi xử lý userDataConfig: " + e.getMessage());
             }
         }
 
@@ -325,6 +397,18 @@ public class FormTemplateService {
         fieldResponse.setOptions(field.getOptions());
         fieldResponse.setRepeatable(field.getRepeatable());
         fieldResponse.setChildren(convertChildrenToFieldResponse(field.getChildren()));
+
+        // Convert userDataConfig from JsonNode to UserDataConfig object
+        if (field.getUserDataConfig() != null) {
+            try {
+                ObjectMapper mapper = new ObjectMapper();
+                UserDataConfig userDataConfig = mapper.treeToValue(field.getUserDataConfig(), UserDataConfig.class);
+                fieldResponse.setUserDataConfig(userDataConfig);
+            } catch (Exception e) {
+                fieldResponse.setUserDataConfig(null);
+            }
+        }
+
         return fieldResponse;
     }
 
@@ -335,9 +419,9 @@ public class FormTemplateService {
 
         try {
             ObjectMapper mapper = new ObjectMapper();
-            List<CreateTemplateWithFieldsRequest.FieldData> childrenData = mapper.treeToValue(childrenJson,
+            List<FieldData> childrenData = mapper.treeToValue(childrenJson,
                     mapper.getTypeFactory().constructCollectionType(List.class,
-                            CreateTemplateWithFieldsRequest.FieldData.class));
+                            FieldData.class));
 
             return childrenData.stream()
                     .map(childData -> {
@@ -353,6 +437,10 @@ public class FormTemplateService {
                                 childData.getOptions() != null ? mapper.valueToTree(childData.getOptions()) : null);
                         childResponse.setChildren(convertChildrenToFieldResponse(
                                 childData.getChildren() != null ? mapper.valueToTree(childData.getChildren()) : null));
+
+                        // Set userDataConfig from FieldData
+                        childResponse.setUserDataConfig(childData.getUserDataConfig());
+
                         return childResponse;
                     })
                     .collect(Collectors.toList());
@@ -361,4 +449,186 @@ public class FormTemplateService {
         }
     }
 
+    // 10. Tạo form template không gắn round cụ thể (template chung)
+    @Transactional
+    public CreateTemplateResponse createTemplate(CreateTemplateRequest request) {
+        FormTemplate template = new FormTemplate();
+        template.setTemplateType(request.getTemplateType());
+        template.setTargetRole(request.getTargetRole());
+        template.setTemplateContent(request.getTemplateContent());
+
+        if (request.getRoundId() != null && !request.getRoundId().trim().isEmpty()) {
+            InnovationRound innovationRound = innovationRoundRepository.findById(request.getRoundId().trim())
+                    .orElseThrow(() -> new IdInvalidException(
+                            "Innovation round không tồn tại với ID: " + request.getRoundId()));
+            template.setInnovationRound(innovationRound);
+        } else {
+            template.setInnovationRound(null);
+        }
+
+        FormTemplate savedTemplate = formTemplateRepository.save(template);
+
+        List<FormField> formFields = request.getFields().stream()
+                .map(fieldData -> createFormFieldFromTemplateRequest(fieldData, savedTemplate))
+                .collect(Collectors.toList());
+
+        savedTemplate.setFormFields(formFields);
+        formTemplateRepository.save(savedTemplate);
+
+        return createTemplateResponse(savedTemplate);
+    }
+
+    private FormField createFormFieldFromTemplateRequest(FieldData fieldData, FormTemplate template) {
+        FormField field = new FormField();
+        field.setFieldKey(fieldData.getFieldKey());
+        field.setLabel(fieldData.getLabel());
+        field.setFieldType(fieldData.getType());
+        field.setRequired(fieldData.getRequired());
+        field.setPlaceholder(fieldData.getPlaceholder());
+        field.setFormTemplate(template);
+        field.setRepeatable(fieldData.getRepeatable() != null ? fieldData.getRepeatable() : false);
+
+        // Xử lý table config nếu field type là TABLE
+        if (fieldData.getType() == FieldTypeEnum.TABLE && fieldData.getTableConfig() != null) {
+            try {
+                // Tự sinh UUID cho các column nếu chưa có
+                generateColumnIdsIfNeeded(fieldData.getTableConfig());
+
+                ObjectMapper mapper = new ObjectMapper();
+                JsonNode tableConfigJson = mapper.valueToTree(fieldData.getTableConfig());
+                field.setTableConfig(tableConfigJson);
+            } catch (Exception e) {
+                throw new IdInvalidException("Lỗi khi xử lý table config: " + e.getMessage());
+            }
+        }
+
+        // Xử lý options nếu field có options (DROPDOWN, RADIO, CHECKBOX)
+        if (fieldData.getOptions() != null && !fieldData.getOptions().isEmpty()) {
+            try {
+                ObjectMapper mapper = new ObjectMapper();
+                JsonNode optionsJson = mapper.valueToTree(fieldData.getOptions());
+                field.setOptions(optionsJson);
+            } catch (Exception e) {
+                throw new IdInvalidException("Lỗi khi xử lý options: " + e.getMessage());
+            }
+        }
+
+        // Xử lý children nếu field có children (SECTION type)
+        if (fieldData.getChildren() != null && !fieldData.getChildren().isEmpty()) {
+            try {
+                ObjectMapper mapper = new ObjectMapper();
+                JsonNode childrenJson = mapper.valueToTree(fieldData.getChildren());
+                field.setChildren(childrenJson);
+            } catch (Exception e) {
+                throw new IdInvalidException("Lỗi khi xử lý children: " + e.getMessage());
+            }
+        }
+
+        // Xử lý userDataConfig nếu field có userDataConfig (USER_DATA type)
+        if (fieldData.getUserDataConfig() != null) {
+            try {
+                ObjectMapper mapper = new ObjectMapper();
+                JsonNode userDataConfigJson = mapper.valueToTree(fieldData.getUserDataConfig());
+                field.setUserDataConfig(userDataConfigJson);
+            } catch (Exception e) {
+                throw new IdInvalidException("Lỗi khi xử lý userDataConfig: " + e.getMessage());
+            }
+        }
+
+        return field;
+    }
+
+    private CreateTemplateResponse createTemplateResponse(FormTemplate template) {
+        CreateTemplateResponse response = new CreateTemplateResponse();
+        response.setId(template.getId());
+        response.setTemplateContent(template.getTemplateContent());
+        response.setTemplateType(template.getTemplateType());
+        response.setTargetRole(template.getTargetRole());
+        response.setRoundId(template.getInnovationRound() != null ? template.getInnovationRound().getId() : null);
+        response.setCreatedAt(template.getCreatedAt());
+        response.setUpdatedAt(template.getUpdatedAt());
+        response.setCreatedBy(template.getCreatedBy());
+        response.setUpdatedBy(template.getUpdatedBy());
+
+        List<CreateTemplateResponse.FieldResponse> fieldResponses = template.getFormFields().stream()
+                .map(this::convertToTemplateFieldResponse)
+                .collect(Collectors.toList());
+
+        response.setFields(fieldResponses);
+        return response;
+    }
+
+    private CreateTemplateResponse.FieldResponse convertToTemplateFieldResponse(FormField field) {
+        CreateTemplateResponse.FieldResponse fieldResponse = new CreateTemplateResponse.FieldResponse();
+        fieldResponse.setId(field.getId());
+        fieldResponse.setFieldKey(field.getFieldKey());
+        fieldResponse.setLabel(field.getLabel());
+        fieldResponse.setType(field.getFieldType());
+        fieldResponse.setRequired(field.getRequired());
+        fieldResponse.setPlaceholder(field.getPlaceholder());
+        fieldResponse.setTableConfig(field.getTableConfig());
+        fieldResponse.setOptions(field.getOptions());
+        fieldResponse.setRepeatable(field.getRepeatable());
+        fieldResponse.setChildren(convertChildrenToTemplateFieldResponse(field.getChildren()));
+
+        // Convert userDataConfig from JsonNode to UserDataConfig object
+        if (field.getUserDataConfig() != null) {
+            try {
+                ObjectMapper mapper = new ObjectMapper();
+                UserDataConfig userDataConfig = mapper.treeToValue(field.getUserDataConfig(), UserDataConfig.class);
+                fieldResponse.setUserDataConfig(userDataConfig);
+            } catch (Exception e) {
+                fieldResponse.setUserDataConfig(null);
+            }
+        }
+
+        return fieldResponse;
+    }
+
+    private List<CreateTemplateResponse.FieldResponse> convertChildrenToTemplateFieldResponse(JsonNode childrenJson) {
+        if (childrenJson == null || childrenJson.isNull()) {
+            return null;
+        }
+
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            List<FieldData> childrenData = mapper.treeToValue(childrenJson,
+                    mapper.getTypeFactory().constructCollectionType(List.class,
+                            FieldData.class));
+
+            return childrenData.stream()
+                    .map(childData -> {
+                        CreateTemplateResponse.FieldResponse childResponse = new CreateTemplateResponse.FieldResponse();
+                        childResponse.setId(childData.getId());
+                        childResponse.setFieldKey(childData.getFieldKey());
+                        childResponse.setLabel(childData.getLabel());
+                        childResponse.setType(childData.getType());
+                        childResponse.setRequired(childData.getRequired());
+                        childResponse.setPlaceholder(childData.getPlaceholder());
+                        childResponse.setRepeatable(childData.getRepeatable());
+                        childResponse.setOptions(childData.getOptions());
+                        childResponse.setChildren(convertChildrenToTemplateFieldResponse(
+                                childData.getChildren() != null ? mapper.valueToTree(childData.getChildren()) : null));
+                        childResponse.setUserDataConfig(childData.getUserDataConfig());
+
+                        return childResponse;
+                    })
+                    .collect(Collectors.toList());
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    /**
+     * Tự sinh UUID cho các column trong TableConfigData nếu chưa có ID
+     */
+    private void generateColumnIdsIfNeeded(TableConfigData tableConfig) {
+        if (tableConfig != null && tableConfig.getColumns() != null) {
+            for (TableConfigData.ColumnData column : tableConfig.getColumns()) {
+                if (column.getId() == null || column.getId().trim().isEmpty()) {
+                    column.setId(UUID.randomUUID().toString());
+                }
+            }
+        }
+    }
 }

@@ -17,8 +17,10 @@ import org.springframework.web.bind.annotation.*;
 import com.turkraft.springfilter.boot.Filter;
 
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.FormTemplate;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.CreateTemplateRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.CreateTemplateWithFieldsRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.UpdateFormTemplateRequest;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.CreateTemplateResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.CreateTemplateWithFieldsResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.FormTemplateResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.service.FormTemplateService;
@@ -39,30 +41,40 @@ public class FormTemplateController {
                 this.formTemplateService = formTemplateService;
         }
 
-        // 1. Lấy form template by id
-        @GetMapping("/{id}")
-        @ApiMessage("Lấy form template theo id thành công")
-        @Operation(summary = "Get Form Template by ID", description = "Get form template details by ID")
-        @ApiResponses(value = {
-                        @ApiResponse(responseCode = "200", description = "Form template retrieved successfully", content = @Content(schema = @Schema(implementation = FormTemplateResponse.class))),
-                        @ApiResponse(responseCode = "404", description = "Form template not found")
-        })
-        public ResponseEntity<FormTemplateResponse> getFormTemplateById(
-                        @Parameter(description = "Form template ID", required = true) @PathVariable String id) {
-                return ResponseEntity.ok(formTemplateService.getFormTemplateById(id));
-        }
+        // // 1. Lấy form template by id
+        // @GetMapping("/{id}")
+        // @ApiMessage("Lấy form template theo id thành công")
+        // @Operation(summary = "Get Form Template by ID", description = "Get form
+        // template details by ID")
+        // @ApiResponses(value = {
+        // @ApiResponse(responseCode = "200", description = "Form template retrieved
+        // successfully", content = @Content(schema = @Schema(implementation =
+        // FormTemplateResponse.class))),
+        // @ApiResponse(responseCode = "404", description = "Form template not found")
+        // })
+        // public ResponseEntity<FormTemplateResponse> getFormTemplateById(
+        // @Parameter(description = "Form template ID", required = true) @PathVariable
+        // String id) {
+        // return ResponseEntity.ok(formTemplateService.getFormTemplateById(id));
+        // }
 
-        // 2. Lấy form templates by innovation phase
-        @GetMapping("/innovation-phase/{phaseId}")
-        @ApiMessage("Lấy form templates theo innovation phase thành công")
-        @Operation(summary = "Get Form Templates by Innovation Phase", description = "Get form templates filtered by innovation phase ID")
-        @ApiResponses(value = {
-                        @ApiResponse(responseCode = "200", description = "Form templates retrieved successfully", content = @Content(schema = @Schema(implementation = List.class)))
-        })
-        public ResponseEntity<List<FormTemplateResponse>> getFormTemplatesByInnovationPhase(
-                        @Parameter(description = "Innovation phase ID", required = true) @PathVariable String phaseId) {
-                return ResponseEntity.ok(formTemplateService.getFormTemplatesByInnovationPhase(phaseId));
-        }
+        // // 2. Lấy form templates by innovation phase
+        // @GetMapping("/innovation-phase/{phaseId}")
+        // @ApiMessage("Lấy form templates theo innovation phase thành công")
+        // @Operation(summary = "Get Form Templates by Innovation Phase", description =
+        // "Get form templates filtered by innovation phase ID")
+        // @ApiResponses(value = {
+        // @ApiResponse(responseCode = "200", description = "Form templates retrieved
+        // successfully", content = @Content(schema = @Schema(implementation =
+        // List.class)))
+        // })
+        // public ResponseEntity<List<FormTemplateResponse>>
+        // getFormTemplatesByInnovationPhase(
+        // @Parameter(description = "Innovation phase ID", required = true)
+        // @PathVariable String phaseId) {
+        // return
+        // ResponseEntity.ok(formTemplateService.getFormTemplatesByInnovationPhase(phaseId));
+        // }
 
         // 3. Lấy form templates by innovation round
         @GetMapping("/innovation-round/{roundId}")
@@ -145,5 +157,32 @@ public class FormTemplateController {
                         @Parameter(description = "Form template ID", required = true) @PathVariable String id) {
                 formTemplateService.deleteFormTemplate(id);
                 return ResponseEntity.ok().build();
+        }
+
+        // 9. Tạo form template (không gắn round cụ thể)
+        @PostMapping
+        @ApiMessage("Tạo form template không gắn với round cụ thể thành công")
+        @Operation(summary = "Create Form Template no roundId", description = "Create a new form template with optional round association")
+        @ApiResponses(value = {
+                        @ApiResponse(responseCode = "200", description = "Form template created successfully", content = @Content(schema = @Schema(implementation = CreateTemplateResponse.class))),
+                        @ApiResponse(responseCode = "400", description = "Invalid request data")
+        })
+        public ResponseEntity<CreateTemplateResponse> createTemplate(
+                        @Parameter(description = "Form template creation request", required = true) @Valid @RequestBody CreateTemplateRequest request) {
+                return ResponseEntity.ok(formTemplateService.createTemplate(request));
+        }
+
+        // 10. Lấy formTemplate (không gắn round cụ thể) với pagination và filtering
+        @GetMapping("/library")
+        @ApiMessage("Lấy thư viện form templates với phân trang và tìm kiếm thành công")
+        @Operation(summary = "Get Template Library", description = "Get all form templates that are not associated with any specific round (template library) with pagination and filtering")
+        @ApiResponses(value = {
+                        @ApiResponse(responseCode = "200", description = "Template library retrieved successfully", content = @Content(schema = @Schema(implementation = ResultPaginationDTO.class)))
+        })
+        public ResponseEntity<ResultPaginationDTO> getTemplateLibraryWithPaginationAndSearch(
+                        @Parameter(description = "Filter specification for template library") @Filter Specification<FormTemplate> specification,
+                        @Parameter(description = "Pagination parameters") Pageable pageable) {
+                return ResponseEntity.ok(
+                                formTemplateService.getTemplateLibraryWithPaginationAndSearch(specification, pageable));
         }
 }

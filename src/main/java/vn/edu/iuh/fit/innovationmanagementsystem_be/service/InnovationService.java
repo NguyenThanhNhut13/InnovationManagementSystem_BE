@@ -308,9 +308,8 @@ public class InnovationService {
                 String currentUserId = userService.getCurrentUserId();
 
                 // Tạo Specification để filter theo user hiện tại
-                Specification<Innovation> userSpec = Specification.where(
-                                (root, query, criteriaBuilder) -> criteriaBuilder.equal(root.get("user").get("id"),
-                                                currentUserId));
+                Specification<Innovation> userSpec = (root, query, criteriaBuilder) -> criteriaBuilder
+                                .equal(root.get("user").get("id"), currentUserId);
 
                 // Kết hợp với specification từ SpringFilter
                 Specification<Innovation> combinedSpec = userSpec.and(specification);
