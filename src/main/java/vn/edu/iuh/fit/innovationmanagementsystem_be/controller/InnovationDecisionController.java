@@ -61,15 +61,15 @@ public class InnovationDecisionController {
          @Operation(summary = "Get All Innovation Decisions", description = "Get all innovation decisions with pagination and filtering")
          @ApiResponses(value = {
          @ApiResponse(responseCode = "200", description = "Innovation decisions retrieved successfully", content = @Content(schema = @Schema(implementation =
-         ResultPaginationDTO.class)))
+            ResultPaginationDTO.class)))
          })
          public ResponseEntity<ResultPaginationDTO> getAllInnovationDecisions(
          @Parameter(description = "Filter specification for innovation decisions")
          @Filter Specification<InnovationDecision> specification,
          @Parameter(description = "Pagination parameters") Pageable pageable) {
          return
-         ResponseEntity.ok(innovationDecisionService.getAllInnovationDecisions(specification,
-         pageable));
+             ResponseEntity.ok(innovationDecisionService.getAllInnovationDecisions(specification,
+             pageable));
          }
 
         // 3. Lấy InnovationDecision by Id
