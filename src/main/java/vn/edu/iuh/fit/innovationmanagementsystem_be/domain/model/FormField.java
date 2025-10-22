@@ -64,7 +64,7 @@ public class FormField {
     private JsonNode children;
 
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "user_data_config", columnDefinition = "JSON")
-    private JsonNode userDataConfig;
+    @Column(name = "reference_config", columnDefinition = "JSON")
+    private JsonNode referenceConfig;
 
 }

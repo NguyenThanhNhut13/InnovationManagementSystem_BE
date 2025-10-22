@@ -20,7 +20,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.CreateTemp
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.UpdateFormTemplateRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.FieldData;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.TableConfigData;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.UserDataConfig;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.ReferenceConfig;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.CreateTemplateResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.CreateTemplateWithFieldsResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.FormTemplateResponse;
@@ -208,13 +208,13 @@ public class FormTemplateService {
                     }
                 }
 
-                if (fd.getUserDataConfig() != null) {
+                if (fd.getReferenceConfig() != null) {
                     try {
                         ObjectMapper mapper = new ObjectMapper();
-                        JsonNode userDataConfigJson = mapper.valueToTree(fd.getUserDataConfig());
-                        entity.setUserDataConfig(userDataConfigJson);
+                        JsonNode referenceConfigJson = mapper.valueToTree(fd.getReferenceConfig());
+                        entity.setReferenceConfig(referenceConfigJson);
                     } catch (Exception e) {
-                        throw new IdInvalidException("Lỗi khi xử lý userDataConfig: " + e.getMessage());
+                        throw new IdInvalidException("Lỗi khi xử lý referenceConfig: " + e.getMessage());
                     }
                 }
 
@@ -351,14 +351,14 @@ public class FormTemplateService {
             }
         }
 
-        // Xử lý userDataConfig nếu field có userDataConfig (USER_DATA type)
-        if (fieldData.getUserDataConfig() != null) {
+        // Xử lý referenceConfig nếu field có referenceConfig (REFERENCE type)
+        if (fieldData.getReferenceConfig() != null) {
             try {
                 ObjectMapper mapper = new ObjectMapper();
-                JsonNode userDataConfigJson = mapper.valueToTree(fieldData.getUserDataConfig());
-                field.setUserDataConfig(userDataConfigJson);
+                JsonNode referenceConfigJson = mapper.valueToTree(fieldData.getReferenceConfig());
+                field.setReferenceConfig(referenceConfigJson);
             } catch (Exception e) {
-                throw new IdInvalidException("Lỗi khi xử lý userDataConfig: " + e.getMessage());
+                throw new IdInvalidException("Lỗi khi xử lý referenceConfig: " + e.getMessage());
             }
         }
 
@@ -398,14 +398,14 @@ public class FormTemplateService {
         fieldResponse.setRepeatable(field.getRepeatable());
         fieldResponse.setChildren(convertChildrenToFieldResponse(field.getChildren()));
 
-        // Convert userDataConfig from JsonNode to UserDataConfig object
-        if (field.getUserDataConfig() != null) {
+        // Convert referenceConfig from JsonNode to ReferenceConfig object
+        if (field.getReferenceConfig() != null) {
             try {
                 ObjectMapper mapper = new ObjectMapper();
-                UserDataConfig userDataConfig = mapper.treeToValue(field.getUserDataConfig(), UserDataConfig.class);
-                fieldResponse.setUserDataConfig(userDataConfig);
+                ReferenceConfig referenceConfig = mapper.treeToValue(field.getReferenceConfig(), ReferenceConfig.class);
+                fieldResponse.setReferenceConfig(referenceConfig);
             } catch (Exception e) {
-                fieldResponse.setUserDataConfig(null);
+                fieldResponse.setReferenceConfig(null);
             }
         }
 
@@ -438,8 +438,8 @@ public class FormTemplateService {
                         childResponse.setChildren(convertChildrenToFieldResponse(
                                 childData.getChildren() != null ? mapper.valueToTree(childData.getChildren()) : null));
 
-                        // Set userDataConfig from FieldData
-                        childResponse.setUserDataConfig(childData.getUserDataConfig());
+                        // Set referenceConfig from FieldData
+                        childResponse.setReferenceConfig(childData.getReferenceConfig());
 
                         return childResponse;
                     })
@@ -524,14 +524,14 @@ public class FormTemplateService {
             }
         }
 
-        // Xử lý userDataConfig nếu field có userDataConfig (USER_DATA type)
-        if (fieldData.getUserDataConfig() != null) {
+        // Xử lý referenceConfig nếu field có referenceConfig (REFERENCE type)
+        if (fieldData.getReferenceConfig() != null) {
             try {
                 ObjectMapper mapper = new ObjectMapper();
-                JsonNode userDataConfigJson = mapper.valueToTree(fieldData.getUserDataConfig());
-                field.setUserDataConfig(userDataConfigJson);
+                JsonNode referenceConfigJson = mapper.valueToTree(fieldData.getReferenceConfig());
+                field.setReferenceConfig(referenceConfigJson);
             } catch (Exception e) {
-                throw new IdInvalidException("Lỗi khi xử lý userDataConfig: " + e.getMessage());
+                throw new IdInvalidException("Lỗi khi xử lý referenceConfig: " + e.getMessage());
             }
         }
 
@@ -571,14 +571,14 @@ public class FormTemplateService {
         fieldResponse.setRepeatable(field.getRepeatable());
         fieldResponse.setChildren(convertChildrenToTemplateFieldResponse(field.getChildren()));
 
-        // Convert userDataConfig from JsonNode to UserDataConfig object
-        if (field.getUserDataConfig() != null) {
+        // Convert referenceConfig from JsonNode to ReferenceConfig object
+        if (field.getReferenceConfig() != null) {
             try {
                 ObjectMapper mapper = new ObjectMapper();
-                UserDataConfig userDataConfig = mapper.treeToValue(field.getUserDataConfig(), UserDataConfig.class);
-                fieldResponse.setUserDataConfig(userDataConfig);
+                ReferenceConfig referenceConfig = mapper.treeToValue(field.getReferenceConfig(), ReferenceConfig.class);
+                fieldResponse.setReferenceConfig(referenceConfig);
             } catch (Exception e) {
-                fieldResponse.setUserDataConfig(null);
+                fieldResponse.setReferenceConfig(null);
             }
         }
 
@@ -609,7 +609,7 @@ public class FormTemplateService {
                         childResponse.setOptions(childData.getOptions());
                         childResponse.setChildren(convertChildrenToTemplateFieldResponse(
                                 childData.getChildren() != null ? mapper.valueToTree(childData.getChildren()) : null));
-                        childResponse.setUserDataConfig(childData.getUserDataConfig());
+                        childResponse.setReferenceConfig(childData.getReferenceConfig());
 
                         return childResponse;
                     })

@@ -44,6 +44,6 @@ public class TableConfigData {
         private List<String> options;
 
         @Valid
-        private UserDataConfig userDataConfig;
+        private ReferenceConfig referenceConfig;
     }
 }

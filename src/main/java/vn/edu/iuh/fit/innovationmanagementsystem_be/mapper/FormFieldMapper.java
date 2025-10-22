@@ -6,7 +6,7 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.FormField;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.FormFieldResponse;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.UserDataConfig;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.ReferenceConfig;
 
 @Mapper(componentModel = "spring")
 public interface FormFieldMapper {
@@ -18,17 +18,17 @@ public interface FormFieldMapper {
     @Mapping(target = "options", source = "options")
     @Mapping(target = "repeatable", source = "repeatable")
     @Mapping(target = "children", source = "children")
-    @Mapping(target = "userDataConfig", source = "userDataConfig", qualifiedByName = "jsonNodeToUserDataConfig")
+    @Mapping(target = "referenceConfig", source = "referenceConfig", qualifiedByName = "jsonNodeToReferenceConfig")
     FormFieldResponse toFormFieldResponse(FormField formField);
 
-    @org.mapstruct.Named("jsonNodeToUserDataConfig")
-    default UserDataConfig jsonNodeToUserDataConfig(JsonNode jsonNode) {
+    @org.mapstruct.Named("jsonNodeToReferenceConfig")
+    default ReferenceConfig jsonNodeToReferenceConfig(JsonNode jsonNode) {
         if (jsonNode == null || jsonNode.isNull()) {
             return null;
         }
         try {
             ObjectMapper mapper = new ObjectMapper();
-            return mapper.treeToValue(jsonNode, UserDataConfig.class);
+            return mapper.treeToValue(jsonNode, ReferenceConfig.class);
         } catch (Exception e) {
             return null;
         }
