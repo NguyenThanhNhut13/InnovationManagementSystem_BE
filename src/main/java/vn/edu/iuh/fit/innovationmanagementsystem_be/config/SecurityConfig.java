@@ -130,7 +130,7 @@ public class SecurityConfig {
 
                                                 // Form Template
                                                 .requestMatchers(HttpMethod.POST, EndpointConstants.FORM_TEMPLATE_POST)
-                                                .hasAnyRole(QUAN_TRI_VIEN_HE_THONG, QUAN_TRI_VIEN_QLKH_HTQT)
+                                                .hasAnyRole(QUAN_TRI_VIEN_HE_THONG)
                                                 .requestMatchers(HttpMethod.PUT, EndpointConstants.FORM_TEMPLATE_PUT)
                                                 .hasAnyRole(QUAN_TRI_VIEN_HE_THONG, QUAN_TRI_VIEN_QLKH_HTQT)
 

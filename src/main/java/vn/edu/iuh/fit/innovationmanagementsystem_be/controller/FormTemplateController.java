@@ -152,7 +152,7 @@ public class FormTemplateController {
         // 9. Tạo form template (không gắn round cụ thể)
         @PostMapping
         @ApiMessage("Tạo form template không gắn với round cụ thể thành công")
-        @Operation(summary = "Create Form Template", description = "Create a new form template with optional round association")
+        @Operation(summary = "Create Form Template no roundId", description = "Create a new form template with optional round association")
         @ApiResponses(value = {
                         @ApiResponse(responseCode = "200", description = "Form template created successfully", content = @Content(schema = @Schema(implementation = CreateTemplateResponse.class))),
                         @ApiResponse(responseCode = "400", description = "Invalid request data")
