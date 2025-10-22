@@ -8,17 +8,18 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
-// import org.springframework.data.domain.Pageable;
-// import org.springframework.data.jpa.domain.Specification;
+ import org.springframework.data.domain.Pageable;
+ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-// import com.turkraft.springfilter.boot.Filter;
+ import com.turkraft.springfilter.boot.Filter;
 // import jakarta.validation.Valid;
-// import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.InnovationDecision;
+ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.InnovationDecision;
 // import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.InnovationDecisionRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationDecisionResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.service.InnovationDecisionService;
 // import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.ResultPaginationDTO;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.ResultPaginationDTO;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.annotation.ApiMessage;
 
 // import java.time.LocalDate;
@@ -55,23 +56,21 @@ public class InnovationDecisionController {
         // }
 
         // // 2. Lấy danh sách quyết định
-        // @GetMapping("/innovation-decisions")
-        // @ApiMessage("Lấy danh sách quyết định thành công")
-        // @Operation(summary = "Get All Innovation Decisions", description = "Get all
-        // innovation decisions with pagination and filtering")
-        // @ApiResponses(value = {
-        // @ApiResponse(responseCode = "200", description = "Innovation decisions
-        // retrieved successfully", content = @Content(schema = @Schema(implementation =
-        // ResultPaginationDTO.class)))
-        // })
-        // public ResponseEntity<ResultPaginationDTO> getAllInnovationDecisions(
-        // @Parameter(description = "Filter specification for innovation decisions")
-        // @Filter Specification<InnovationDecision> specification,
-        // @Parameter(description = "Pagination parameters") Pageable pageable) {
-        // return
-        // ResponseEntity.ok(innovationDecisionService.getAllInnovationDecisions(specification,
-        // pageable));
-        // }
+         @GetMapping("/innovation-decisions")
+         @ApiMessage("Lấy danh sách quyết định thành công")
+         @Operation(summary = "Get All Innovation Decisions", description = "Get all innovation decisions with pagination and filtering")
+         @ApiResponses(value = {
+         @ApiResponse(responseCode = "200", description = "Innovation decisions retrieved successfully", content = @Content(schema = @Schema(implementation =
+            ResultPaginationDTO.class)))
+         })
+         public ResponseEntity<ResultPaginationDTO> getAllInnovationDecisions(
+         @Parameter(description = "Filter specification for innovation decisions")
+         @Filter Specification<InnovationDecision> specification,
+         @Parameter(description = "Pagination parameters") Pageable pageable) {
+         return
+             ResponseEntity.ok(innovationDecisionService.getAllInnovationDecisions(specification,
+             pageable));
+         }
 
         // 3. Lấy InnovationDecision by Id
         @GetMapping("/innovation-decisions/{id}")
