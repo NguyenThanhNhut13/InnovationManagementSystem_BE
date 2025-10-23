@@ -18,6 +18,7 @@ public interface FormFieldMapper {
     @Mapping(target = "referenceConfig", source = "referenceConfig")
     @Mapping(target = "userDataConfig", source = "userDataConfig")
     @Mapping(target = "innovationDataConfig", source = "innovationDataConfig")
+    @Mapping(target = "contributionConfig", source = "contributionConfig")
     @Mapping(target = "signingRole", source = "signingRole")
     FormFieldResponse toFormFieldResponse(FormField formField);
 

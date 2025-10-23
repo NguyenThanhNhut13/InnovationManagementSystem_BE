@@ -82,6 +82,10 @@ public class FormFieldService {
             formField.setInnovationDataConfig(request.getInnovationDataConfig());
         }
 
+        if (request.getContributionConfig() != null) {
+            formField.setContributionConfig(request.getContributionConfig());
+        }
+
         if (request.getSigningRole() != null) {
             formField.setSigningRole(request.getSigningRole());
         }
@@ -143,6 +147,11 @@ public class FormFieldService {
             formField.setInnovationDataConfig(request.getInnovationDataConfig());
         }
 
+        // Handle contribution config
+        if (request.getContributionConfig() != null) {
+            formField.setContributionConfig(request.getContributionConfig());
+        }
+
         // Handle signing role
         if (request.getSigningRole() != null) {
             formField.setSigningRole(request.getSigningRole());
@@ -179,6 +188,11 @@ public class FormFieldService {
         // Map innovation data config if exists
         if (formField.getInnovationDataConfig() != null) {
             response.setInnovationDataConfig(formField.getInnovationDataConfig());
+        }
+
+        // Map contribution config if exists
+        if (formField.getContributionConfig() != null) {
+            response.setContributionConfig(formField.getContributionConfig());
         }
 
         // Map signing role if exists

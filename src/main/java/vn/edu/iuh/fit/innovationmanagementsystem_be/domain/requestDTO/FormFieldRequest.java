@@ -34,6 +34,8 @@ public class FormFieldRequest {
 
     private JsonNode innovationDataConfig;
 
+    private JsonNode contributionConfig;
+
     private UserRoleEnum signingRole;
 
     private JsonNode children;

@@ -325,6 +325,11 @@ public class FormTemplateService {
             field.setInnovationDataConfig(fieldData.getInnovationDataConfig());
         }
 
+        // Xử lý contributionConfig nếu field có contributionConfig
+        if (fieldData.getContributionConfig() != null) {
+            field.setContributionConfig(fieldData.getContributionConfig());
+        }
+
         // Xử lý signingRole nếu field có signingRole
         if (fieldData.getSigningRole() != null) {
             field.setSigningRole(fieldData.getSigningRole());
@@ -373,6 +378,9 @@ public class FormTemplateService {
 
         // Set innovationDataConfig
         fieldResponse.setInnovationDataConfig(field.getInnovationDataConfig());
+
+        // Set contributionConfig
+        fieldResponse.setContributionConfig(field.getContributionConfig());
 
         // Set signingRole
         fieldResponse.setSigningRole(field.getSigningRole());
@@ -450,6 +458,11 @@ public class FormTemplateService {
             field.setInnovationDataConfig(fieldData.getInnovationDataConfig());
         }
 
+        // Xử lý contributionConfig nếu field có contributionConfig
+        if (fieldData.getContributionConfig() != null) {
+            field.setContributionConfig(fieldData.getContributionConfig());
+        }
+
         // Xử lý signingRole nếu field có signingRole
         if (fieldData.getSigningRole() != null) {
             field.setSigningRole(fieldData.getSigningRole());
@@ -498,6 +511,9 @@ public class FormTemplateService {
 
         // Set innovationDataConfig
         fieldResponse.setInnovationDataConfig(field.getInnovationDataConfig());
+
+        // Set contributionConfig
+        fieldResponse.setContributionConfig(field.getContributionConfig());
 
         // Set signingRole
         fieldResponse.setSigningRole(field.getSigningRole());

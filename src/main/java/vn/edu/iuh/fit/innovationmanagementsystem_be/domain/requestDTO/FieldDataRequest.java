@@ -42,6 +42,8 @@ public class FieldDataRequest {
 
     private JsonNode innovationDataConfig;
 
+    private JsonNode contributionConfig;
+
     private UserRoleEnum signingRole;
 
 }

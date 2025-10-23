@@ -46,6 +46,8 @@ public class CreateTemplateWithFieldsResponse {
         private JsonNode userDataConfig;
         private JsonNode innovationDataConfig;
 
+        private JsonNode contributionConfig;
+
         private UserRoleEnum signingRole;
     }
 }

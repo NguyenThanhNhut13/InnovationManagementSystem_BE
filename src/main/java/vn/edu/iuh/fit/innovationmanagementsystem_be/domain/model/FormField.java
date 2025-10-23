@@ -65,6 +65,10 @@ public class FormField {
     @Column(name = "innovation_data_config", columnDefinition = "JSON")
     private JsonNode innovationDataConfig;
 
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "contribution_config", columnDefinition = "JSON")
+    private JsonNode contributionConfig;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "signing_role")
     private UserRoleEnum signingRole;

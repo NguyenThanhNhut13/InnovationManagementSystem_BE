@@ -29,6 +29,8 @@ public class FormFieldResponse {
     private JsonNode userDataConfig;
     private JsonNode innovationDataConfig;
 
+    private JsonNode contributionConfig;
+
     private UserRoleEnum signingRole;
 
 }

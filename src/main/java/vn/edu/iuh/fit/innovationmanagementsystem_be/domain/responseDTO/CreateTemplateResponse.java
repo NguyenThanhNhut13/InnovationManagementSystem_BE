@@ -44,6 +44,8 @@ public class CreateTemplateResponse {
         private Object userDataConfig;
         private Object innovationDataConfig;
 
+        private Object contributionConfig;
+
         private UserRoleEnum signingRole;
     }
 }
