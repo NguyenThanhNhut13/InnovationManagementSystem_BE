@@ -22,6 +22,8 @@ public class UpdateFormFieldRequest {
 
     private Boolean required;
 
+    private Boolean repeatable;
+
     private JsonNode userDataConfig;
 
     private UserRoleEnum signingRole;

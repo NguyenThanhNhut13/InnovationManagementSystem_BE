@@ -70,6 +70,10 @@ public class FormFieldService {
             formField.setRequired(request.getRequired());
         }
 
+        if (request.getRepeatable() != null) {
+            formField.setRepeatable(request.getRepeatable());
+        }
+
         if (request.getUserDataConfig() != null) {
             formField.setUserDataConfig(request.getUserDataConfig());
         }
@@ -112,6 +116,7 @@ public class FormFieldService {
         formField.setFieldKey(request.getFieldKey());
         formField.setFieldType(request.getFieldType());
         formField.setRequired(request.getRequired());
+        formField.setRepeatable(request.getRepeatable());
         formField.setFormTemplate(formTemplateRepository.findById(templateId)
                 .orElseThrow(() -> new IdInvalidException("Không tìm thấy template với id: " + templateId)));
 
@@ -140,6 +145,7 @@ public class FormFieldService {
         response.setLabel(formField.getLabel());
         response.setFieldType(formField.getFieldType());
         response.setRequired(formField.getRequired());
+        response.setRepeatable(formField.getRepeatable());
         response.setFormTemplateId(formField.getFormTemplate().getId());
 
         // Map table config if exists

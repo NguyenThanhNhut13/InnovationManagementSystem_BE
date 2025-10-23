@@ -26,6 +26,8 @@ public class FormFieldRequest {
     @NotNull(message = "Trạng thái required không được để trống")
     private Boolean required = false;
 
+    private Boolean repeatable = false;
+
     private JsonNode tableConfig;
 
     private JsonNode userDataConfig;
