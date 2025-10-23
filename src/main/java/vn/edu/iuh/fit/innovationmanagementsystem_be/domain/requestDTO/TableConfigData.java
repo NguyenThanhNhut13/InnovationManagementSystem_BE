@@ -1,12 +1,13 @@
 package vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO;
 
-import jakarta.validation.Valid;
+import com.fasterxml.jackson.databind.JsonNode;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.FieldTypeEnum;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.UserRoleEnum;
 
 import java.util.List;
 
@@ -43,7 +44,10 @@ public class TableConfigData {
 
         private List<String> options;
 
-        @Valid
-        private ReferenceConfig referenceConfig;
+        private JsonNode referenceConfig;
+
+        private JsonNode userDataConfig;
+
+        private UserRoleEnum signingRole;
     }
 }

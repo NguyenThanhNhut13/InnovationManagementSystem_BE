@@ -21,5 +21,5 @@ public class UpdateFormTemplateRequest {
     private String templateContent;
 
     @Valid
-    private List<FieldData> fields;
+    private List<FieldDataRequest> fields;
 }

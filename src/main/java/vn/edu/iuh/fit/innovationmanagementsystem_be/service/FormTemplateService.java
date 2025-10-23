@@ -18,9 +18,8 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.FieldType
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.CreateTemplateRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.CreateTemplateWithFieldsRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.UpdateFormTemplateRequest;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.FieldData;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.FieldDataRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.TableConfigData;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.ReferenceConfig;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.CreateTemplateResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.CreateTemplateWithFieldsResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.FormTemplateResponse;
@@ -143,7 +142,7 @@ public class FormTemplateService {
             Set<String> incomingFieldKeys = new java.util.HashSet<>();
 
             List<FormField> newList = new java.util.ArrayList<>();
-            for (FieldData fd : request.getFields()) {
+            for (FieldDataRequest fd : request.getFields()) {
                 FormField entity = null;
 
                 // Ưu tiên tìm theo ID trước, sau đó tìm theo fieldKey
@@ -207,13 +206,15 @@ public class FormTemplateService {
                 }
 
                 if (fd.getReferenceConfig() != null) {
-                    try {
-                        ObjectMapper mapper = new ObjectMapper();
-                        JsonNode referenceConfigJson = mapper.valueToTree(fd.getReferenceConfig());
-                        entity.setReferenceConfig(referenceConfigJson);
-                    } catch (Exception e) {
-                        throw new IdInvalidException("Lỗi khi xử lý referenceConfig: " + e.getMessage());
-                    }
+                    entity.setReferenceConfig(fd.getReferenceConfig());
+                }
+
+                if (fd.getUserDataConfig() != null) {
+                    entity.setUserDataConfig(fd.getUserDataConfig());
+                }
+
+                if (fd.getSigningRole() != null) {
+                    entity.setSigningRole(fd.getSigningRole());
                 }
 
                 newList.add(entity);
@@ -303,7 +304,7 @@ public class FormTemplateService {
         return Utils.toResultPaginationDTO(templates.map(formTemplateMapper::toFormTemplateResponse), pageable);
     }
 
-    private FormField createFormField(FieldData fieldData, FormTemplate template) {
+    private FormField createFormField(FieldDataRequest fieldData, FormTemplate template) {
         FormField field = new FormField();
         field.setFieldKey(fieldData.getFieldKey());
         field.setLabel(fieldData.getLabel());
@@ -350,13 +351,17 @@ public class FormTemplateService {
 
         // Xử lý referenceConfig nếu field có referenceConfig (REFERENCE type)
         if (fieldData.getReferenceConfig() != null) {
-            try {
-                ObjectMapper mapper = new ObjectMapper();
-                JsonNode referenceConfigJson = mapper.valueToTree(fieldData.getReferenceConfig());
-                field.setReferenceConfig(referenceConfigJson);
-            } catch (Exception e) {
-                throw new IdInvalidException("Lỗi khi xử lý referenceConfig: " + e.getMessage());
-            }
+            field.setReferenceConfig(fieldData.getReferenceConfig());
+        }
+
+        // Xử lý userDataConfig nếu field có userDataConfig
+        if (fieldData.getUserDataConfig() != null) {
+            field.setUserDataConfig(fieldData.getUserDataConfig());
+        }
+
+        // Xử lý signingRole nếu field có signingRole
+        if (fieldData.getSigningRole() != null) {
+            field.setSigningRole(fieldData.getSigningRole());
         }
 
         return field;
@@ -394,16 +399,14 @@ public class FormTemplateService {
         fieldResponse.setRepeatable(field.getRepeatable());
         fieldResponse.setChildren(convertChildrenToFieldResponse(field.getChildren()));
 
-        // Convert referenceConfig from JsonNode to ReferenceConfig object
-        if (field.getReferenceConfig() != null) {
-            try {
-                ObjectMapper mapper = new ObjectMapper();
-                ReferenceConfig referenceConfig = mapper.treeToValue(field.getReferenceConfig(), ReferenceConfig.class);
-                fieldResponse.setReferenceConfig(referenceConfig);
-            } catch (Exception e) {
-                fieldResponse.setReferenceConfig(null);
-            }
-        }
+        // Set referenceConfig (already JsonNode)
+        fieldResponse.setReferenceConfig(field.getReferenceConfig());
+
+        // Set userDataConfig
+        fieldResponse.setUserDataConfig(field.getUserDataConfig());
+
+        // Set signingRole
+        fieldResponse.setSigningRole(field.getSigningRole());
 
         return fieldResponse;
     }
@@ -415,9 +418,9 @@ public class FormTemplateService {
 
         try {
             ObjectMapper mapper = new ObjectMapper();
-            List<FieldData> childrenData = mapper.treeToValue(childrenJson,
+            List<FieldDataRequest> childrenData = mapper.treeToValue(childrenJson,
                     mapper.getTypeFactory().constructCollectionType(List.class,
-                            FieldData.class));
+                            FieldDataRequest.class));
 
             return childrenData.stream()
                     .map(childData -> {
@@ -433,8 +436,14 @@ public class FormTemplateService {
                         childResponse.setChildren(convertChildrenToFieldResponse(
                                 childData.getChildren() != null ? mapper.valueToTree(childData.getChildren()) : null));
 
-                        // Set referenceConfig from FieldData
+                        // Set referenceConfig from FieldData (already JsonNode)
                         childResponse.setReferenceConfig(childData.getReferenceConfig());
+
+                        // Set userDataConfig from FieldData
+                        childResponse.setUserDataConfig(childData.getUserDataConfig());
+
+                        // Set signingRole from FieldData
+                        childResponse.setSigningRole(childData.getSigningRole());
 
                         return childResponse;
                     })
@@ -473,7 +482,7 @@ public class FormTemplateService {
         return createTemplateResponse(savedTemplate);
     }
 
-    private FormField createFormFieldFromTemplateRequest(FieldData fieldData, FormTemplate template) {
+    private FormField createFormFieldFromTemplateRequest(FieldDataRequest fieldData, FormTemplate template) {
         FormField field = new FormField();
         field.setFieldKey(fieldData.getFieldKey());
         field.setLabel(fieldData.getLabel());
@@ -520,13 +529,17 @@ public class FormTemplateService {
 
         // Xử lý referenceConfig nếu field có referenceConfig (REFERENCE type)
         if (fieldData.getReferenceConfig() != null) {
-            try {
-                ObjectMapper mapper = new ObjectMapper();
-                JsonNode referenceConfigJson = mapper.valueToTree(fieldData.getReferenceConfig());
-                field.setReferenceConfig(referenceConfigJson);
-            } catch (Exception e) {
-                throw new IdInvalidException("Lỗi khi xử lý referenceConfig: " + e.getMessage());
-            }
+            field.setReferenceConfig(fieldData.getReferenceConfig());
+        }
+
+        // Xử lý userDataConfig nếu field có userDataConfig
+        if (fieldData.getUserDataConfig() != null) {
+            field.setUserDataConfig(fieldData.getUserDataConfig());
+        }
+
+        // Xử lý signingRole nếu field có signingRole
+        if (fieldData.getSigningRole() != null) {
+            field.setSigningRole(fieldData.getSigningRole());
         }
 
         return field;
@@ -564,16 +577,14 @@ public class FormTemplateService {
         fieldResponse.setRepeatable(field.getRepeatable());
         fieldResponse.setChildren(convertChildrenToTemplateFieldResponse(field.getChildren()));
 
-        // Convert referenceConfig from JsonNode to ReferenceConfig object
-        if (field.getReferenceConfig() != null) {
-            try {
-                ObjectMapper mapper = new ObjectMapper();
-                ReferenceConfig referenceConfig = mapper.treeToValue(field.getReferenceConfig(), ReferenceConfig.class);
-                fieldResponse.setReferenceConfig(referenceConfig);
-            } catch (Exception e) {
-                fieldResponse.setReferenceConfig(null);
-            }
-        }
+        // Set referenceConfig (already JsonNode)
+        fieldResponse.setReferenceConfig(field.getReferenceConfig());
+
+        // Set userDataConfig
+        fieldResponse.setUserDataConfig(field.getUserDataConfig());
+
+        // Set signingRole
+        fieldResponse.setSigningRole(field.getSigningRole());
 
         return fieldResponse;
     }
@@ -585,9 +596,9 @@ public class FormTemplateService {
 
         try {
             ObjectMapper mapper = new ObjectMapper();
-            List<FieldData> childrenData = mapper.treeToValue(childrenJson,
+            List<FieldDataRequest> childrenData = mapper.treeToValue(childrenJson,
                     mapper.getTypeFactory().constructCollectionType(List.class,
-                            FieldData.class));
+                            FieldDataRequest.class));
 
             return childrenData.stream()
                     .map(childData -> {
@@ -602,6 +613,12 @@ public class FormTemplateService {
                         childResponse.setChildren(convertChildrenToTemplateFieldResponse(
                                 childData.getChildren() != null ? mapper.valueToTree(childData.getChildren()) : null));
                         childResponse.setReferenceConfig(childData.getReferenceConfig());
+
+                        // Set userDataConfig from FieldData
+                        childResponse.setUserDataConfig(childData.getUserDataConfig());
+
+                        // Set signingRole from FieldData
+                        childResponse.setSigningRole(childData.getSigningRole());
 
                         return childResponse;
                     })

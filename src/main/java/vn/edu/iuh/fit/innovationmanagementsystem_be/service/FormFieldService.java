@@ -70,6 +70,14 @@ public class FormFieldService {
             formField.setRequired(request.getRequired());
         }
 
+        if (request.getUserDataConfig() != null) {
+            formField.setUserDataConfig(request.getUserDataConfig());
+        }
+
+        if (request.getSigningRole() != null) {
+            formField.setSigningRole(request.getSigningRole());
+        }
+
         this.formFieldRepository.save(formField);
 
         return toResponse(formField);
@@ -112,6 +120,16 @@ public class FormFieldService {
             formField.setTableConfig(request.getTableConfig());
         }
 
+        // Handle user data config
+        if (request.getUserDataConfig() != null) {
+            formField.setUserDataConfig(request.getUserDataConfig());
+        }
+
+        // Handle signing role
+        if (request.getSigningRole() != null) {
+            formField.setSigningRole(request.getSigningRole());
+        }
+
         return formField;
     }
 
@@ -127,6 +145,16 @@ public class FormFieldService {
         // Map table config if exists
         if (formField.getTableConfig() != null) {
             response.setTableConfig(formField.getTableConfig());
+        }
+
+        // Map user data config if exists
+        if (formField.getUserDataConfig() != null) {
+            response.setUserDataConfig(formField.getUserDataConfig());
+        }
+
+        // Map signing role if exists
+        if (formField.getSigningRole() != null) {
+            response.setSigningRole(formField.getSigningRole());
         }
 
         return response;

@@ -7,7 +7,7 @@ import lombok.NoArgsConstructor;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.FieldTypeEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.TemplateTypeEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.TargetRoleCode;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.ReferenceConfig;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.UserRoleEnum;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -42,6 +42,9 @@ public class CreateTemplateWithFieldsResponse {
         private JsonNode options;
         private Boolean repeatable;
         private List<FieldResponse> children;
-        private ReferenceConfig referenceConfig;
+        private JsonNode referenceConfig;
+        private JsonNode userDataConfig;
+
+        private UserRoleEnum signingRole;
     }
 }

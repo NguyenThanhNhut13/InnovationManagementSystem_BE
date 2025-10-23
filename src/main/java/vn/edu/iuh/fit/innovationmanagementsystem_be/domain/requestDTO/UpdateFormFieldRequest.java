@@ -1,9 +1,11 @@
 package vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.FieldTypeEnum;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.UserRoleEnum;
 
 @Data
 @NoArgsConstructor
@@ -19,5 +21,9 @@ public class UpdateFormFieldRequest {
     private FieldTypeEnum fieldType;
 
     private Boolean required;
+
+    private JsonNode userDataConfig;
+
+    private UserRoleEnum signingRole;
 
 }

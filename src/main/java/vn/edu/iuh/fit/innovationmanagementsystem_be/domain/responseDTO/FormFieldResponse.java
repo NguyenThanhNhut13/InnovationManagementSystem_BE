@@ -5,7 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.FieldTypeEnum;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.ReferenceConfig;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.UserRoleEnum;
 
 @Data
 @NoArgsConstructor
@@ -25,6 +25,9 @@ public class FormFieldResponse {
     private JsonNode options;
     private Boolean repeatable;
     private JsonNode children;
-    private ReferenceConfig referenceConfig;
+    private JsonNode referenceConfig;
+    private JsonNode userDataConfig;
+
+    private UserRoleEnum signingRole;
 
 }
