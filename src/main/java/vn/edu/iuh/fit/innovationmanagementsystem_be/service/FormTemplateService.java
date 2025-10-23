@@ -186,23 +186,11 @@ public class FormTemplateService {
                 }
 
                 if (fd.getOptions() != null) {
-                    try {
-                        ObjectMapper mapper = new ObjectMapper();
-                        JsonNode optionsJson = mapper.valueToTree(fd.getOptions());
-                        entity.setOptions(optionsJson);
-                    } catch (Exception e) {
-                        throw new IdInvalidException("Lỗi khi xử lý options: " + e.getMessage());
-                    }
+                    entity.setOptions(fd.getOptions());
                 }
 
                 if (fd.getChildren() != null) {
-                    try {
-                        ObjectMapper mapper = new ObjectMapper();
-                        JsonNode childrenJson = mapper.valueToTree(fd.getChildren());
-                        entity.setChildren(childrenJson);
-                    } catch (Exception e) {
-                        throw new IdInvalidException("Lỗi khi xử lý children: " + e.getMessage());
-                    }
+                    entity.setChildren(fd.getChildren());
                 }
 
                 if (fd.getReferenceConfig() != null) {
@@ -328,25 +316,13 @@ public class FormTemplateService {
         }
 
         // Xử lý options nếu field có options (DROPDOWN, RADIO, CHECKBOX)
-        if (fieldData.getOptions() != null && !fieldData.getOptions().isEmpty()) {
-            try {
-                ObjectMapper mapper = new ObjectMapper();
-                JsonNode optionsJson = mapper.valueToTree(fieldData.getOptions());
-                field.setOptions(optionsJson);
-            } catch (Exception e) {
-                throw new IdInvalidException("Lỗi khi xử lý options: " + e.getMessage());
-            }
+        if (fieldData.getOptions() != null) {
+            field.setOptions(fieldData.getOptions());
         }
 
         // Xử lý children nếu field có children (SECTION type)
-        if (fieldData.getChildren() != null && !fieldData.getChildren().isEmpty()) {
-            try {
-                ObjectMapper mapper = new ObjectMapper();
-                JsonNode childrenJson = mapper.valueToTree(fieldData.getChildren());
-                field.setChildren(childrenJson);
-            } catch (Exception e) {
-                throw new IdInvalidException("Lỗi khi xử lý children: " + e.getMessage());
-            }
+        if (fieldData.getChildren() != null) {
+            field.setChildren(fieldData.getChildren());
         }
 
         // Xử lý referenceConfig nếu field có referenceConfig (REFERENCE type)
@@ -402,7 +378,7 @@ public class FormTemplateService {
         fieldResponse.setTableConfig(field.getTableConfig());
         fieldResponse.setOptions(field.getOptions());
         fieldResponse.setRepeatable(field.getRepeatable());
-        fieldResponse.setChildren(convertChildrenToFieldResponse(field.getChildren()));
+        fieldResponse.setChildren(field.getChildren());
 
         // Set referenceConfig (already JsonNode)
         fieldResponse.setReferenceConfig(field.getReferenceConfig());
@@ -417,51 +393,6 @@ public class FormTemplateService {
         fieldResponse.setSigningRole(field.getSigningRole());
 
         return fieldResponse;
-    }
-
-    private List<CreateTemplateWithFieldsResponse.FieldResponse> convertChildrenToFieldResponse(JsonNode childrenJson) {
-        if (childrenJson == null || childrenJson.isNull()) {
-            return null;
-        }
-
-        try {
-            ObjectMapper mapper = new ObjectMapper();
-            List<FieldDataRequest> childrenData = mapper.treeToValue(childrenJson,
-                    mapper.getTypeFactory().constructCollectionType(List.class,
-                            FieldDataRequest.class));
-
-            return childrenData.stream()
-                    .map(childData -> {
-                        CreateTemplateWithFieldsResponse.FieldResponse childResponse = new CreateTemplateWithFieldsResponse.FieldResponse();
-                        childResponse.setId(childData.getId());
-                        childResponse.setFieldKey(childData.getFieldKey());
-                        childResponse.setLabel(childData.getLabel());
-                        childResponse.setType(childData.getType());
-                        childResponse.setRequired(childData.getRequired());
-                        childResponse.setRepeatable(childData.getRepeatable());
-                        childResponse.setOptions(
-                                childData.getOptions() != null ? mapper.valueToTree(childData.getOptions()) : null);
-                        childResponse.setChildren(convertChildrenToFieldResponse(
-                                childData.getChildren() != null ? mapper.valueToTree(childData.getChildren()) : null));
-
-                        // Set referenceConfig from FieldData (already JsonNode)
-                        childResponse.setReferenceConfig(childData.getReferenceConfig());
-
-                        // Set userDataConfig from FieldData
-                        childResponse.setUserDataConfig(childData.getUserDataConfig());
-
-                        // Set innovationDataConfig from FieldData
-                        childResponse.setInnovationDataConfig(childData.getInnovationDataConfig());
-
-                        // Set signingRole from FieldData
-                        childResponse.setSigningRole(childData.getSigningRole());
-
-                        return childResponse;
-                    })
-                    .collect(Collectors.toList());
-        } catch (Exception e) {
-            return null;
-        }
     }
 
     // 10. Tạo form template không gắn round cụ thể (template chung)
@@ -517,25 +448,13 @@ public class FormTemplateService {
         }
 
         // Xử lý options nếu field có options (DROPDOWN, RADIO, CHECKBOX)
-        if (fieldData.getOptions() != null && !fieldData.getOptions().isEmpty()) {
-            try {
-                ObjectMapper mapper = new ObjectMapper();
-                JsonNode optionsJson = mapper.valueToTree(fieldData.getOptions());
-                field.setOptions(optionsJson);
-            } catch (Exception e) {
-                throw new IdInvalidException("Lỗi khi xử lý options: " + e.getMessage());
-            }
+        if (fieldData.getOptions() != null) {
+            field.setOptions(fieldData.getOptions());
         }
 
         // Xử lý children nếu field có children (SECTION type)
-        if (fieldData.getChildren() != null && !fieldData.getChildren().isEmpty()) {
-            try {
-                ObjectMapper mapper = new ObjectMapper();
-                JsonNode childrenJson = mapper.valueToTree(fieldData.getChildren());
-                field.setChildren(childrenJson);
-            } catch (Exception e) {
-                throw new IdInvalidException("Lỗi khi xử lý children: " + e.getMessage());
-            }
+        if (fieldData.getChildren() != null) {
+            field.setChildren(fieldData.getChildren());
         }
 
         // Xử lý referenceConfig nếu field có referenceConfig (REFERENCE type)
@@ -591,7 +510,7 @@ public class FormTemplateService {
         fieldResponse.setTableConfig(field.getTableConfig());
         fieldResponse.setOptions(field.getOptions());
         fieldResponse.setRepeatable(field.getRepeatable());
-        fieldResponse.setChildren(convertChildrenToTemplateFieldResponse(field.getChildren()));
+        fieldResponse.setChildren(field.getChildren());
 
         // Set referenceConfig (already JsonNode)
         fieldResponse.setReferenceConfig(field.getReferenceConfig());
@@ -606,48 +525,6 @@ public class FormTemplateService {
         fieldResponse.setSigningRole(field.getSigningRole());
 
         return fieldResponse;
-    }
-
-    private List<CreateTemplateResponse.FieldResponse> convertChildrenToTemplateFieldResponse(JsonNode childrenJson) {
-        if (childrenJson == null || childrenJson.isNull()) {
-            return null;
-        }
-
-        try {
-            ObjectMapper mapper = new ObjectMapper();
-            List<FieldDataRequest> childrenData = mapper.treeToValue(childrenJson,
-                    mapper.getTypeFactory().constructCollectionType(List.class,
-                            FieldDataRequest.class));
-
-            return childrenData.stream()
-                    .map(childData -> {
-                        CreateTemplateResponse.FieldResponse childResponse = new CreateTemplateResponse.FieldResponse();
-                        childResponse.setId(childData.getId());
-                        childResponse.setFieldKey(childData.getFieldKey());
-                        childResponse.setLabel(childData.getLabel());
-                        childResponse.setType(childData.getType());
-                        childResponse.setRequired(childData.getRequired());
-                        childResponse.setRepeatable(childData.getRepeatable());
-                        childResponse.setOptions(childData.getOptions());
-                        childResponse.setChildren(convertChildrenToTemplateFieldResponse(
-                                childData.getChildren() != null ? mapper.valueToTree(childData.getChildren()) : null));
-                        childResponse.setReferenceConfig(childData.getReferenceConfig());
-
-                        // Set userDataConfig from FieldData
-                        childResponse.setUserDataConfig(childData.getUserDataConfig());
-
-                        // Set innovationDataConfig from FieldData
-                        childResponse.setInnovationDataConfig(childData.getInnovationDataConfig());
-
-                        // Set signingRole from FieldData
-                        childResponse.setSigningRole(childData.getSigningRole());
-
-                        return childResponse;
-                    })
-                    .collect(Collectors.toList());
-        } catch (Exception e) {
-            return null;
-        }
     }
 
     /**

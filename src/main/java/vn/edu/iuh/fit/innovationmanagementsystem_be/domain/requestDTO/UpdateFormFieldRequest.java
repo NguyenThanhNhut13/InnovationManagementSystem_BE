@@ -30,4 +30,6 @@ public class UpdateFormFieldRequest {
 
     private UserRoleEnum signingRole;
 
+    private JsonNode children;
+
 }

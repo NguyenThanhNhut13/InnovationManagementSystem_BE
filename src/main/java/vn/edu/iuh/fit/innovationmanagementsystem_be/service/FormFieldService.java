@@ -86,6 +86,10 @@ public class FormFieldService {
             formField.setSigningRole(request.getSigningRole());
         }
 
+        if (request.getChildren() != null) {
+            formField.setChildren(request.getChildren());
+        }
+
         this.formFieldRepository.save(formField);
 
         return toResponse(formField);
@@ -144,6 +148,11 @@ public class FormFieldService {
             formField.setSigningRole(request.getSigningRole());
         }
 
+        // Handle children
+        if (request.getChildren() != null) {
+            formField.setChildren(request.getChildren());
+        }
+
         return formField;
     }
 
@@ -175,6 +184,11 @@ public class FormFieldService {
         // Map signing role if exists
         if (formField.getSigningRole() != null) {
             response.setSigningRole(formField.getSigningRole());
+        }
+
+        // Map children if exists
+        if (formField.getChildren() != null) {
+            response.setChildren(formField.getChildren());
         }
 
         return response;

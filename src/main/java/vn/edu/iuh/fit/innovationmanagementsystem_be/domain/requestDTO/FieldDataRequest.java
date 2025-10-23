@@ -1,7 +1,6 @@
 package vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
@@ -9,8 +8,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.FieldTypeEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.UserRoleEnum;
-
-import java.util.List;
 
 @Data
 @NoArgsConstructor
@@ -33,14 +30,13 @@ public class FieldDataRequest {
 
     private TableConfigData tableConfig;
 
-    private List<String> options;
+    private JsonNode options;
 
     private Boolean repeatable = false;
 
     private JsonNode referenceConfig;
 
-    @Valid
-    private List<FieldDataRequest> children;
+    private JsonNode children;
 
     private JsonNode userDataConfig;
 

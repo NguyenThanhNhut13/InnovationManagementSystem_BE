@@ -39,7 +39,7 @@ public class CreateTemplateResponse {
         private Object tableConfig;
         private Object options;
         private Boolean repeatable;
-        private List<FieldResponse> children;
+        private Object children;
         private Object referenceConfig;
         private Object userDataConfig;
         private Object innovationDataConfig;

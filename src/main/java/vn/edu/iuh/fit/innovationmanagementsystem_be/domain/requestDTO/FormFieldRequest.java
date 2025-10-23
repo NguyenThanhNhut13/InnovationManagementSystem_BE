@@ -36,4 +36,6 @@ public class FormFieldRequest {
 
     private UserRoleEnum signingRole;
 
+    private JsonNode children;
+
 }

@@ -41,7 +41,7 @@ public class CreateTemplateWithFieldsResponse {
         private JsonNode tableConfig;
         private JsonNode options;
         private Boolean repeatable;
-        private List<FieldResponse> children;
+        private JsonNode children;
         private JsonNode referenceConfig;
         private JsonNode userDataConfig;
         private JsonNode innovationDataConfig;
