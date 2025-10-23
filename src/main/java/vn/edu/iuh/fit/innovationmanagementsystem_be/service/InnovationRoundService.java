@@ -3,7 +3,6 @@ package vn.edu.iuh.fit.innovationmanagementsystem_be.service;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.InnovationDecision;
@@ -17,7 +16,6 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.Innovatio
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationStatusEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationPhaseTypeEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.PhaseStatusEnum;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationRoundStatusEnum;
 import com.fasterxml.jackson.databind.JsonNode;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.mapper.InnovationRoundMapper;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.exception.IdInvalidException;
@@ -97,57 +95,6 @@ public class InnovationRoundService {
         }
 
         return innovationRoundMapper.toInnovationRoundResponse(innovationRoundRepository.save(round));
-    }
-
-    // 2. Lấy tất cả innovationRound bởi decision với pagination và filtering
-    public ResultPaginationDTO getRoundsByDecision(@NonNull String decisionId,
-            @NonNull Specification<InnovationRound> specification,
-            @NonNull Pageable pageable) {
-
-        if (!innovationDecisionRepository.existsById(decisionId)) {
-            throw new IdInvalidException("Không tìm thấy InnovationDecision với ID: " + decisionId);
-        }
-
-        if (pageable.getSort().isUnsorted()) {
-            pageable = org.springframework.data.domain.PageRequest.of(
-                    pageable.getPageNumber(),
-                    pageable.getPageSize(),
-                    org.springframework.data.domain.Sort.by("createdAt").descending());
-        }
-
-        Specification<InnovationRound> decisionSpec = (root, query, criteriaBuilder) -> criteriaBuilder
-                .equal(root.get("innovationDecision").get("id"), decisionId);
-
-        Specification<InnovationRound> combinedSpec = decisionSpec.and(specification);
-
-        Page<InnovationRound> rounds = innovationRoundRepository.findAll(combinedSpec, pageable);
-        Page<InnovationRoundResponse> responses = rounds.map(round -> {
-            InnovationRoundResponse response = innovationRoundMapper.toInnovationRoundResponse(round);
-            setStatistics(response, round);
-            return response;
-        });
-        return Utils.toResultPaginationDTO(responses, pageable);
-    }
-
-    // 3. Lấy innovationRound bởi ID
-    public InnovationRoundResponse getRoundById(String roundId) {
-        InnovationRound round = innovationRoundRepository.findById(roundId)
-                .orElseThrow(() -> new IdInvalidException("Không tìm thấy InnovationRound với ID: " + roundId));
-        InnovationRoundResponse response = innovationRoundMapper.toInnovationRoundResponse(round);
-        setStatistics(response, round);
-        return response;
-    }
-
-    // 4. Lấy innovationRound hiện tại
-    public InnovationRoundResponse getCurrentActiveRound(String decisionId) {
-        InnovationRound round = innovationRoundRepository.findCurrentActiveRound(decisionId, LocalDate.now())
-                .orElse(null);
-        if (round != null) {
-            InnovationRoundResponse response = innovationRoundMapper.toInnovationRoundResponse(round);
-            setStatistics(response, round);
-            return response;
-        }
-        return null;
     }
 
     // 5. Cập nhật innovationRound
@@ -267,33 +214,6 @@ public class InnovationRoundService {
         InnovationRoundResponse response = innovationRoundMapper.toInnovationRoundResponse(savedRound);
         setStatistics(response, savedRound);
         return response;
-    }
-
-    // 7. Toggle status innovationRound
-    public InnovationRoundResponse toggleRoundStatus(String roundId, InnovationRoundStatusEnum status) {
-        InnovationRound round = innovationRoundRepository.findById(roundId)
-                .orElseThrow(() -> new IdInvalidException("Không tìm thấy InnovationRound với ID: " + roundId));
-
-        round.setStatus(status);
-
-        InnovationRound savedRound = innovationRoundRepository.save(round);
-        InnovationRoundResponse response = innovationRoundMapper.toInnovationRoundResponse(savedRound);
-        setStatistics(response, savedRound);
-        return response;
-    }
-
-    // 8. Lấy innovationRound bởi status
-    public List<InnovationRoundResponse> getRoundsByStatus(String status) {
-        List<InnovationRound> rounds = innovationRoundRepository.findByStatus(
-                vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationRoundStatusEnum
-                        .valueOf(status));
-        return rounds.stream()
-                .map(round -> {
-                    InnovationRoundResponse response = innovationRoundMapper.toInnovationRoundResponse(round);
-                    setStatistics(response, round);
-                    return response;
-                })
-                .collect(Collectors.toList());
     }
 
     // 9. Lấy tất cả innovationRound với pagination và filtering
