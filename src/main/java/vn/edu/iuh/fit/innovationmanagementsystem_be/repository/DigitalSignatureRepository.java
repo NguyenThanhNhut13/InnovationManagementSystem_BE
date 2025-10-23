@@ -14,20 +14,6 @@ import java.util.List;
 @Repository
 public interface DigitalSignatureRepository extends JpaRepository<DigitalSignature, String> {
 
-        List<DigitalSignature> findByInnovationIdAndDocumentType(String innovationId, DocumentTypeEnum documentType);
-
-        List<DigitalSignature> findByInnovationIdAndDocumentTypeAndSignedAsRole(
-                        String innovationId,
-                        DocumentTypeEnum documentType,
-                        UserRoleEnum signedAsRole);
-
-        List<DigitalSignature> findByInnovationIdAndDocumentTypeAndStatus(
-                        String innovationId,
-                        DocumentTypeEnum documentType,
-                        SignatureStatusEnum status);
-
-        List<DigitalSignature> findByUserIdAndDocumentType(String userId, DocumentTypeEnum documentType);
-
         boolean existsByInnovationIdAndDocumentTypeAndUserIdAndStatus(
                         String innovationId,
                         DocumentTypeEnum documentType,
