@@ -10,8 +10,6 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.FormField
 @Mapper(componentModel = "spring")
 public interface FormFieldMapper {
 
-    FormFieldMapper INSTANCE = org.mapstruct.factory.Mappers.getMapper(FormFieldMapper.class);
-
     @Mapping(target = "type", source = "fieldType")
     CreateTemplateResponse.FieldResponse toCreateTemplateFieldResponse(FormField formField);
 

@@ -2,18 +2,13 @@ package vn.edu.iuh.fit.innovationmanagementsystem_be.mapper;
 
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
-import org.mapstruct.Named;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.User;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.UserRole;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.UserRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.UserResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.UserRoleResponse;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.stream.Collectors;
-
-@Mapper(componentModel = "spring")
+@Mapper(componentModel = "spring", uses = { UserRoleMapper.class })
 public interface UserMapper {
 
     @Mapping(target = "departmentId", source = "department.id")
@@ -50,16 +45,4 @@ public interface UserMapper {
     @Mapping(target = "userId", source = "user.id")
     @Mapping(target = "userName", source = "user.fullName")
     UserRoleResponse toUserRoleResponse(UserRole userRole);
-
-    @Named("mapUserRolesToStrings")
-    default List<String> mapUserRolesToStrings(List<UserRole> userRoles) {
-        if (userRoles == null) {
-            return Collections.emptyList();
-        }
-        return userRoles.stream()
-                .map(userRole -> userRole.getRole() != null && userRole.getRole().getRoleName() != null
-                        ? userRole.getRole().getRoleName().name()
-                        : null)
-                .collect(Collectors.toList());
-    }
 }

@@ -10,8 +10,6 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.CreateTem
 @Mapper(componentModel = "spring", uses = { FormFieldMapper.class })
 public interface FormTemplateMapper {
 
-    FormTemplateMapper INSTANCE = org.mapstruct.factory.Mappers.getMapper(FormTemplateMapper.class);
-
     @Mapping(target = "innovationRoundId", source = "innovationRound.id")
     @Mapping(target = "innovationRoundName", source = "innovationRound.name", defaultValue = "")
     FormTemplateResponse toFormTemplateResponse(FormTemplate formTemplate);
