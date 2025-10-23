@@ -58,11 +58,11 @@ public class FormTemplateService {
     }
 
     // 1. Lấy form template by id
-    public FormTemplateResponse getFormTemplateById(String id) {
+    public CreateTemplateWithFieldsResponse getFormTemplateById(String id) {
         FormTemplate template = formTemplateRepository.findById(id)
                 .orElseThrow(() -> new IdInvalidException("Form template không tồn tại với ID: " + id));
 
-        return formTemplateMapper.toFormTemplateResponse(template);
+        return formTemplateMapper.toCreateTemplateWithFieldsResponse(template);
     }
 
     // 2. Lấy tất cả form templates by innovation phase
@@ -129,97 +129,7 @@ public class FormTemplateService {
 
         // Upsert danh sách FormField nếu có
         if (request.getFields() != null) {
-            // Map các field hiện có theo id và fieldKey để tiện cập nhật/xóa
-            Map<String, FormField> existingById = template.getFormFields().stream()
-                    .filter(f -> f.getId() != null)
-                    .collect(java.util.stream.Collectors.toMap(FormField::getId, f -> f));
-
-            Map<String, FormField> existingByFieldKey = template.getFormFields().stream()
-                    .filter(f -> f.getFieldKey() != null)
-                    .collect(java.util.stream.Collectors.toMap(FormField::getFieldKey, f -> f));
-
-            Set<String> incomingIds = new java.util.HashSet<>();
-            Set<String> incomingFieldKeys = new java.util.HashSet<>();
-
-            List<FormField> newList = new java.util.ArrayList<>();
-            for (FieldDataRequest fd : request.getFields()) {
-                FormField entity = null;
-
-                // Ưu tiên tìm theo ID trước, sau đó tìm theo fieldKey
-                if (fd.getId() != null && existingById.containsKey(fd.getId())) {
-                    entity = existingById.get(fd.getId());
-                    incomingIds.add(fd.getId());
-                } else if (fd.getFieldKey() != null && existingByFieldKey.containsKey(fd.getFieldKey())) {
-                    entity = existingByFieldKey.get(fd.getFieldKey());
-                    incomingFieldKeys.add(fd.getFieldKey());
-                } else {
-                    entity = new FormField();
-                    entity.setFormTemplate(template);
-                }
-
-                if (fd.getFieldKey() != null)
-                    entity.setFieldKey(fd.getFieldKey());
-                if (fd.getLabel() != null)
-                    entity.setLabel(fd.getLabel());
-                if (fd.getType() != null)
-                    entity.setFieldType(fd.getType());
-                if (fd.getRequired() != null)
-                    entity.setRequired(fd.getRequired());
-                if (fd.getRepeatable() != null)
-                    entity.setRepeatable(fd.getRepeatable());
-
-                // tableConfig/options/children: tận dụng mapper như create
-                if (fd.getType() == FieldTypeEnum.TABLE && fd.getTableConfig() != null) {
-                    // Tự sinh UUID cho các column nếu chưa có
-                    JsonNode processedTableConfig = generateColumnIdsIfNeeded(fd.getTableConfig());
-                    entity.setTableConfig(processedTableConfig);
-                } else if (fd.getType() != FieldTypeEnum.TABLE) {
-                    entity.setTableConfig(null);
-                }
-
-                if (fd.getOptions() != null) {
-                    entity.setOptions(fd.getOptions());
-                }
-
-                if (fd.getChildren() != null) {
-                    entity.setChildren(fd.getChildren());
-                }
-
-                if (fd.getReferenceConfig() != null) {
-                    entity.setReferenceConfig(fd.getReferenceConfig());
-                }
-
-                if (fd.getUserDataConfig() != null) {
-                    entity.setUserDataConfig(fd.getUserDataConfig());
-                }
-
-                if (fd.getSigningRole() != null) {
-                    entity.setSigningRole(fd.getSigningRole());
-                }
-
-                newList.add(entity);
-            }
-
-            List<FormField> fieldsToRemove = template.getFormFields().stream()
-                    .filter(field -> {
-                        // Giữ lại field nếu có ID trong incomingIds
-                        if (field.getId() != null && incomingIds.contains(field.getId())) {
-                            return false;
-                        }
-                        // Giữ lại field nếu có fieldKey trong incomingFieldKeys
-                        if (field.getFieldKey() != null && incomingFieldKeys.contains(field.getFieldKey())) {
-                            return false;
-                        }
-                        // Xóa field nếu không có trong cả hai danh sách
-                        return true;
-                    })
-                    .collect(java.util.stream.Collectors.toList());
-
-            // Xóa các field không còn được sử dụng
-            template.getFormFields().removeAll(fieldsToRemove);
-
-            // Thêm các field mới/cập nhật
-            template.getFormFields().addAll(newList);
+            processFormFields(template, request.getFields());
         }
 
         FormTemplate updatedTemplate = formTemplateRepository.save(template);
@@ -241,14 +151,13 @@ public class FormTemplateService {
 
         FormTemplate savedTemplate = formTemplateRepository.save(template);
 
-        List<FormField> formFields = request.getFields().stream()
-                .map(fieldData -> createFormField(fieldData, savedTemplate))
-                .collect(Collectors.toList());
+        // Sử dụng cùng logic xử lý fields như updateFormTemplate
+        if (request.getFields() != null && !request.getFields().isEmpty()) {
+            processFormFields(savedTemplate, request.getFields());
+        }
 
-        savedTemplate.setFormFields(formFields);
-        formTemplateRepository.save(savedTemplate);
-
-        return createTemplateWithFieldsResponse(savedTemplate);
+        FormTemplate finalTemplate = formTemplateRepository.save(savedTemplate);
+        return formTemplateMapper.toCreateTemplateWithFieldsResponse(finalTemplate);
     }
 
     // 7. Lấy tất cả form templates với phân trang và tìm kiếm
@@ -284,108 +193,94 @@ public class FormTemplateService {
         return Utils.toResultPaginationDTO(templates.map(formTemplateMapper::toFormTemplateResponse), pageable);
     }
 
-    private FormField createFormField(FieldDataRequest fieldData, FormTemplate template) {
-        FormField field = new FormField();
-        field.setFieldKey(fieldData.getFieldKey());
-        field.setLabel(fieldData.getLabel());
-        field.setFieldType(fieldData.getType());
-        field.setRequired(fieldData.getRequired());
-        field.setFormTemplate(template);
-        field.setRepeatable(fieldData.getRepeatable() != null ? fieldData.getRepeatable() : false);
-
-        // Xử lý table config nếu field type là TABLE
-        if (fieldData.getType() == FieldTypeEnum.TABLE && fieldData.getTableConfig() != null) {
-            // Tự sinh UUID cho các column nếu chưa có
-            JsonNode processedTableConfig = generateColumnIdsIfNeeded(fieldData.getTableConfig());
-            field.setTableConfig(processedTableConfig);
+    // Helper method để xử lý fields cho cả create và update
+    private void processFormFields(FormTemplate template, List<FieldDataRequest> fields) {
+        if (fields == null || fields.isEmpty()) {
+            return;
         }
 
-        // Xử lý options nếu field có options (DROPDOWN, RADIO, CHECKBOX)
-        if (fieldData.getOptions() != null) {
-            field.setOptions(fieldData.getOptions());
+        // Map các field hiện có theo id để tiện cập nhật/xóa
+        Map<String, FormField> existingById = template.getFormFields().stream()
+                .filter(f -> f.getId() != null)
+                .collect(java.util.stream.Collectors.toMap(FormField::getId, f -> f));
+
+        Set<String> incomingIds = new java.util.HashSet<>();
+
+        List<FormField> newList = new java.util.ArrayList<>();
+        for (FieldDataRequest fd : fields) {
+            FormField entity = null;
+
+            // Ưu tiên tìm theo ID trước
+            if (fd.getId() != null && existingById.containsKey(fd.getId())) {
+                entity = existingById.get(fd.getId());
+                incomingIds.add(fd.getId());
+            } else {
+                // Nếu không có ID, tạo field mới
+                entity = new FormField();
+                entity.setFormTemplate(template);
+            }
+
+            // Cập nhật tất cả các field từ request
+            if (fd.getFieldKey() != null)
+                entity.setFieldKey(fd.getFieldKey());
+            if (fd.getLabel() != null)
+                entity.setLabel(fd.getLabel());
+            if (fd.getType() != null)
+                entity.setFieldType(fd.getType());
+            if (fd.getRequired() != null)
+                entity.setRequired(fd.getRequired());
+            if (fd.getRepeatable() != null)
+                entity.setRepeatable(fd.getRepeatable());
+
+            // tableConfig/options/children: tận dụng mapper như create
+            if (fd.getType() == FieldTypeEnum.TABLE && fd.getTableConfig() != null) {
+                // Tự sinh UUID cho các column nếu chưa có
+                JsonNode processedTableConfig = generateColumnIdsIfNeeded(fd.getTableConfig());
+                entity.setTableConfig(processedTableConfig);
+            } else if (fd.getType() != FieldTypeEnum.TABLE) {
+                entity.setTableConfig(null);
+            }
+
+            if (fd.getOptions() != null) {
+                entity.setOptions(fd.getOptions());
+            }
+
+            if (fd.getChildren() != null) {
+                entity.setChildren(fd.getChildren());
+            }
+
+            if (fd.getReferenceConfig() != null) {
+                entity.setReferenceConfig(fd.getReferenceConfig());
+            }
+
+            if (fd.getUserDataConfig() != null) {
+                entity.setUserDataConfig(fd.getUserDataConfig());
+            }
+
+            if (fd.getSigningRole() != null) {
+                entity.setSigningRole(fd.getSigningRole());
+            }
+
+            newList.add(entity);
         }
 
-        // Xử lý children nếu field có children (SECTION type)
-        if (fieldData.getChildren() != null) {
-            field.setChildren(fieldData.getChildren());
-        }
+        // Xóa các field không còn được sử dụng (chỉ dựa vào ID)
+        List<FormField> fieldsToRemove = template.getFormFields().stream()
+                .filter(field -> {
+                    // Giữ lại field nếu có ID trong incomingIds
+                    if (field.getId() != null && incomingIds.contains(field.getId())) {
+                        return false;
+                    }
+                    // Xóa field nếu không có ID hoặc ID không có trong incomingIds
+                    return true;
+                })
+                .collect(java.util.stream.Collectors.toList());
 
-        // Xử lý referenceConfig nếu field có referenceConfig (REFERENCE type)
-        if (fieldData.getReferenceConfig() != null) {
-            field.setReferenceConfig(fieldData.getReferenceConfig());
-        }
+        // Xóa các field không còn được sử dụng
+        template.getFormFields().removeAll(fieldsToRemove);
 
-        // Xử lý userDataConfig nếu field có userDataConfig
-        if (fieldData.getUserDataConfig() != null) {
-            field.setUserDataConfig(fieldData.getUserDataConfig());
-        }
-
-        // Xử lý innovationDataConfig nếu field có innovationDataConfig
-        if (fieldData.getInnovationDataConfig() != null) {
-            field.setInnovationDataConfig(fieldData.getInnovationDataConfig());
-        }
-
-        // Xử lý contributionConfig nếu field có contributionConfig
-        if (fieldData.getContributionConfig() != null) {
-            field.setContributionConfig(fieldData.getContributionConfig());
-        }
-
-        // Xử lý signingRole nếu field có signingRole
-        if (fieldData.getSigningRole() != null) {
-            field.setSigningRole(fieldData.getSigningRole());
-        }
-
-        return field;
-    }
-
-    private CreateTemplateWithFieldsResponse createTemplateWithFieldsResponse(FormTemplate template) {
-        CreateTemplateWithFieldsResponse response = new CreateTemplateWithFieldsResponse();
-        response.setId(template.getId());
-        response.setTemplateContent(template.getTemplateContent());
-        response.setTemplateType(template.getTemplateType());
-        response.setTargetRole(template.getTargetRole());
-        response.setRoundId(template.getInnovationRound().getId());
-        response.setCreatedAt(template.getCreatedAt());
-        response.setUpdatedAt(template.getUpdatedAt());
-        response.setCreatedBy(template.getCreatedBy());
-        response.setUpdatedBy(template.getUpdatedBy());
-
-        List<CreateTemplateWithFieldsResponse.FieldResponse> fieldResponses = template.getFormFields().stream()
-                .map(this::convertToFieldResponse)
-                .collect(Collectors.toList());
-
-        response.setFields(fieldResponses);
-        return response;
-    }
-
-    private CreateTemplateWithFieldsResponse.FieldResponse convertToFieldResponse(FormField field) {
-        CreateTemplateWithFieldsResponse.FieldResponse fieldResponse = new CreateTemplateWithFieldsResponse.FieldResponse();
-        fieldResponse.setId(field.getId());
-        fieldResponse.setFieldKey(field.getFieldKey());
-        fieldResponse.setLabel(field.getLabel());
-        fieldResponse.setType(field.getFieldType());
-        fieldResponse.setRequired(field.getRequired());
-        fieldResponse.setTableConfig(field.getTableConfig());
-        fieldResponse.setOptions(field.getOptions());
-        fieldResponse.setRepeatable(field.getRepeatable());
-        fieldResponse.setChildren(field.getChildren());
-
-        // Set referenceConfig (already JsonNode)
-        fieldResponse.setReferenceConfig(field.getReferenceConfig());
-
-        // Set userDataConfig
-        fieldResponse.setUserDataConfig(field.getUserDataConfig());
-
-        // Set innovationDataConfig
-        fieldResponse.setInnovationDataConfig(field.getInnovationDataConfig());
-
-        // Set contributionConfig
-        fieldResponse.setContributionConfig(field.getContributionConfig());
-
-        // Set signingRole
-        fieldResponse.setSigningRole(field.getSigningRole());
-
-        return fieldResponse;
+        // Thêm các field mới/cập nhật
+        template.getFormFields().addAll(newList);
     }
 
     // 10. Tạo form template không gắn round cụ thể (template chung)
@@ -407,118 +302,13 @@ public class FormTemplateService {
 
         FormTemplate savedTemplate = formTemplateRepository.save(template);
 
-        List<FormField> formFields = request.getFields().stream()
-                .map(fieldData -> createFormFieldFromTemplateRequest(fieldData, savedTemplate))
-                .collect(Collectors.toList());
-
-        savedTemplate.setFormFields(formFields);
-        formTemplateRepository.save(savedTemplate);
-
-        return createTemplateResponse(savedTemplate);
-    }
-
-    private FormField createFormFieldFromTemplateRequest(FieldDataRequest fieldData, FormTemplate template) {
-        FormField field = new FormField();
-        field.setFieldKey(fieldData.getFieldKey());
-        field.setLabel(fieldData.getLabel());
-        field.setFieldType(fieldData.getType());
-        field.setRequired(fieldData.getRequired());
-        field.setFormTemplate(template);
-        field.setRepeatable(fieldData.getRepeatable() != null ? fieldData.getRepeatable() : false);
-
-        // Xử lý table config nếu field type là TABLE
-        if (fieldData.getType() == FieldTypeEnum.TABLE && fieldData.getTableConfig() != null) {
-            // Tự sinh UUID cho các column nếu chưa có
-            JsonNode processedTableConfig = generateColumnIdsIfNeeded(fieldData.getTableConfig());
-            field.setTableConfig(processedTableConfig);
+        // Sử dụng cùng logic xử lý fields như các method khác
+        if (request.getFields() != null && !request.getFields().isEmpty()) {
+            processFormFields(savedTemplate, request.getFields());
         }
 
-        // Xử lý options nếu field có options (DROPDOWN, RADIO, CHECKBOX)
-        if (fieldData.getOptions() != null) {
-            field.setOptions(fieldData.getOptions());
-        }
-
-        // Xử lý children nếu field có children (SECTION type)
-        if (fieldData.getChildren() != null) {
-            field.setChildren(fieldData.getChildren());
-        }
-
-        // Xử lý referenceConfig nếu field có referenceConfig (REFERENCE type)
-        if (fieldData.getReferenceConfig() != null) {
-            field.setReferenceConfig(fieldData.getReferenceConfig());
-        }
-
-        // Xử lý userDataConfig nếu field có userDataConfig
-        if (fieldData.getUserDataConfig() != null) {
-            field.setUserDataConfig(fieldData.getUserDataConfig());
-        }
-
-        // Xử lý innovationDataConfig nếu field có innovationDataConfig
-        if (fieldData.getInnovationDataConfig() != null) {
-            field.setInnovationDataConfig(fieldData.getInnovationDataConfig());
-        }
-
-        // Xử lý contributionConfig nếu field có contributionConfig
-        if (fieldData.getContributionConfig() != null) {
-            field.setContributionConfig(fieldData.getContributionConfig());
-        }
-
-        // Xử lý signingRole nếu field có signingRole
-        if (fieldData.getSigningRole() != null) {
-            field.setSigningRole(fieldData.getSigningRole());
-        }
-
-        return field;
-    }
-
-    private CreateTemplateResponse createTemplateResponse(FormTemplate template) {
-        CreateTemplateResponse response = new CreateTemplateResponse();
-        response.setId(template.getId());
-        response.setTemplateContent(template.getTemplateContent());
-        response.setTemplateType(template.getTemplateType());
-        response.setTargetRole(template.getTargetRole());
-        response.setRoundId(template.getInnovationRound() != null ? template.getInnovationRound().getId() : null);
-        response.setCreatedAt(template.getCreatedAt());
-        response.setUpdatedAt(template.getUpdatedAt());
-        response.setCreatedBy(template.getCreatedBy());
-        response.setUpdatedBy(template.getUpdatedBy());
-
-        List<CreateTemplateResponse.FieldResponse> fieldResponses = template.getFormFields().stream()
-                .map(this::convertToTemplateFieldResponse)
-                .collect(Collectors.toList());
-
-        response.setFields(fieldResponses);
-        return response;
-    }
-
-    private CreateTemplateResponse.FieldResponse convertToTemplateFieldResponse(FormField field) {
-        CreateTemplateResponse.FieldResponse fieldResponse = new CreateTemplateResponse.FieldResponse();
-        fieldResponse.setId(field.getId());
-        fieldResponse.setFieldKey(field.getFieldKey());
-        fieldResponse.setLabel(field.getLabel());
-        fieldResponse.setType(field.getFieldType());
-        fieldResponse.setRequired(field.getRequired());
-        fieldResponse.setTableConfig(field.getTableConfig());
-        fieldResponse.setOptions(field.getOptions());
-        fieldResponse.setRepeatable(field.getRepeatable());
-        fieldResponse.setChildren(field.getChildren());
-
-        // Set referenceConfig (already JsonNode)
-        fieldResponse.setReferenceConfig(field.getReferenceConfig());
-
-        // Set userDataConfig
-        fieldResponse.setUserDataConfig(field.getUserDataConfig());
-
-        // Set innovationDataConfig
-        fieldResponse.setInnovationDataConfig(field.getInnovationDataConfig());
-
-        // Set contributionConfig
-        fieldResponse.setContributionConfig(field.getContributionConfig());
-
-        // Set signingRole
-        fieldResponse.setSigningRole(field.getSigningRole());
-
-        return fieldResponse;
+        FormTemplate finalTemplate = formTemplateRepository.save(savedTemplate);
+        return formTemplateMapper.toCreateTemplateResponse(finalTemplate);
     }
 
     /**

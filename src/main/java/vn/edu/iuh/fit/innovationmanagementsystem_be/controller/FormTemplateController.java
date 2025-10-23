@@ -41,22 +41,19 @@ public class FormTemplateController {
                 this.formTemplateService = formTemplateService;
         }
 
-        // // 1. Lấy form template by id
-        // @GetMapping("/{id}")
-        // @ApiMessage("Lấy form template theo id thành công")
-        // @Operation(summary = "Get Form Template by ID", description = "Get form
-        // template details by ID")
-        // @ApiResponses(value = {
-        // @ApiResponse(responseCode = "200", description = "Form template retrieved
-        // successfully", content = @Content(schema = @Schema(implementation =
-        // FormTemplateResponse.class))),
-        // @ApiResponse(responseCode = "404", description = "Form template not found")
-        // })
-        // public ResponseEntity<FormTemplateResponse> getFormTemplateById(
-        // @Parameter(description = "Form template ID", required = true) @PathVariable
-        // String id) {
-        // return ResponseEntity.ok(formTemplateService.getFormTemplateById(id));
-        // }
+        // 1. Lấy form template by id
+        @GetMapping("/{id}")
+        @ApiMessage("Lấy form template theo id thành công")
+        @Operation(summary = "Get Form Template by ID", description = "Get form template details by ID")
+        @ApiResponses(value = {
+                        @ApiResponse(responseCode = "200", description = "Form template retrieved successfully", content = @Content(schema = @Schema(implementation = CreateTemplateWithFieldsResponse.class))),
+                        @ApiResponse(responseCode = "404", description = "Form template not found")
+
+        })
+        public ResponseEntity<CreateTemplateWithFieldsResponse> getFormTemplateById(
+                        @Parameter(description = "Form template ID", required = true) @PathVariable String id) {
+                return ResponseEntity.ok(formTemplateService.getFormTemplateById(id));
+        }
 
         // // 2. Lấy form templates by innovation phase
         // @GetMapping("/innovation-phase/{phaseId}")
