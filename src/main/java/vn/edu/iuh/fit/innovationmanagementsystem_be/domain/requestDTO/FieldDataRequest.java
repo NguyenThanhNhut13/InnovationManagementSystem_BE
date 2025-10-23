@@ -28,11 +28,11 @@ public class FieldDataRequest {
     @NotNull(message = "Required status không được để trống")
     private Boolean required = false;
 
-    private TableConfigData tableConfig;
+    private Boolean repeatable = false;
+
+    private JsonNode tableConfig;
 
     private JsonNode options;
-
-    private Boolean repeatable = false;
 
     private JsonNode referenceConfig;
 

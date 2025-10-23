@@ -1,7 +1,8 @@
 package vn.edu.iuh.fit.innovationmanagementsystem_be.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -19,7 +20,6 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.CreateTemp
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.CreateTemplateWithFieldsRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.UpdateFormTemplateRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.FieldDataRequest;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.TableConfigData;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.CreateTemplateResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.CreateTemplateWithFieldsResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.FormTemplateResponse;
@@ -170,17 +170,9 @@ public class FormTemplateService {
 
                 // tableConfig/options/children: tận dụng mapper như create
                 if (fd.getType() == FieldTypeEnum.TABLE && fd.getTableConfig() != null) {
-                    try {
-                        // Tự sinh UUID cho các column nếu chưa có
-                        generateColumnIdsIfNeeded(fd.getTableConfig());
-
-                        ObjectMapper mapper = new ObjectMapper();
-                        JsonNode tableConfigJson = mapper
-                                .valueToTree(fd.getTableConfig());
-                        entity.setTableConfig(tableConfigJson);
-                    } catch (Exception e) {
-                        throw new IdInvalidException("Lỗi khi xử lý table config: " + e.getMessage());
-                    }
+                    // Tự sinh UUID cho các column nếu chưa có
+                    JsonNode processedTableConfig = generateColumnIdsIfNeeded(fd.getTableConfig());
+                    entity.setTableConfig(processedTableConfig);
                 } else if (fd.getType() != FieldTypeEnum.TABLE) {
                     entity.setTableConfig(null);
                 }
@@ -303,16 +295,9 @@ public class FormTemplateService {
 
         // Xử lý table config nếu field type là TABLE
         if (fieldData.getType() == FieldTypeEnum.TABLE && fieldData.getTableConfig() != null) {
-            try {
-                // Tự sinh UUID cho các column nếu chưa có
-                generateColumnIdsIfNeeded(fieldData.getTableConfig());
-
-                ObjectMapper mapper = new ObjectMapper();
-                JsonNode tableConfigJson = mapper.valueToTree(fieldData.getTableConfig());
-                field.setTableConfig(tableConfigJson);
-            } catch (Exception e) {
-                throw new IdInvalidException("Lỗi khi xử lý table config: " + e.getMessage());
-            }
+            // Tự sinh UUID cho các column nếu chưa có
+            JsonNode processedTableConfig = generateColumnIdsIfNeeded(fieldData.getTableConfig());
+            field.setTableConfig(processedTableConfig);
         }
 
         // Xử lý options nếu field có options (DROPDOWN, RADIO, CHECKBOX)
@@ -435,16 +420,9 @@ public class FormTemplateService {
 
         // Xử lý table config nếu field type là TABLE
         if (fieldData.getType() == FieldTypeEnum.TABLE && fieldData.getTableConfig() != null) {
-            try {
-                // Tự sinh UUID cho các column nếu chưa có
-                generateColumnIdsIfNeeded(fieldData.getTableConfig());
-
-                ObjectMapper mapper = new ObjectMapper();
-                JsonNode tableConfigJson = mapper.valueToTree(fieldData.getTableConfig());
-                field.setTableConfig(tableConfigJson);
-            } catch (Exception e) {
-                throw new IdInvalidException("Lỗi khi xử lý table config: " + e.getMessage());
-            }
+            // Tự sinh UUID cho các column nếu chưa có
+            JsonNode processedTableConfig = generateColumnIdsIfNeeded(fieldData.getTableConfig());
+            field.setTableConfig(processedTableConfig);
         }
 
         // Xử lý options nếu field có options (DROPDOWN, RADIO, CHECKBOX)
@@ -528,15 +506,27 @@ public class FormTemplateService {
     }
 
     /**
-     * Tự sinh UUID cho các column trong TableConfigData nếu chưa có ID
+     * Tự sinh UUID cho các column trong JsonNode tableConfig nếu chưa có ID
      */
-    private void generateColumnIdsIfNeeded(TableConfigData tableConfig) {
-        if (tableConfig != null && tableConfig.getColumns() != null) {
-            for (TableConfigData.ColumnData column : tableConfig.getColumns()) {
-                if (column.getId() == null || column.getId().trim().isEmpty()) {
-                    column.setId(UUID.randomUUID().toString());
+    private JsonNode generateColumnIdsIfNeeded(JsonNode tableConfig) {
+        if (tableConfig != null && tableConfig.has("columns")) {
+            try {
+                ObjectNode tableConfigNode = (ObjectNode) tableConfig.deepCopy();
+                ArrayNode columnsNode = (ArrayNode) tableConfigNode.get("columns");
+
+                for (int i = 0; i < columnsNode.size(); i++) {
+                    ObjectNode columnNode = (ObjectNode) columnsNode.get(i);
+                    if (!columnNode.has("id") || columnNode.get("id").isNull() ||
+                            columnNode.get("id").asText().trim().isEmpty()) {
+                        columnNode.put("id", UUID.randomUUID().toString());
+                    }
                 }
+
+                return tableConfigNode;
+            } catch (Exception e) {
+                throw new IdInvalidException("Lỗi khi xử lý table config: " + e.getMessage());
             }
         }
+        return tableConfig;
     }
 }
