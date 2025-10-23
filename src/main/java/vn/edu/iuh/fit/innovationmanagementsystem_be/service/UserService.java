@@ -2,9 +2,6 @@ package vn.edu.iuh.fit.innovationmanagementsystem_be.service;
 
 import java.util.ArrayList;
 
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.domain.Specification;
 import org.springframework.lang.NonNull;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -17,8 +14,6 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.Department;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.Role;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.User;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.UserRole;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.UserSignatureProfile;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.UserStatusEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.UserRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.UserSignatureProfileRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.UpdateProfileRequest;
@@ -31,8 +26,6 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.RoleRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.UserRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.UserRoleRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.JwtTokenUtil;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.ResultPaginationDTO;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.Utils;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.mapper.UserMapper;
 
 import java.util.Optional;
@@ -91,76 +84,6 @@ public class UserService {
         return userMapper.toUserResponse(user);
     }
 
-    // 2. Lấy All Users với Pagination
-    public ResultPaginationDTO getUsersWithPagination(@NonNull Specification<User> specification,
-            @NonNull Pageable pageable) {
-        Page<User> users = userRepository.findAll(specification, pageable);
-
-        Page<UserResponse> userResponses = users.map(userMapper::toUserResponse);
-
-        return Utils.toResultPaginationDTO(userResponses, pageable);
-    }
-
-    // 3. Lấy User By Id
-    public UserResponse getUserById(@NonNull String id) {
-        User user = userRepository.findById(id)
-                .orElseThrow(() -> new IdInvalidException("Người dùng không tồn tại với ID: " + id));
-        return userMapper.toUserResponse(user);
-    }
-
-    // 4. Cập nhật User
-    public UserResponse updateUser(@NonNull String id, @NonNull UserRequest userRequest) {
-        User user = userRepository.findById(id)
-                .orElseThrow(() -> new IdInvalidException("Người dùng không tồn tại với ID: " + id));
-
-        if (userRequest.getFullName() != null) {
-            user.setFullName(userRequest.getFullName());
-        }
-        if (userRequest.getEmail() != null) {
-            if (!user.getEmail().equals(userRequest.getEmail())
-                    && userRepository.existsByEmail(userRequest.getEmail())) {
-                throw new IdInvalidException("Email đã tồn tại trong hệ thống");
-            }
-            user.setEmail(userRequest.getEmail());
-        }
-        if (userRequest.getPhoneNumber() != null) {
-            user.setPhoneNumber(userRequest.getPhoneNumber());
-        }
-        if (userRequest.getPassword() != null) {
-            user.setPassword(passwordEncoder.encode(userRequest.getPassword()));
-        }
-        if (userRequest.getDepartmentId() != null) {
-            Department department = departmentRepository.findById(userRequest.getDepartmentId())
-                    .orElseThrow(() -> new IdInvalidException("Phòng ban không tồn tại"));
-            user.setDepartment(department);
-        }
-        if (userRequest.getDateOfBirth() != null) {
-            user.setDateOfBirth(userRequest.getDateOfBirth());
-        }
-        if (userRequest.getQualification() != null) {
-            user.setQualification(userRequest.getQualification());
-        }
-        if (userRequest.getTitle() != null) {
-            user.setTitle(userRequest.getTitle());
-        }
-        user.setStatus(userRequest.getStatus() != null ? userRequest.getStatus() : UserStatusEnum.ACTIVE);
-
-        userRepository.save(user);
-        return userMapper.toUserResponse(user);
-    }
-
-    // 5. Lấy Users By Status với Pagination
-    public ResultPaginationDTO getUsersByStatusWithPagination(@NonNull UserStatusEnum status,
-            @NonNull Pageable pageable) {
-        Specification<User> statusSpec = (root, query, criteriaBuilder) -> criteriaBuilder.equal(root.get("status"),
-                status);
-
-        Page<User> userPage = userRepository.findAll(statusSpec, pageable);
-
-        Page<UserResponse> userResponses = userPage.map(userMapper::toUserResponse);
-        return Utils.toResultPaginationDTO(userResponses, pageable);
-    }
-
     // 6. Gán Role To User
     public UserRoleResponse assignRoleToUser(@NonNull String userId, @NonNull String roleId) {
 
@@ -205,43 +128,6 @@ public class UserService {
         }
         userRoleRepository.deleteByUserIdAndRoleId(userId, roleId);
 
-    }
-
-    // 8. Lấy Users By Role với Pagination
-    public ResultPaginationDTO getUsersByRoleWithPagination(@NonNull String roleId, @NonNull Pageable pageable) {
-        Page<UserRole> userRolePage = userRoleRepository.findByRoleId(roleId, pageable);
-
-        Page<User> userPage = userRolePage.map(UserRole::getUser);
-
-        Page<UserResponse> userResponsePage = userPage.map(userMapper::toUserResponse);
-
-        return Utils.toResultPaginationDTO(userResponsePage, pageable);
-
-    }
-
-    // 9. Lấy Users By Department với Pagination
-    public ResultPaginationDTO getUsersByDepartmentWithPagination(@NonNull String departmentId,
-            @NonNull Pageable pageable) {
-
-        if (!departmentRepository.existsById(departmentId)) {
-            throw new IdInvalidException("Phòng ban không tồn tại với ID: " + departmentId);
-        }
-
-        Page<User> userPage = userRepository.findByDepartmentId(departmentId, pageable);
-        Page<UserResponse> userResponsePage = userPage.map(userMapper::toUserResponse);
-        return Utils.toResultPaginationDTO(userResponsePage, pageable);
-    }
-
-    // 10. Tìm kiếm Users By Full Name, Email or Personnel ID
-    public ResultPaginationDTO searchUsersByFullNameOrEmailOrPersonnelId(@NonNull String searchTerm,
-            @NonNull Pageable pageable) {
-        if (searchTerm == null || searchTerm.trim().isEmpty()) {
-            throw new IdInvalidException("Từ khóa tìm kiếm không được để trống");
-        }
-
-        Page<User> userPage = userRepository.searchUsersByFullNameOrEmailOrPersonnelId(searchTerm.trim(), pageable);
-        Page<UserResponse> userResponsePage = userPage.map(userMapper::toUserResponse);
-        return Utils.toResultPaginationDTO(userResponsePage, pageable);
     }
 
     // 11. Lấy Current User từ JWT Token
@@ -333,15 +219,6 @@ public class UserService {
     public boolean isOwnerOfInnovation(String innovationUserId) {
         User currentUser = getCurrentUser();
         return currentUser.getId().equals(innovationUserId);
-    }
-
-    // 14. Tạo UserSignatureProfile cho user hiện có
-    public UserSignatureProfile createUserSignatureProfileForExistingUser(String userId) {
-        // Validate user exists
-        userRepository.findById(userId)
-                .orElseThrow(() -> new IdInvalidException("Không tìm thấy user với ID: " + userId));
-
-        return userSignatureProfileService.createUserSignatureProfileForExistingUser(userId);
     }
 
     // 15. Lấy Current User Response
