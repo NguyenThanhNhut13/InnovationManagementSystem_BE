@@ -42,6 +42,7 @@ public class CreateTemplateResponse {
         private List<FieldResponse> children;
         private Object referenceConfig;
         private Object userDataConfig;
+        private Object innovationDataConfig;
 
         private UserRoleEnum signingRole;
     }

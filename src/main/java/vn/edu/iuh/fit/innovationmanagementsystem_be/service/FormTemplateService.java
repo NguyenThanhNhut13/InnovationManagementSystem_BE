@@ -359,6 +359,11 @@ public class FormTemplateService {
             field.setUserDataConfig(fieldData.getUserDataConfig());
         }
 
+        // Xử lý innovationDataConfig nếu field có innovationDataConfig
+        if (fieldData.getInnovationDataConfig() != null) {
+            field.setInnovationDataConfig(fieldData.getInnovationDataConfig());
+        }
+
         // Xử lý signingRole nếu field có signingRole
         if (fieldData.getSigningRole() != null) {
             field.setSigningRole(fieldData.getSigningRole());
@@ -405,6 +410,9 @@ public class FormTemplateService {
         // Set userDataConfig
         fieldResponse.setUserDataConfig(field.getUserDataConfig());
 
+        // Set innovationDataConfig
+        fieldResponse.setInnovationDataConfig(field.getInnovationDataConfig());
+
         // Set signingRole
         fieldResponse.setSigningRole(field.getSigningRole());
 
@@ -441,6 +449,9 @@ public class FormTemplateService {
 
                         // Set userDataConfig from FieldData
                         childResponse.setUserDataConfig(childData.getUserDataConfig());
+
+                        // Set innovationDataConfig from FieldData
+                        childResponse.setInnovationDataConfig(childData.getInnovationDataConfig());
 
                         // Set signingRole from FieldData
                         childResponse.setSigningRole(childData.getSigningRole());
@@ -537,6 +548,11 @@ public class FormTemplateService {
             field.setUserDataConfig(fieldData.getUserDataConfig());
         }
 
+        // Xử lý innovationDataConfig nếu field có innovationDataConfig
+        if (fieldData.getInnovationDataConfig() != null) {
+            field.setInnovationDataConfig(fieldData.getInnovationDataConfig());
+        }
+
         // Xử lý signingRole nếu field có signingRole
         if (fieldData.getSigningRole() != null) {
             field.setSigningRole(fieldData.getSigningRole());
@@ -583,6 +599,9 @@ public class FormTemplateService {
         // Set userDataConfig
         fieldResponse.setUserDataConfig(field.getUserDataConfig());
 
+        // Set innovationDataConfig
+        fieldResponse.setInnovationDataConfig(field.getInnovationDataConfig());
+
         // Set signingRole
         fieldResponse.setSigningRole(field.getSigningRole());
 
@@ -616,6 +635,9 @@ public class FormTemplateService {
 
                         // Set userDataConfig from FieldData
                         childResponse.setUserDataConfig(childData.getUserDataConfig());
+
+                        // Set innovationDataConfig from FieldData
+                        childResponse.setInnovationDataConfig(childData.getInnovationDataConfig());
 
                         // Set signingRole from FieldData
                         childResponse.setSigningRole(childData.getSigningRole());

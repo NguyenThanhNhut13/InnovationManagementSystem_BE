@@ -26,6 +26,8 @@ public class UpdateFormFieldRequest {
 
     private JsonNode userDataConfig;
 
+    private JsonNode innovationDataConfig;
+
     private UserRoleEnum signingRole;
 
 }

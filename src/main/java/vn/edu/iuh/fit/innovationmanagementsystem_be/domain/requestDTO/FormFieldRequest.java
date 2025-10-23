@@ -32,6 +32,8 @@ public class FormFieldRequest {
 
     private JsonNode userDataConfig;
 
+    private JsonNode innovationDataConfig;
+
     private UserRoleEnum signingRole;
 
 }
