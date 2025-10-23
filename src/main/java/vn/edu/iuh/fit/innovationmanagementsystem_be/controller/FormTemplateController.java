@@ -41,7 +41,7 @@ public class FormTemplateController {
                 this.formTemplateService = formTemplateService;
         }
 
-        // 1. Lấy form template by id
+        // 1. Lấy FormTemplate by id - OK
         @GetMapping("/{id}")
         @ApiMessage("Lấy form template theo id thành công")
         @Operation(summary = "Get Form Template by ID", description = "Get form template details by ID")
@@ -55,38 +55,7 @@ public class FormTemplateController {
                 return ResponseEntity.ok(formTemplateService.getFormTemplateById(id));
         }
 
-        // // 2. Lấy form templates by innovation phase
-        // @GetMapping("/innovation-phase/{phaseId}")
-        // @ApiMessage("Lấy form templates theo innovation phase thành công")
-        // @Operation(summary = "Get Form Templates by Innovation Phase", description =
-        // "Get form templates filtered by innovation phase ID")
-        // @ApiResponses(value = {
-        // @ApiResponse(responseCode = "200", description = "Form templates retrieved
-        // successfully", content = @Content(schema = @Schema(implementation =
-        // List.class)))
-        // })
-        // public ResponseEntity<List<FormTemplateResponse>>
-        // getFormTemplatesByInnovationPhase(
-        // @Parameter(description = "Innovation phase ID", required = true)
-        // @PathVariable String phaseId) {
-        // return
-        // ResponseEntity.ok(formTemplateService.getFormTemplatesByInnovationPhase(phaseId));
-        // }
-
-        // 3. Lấy form templates by innovation round
-        @GetMapping("/innovation-round/{roundId}")
-        @ApiMessage("Lấy form templates theo innovation round thành công")
-        @Operation(summary = "Get Form Templates by Innovation Round", description = "Get form templates filtered by innovation round ID")
-        @ApiResponses(value = {
-                        @ApiResponse(responseCode = "200", description = "Form templates retrieved successfully", content = @Content(schema = @Schema(implementation = List.class))),
-                        @ApiResponse(responseCode = "404", description = "Innovation round not found")
-        })
-        public ResponseEntity<List<FormTemplateResponse>> getFormTemplatesByInnovationRound(
-                        @Parameter(description = "Innovation round ID", required = true) @PathVariable String roundId) {
-                return ResponseEntity.ok(formTemplateService.getFormTemplatesByInnovationRound(roundId));
-        }
-
-        // 4. Lấy form templates theo innovation round hiện tại
+        // 2. Lấy FormTemplate by current InnovationRound - OK
         @GetMapping("/innovation-round/current")
         @ApiMessage("Lấy form templates theo innovation round hiện tại thành công")
         @Operation(summary = "Get Form Templates by Current Round", description = "Get form templates for the current active innovation round")
@@ -98,7 +67,7 @@ public class FormTemplateController {
                 return ResponseEntity.ok(formTemplateService.getFormTemplatesByCurrentRound());
         }
 
-        // 5. Cập nhật form template
+        // 3. Cập nhật FormTemplate by id - OK
         @PutMapping("/{id}")
         @ApiMessage("Cập nhật form template thành công")
         @Operation(summary = "Update Form Template", description = "Update form template by ID")
@@ -113,7 +82,7 @@ public class FormTemplateController {
                 return ResponseEntity.ok(formTemplateService.updateFormTemplate(id, request));
         }
 
-        // 6. Tạo form template với fields
+        // 4. Tạo FormTemplate với FormFields - OK
         @PostMapping("/with-fields")
         @ApiMessage("Tạo form template với fields thành công")
         @Operation(summary = "Create Form Template with Fields", description = "Create a new form template with fields and table configuration")
@@ -126,7 +95,7 @@ public class FormTemplateController {
                 return ResponseEntity.ok(formTemplateService.createTemplateWithFields(request));
         }
 
-        // 7. Lấy danh sách form templates với pagination và filtering
+        // 5. Lấy danh sách FormTemplate với pagination và filtering - OK
         @GetMapping
         @ApiMessage("Lấy danh sách form templates với phân trang và tìm kiếm")
         @Operation(summary = "Get All Form Templates", description = "Get all form templates with pagination and filtering")
@@ -141,7 +110,7 @@ public class FormTemplateController {
                                                 pageable));
         }
 
-        // 8. Xóa form template (chỉ khi round đang DRAFT)
+        // 6. Xóa FormTemplate by id (InnovationRound ở trạng thái DRAFT) - OK
         @DeleteMapping("/{id}")
         @ApiMessage("Xóa form template thành công")
         @Operation(summary = "Delete Form Template", description = "Delete a form template by ID (only when round is DRAFT)")
@@ -156,7 +125,7 @@ public class FormTemplateController {
                 return ResponseEntity.ok().build();
         }
 
-        // 9. Tạo form template (không gắn round cụ thể)
+        // 7. Tạo FormTemplate (không gắn InnovationRoundId ) - OK
         @PostMapping
         @ApiMessage("Tạo form template không gắn với round cụ thể thành công")
         @Operation(summary = "Create Form Template no roundId", description = "Create a new form template with optional round association")
@@ -169,7 +138,7 @@ public class FormTemplateController {
                 return ResponseEntity.ok(formTemplateService.createTemplate(request));
         }
 
-        // 10. Lấy formTemplate (không gắn round cụ thể) với pagination và filtering
+        // 8. Lấy FormTemplate (InnovationRoundId = null) với pagination, filtering - OK
         @GetMapping("/library")
         @ApiMessage("Lấy thư viện form templates với phân trang và tìm kiếm thành công")
         @Operation(summary = "Get Template Library", description = "Get all form templates that are not associated with any specific round (template library) with pagination and filtering")

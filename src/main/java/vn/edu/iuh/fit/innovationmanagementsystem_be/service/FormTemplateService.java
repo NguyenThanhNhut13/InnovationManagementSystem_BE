@@ -12,7 +12,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.FormField;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.FormTemplate;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.InnovationPhase;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.InnovationRound;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationRoundStatusEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.FieldTypeEnum;
@@ -26,7 +25,6 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.FormTempl
 import vn.edu.iuh.fit.innovationmanagementsystem_be.exception.IdInvalidException;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.mapper.FormTemplateMapper;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.FormTemplateRepository;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.InnovationPhaseRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.InnovationRoundRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.ResultPaginationDTO;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.Utils;
@@ -43,16 +41,13 @@ import java.util.stream.Collectors;
 public class FormTemplateService {
 
     private final FormTemplateRepository formTemplateRepository;
-    private final InnovationPhaseRepository innovationPhaseRepository;
     private final FormTemplateMapper formTemplateMapper;
     private final InnovationRoundRepository innovationRoundRepository;
 
     public FormTemplateService(FormTemplateRepository formTemplateRepository,
-            InnovationPhaseRepository innovationPhaseRepository,
             InnovationRoundRepository innovationRoundRepository,
             FormTemplateMapper formTemplateMapper) {
         this.formTemplateRepository = formTemplateRepository;
-        this.innovationPhaseRepository = innovationPhaseRepository;
         this.innovationRoundRepository = innovationRoundRepository;
         this.formTemplateMapper = formTemplateMapper;
     }
@@ -65,32 +60,7 @@ public class FormTemplateService {
         return formTemplateMapper.toCreateTemplateWithFieldsResponse(template);
     }
 
-    // 2. Lấy tất cả form templates by innovation phase
-    public List<FormTemplateResponse> getFormTemplatesByInnovationPhase(String phaseId) {
-
-        InnovationPhase phase = innovationPhaseRepository.findById(phaseId)
-                .orElseThrow(() -> new IdInvalidException("Innovation phase không tồn tại với ID: " + phaseId));
-
-        List<FormTemplate> templates = formTemplateRepository
-                .findByInnovationRoundIdOrderByTemplateType(phase.getInnovationRound().getId());
-        return templates.stream()
-                .map(formTemplateMapper::toFormTemplateResponse)
-                .collect(Collectors.toList());
-    }
-
-    // 3. Lấy tất cả form templates by innovation round
-    public List<FormTemplateResponse> getFormTemplatesByInnovationRound(String roundId) {
-        innovationRoundRepository.findById(roundId)
-                .orElseThrow(() -> new IdInvalidException("Innovation round không tồn tại với ID: " + roundId));
-
-        List<FormTemplate> templates = formTemplateRepository
-                .findByInnovationRoundIdOrderByTemplateType(roundId);
-        return templates.stream()
-                .map(formTemplateMapper::toFormTemplateResponse)
-                .collect(Collectors.toList());
-    }
-
-    // 4. Lấy tất cả form templates theo innovation round hiện tại
+    // 2. Lấy tất cả form templates theo innovation round hiện tại
     public List<FormTemplateResponse> getFormTemplatesByCurrentRound() {
         InnovationRound currentRound = innovationRoundRepository.findCurrentActiveRound(LocalDate.now())
                 .orElseThrow(() -> new IdInvalidException("Không có innovation round hiện tại"));
@@ -102,7 +72,7 @@ public class FormTemplateService {
                 .collect(Collectors.toList());
     }
 
-    // 5. Cập nhật form template
+    // 3. Cập nhật form template
     public FormTemplateResponse updateFormTemplate(String id, UpdateFormTemplateRequest request) {
         FormTemplate template = formTemplateRepository.findById(id)
                 .orElseThrow(() -> new IdInvalidException("Form template không tồn tại với ID: " + id));
@@ -136,7 +106,7 @@ public class FormTemplateService {
         return formTemplateMapper.toFormTemplateResponse(updatedTemplate);
     }
 
-    // 6. Tạo form template với fields
+    // 4. Tạo form template với fields
     @Transactional
     public CreateTemplateWithFieldsResponse createTemplateWithFields(CreateTemplateWithFieldsRequest request) {
         InnovationRound innovationRound = innovationRoundRepository.findById(request.getRoundId().trim())
@@ -160,7 +130,7 @@ public class FormTemplateService {
         return formTemplateMapper.toCreateTemplateWithFieldsResponse(finalTemplate);
     }
 
-    // 7. Lấy tất cả form templates với phân trang và tìm kiếm
+    // 5. Lấy tất cả form templates với phân trang và tìm kiếm
     public ResultPaginationDTO getAllFormTemplatesWithPaginationAndSearch(
             @NonNull Specification<FormTemplate> specification,
             @NonNull Pageable pageable) {
@@ -168,7 +138,7 @@ public class FormTemplateService {
         return Utils.toResultPaginationDTO(templates.map(formTemplateMapper::toFormTemplateResponse), pageable);
     }
 
-    // 8. Xóa form template (chỉ khi round đang DRAFT)
+    // 6. Xóa form template (chỉ khi round đang DRAFT)
     public void deleteFormTemplate(String id) {
         FormTemplate template = formTemplateRepository.findById(id)
                 .orElseThrow(() -> new IdInvalidException("Form template không tồn tại với ID: " + id));
@@ -181,7 +151,7 @@ public class FormTemplateService {
         formTemplateRepository.delete(template);
     }
 
-    // 9. Lấy FormTemplate (không gắn round cụ thể) với pagination và filtering
+    // 7. Lấy FormTemplate (không gắn round cụ thể) với pagination và filtering
     public ResultPaginationDTO getTemplateLibraryWithPaginationAndSearch(
             @NonNull Specification<FormTemplate> specification,
             @NonNull Pageable pageable) {
@@ -285,7 +255,7 @@ public class FormTemplateService {
         template.getFormFields().addAll(newList);
     }
 
-    // 10. Tạo form template không gắn round cụ thể (template chung)
+    // 8. Tạo form template không gắn round cụ thể (template chung)
     @Transactional
     public CreateTemplateResponse createTemplate(CreateTemplateRequest request) {
         FormTemplate template = new FormTemplate();
