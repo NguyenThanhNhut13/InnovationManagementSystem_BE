@@ -42,21 +42,8 @@ public final class EndpointConstants {
 
         // ================== DEPARTMENT ==================
         public static final String[] DEPARTMENT_GET = {
-                        "/api/v1/departments/users/statistics",
-                        "/api/v1/departments/{id}/users/statistics",
-                        "/api/v1/departments/{id}/users",
-                        "/api/v1/departments/{id}/users/active",
-                        "/api/v1/departments/{id}/users/inactive"
-        };
-
-        public static final String[] DEPARTMENT_POST = {
                         "/api/v1/departments",
-                        "/api/v1/departments/merge",
-                        "/api/v1/departments/split"
-        };
-
-        public static final String[] DEPARTMENT_PUT = {
-                        "/api/v1/departments/{id}"
+                        "/api/v1/departments/innovations/statistics"
         };
 
         // ================== INNOVATION DECISION ==================
