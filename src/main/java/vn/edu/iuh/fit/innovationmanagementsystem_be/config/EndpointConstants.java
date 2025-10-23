@@ -152,20 +152,6 @@ public final class EndpointConstants {
                         "/api/v1/utils/ping"
         };
 
-        // ================== COUNCIL ==================
-        public static final String[] COUNCIL_POST = {
-                        "/api/v1/councils",
-                        "/api/v1/councils/{councilId}/members"
-        };
-
-        public static final String[] COUNCIL_PUT = {
-                        "/api/v1/councils/{id}"
-        };
-
-        public static final String[] COUNCIL_DELETE = {
-                        "/api/v1/councils/{councilId}/members/{userId}"
-        };
-
         // ================== SWAGGER ==================
         public static final String[] SWAGGER_PUBLIC = {
                         "/swagger-ui/**",
