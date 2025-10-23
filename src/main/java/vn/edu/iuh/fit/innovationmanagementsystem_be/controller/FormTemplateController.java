@@ -18,8 +18,8 @@ import com.turkraft.springfilter.boot.Filter;
 
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.FormTemplate;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.CreateTemplateRequest;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.CreateTemplateWithFieldsRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.UpdateFormTemplateRequest;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.FormTemplateRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.CreateTemplateResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.CreateTemplateWithFieldsResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.FormTemplateResponse;
@@ -125,7 +125,7 @@ public class FormTemplateController {
                         @ApiResponse(responseCode = "400", description = "Invalid request data")
         })
         public ResponseEntity<CreateTemplateWithFieldsResponse> createTemplateWithFields(
-                        @Parameter(description = "Form template with fields creation request", required = true) @Valid @RequestBody CreateTemplateWithFieldsRequest request) {
+                        @Parameter(description = "Form template with fields creation request", required = true) @Valid @RequestBody FormTemplateRequest request) {
                 return ResponseEntity.ok(formTemplateService.createTemplateWithFields(request));
         }
 
