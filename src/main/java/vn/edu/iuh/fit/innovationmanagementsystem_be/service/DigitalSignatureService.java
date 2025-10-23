@@ -10,6 +10,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.DocumentT
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.SignatureStatusEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.UserRoleEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.DigitalSignatureRequest;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.mapper.DigitalSignatureResponseMapper;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.DigitalSignatureResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.SignatureStatusResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.exception.IdInvalidException;
@@ -30,17 +31,20 @@ public class DigitalSignatureService {
     private final UserSignatureProfileRepository userSignatureProfileRepository;
     private final UserService userService;
     private final KeyManagementService keyManagementService;
+    private final DigitalSignatureResponseMapper digitalSignatureResponseMapper;
 
     public DigitalSignatureService(DigitalSignatureRepository digitalSignatureRepository,
             InnovationRepository innovationRepository,
             UserSignatureProfileRepository userSignatureProfileRepository,
             UserService userService,
-            KeyManagementService keyManagementService) {
+            KeyManagementService keyManagementService,
+            DigitalSignatureResponseMapper digitalSignatureResponseMapper) {
         this.digitalSignatureRepository = digitalSignatureRepository;
         this.innovationRepository = innovationRepository;
         this.userSignatureProfileRepository = userSignatureProfileRepository;
         this.userService = userService;
         this.keyManagementService = keyManagementService;
+        this.digitalSignatureResponseMapper = digitalSignatureResponseMapper;
     }
 
     // 1. Tạo digital signature
@@ -88,7 +92,7 @@ public class DigitalSignatureService {
 
         DigitalSignature savedSignature = digitalSignatureRepository.save(digitalSignature);
 
-        return mapToResponse(savedSignature);
+        return digitalSignatureResponseMapper.toResponse(savedSignature);
     }
 
     // 2. Lấy signature status của innovation
@@ -139,7 +143,7 @@ public class DigitalSignatureService {
         response.setRequiredSignatures(requiredSignatures);
         response.setCompletedSignatures(signatures.stream()
                 .filter(sig -> sig.getStatus() == SignatureStatusEnum.SIGNED)
-                .map(this::mapToResponse)
+                .map(digitalSignatureResponseMapper::toResponse)
                 .collect(Collectors.toList()));
 
         return response;
@@ -173,7 +177,7 @@ public class DigitalSignatureService {
     public List<DigitalSignatureResponse> getInnovationSignatures(String innovationId) {
         List<DigitalSignature> signatures = digitalSignatureRepository.findByInnovationIdWithRelations(innovationId);
         return signatures.stream()
-                .map(this::mapToResponse)
+                .map(digitalSignatureResponseMapper::toResponse)
                 .collect(Collectors.toList());
     }
 
@@ -242,34 +246,6 @@ public class DigitalSignatureService {
         }
 
         return required;
-    }
-
-    private DigitalSignatureResponse mapToResponse(DigitalSignature signature) {
-        DigitalSignatureResponse response = new DigitalSignatureResponse();
-        response.setId(signature.getId());
-        response.setDocumentType(signature.getDocumentType());
-        response.setSignedAsRole(signature.getSignedAsRole());
-        response.setSignAt(signature.getSignAt());
-        response.setSignatureHash(signature.getSignatureHash());
-        response.setDocumentHash(signature.getDocumentHash());
-        response.setStatus(signature.getStatus());
-
-        // User information
-        response.setUserId(signature.getUser().getId());
-        response.setUserFullName(signature.getUser().getFullName());
-        response.setUserPersonnelId(signature.getUser().getPersonnelId());
-
-        // Innovation information
-        response.setInnovationId(signature.getInnovation().getId());
-        response.setInnovationName(signature.getInnovation().getInnovationName());
-
-        // Certificate information
-        if (signature.getUserSignatureProfile() != null) {
-            response.setCertificateSerial(signature.getUserSignatureProfile().getCertificateSerial());
-            response.setCertificateIssuer(signature.getUserSignatureProfile().getCertificateIssuer());
-        }
-
-        return response;
     }
 
     /*
