@@ -20,6 +20,4 @@ public class UpdateFormFieldRequest {
 
     private Boolean required;
 
-    private String placeholder;
-
 }

@@ -29,8 +29,6 @@ public class FieldData {
     @NotNull(message = "Required status không được để trống")
     private Boolean required = false;
 
-    private String placeholder;
-
     private TableConfigData tableConfig;
 
     private List<String> options;

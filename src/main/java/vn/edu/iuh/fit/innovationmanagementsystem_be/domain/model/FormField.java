@@ -37,9 +37,6 @@ public class FormField {
     @Column(name = "field_key", nullable = false)
     private String fieldKey;
 
-    @Column(name = "placeholder", columnDefinition = "TEXT")
-    private String placeholder;
-
     // Relationships
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "form_template_id", nullable = false)

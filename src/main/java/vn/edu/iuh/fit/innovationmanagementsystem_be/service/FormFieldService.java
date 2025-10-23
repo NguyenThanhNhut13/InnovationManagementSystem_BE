@@ -70,10 +70,6 @@ public class FormFieldService {
             formField.setRequired(request.getRequired());
         }
 
-        if (request.getPlaceholder() != null) {
-            formField.setPlaceholder(request.getPlaceholder());
-        }
-
         this.formFieldRepository.save(formField);
 
         return toResponse(formField);
@@ -108,7 +104,6 @@ public class FormFieldService {
         formField.setFieldKey(request.getFieldKey());
         formField.setFieldType(request.getFieldType());
         formField.setRequired(request.getRequired());
-        formField.setPlaceholder(request.getPlaceholder());
         formField.setFormTemplate(formTemplateRepository.findById(templateId)
                 .orElseThrow(() -> new IdInvalidException("Không tìm thấy template với id: " + templateId)));
 
@@ -127,7 +122,6 @@ public class FormFieldService {
         response.setLabel(formField.getLabel());
         response.setFieldType(formField.getFieldType());
         response.setRequired(formField.getRequired());
-        response.setPlaceholder(formField.getPlaceholder());
         response.setFormTemplateId(formField.getFormTemplate().getId());
 
         // Map table config if exists

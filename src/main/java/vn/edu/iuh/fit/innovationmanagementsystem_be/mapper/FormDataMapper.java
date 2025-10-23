@@ -14,7 +14,6 @@ public interface FormDataMapper {
     @Mapping(target = "formFieldKey", source = "formField.fieldKey")
     @Mapping(target = "fieldType", source = "formField.fieldType")
     @Mapping(target = "required", source = "formField.required")
-    @Mapping(target = "placeholder", source = "formField.placeholder")
     @Mapping(target = "templateId", source = "formField.formTemplate.id")
     FormDataResponse toFormDataResponse(FormData formData);
 

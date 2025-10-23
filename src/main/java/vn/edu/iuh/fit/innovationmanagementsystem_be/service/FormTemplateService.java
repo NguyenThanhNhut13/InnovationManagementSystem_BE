@@ -166,8 +166,6 @@ public class FormTemplateService {
                     entity.setFieldType(fd.getType());
                 if (fd.getRequired() != null)
                     entity.setRequired(fd.getRequired());
-                if (fd.getPlaceholder() != null)
-                    entity.setPlaceholder(fd.getPlaceholder());
                 if (fd.getRepeatable() != null)
                     entity.setRepeatable(fd.getRepeatable());
 
@@ -311,7 +309,6 @@ public class FormTemplateService {
         field.setLabel(fieldData.getLabel());
         field.setFieldType(fieldData.getType());
         field.setRequired(fieldData.getRequired());
-        field.setPlaceholder(fieldData.getPlaceholder());
         field.setFormTemplate(template);
         field.setRepeatable(fieldData.getRepeatable() != null ? fieldData.getRepeatable() : false);
 
@@ -392,7 +389,6 @@ public class FormTemplateService {
         fieldResponse.setLabel(field.getLabel());
         fieldResponse.setType(field.getFieldType());
         fieldResponse.setRequired(field.getRequired());
-        fieldResponse.setPlaceholder(field.getPlaceholder());
         fieldResponse.setTableConfig(field.getTableConfig());
         fieldResponse.setOptions(field.getOptions());
         fieldResponse.setRepeatable(field.getRepeatable());
@@ -431,7 +427,6 @@ public class FormTemplateService {
                         childResponse.setLabel(childData.getLabel());
                         childResponse.setType(childData.getType());
                         childResponse.setRequired(childData.getRequired());
-                        childResponse.setPlaceholder(childData.getPlaceholder());
                         childResponse.setRepeatable(childData.getRepeatable());
                         childResponse.setOptions(
                                 childData.getOptions() != null ? mapper.valueToTree(childData.getOptions()) : null);
@@ -484,7 +479,6 @@ public class FormTemplateService {
         field.setLabel(fieldData.getLabel());
         field.setFieldType(fieldData.getType());
         field.setRequired(fieldData.getRequired());
-        field.setPlaceholder(fieldData.getPlaceholder());
         field.setFormTemplate(template);
         field.setRepeatable(fieldData.getRepeatable() != null ? fieldData.getRepeatable() : false);
 
@@ -565,7 +559,6 @@ public class FormTemplateService {
         fieldResponse.setLabel(field.getLabel());
         fieldResponse.setType(field.getFieldType());
         fieldResponse.setRequired(field.getRequired());
-        fieldResponse.setPlaceholder(field.getPlaceholder());
         fieldResponse.setTableConfig(field.getTableConfig());
         fieldResponse.setOptions(field.getOptions());
         fieldResponse.setRepeatable(field.getRepeatable());
@@ -604,7 +597,6 @@ public class FormTemplateService {
                         childResponse.setLabel(childData.getLabel());
                         childResponse.setType(childData.getType());
                         childResponse.setRequired(childData.getRequired());
-                        childResponse.setPlaceholder(childData.getPlaceholder());
                         childResponse.setRepeatable(childData.getRepeatable());
                         childResponse.setOptions(childData.getOptions());
                         childResponse.setChildren(convertChildrenToTemplateFieldResponse(

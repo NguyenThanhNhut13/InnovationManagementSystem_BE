@@ -18,7 +18,6 @@ public class FormFieldResponse {
     private String label;
     private FieldTypeEnum fieldType;
     private Boolean required;
-    private String placeholder;
 
     // Template info
     private String formTemplateId;
