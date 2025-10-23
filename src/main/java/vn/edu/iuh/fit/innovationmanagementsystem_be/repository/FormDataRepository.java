@@ -12,32 +12,26 @@ import java.util.Optional;
 @Repository
 public interface FormDataRepository extends JpaRepository<FormData, String> {
 
-    List<FormData> findByInnovationId(String innovationId);
+        @Query("SELECT fd FROM FormData fd " +
+                        "LEFT JOIN FETCH fd.formField ff " +
+                        "LEFT JOIN FETCH ff.formTemplate ft " +
+                        "LEFT JOIN FETCH fd.innovation i " +
+                        "WHERE fd.id = :id")
+        Optional<FormData> findByIdWithRelations(@Param("id") String id);
 
-    List<FormData> findByInnovationIdAndFormFieldFormTemplateId(String innovationId, String templateId);
+        @Query("SELECT fd FROM FormData fd " +
+                        "LEFT JOIN FETCH fd.formField ff " +
+                        "LEFT JOIN FETCH ff.formTemplate ft " +
+                        "LEFT JOIN FETCH fd.innovation i " +
+                        "WHERE fd.innovation.id = :innovationId")
+        List<FormData> findByInnovationIdWithRelations(@Param("innovationId") String innovationId);
 
-    List<FormData> findByFormFieldFormTemplateId(String templateId);
-
-    @Query("SELECT fd FROM FormData fd " +
-            "LEFT JOIN FETCH fd.formField ff " +
-            "LEFT JOIN FETCH ff.formTemplate ft " +
-            "LEFT JOIN FETCH fd.innovation i " +
-            "WHERE fd.id = :id")
-    Optional<FormData> findByIdWithRelations(@Param("id") String id);
-
-    @Query("SELECT fd FROM FormData fd " +
-            "LEFT JOIN FETCH fd.formField ff " +
-            "LEFT JOIN FETCH ff.formTemplate ft " +
-            "LEFT JOIN FETCH fd.innovation i " +
-            "WHERE fd.innovation.id = :innovationId")
-    List<FormData> findByInnovationIdWithRelations(@Param("innovationId") String innovationId);
-
-    @Query("SELECT fd FROM FormData fd " +
-            "LEFT JOIN FETCH fd.formField ff " +
-            "LEFT JOIN FETCH ff.formTemplate ft " +
-            "LEFT JOIN FETCH fd.innovation i " +
-            "WHERE fd.innovation.id = :innovationId AND ff.formTemplate.id = :templateId")
-    List<FormData> findByInnovationIdAndTemplateIdWithRelations(@Param("innovationId") String innovationId,
-            @Param("templateId") String templateId);
+        @Query("SELECT fd FROM FormData fd " +
+                        "LEFT JOIN FETCH fd.formField ff " +
+                        "LEFT JOIN FETCH ff.formTemplate ft " +
+                        "LEFT JOIN FETCH fd.innovation i " +
+                        "WHERE fd.innovation.id = :innovationId AND ff.formTemplate.id = :templateId")
+        List<FormData> findByInnovationIdAndTemplateIdWithRelations(@Param("innovationId") String innovationId,
+                        @Param("templateId") String templateId);
 
 }
