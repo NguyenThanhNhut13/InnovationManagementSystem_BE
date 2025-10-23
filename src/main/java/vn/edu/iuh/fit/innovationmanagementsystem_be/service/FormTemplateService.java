@@ -17,8 +17,8 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.InnovationRound
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationRoundStatusEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.FieldTypeEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.CreateTemplateRequest;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.CreateTemplateWithFieldsRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.UpdateFormTemplateRequest;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.FormTemplateRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.FieldDataRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.CreateTemplateResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.CreateTemplateWithFieldsResponse;
@@ -138,7 +138,7 @@ public class FormTemplateService {
 
     // 6. Tạo form template với fields
     @Transactional
-    public CreateTemplateWithFieldsResponse createTemplateWithFields(FormTemplateRequest request) {
+    public CreateTemplateWithFieldsResponse createTemplateWithFields(CreateTemplateWithFieldsRequest request) {
         InnovationRound innovationRound = innovationRoundRepository.findById(request.getRoundId().trim())
                 .orElseThrow(
                         () -> new IdInvalidException("Innovation round không tồn tại với ID: " + request.getRoundId()));
@@ -246,7 +246,9 @@ public class FormTemplateService {
             }
 
             if (fd.getChildren() != null) {
-                entity.setChildren(fd.getChildren());
+                // Tự sinh UUID cho các children nếu chưa có
+                JsonNode processedChildren = generateChildrenIdsIfNeeded(fd.getChildren());
+                entity.setChildren(processedChildren);
             }
 
             if (fd.getReferenceConfig() != null) {
@@ -334,5 +336,29 @@ public class FormTemplateService {
             }
         }
         return tableConfig;
+    }
+
+    /**
+     * Tự sinh UUID cho các children trong JsonNode children nếu chưa có ID
+     */
+    private JsonNode generateChildrenIdsIfNeeded(JsonNode children) {
+        if (children != null && children.isArray()) {
+            try {
+                ArrayNode childrenNode = (ArrayNode) children.deepCopy();
+
+                for (int i = 0; i < childrenNode.size(); i++) {
+                    ObjectNode childNode = (ObjectNode) childrenNode.get(i);
+                    if (!childNode.has("id") || childNode.get("id").isNull() ||
+                            childNode.get("id").asText().trim().isEmpty()) {
+                        childNode.put("id", UUID.randomUUID().toString());
+                    }
+                }
+
+                return childrenNode;
+            } catch (Exception e) {
+                throw new IdInvalidException("Lỗi khi xử lý children config: " + e.getMessage());
+            }
+        }
+        return children;
     }
 }
