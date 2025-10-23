@@ -19,6 +19,8 @@ public interface UserRepository extends JpaRepository<User, String>, JpaSpecific
 
         boolean existsByEmail(String email);
 
+        boolean existsByPhoneNumber(String phoneNumber);
+
         @Query("SELECT u FROM User u WHERE u.department.id = :departmentId")
         Page<User> findByDepartmentId(@Param("departmentId") String departmentId,
                         Pageable pageable);

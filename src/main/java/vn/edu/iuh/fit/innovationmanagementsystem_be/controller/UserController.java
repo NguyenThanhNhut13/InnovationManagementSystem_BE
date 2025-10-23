@@ -17,6 +17,7 @@ import jakarta.validation.Valid;
 // import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.User;
 // import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.UserStatusEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.UserRequest;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.UpdateProfileRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.UserResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.UserRoleResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.service.UserService;
@@ -92,6 +93,21 @@ public class UserController {
         return ResponseEntity.ok(userService.getUserById(id));
     }
 
+    // // 3.1. Lấy thông tin Current User
+    // @GetMapping("/users/profile")
+    // @ApiMessage("Lấy thông tin cá nhân thành công")
+    // @Operation(summary = "Get Current User Profile", description = "Get current
+    // user's profile information")
+    // @ApiResponses(value = {
+    // @ApiResponse(responseCode = "200", description = "Profile retrieved
+    // successfully", content = @Content(schema = @Schema(implementation =
+    // UserResponse.class))),
+    // @ApiResponse(responseCode = "401", description = "Unauthorized")
+    // })
+    // public ResponseEntity<UserResponse> getCurrentUserProfile() {
+    // return ResponseEntity.ok(userService.getCurrentUserResponse());
+    // }
+
     // 4. Cập nhật User
     @PutMapping("/users/{id}")
     @ApiMessage("Cập nhật thông tin người dùng thành công")
@@ -106,6 +122,21 @@ public class UserController {
             @Parameter(description = "User ID", required = true) @PathVariable String id,
             @Parameter(description = "Updated user information", required = true) @Valid @RequestBody UserRequest userRequest) {
         return ResponseEntity.ok(userService.updateUser(id, userRequest));
+    }
+
+    // 4.1. Cập nhật Profile của User hiện tại (không cần ID)
+    @PutMapping("/users/profile")
+    @ApiMessage("Cập nhật thông tin cá nhân thành công")
+    @Operation(summary = "Update Current User Profile", description = "Update current user's profile information without requiring ID")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Profile updated successfully", content = @Content(schema = @Schema(implementation = UserResponse.class))),
+            @ApiResponse(responseCode = "400", description = "Invalid request data"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized"),
+            @ApiResponse(responseCode = "409", description = "Email or phone number already exists")
+    })
+    public ResponseEntity<UserResponse> updateCurrentUserProfile(
+            @Parameter(description = "Updated profile information", required = true) @Valid @RequestBody UpdateProfileRequest updateProfileRequest) {
+        return ResponseEntity.ok(userService.updateCurrentUserProfile(updateProfileRequest));
     }
 
     // // 5. Lấy Users By Status với Pagination

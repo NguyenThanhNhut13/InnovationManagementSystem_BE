@@ -21,6 +21,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.UserSignaturePr
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.UserStatusEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.UserRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.UserSignatureProfileRequest;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.UpdateProfileRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.UserResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.UserRoleResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.UserRoleEnum;
@@ -346,6 +347,50 @@ public class UserService {
     // 15. Lấy Current User Response
     public UserResponse getCurrentUserResponse() {
         User currentUser = getCurrentUser();
+        return userMapper.toUserResponse(currentUser);
+    }
+
+    // 16. Cập nhật Profile của Current User
+    public UserResponse updateCurrentUserProfile(@NonNull UpdateProfileRequest updateProfileRequest) {
+        User currentUser = getCurrentUser();
+
+        if (updateProfileRequest.getFullName() != null && !updateProfileRequest.getFullName().trim().isEmpty()) {
+            currentUser.setFullName(updateProfileRequest.getFullName().trim());
+        }
+
+        if (updateProfileRequest.getEmail() != null && !updateProfileRequest.getEmail().trim().isEmpty()) {
+            String newEmail = updateProfileRequest.getEmail().trim();
+            if (!currentUser.getEmail().equals(newEmail)) {
+                if (userRepository.existsByEmail(newEmail)) {
+                    throw new IdInvalidException("Email đã tồn tại trong hệ thống");
+                }
+                currentUser.setEmail(newEmail);
+            }
+        }
+
+        if (updateProfileRequest.getPhoneNumber() != null && !updateProfileRequest.getPhoneNumber().trim().isEmpty()) {
+            String newPhoneNumber = updateProfileRequest.getPhoneNumber().trim();
+            if (!currentUser.getPhoneNumber().equals(newPhoneNumber)) {
+                if (userRepository.existsByPhoneNumber(newPhoneNumber)) {
+                    throw new IdInvalidException("Số điện thoại đã tồn tại trong hệ thống");
+                }
+                currentUser.setPhoneNumber(newPhoneNumber);
+            }
+        }
+
+        if (updateProfileRequest.getDateOfBirth() != null) {
+            currentUser.setDateOfBirth(updateProfileRequest.getDateOfBirth());
+        }
+
+        if (updateProfileRequest.getQualification() != null) {
+            currentUser.setQualification(updateProfileRequest.getQualification().trim());
+        }
+
+        if (updateProfileRequest.getTitle() != null) {
+            currentUser.setTitle(updateProfileRequest.getTitle().trim());
+        }
+
+        userRepository.save(currentUser);
         return userMapper.toUserResponse(currentUser);
     }
 
