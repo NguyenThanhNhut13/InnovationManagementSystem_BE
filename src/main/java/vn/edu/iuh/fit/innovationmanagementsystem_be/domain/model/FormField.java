@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.FieldTypeEnum;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.UserRoleEnum;
 
 import java.util.List;
 import java.util.ArrayList;
@@ -37,14 +38,6 @@ public class FormField {
     @Column(name = "field_key", nullable = false)
     private String fieldKey;
 
-    // Relationships
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "form_template_id", nullable = false)
-    private FormTemplate formTemplate;
-
-    @OneToMany(mappedBy = "formField", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
-    private List<FormData> formDataList = new ArrayList<>();
-
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "table_config", columnDefinition = "JSON")
     private JsonNode tableConfig;
@@ -63,5 +56,21 @@ public class FormField {
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "reference_config", columnDefinition = "JSON")
     private JsonNode referenceConfig;
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "user_data_config", columnDefinition = "JSON")
+    private JsonNode userDataConfig;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "signing_role")
+    private UserRoleEnum signingRole;
+
+    // Relationships
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "form_template_id", nullable = false)
+    private FormTemplate formTemplate;
+
+    @OneToMany(mappedBy = "formField", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
+    private List<FormData> formDataList = new ArrayList<>();
 
 }

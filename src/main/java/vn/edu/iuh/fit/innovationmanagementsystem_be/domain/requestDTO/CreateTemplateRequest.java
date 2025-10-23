@@ -30,5 +30,5 @@ public class CreateTemplateRequest {
 
     @NotEmpty(message = "Danh sách fields không được để trống")
     @Valid
-    private List<FieldData> fields;
+    private List<FieldDataRequest> fields;
 }
