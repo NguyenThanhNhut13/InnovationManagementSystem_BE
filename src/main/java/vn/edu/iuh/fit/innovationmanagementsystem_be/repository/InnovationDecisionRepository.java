@@ -9,6 +9,4 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.InnovationDecis
 public interface InnovationDecisionRepository
                 extends JpaRepository<InnovationDecision, String>, JpaSpecificationExecutor<InnovationDecision> {
 
-        boolean existsByDecisionNumber(String decisionNumber);
-
 }

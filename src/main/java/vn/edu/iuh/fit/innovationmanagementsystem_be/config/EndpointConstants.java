@@ -84,7 +84,9 @@ public final class EndpointConstants {
         };
 
         public static final String[] INNOVATION_ROUND_PUT = {
-                        "/api/v1/innovation-rounds/{roundId}"
+                        "/api/v1/innovation-rounds/{roundId}",
+                        "/api/v1/innovation-rounds/{roundId}/publish",
+                        "/api/v1/innovation-rounds/{roundId}/close"
         };
 
         // ================== FORM TEMPLATE ==================

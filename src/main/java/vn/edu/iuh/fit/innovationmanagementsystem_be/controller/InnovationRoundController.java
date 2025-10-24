@@ -69,7 +69,7 @@ public class InnovationRoundController {
         // 3. Tạo innovationRound
         @PostMapping
         @ApiMessage("Tạo đợt sáng kiến thành công")
-        @Operation(summary = "Create Innovation Round", description = "Create a new innovation round")
+        @Operation(summary = "Create Innovation Round", description = "Create a new innovation round with default status DRAFT")
         @ApiResponses(value = {
                         @ApiResponse(responseCode = "200", description = "Innovation round created successfully", content = @Content(schema = @Schema(implementation = InnovationRoundResponse.class))),
                         @ApiResponse(responseCode = "400", description = "Invalid request data")

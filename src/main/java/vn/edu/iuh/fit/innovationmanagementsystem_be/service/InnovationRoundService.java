@@ -74,7 +74,8 @@ public class InnovationRoundService {
         round.setDescription(request.getDescription());
         round.setRegistrationStartDate(request.getRegistrationStartDate());
         round.setRegistrationEndDate(request.getRegistrationEndDate());
-        round.setStatus(request.getStatus());
+
+        round.setStatus(InnovationRoundStatusEnum.DRAFT);
 
         // Tạo InnovationDecision
         if (request.getInnovationDecision() != null) {
@@ -513,37 +514,31 @@ public class InnovationRoundService {
         // 5. Kiểm tra ngày của các phase hợp lệ
         validatePhaseDates(round);
 
-        // 6. Kiểm tra có đang trong thời gian đăng ký không (tùy chọn)
-        LocalDate today = LocalDate.now();
-        if (today.isBefore(round.getRegistrationStartDate())) {
-            throw new IllegalArgumentException("Chưa đến thời gian bắt đầu đăng ký");
-        }
-
-        // 7. Kiểm tra InnovationDecision có đầy đủ thông tin không
+        // 6. Kiểm tra InnovationDecision có đầy đủ thông tin không
         validateInnovationDecision(round.getInnovationDecision());
 
-        // 8. Kiểm tra FormTemplate có ít nhất 5 mẫu
+        // 7. Kiểm tra FormTemplate có ít nhất 5 mẫu
         validateFormTemplates(round);
 
-        // 9. Kiểm tra năm học hợp lệ
+        // 8. Kiểm tra năm học hợp lệ
         validateAcademicYear(round);
 
-        // 10. Kiểm tra tên Round không trùng lặp trong cùng năm học
+        // 9. Kiểm tra tên Round không trùng lặp trong cùng năm học
         validateRoundNameUnique(round);
 
-        // 11. Kiểm tra Phase phải có đầy đủ 3 loại: SUBMISSION, SCORING, ANNOUNCEMENT
+        // 9. Kiểm tra Phase phải có đầy đủ 3 loại: SUBMISSION, SCORING, ANNOUNCEMENT
         validatePhaseTypes(round);
 
-        // 12. Kiểm tra FormTemplate phải có đầy đủ các loại template cần thiết
+        // 10. Kiểm tra FormTemplate phải có đầy đủ các loại template cần thiết
         validateTemplateTypes(round);
 
-        // 13. Kiểm tra FormTemplate phải có đầy đủ các target role cần thiết
+        // 11. Kiểm tra FormTemplate phải có đầy đủ các target role cần thiết
         validateTemplateRoles(round);
 
-        // 14. Kiểm tra thời gian phase phải hợp lý
+        // 12. Kiểm tra thời gian phase phải hợp lý
         validatePhaseDuration(round);
 
-        // 15. Kiểm tra Round không được công bố nếu đã có Round khác đang ACTIVE
+        // 13. Kiểm tra Round không được công bố nếu đã có Round khác đang ACTIVE
         validateActiveRound(round);
     }
 
@@ -560,11 +555,6 @@ public class InnovationRoundService {
             throw new IllegalArgumentException("Ngày kết thúc đăng ký phải sau ngày bắt đầu đăng ký");
         }
 
-        // Kiểm tra ngày đăng ký không được quá xa trong tương lai (tùy chọn)
-        LocalDate today = LocalDate.now();
-        if (round.getRegistrationStartDate().isAfter(today.plusYears(1))) {
-            throw new IllegalArgumentException("Ngày bắt đầu đăng ký không được quá xa trong tương lai (tối đa 1 năm)");
-        }
     }
 
     /*
@@ -573,14 +563,6 @@ public class InnovationRoundService {
     private void validatePhaseDates(InnovationRound round) {
         Set<InnovationPhase> phasesSet = round.getInnovationPhases();
         List<InnovationPhase> phases = new ArrayList<>(phasesSet);
-
-        // Sắp xếp phases theo thứ tự để kiểm tra
-        phases.sort((p1, p2) -> {
-            if (p1.getPhaseStartDate() == null || p2.getPhaseStartDate() == null) {
-                throw new IllegalArgumentException("Tất cả các giai đoạn phải có ngày bắt đầu");
-            }
-            return p1.getPhaseStartDate().compareTo(p2.getPhaseStartDate());
-        });
 
         // Kiểm tra từng phase có đầy đủ ngày tháng
         for (InnovationPhase phase : phases) {
@@ -591,7 +573,8 @@ public class InnovationRoundService {
             // Kiểm tra ngày kết thúc phải sau ngày bắt đầu
             if (phase.getPhaseEndDate().isBefore(phase.getPhaseStartDate())) {
                 throw new IllegalArgumentException(
-                        "Ngày kết thúc của giai đoạn '" + phase.getName() + "' phải sau ngày bắt đầu");
+                        "Ngày kết thúc của giai đoạn '" + phase.getName() + "' phải sau ngày bắt đầu"
+                                + phase.getPhaseStartDate());
             }
         }
 
@@ -606,11 +589,6 @@ public class InnovationRoundService {
             }
         }
 
-        // Kiểm tra phase đầu tiên phải bắt đầu sau ngày kết thúc đăng ký
-        InnovationPhase firstPhase = phases.get(0);
-        if (firstPhase.getPhaseStartDate().isBefore(round.getRegistrationEndDate())) {
-            throw new IllegalArgumentException("Giai đoạn đầu tiên phải bắt đầu sau ngày kết thúc đăng ký");
-        }
     }
 
     /*
@@ -645,16 +623,16 @@ public class InnovationRoundService {
         for (vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.FormTemplate template : round
                 .getFormTemplates()) {
             if (template.getTemplateType() == null) {
-                throw new IllegalArgumentException("Tất cả mẫu form phải có loại template");
+                throw new IllegalArgumentException("Tất cả mẫu FormTemplate phải có loại TemplateType");
             }
             if (template.getTargetRole() == null) {
-                throw new IllegalArgumentException("Tất cả mẫu form phải có vai trò đích");
+                throw new IllegalArgumentException("Tất cả mẫu FormTemplate phải có vai TargetRole");
             }
             if (template.getTemplateContent() == null || template.getTemplateContent().trim().isEmpty()) {
-                throw new IllegalArgumentException("Tất cả mẫu form phải có nội dung template");
+                throw new IllegalArgumentException("Tất cả mẫu FormTemplate phải có nội dung TemplateContent");
             }
             if (template.getFormFields() == null || template.getFormFields().isEmpty()) {
-                throw new IllegalArgumentException("Tất cả mẫu form phải có ít nhất một trường");
+                throw new IllegalArgumentException("Tất cả mẫu FormTemplate phải có ít nhất một trường FormField");
             }
         }
     }
@@ -768,7 +746,7 @@ public class InnovationRoundService {
 
         for (TemplateTypeEnum requiredType : requiredTypes) {
             if (!templateTypes.contains(requiredType)) {
-                throw new IllegalArgumentException("Round phải có template loại: " + requiredType.getValue());
+                throw new IllegalArgumentException("InnovationRound phải có TemplateType: " + requiredType.getValue());
             }
         }
 
@@ -801,7 +779,8 @@ public class InnovationRoundService {
 
         for (TargetRoleCode requiredRole : requiredRoles) {
             if (!targetRoles.contains(requiredRole)) {
-                throw new IllegalArgumentException("Round phải có template cho vai trò: " + requiredRole.getValue());
+                throw new IllegalArgumentException(
+                        "InnovationRound phải có Template có TargetRole: " + requiredRole.getValue());
             }
         }
     }
@@ -833,11 +812,6 @@ public class InnovationRoundService {
                         "' phải có thời gian ít nhất 1 ngày");
             }
 
-            // Kiểm tra phase không được quá dài (tối đa 90 ngày)
-            if (daysBetween > 90) {
-                throw new IllegalArgumentException("Giai đoạn '" + phase.getName() +
-                        "' không được quá dài (tối đa 90 ngày)");
-            }
         }
 
         // 2. Kiểm tra sequence của các phases
