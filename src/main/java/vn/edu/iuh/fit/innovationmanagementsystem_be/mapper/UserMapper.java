@@ -11,9 +11,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.UserRoleR
 @Mapper(componentModel = "spring", uses = { UserRoleMapper.class })
 public interface UserMapper {
 
-    @Mapping(target = "departmentId", source = "department.id")
-    @Mapping(target = "departmentName", source = "department.departmentName")
-    @Mapping(target = "departmentCode", source = "department.departmentCode")
+    @Mapping(target = "department", source = "department.departmentName")
     @Mapping(target = "roles", source = "userRoles", qualifiedByName = "mapUserRolesToStrings")
     UserResponse toUserResponse(User user);
 

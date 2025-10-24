@@ -19,9 +19,7 @@ public class LoginResponse {
     private String email;
     private String phoneNumber;
     private UserStatusEnum status;
-    private String departmentId;
-    private String departmentName;
-    private String departmentCode;
+    private String department;
     private List<String> roles;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

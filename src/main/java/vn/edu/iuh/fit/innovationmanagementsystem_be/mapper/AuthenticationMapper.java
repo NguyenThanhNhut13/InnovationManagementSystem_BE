@@ -8,9 +8,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.LoginResp
 @Mapper(componentModel = "spring", uses = { UserRoleMapper.class })
 public interface AuthenticationMapper {
 
-    @Mapping(target = "departmentId", source = "department.id")
-    @Mapping(target = "departmentName", source = "department.departmentName")
-    @Mapping(target = "departmentCode", source = "department.departmentCode")
+    @Mapping(target = "department", source = "department.departmentName")
     @Mapping(target = "roles", source = "userRoles", qualifiedByName = "mapUserRolesToStringsWithDefault")
     @Mapping(target = "accessToken", ignore = true) // Will be set separately
     @Mapping(target = "refreshToken", ignore = true) // Will be set separately

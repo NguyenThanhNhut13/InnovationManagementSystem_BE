@@ -19,9 +19,7 @@ public class UserResponse {
     private String email;
     private String phoneNumber;
     private UserStatusEnum status;
-    private String departmentId;
-    private String departmentName;
-    private String departmentCode;
+    private String department;
     private LocalDate dateOfBirth;
     private String qualification;
     private String title;
