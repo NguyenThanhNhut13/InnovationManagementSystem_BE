@@ -45,23 +45,6 @@ public class PhaseTransitionService {
         }
     }
 
-    // Kích hoạt phase tiếp theo trong cùng một round
-    // private void activateNextPhase(InnovationPhase completedPhase) {
-    // InnovationPhase nextPhase = innovationPhaseRepository
-    // .findByInnovationRoundIdAndPhaseOrder(completedPhase.getInnovationRound().getId())
-    // .orElse(null);
-    //
-    // if (nextPhase != null &&
-    // PhaseStatusEnum.PENDING.equals(nextPhase.getPhaseStatus())) {
-    // // Kiểm tra xem có đến thời gian bắt đầu chưa
-    // if (nextPhase.isTimeToStart()) {
-    // nextPhase.transitionTo(PhaseStatusEnum.ACTIVE, "Tự động kích hoạt sau khi
-    // phase trước hoàn thành");
-    // innovationPhaseRepository.save(nextPhase);
-    // }
-    // }
-    // }
-
     // Chuyển đổi phase thủ công
     public InnovationPhase transitionPhase(String phaseId, PhaseStatusEnum targetStatus, String reason) {
         InnovationPhase phase = innovationPhaseRepository.findById(phaseId)
@@ -80,19 +63,6 @@ public class PhaseTransitionService {
         if (!phase.canTransitionTo(targetStatus)) {
             throw new IllegalStateException("Không thể chuyển từ " + phase.getPhaseStatus() + " sang " + targetStatus);
         }
-
-        // // 2. Kiểm tra dependencies - phase trước đó phải hoàn thành
-        // if (PhaseStatusEnum.ACTIVE.equals(targetStatus)) {
-        // InnovationPhase previousPhase = innovationPhaseRepository
-        // .findByInnovationRoundIdAndPhaseOrder(phase.getInnovationRound().getId())
-        // .orElse(null);
-        //
-        // if (previousPhase != null &&
-        // !PhaseStatusEnum.COMPLETED.equals(previousPhase.getPhaseStatus())) {
-        // throw new IllegalStateException("Phase trước đó chưa hoàn thành, không thể
-        // kích hoạt phase này");
-        // }
-        // }
 
         // 3. Kiểm tra chỉ có 1 phase ACTIVE tại 1 thời điểm trong cùng round
         if (PhaseStatusEnum.ACTIVE.equals(targetStatus)) {
