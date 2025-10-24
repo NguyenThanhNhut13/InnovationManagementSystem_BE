@@ -115,4 +115,34 @@ public class InnovationRoundController {
                 return ResponseEntity.ok(currentRound);
         }
 
+        // 6. Công bố Round
+        @PutMapping("/{roundId}/publish")
+        @ApiMessage("Công bố đợt sáng kiến thành công")
+        @Operation(summary = "Publish Innovation Round", description = "Publish innovation round by changing status from DRAFT to OPEN")
+        @ApiResponses(value = {
+                        @ApiResponse(responseCode = "200", description = "Round published successfully", content = @Content(schema = @Schema(implementation = InnovationRoundResponse.class))),
+                        @ApiResponse(responseCode = "400", description = "Invalid request - round cannot be published"),
+                        @ApiResponse(responseCode = "404", description = "Round not found")
+        })
+        public ResponseEntity<InnovationRoundResponse> publishRound(
+                        @Parameter(description = "Round ID", required = true) @PathVariable String roundId) {
+                InnovationRoundResponse publishedRound = innovationRoundService.publishRound(roundId);
+                return ResponseEntity.ok(publishedRound);
+        }
+
+        // 7. Đóng Round
+        @PutMapping("/{roundId}/close")
+        @ApiMessage("Đóng đợt sáng kiến thành công")
+        @Operation(summary = "Close Innovation Round", description = "Close innovation round by changing status to CLOSED")
+        @ApiResponses(value = {
+                        @ApiResponse(responseCode = "200", description = "Round closed successfully", content = @Content(schema = @Schema(implementation = InnovationRoundResponse.class))),
+                        @ApiResponse(responseCode = "400", description = "Invalid request - round cannot be closed"),
+                        @ApiResponse(responseCode = "404", description = "Round not found")
+        })
+        public ResponseEntity<InnovationRoundResponse> closeRound(
+                        @Parameter(description = "Round ID", required = true) @PathVariable String roundId) {
+                InnovationRoundResponse closedRound = innovationRoundService.closeRound(roundId);
+                return ResponseEntity.ok(closedRound);
+        }
+
 }
