@@ -29,6 +29,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.InnovationRoundRe
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.ResultPaginationDTO;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.Utils;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.Base64Utils;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.HtmlTemplateUtils;
 
 import java.util.List;
 import java.util.Map;
@@ -44,13 +45,16 @@ public class FormTemplateService {
     private final FormTemplateRepository formTemplateRepository;
     private final FormTemplateMapper formTemplateMapper;
     private final InnovationRoundRepository innovationRoundRepository;
+    private final HtmlTemplateUtils htmlTemplateUtils;
 
     public FormTemplateService(FormTemplateRepository formTemplateRepository,
             InnovationRoundRepository innovationRoundRepository,
-            FormTemplateMapper formTemplateMapper) {
+            FormTemplateMapper formTemplateMapper,
+            HtmlTemplateUtils htmlTemplateUtils) {
         this.formTemplateRepository = formTemplateRepository;
         this.innovationRoundRepository = innovationRoundRepository;
         this.formTemplateMapper = formTemplateMapper;
+        this.htmlTemplateUtils = htmlTemplateUtils;
     }
 
     // 1. Lấy form template by id
@@ -105,6 +109,11 @@ public class FormTemplateService {
         }
 
         FormTemplate updatedTemplate = formTemplateRepository.save(template);
+
+        // Cập nhật HTML template content với field IDs mới sau khi fields đã được save
+        updateHtmlTemplateContent(updatedTemplate);
+        updatedTemplate = formTemplateRepository.save(updatedTemplate);
+
         return formTemplateMapper.toFormTemplateResponse(updatedTemplate);
     }
 
@@ -131,6 +140,11 @@ public class FormTemplateService {
         }
 
         FormTemplate finalTemplate = formTemplateRepository.save(savedTemplate);
+
+        // Cập nhật HTML template content với field IDs mới sau khi fields đã được save
+        updateHtmlTemplateContent(finalTemplate);
+        finalTemplate = formTemplateRepository.save(finalTemplate);
+
         return formTemplateMapper.toCreateTemplateWithFieldsResponse(finalTemplate);
     }
 
@@ -259,6 +273,32 @@ public class FormTemplateService {
         template.getFormFields().addAll(newList);
     }
 
+    /**
+     * Cập nhật HTML template content với field IDs mới
+     */
+    private void updateHtmlTemplateContent(FormTemplate template) {
+        if (template.getTemplateContent() == null || template.getFormFields().isEmpty()) {
+            return;
+        }
+
+        try {
+            // Decode HTML content
+            String htmlContent = Base64Utils.decode(template.getTemplateContent());
+
+            // Cập nhật field IDs trong HTML
+            String updatedHtmlContent = htmlTemplateUtils.updateFieldIdsInHtml(htmlContent, template.getFormFields());
+
+            // Encode lại và lưu
+            String encodedContent = Base64Utils.encode(updatedHtmlContent);
+            template.setTemplateContent(encodedContent);
+
+        } catch (Exception e) {
+            // Log lỗi nhưng không throw exception để không làm gián đoạn quá trình tạo/cập
+            // nhật
+            System.err.println("Lỗi khi cập nhật HTML template content: " + e.getMessage());
+        }
+    }
+
     // 8. Tạo form template không gắn round cụ thể (template chung)
     @Transactional
     public CreateTemplateResponse createTemplate(CreateTemplateRequest request) {
@@ -286,6 +326,11 @@ public class FormTemplateService {
         }
 
         FormTemplate finalTemplate = formTemplateRepository.save(savedTemplate);
+
+        // Cập nhật HTML template content với field IDs mới sau khi fields đã được save
+        updateHtmlTemplateContent(finalTemplate);
+        finalTemplate = formTemplateRepository.save(finalTemplate);
+
         return formTemplateMapper.toCreateTemplateResponse(finalTemplate);
     }
 
