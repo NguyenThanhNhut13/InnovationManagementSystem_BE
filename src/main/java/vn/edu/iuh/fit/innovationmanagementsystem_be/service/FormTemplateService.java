@@ -217,6 +217,8 @@ public class FormTemplateService {
                 entity.setFieldType(fd.getType());
             if (fd.getRequired() != null)
                 entity.setRequired(fd.getRequired());
+            if (fd.getIsReadOnly() != null)
+                entity.setIsReadOnly(fd.getIsReadOnly());
             if (fd.getRepeatable() != null)
                 entity.setRepeatable(fd.getRepeatable());
 

@@ -18,6 +18,7 @@ public class FormFieldResponse {
     private String label;
     private FieldTypeEnum fieldType;
     private Boolean required;
+    private Boolean isReadOnly;
 
     // Template info
     private String formTemplateId;

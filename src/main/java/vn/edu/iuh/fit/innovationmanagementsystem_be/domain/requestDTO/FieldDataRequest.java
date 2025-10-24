@@ -28,6 +28,9 @@ public class FieldDataRequest {
     @NotNull(message = "Required status không được để trống")
     private Boolean required = false;
 
+    @NotNull(message = "Read only status không được để trống")
+    private Boolean isReadOnly = false;
+
     private Boolean repeatable = false;
 
     private JsonNode tableConfig;

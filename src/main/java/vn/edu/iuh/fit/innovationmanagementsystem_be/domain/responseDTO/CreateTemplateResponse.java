@@ -36,6 +36,7 @@ public class CreateTemplateResponse {
         private String label;
         private FieldTypeEnum type;
         private Boolean required;
+        private Boolean isReadOnly;
         private Object tableConfig;
         private Object options;
         private Boolean repeatable;

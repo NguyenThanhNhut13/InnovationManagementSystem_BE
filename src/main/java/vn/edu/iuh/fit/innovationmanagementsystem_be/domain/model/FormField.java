@@ -37,6 +37,9 @@ public class FormField {
     @Column(name = "is_required", nullable = false)
     private Boolean required = false;
 
+    @Column(name = "is_read_only", nullable = false)
+    private Boolean isReadOnly = false;
+
     @Column(name = "field_key", nullable = false)
     private String fieldKey;
 

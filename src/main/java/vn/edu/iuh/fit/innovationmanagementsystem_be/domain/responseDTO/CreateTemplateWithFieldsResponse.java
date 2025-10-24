@@ -38,6 +38,7 @@ public class CreateTemplateWithFieldsResponse {
         private String label;
         private FieldTypeEnum type;
         private Boolean required;
+        private Boolean isReadOnly;
         private JsonNode tableConfig;
         private JsonNode options;
         private Boolean repeatable;
