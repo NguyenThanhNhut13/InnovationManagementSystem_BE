@@ -151,4 +151,17 @@ public class FormTemplateController {
                 return ResponseEntity.ok(
                                 formTemplateService.getTemplateLibraryWithPaginationAndSearch(specification, pageable));
         }
+
+        // 9. Lấy form templates theo innovation round ID - OK
+        @GetMapping("/innovation-round/{roundId}")
+        @ApiMessage("Lấy form templates theo innovation round thành công")
+        @Operation(summary = "Get Form Templates by Innovation Round", description = "Get form templates filtered by innovation round ID")
+        @ApiResponses(value = {
+                        @ApiResponse(responseCode = "200", description = "Form templates retrieved successfully", content = @Content(schema = @Schema(implementation = List.class))),
+                        @ApiResponse(responseCode = "404", description = "Innovation round not found")
+        })
+        public ResponseEntity<List<FormTemplateResponse>> getFormTemplatesByInnovationRound(
+                        @Parameter(description = "Innovation round ID", required = true) @PathVariable String roundId) {
+                return ResponseEntity.ok(formTemplateService.getFormTemplatesByInnovationRound(roundId));
+        }
 }

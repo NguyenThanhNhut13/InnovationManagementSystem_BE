@@ -283,6 +283,18 @@ public class FormTemplateService {
         return formTemplateMapper.toCreateTemplateResponse(finalTemplate);
     }
 
+    // 9. Lấy form templates theo innovation round ID
+    public List<FormTemplateResponse> getFormTemplatesByInnovationRound(String roundId) {
+        innovationRoundRepository.findById(roundId)
+                .orElseThrow(() -> new IdInvalidException("Innovation round không tồn tại với ID: " + roundId));
+
+        List<FormTemplate> templates = formTemplateRepository
+                .findByInnovationRoundIdOrderByTemplateType(roundId);
+        return templates.stream()
+                .map(formTemplateMapper::toFormTemplateResponse)
+                .collect(Collectors.toList());
+    }
+
     /**
      * Tự sinh UUID cho các column trong JsonNode tableConfig nếu chưa có ID
      */

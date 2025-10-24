@@ -5,7 +5,7 @@ public final class EndpointConstants {
         private EndpointConstants() {
         }
 
-        // ================== AUTH ==================
+        // ================== AUTHENTICATION ==================
         public static final String[] PUBLIC = {
                         "/api/v1/auth/login",
                         "/api/v1/auth/refresh",
@@ -25,7 +25,10 @@ public final class EndpointConstants {
                         "/api/v1/utils/ping",
                         "/api/v1/utils/exists/{fileName}",
                         "/api/v1/utils/view/{fileName}"
+        };
 
+        public static final String[] AUTH_GET = {
+                        "/api/v1/auth/me"
         };
 
         public static final String[] AUTH_POST = {
@@ -35,22 +38,23 @@ public final class EndpointConstants {
 
         // ================== USER ==================
         public static final String[] USER_POST = {
-                        "/api/v1/users"
+                        "/api/v1/users",
+                        "/api/v1/users/{userId}/roles/{roleId}"
         };
 
         public static final String[] USER_PUT = {
                         "/api/v1/users/profile"
         };
 
-        // ================== ROLE MANAGEMENT ==================
+        public static final String[] USER_DELETE = {
+                        "/api/v1/users/{userId}/roles/{roleId}"
+        };
         public static final String[] ROLE_MANAGEMENT_POST = {
                         "/api/v1/users/{userId}/roles/{roleId}"
         };
-
         public static final String[] ROLE_MANAGEMENT_DELETE = {
                         "/api/v1/users/{userId}/roles/{roleId}"
         };
-
         // ================== DEPARTMENT ==================
         public static final String[] DEPARTMENT_GET = {
                         "/api/v1/departments",
@@ -62,10 +66,12 @@ public final class EndpointConstants {
                         "/api/v1/innovation-decisions",
                         "/api/v1/innovation-decisions/{id}"
         };
+
         // ================== INNOVATION ==================
         public static final String[] INNOVATION_GET = {
                         "/api/v1/innovations/statistics"
         };
+
         // ================== INNOVATION ROUND ==================
         public static final String[] INNOVATION_ROUND_GET = {
                         "/api/v1/innovation-rounds",
@@ -86,7 +92,8 @@ public final class EndpointConstants {
                         "/api/v1/form-templates/{id}",
                         "/api/v1/form-templates/innovation-round/current",
                         "/api/v1/form-templates",
-                        "/api/v1/form-templates/library"
+                        "/api/v1/form-templates/library",
+                        "/api/v1/form-templates/innovation-round/{roundId}"
         };
 
         public static final String[] FORM_TEMPLATE_POST = {
@@ -102,6 +109,7 @@ public final class EndpointConstants {
                         "/api/v1/form-templates/{id}"
         };
 
+        // ================== UTILS ==================
         public static final String[] UTILS_POST = {
                         "/api/v1/utils/upload",
                         "/api/v1/utils/upload-multiple",
