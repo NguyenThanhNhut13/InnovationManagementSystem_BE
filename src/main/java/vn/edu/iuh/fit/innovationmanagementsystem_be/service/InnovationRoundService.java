@@ -578,10 +578,15 @@ public class InnovationRoundService {
             }
         }
 
+        // Sắp xếp phases theo thứ tự thời gian để kiểm tra sequence đúng
+        List<InnovationPhase> sortedPhases = phases.stream()
+                .sorted(Comparator.comparing(InnovationPhase::getPhaseStartDate))
+                .collect(Collectors.toList());
+
         // Kiểm tra phase sau phải bắt đầu sau khi phase trước kết thúc
-        for (int i = 0; i < phases.size() - 1; i++) {
-            InnovationPhase currentPhase = phases.get(i);
-            InnovationPhase nextPhase = phases.get(i + 1);
+        for (int i = 0; i < sortedPhases.size() - 1; i++) {
+            InnovationPhase currentPhase = sortedPhases.get(i);
+            InnovationPhase nextPhase = sortedPhases.get(i + 1);
 
             if (nextPhase.getPhaseStartDate().isBefore(currentPhase.getPhaseEndDate())) {
                 throw new IllegalArgumentException("Giai đoạn '" + nextPhase.getName() +
@@ -715,14 +720,37 @@ public class InnovationRoundService {
                 .sorted(Comparator.comparing(InnovationPhase::getPhaseStartDate))
                 .collect(Collectors.toList());
 
-        InnovationPhaseTypeEnum firstPhaseType = sortedPhases.get(0).getPhaseType();
-        InnovationPhaseTypeEnum lastPhaseType = sortedPhases.get(sortedPhases.size() - 1).getPhaseType();
+        // Kiểm tra thứ tự phase type theo thời gian
+        InnovationPhaseTypeEnum[] expectedOrder = {
+                InnovationPhaseTypeEnum.SUBMISSION,
+                InnovationPhaseTypeEnum.SCORING,
+                InnovationPhaseTypeEnum.ANNOUNCEMENT
+        };
 
-        if (firstPhaseType != InnovationPhaseTypeEnum.SUBMISSION) {
-            throw new IllegalArgumentException("Giai đoạn đầu tiên phải là SUBMISSION");
+        int expectedIndex = 0;
+        for (InnovationPhase phase : sortedPhases) {
+            InnovationPhaseTypeEnum currentType = phase.getPhaseType();
+
+            // Tìm phase type hiện tại trong expected order
+            while (expectedIndex < expectedOrder.length &&
+                    !expectedOrder[expectedIndex].equals(currentType)) {
+                expectedIndex++;
+            }
+
+            // Nếu không tìm thấy hoặc đã vượt quá expected order
+            if (expectedIndex >= expectedOrder.length) {
+                throw new IllegalArgumentException(
+                        "Thứ tự giai đoạn không hợp lệ. Giai đoạn '" + phase.getName() +
+                                "' (" + currentType + ") không đúng thứ tự. " +
+                                "Thứ tự đúng phải là: SUBMISSION -> SCORING -> ANNOUNCEMENT");
+            }
         }
-        if (lastPhaseType != InnovationPhaseTypeEnum.ANNOUNCEMENT) {
-            throw new IllegalArgumentException("Giai đoạn cuối cùng phải là ANNOUNCEMENT");
+
+        // Kiểm tra có đủ 3 loại phase không
+        if (expectedIndex < expectedOrder.length - 1) {
+            throw new IllegalArgumentException(
+                    "Thiếu giai đoạn '" + expectedOrder[expectedIndex + 1] +
+                            "'. Phải có đầy đủ 3 giai đoạn: SUBMISSION -> SCORING -> ANNOUNCEMENT");
         }
     }
 

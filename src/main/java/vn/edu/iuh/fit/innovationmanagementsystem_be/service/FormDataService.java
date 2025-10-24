@@ -41,7 +41,7 @@ public class FormDataService {
         public FormDataResponse createFormData(FormDataRequest request) {
 
                 if (request == null || request.getInnovationId() == null || request.getFormFieldId() == null) {
-                        throw new IllegalArgumentException("Innovation ID và Form Field ID không được để trống");
+                        throw new IdInvalidException("Innovation ID và Form Field ID không được để trống");
                 }
 
                 Innovation innovation = innovationRepository.findById(request.getInnovationId())
