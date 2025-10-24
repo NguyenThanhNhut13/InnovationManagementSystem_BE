@@ -17,7 +17,6 @@ public class LoginResponse {
     private String personnelId;
     private String fullName;
     private String email;
-    private String phoneNumber;
     private UserStatusEnum status;
     private String department;
     private List<String> roles;

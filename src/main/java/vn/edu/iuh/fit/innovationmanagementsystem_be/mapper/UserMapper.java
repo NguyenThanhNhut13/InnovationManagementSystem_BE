@@ -19,7 +19,6 @@ public interface UserMapper {
     @Mapping(target = "personnelId", source = "personnelId")
     @Mapping(target = "fullName", source = "fullName")
     @Mapping(target = "email", source = "email")
-    @Mapping(target = "phoneNumber", source = "phoneNumber")
     @Mapping(target = "status", source = "status")
     @Mapping(target = "dateOfBirth", source = "dateOfBirth")
     @Mapping(target = "qualification", source = "qualification")

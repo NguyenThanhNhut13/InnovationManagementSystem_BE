@@ -91,7 +91,6 @@ public class UserSeeder implements DatabaseSeeder {
         user.setPersonnelId(String.format("%08d", 10000000 + index));
         user.setFullName("User " + roleEnum.name().replace('_', ' '));
         user.setEmail(roleEnum.name().toLowerCase() + "@iuh.edu.vn");
-        user.setPhoneNumber(String.format("090%07d", index));
         user.setPassword(passwordEncoder.encode("password123"));
         user.setDepartment(department);
         user.setDateOfBirth(LocalDate.of(1980 + (index % 20), (index % 12) + 1, (index % 28) + 1));

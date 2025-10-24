@@ -33,9 +33,6 @@ public class User extends Auditable {
     @Column(name = "email", nullable = false, unique = true, columnDefinition = "VARCHAR(255)")
     private String email;
 
-    @Column(name = "phone_number", nullable = false, unique = true, columnDefinition = "VARCHAR(20)")
-    private String phoneNumber;
-
     @Column(name = "password", nullable = false, columnDefinition = "VARCHAR(255)")
     private String password;
 

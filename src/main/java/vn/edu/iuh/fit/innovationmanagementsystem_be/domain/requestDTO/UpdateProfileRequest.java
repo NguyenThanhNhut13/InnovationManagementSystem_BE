@@ -1,7 +1,6 @@
 package vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO;
 
 import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import jakarta.validation.constraints.Past;
 import jakarta.validation.constraints.AssertTrue;
@@ -21,9 +20,6 @@ public class UpdateProfileRequest {
 
     @Email(message = "Email không hợp lệ")
     private String email;
-
-    @Pattern(regexp = "^0[0-9]{9}$", message = "Số điện thoại phải bắt đầu bằng số 0 và có 10 chữ số")
-    private String phoneNumber;
 
     @Past(message = "Ngày sinh phải là ngày trong quá khứ")
     private LocalDate dateOfBirth;

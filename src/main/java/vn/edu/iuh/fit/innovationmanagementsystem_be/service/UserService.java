@@ -245,16 +245,6 @@ public class UserService {
             }
         }
 
-        if (updateProfileRequest.getPhoneNumber() != null && !updateProfileRequest.getPhoneNumber().trim().isEmpty()) {
-            String newPhoneNumber = updateProfileRequest.getPhoneNumber().trim();
-            if (!currentUser.getPhoneNumber().equals(newPhoneNumber)) {
-                if (userRepository.existsByPhoneNumber(newPhoneNumber)) {
-                    throw new IdInvalidException("Số điện thoại đã tồn tại trong hệ thống");
-                }
-                currentUser.setPhoneNumber(newPhoneNumber);
-            }
-        }
-
         if (updateProfileRequest.getDateOfBirth() != null) {
             currentUser.setDateOfBirth(updateProfileRequest.getDateOfBirth());
         }
