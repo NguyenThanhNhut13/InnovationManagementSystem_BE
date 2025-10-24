@@ -887,4 +887,12 @@ public class InnovationRoundService {
         }
     }
 
+    // 13. Get Round by ID
+    public InnovationRoundResponse getRoundById(String roundId) {
+        InnovationRound round = innovationRoundRepository.findById(roundId)
+                .orElseThrow(() -> new IdInvalidException("Không tìm thấy InnovationRound với ID: " + roundId));
+        InnovationRoundResponse response = innovationRoundMapper.toInnovationRoundResponse(round);
+        setStatistics(response, round);
+        return response;
+    }
 }

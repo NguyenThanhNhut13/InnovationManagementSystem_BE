@@ -145,4 +145,19 @@ public class InnovationRoundController {
                 return ResponseEntity.ok(closedRound);
         }
 
+        // 8. Get Round by ID
+        @GetMapping("/{roundId}")
+        @ApiMessage("Lấy thông tin đợt sáng kiến thành công")
+        @Operation(summary = "Get Round by ID", description = "Get innovation round by ID")
+        @ApiResponses(value = {
+                        @ApiResponse(responseCode = "200", description = "Innovation round retrieved successfully", content = @Content(schema = @Schema(implementation = InnovationRoundResponse.class))),
+                        @ApiResponse(responseCode = "404", description = "Round not found")
+        })
+        public ResponseEntity<InnovationRoundResponse> getRoundById(
+                        @Parameter(description = "Round ID", required = true) @PathVariable String roundId) {
+
+                InnovationRoundResponse round = innovationRoundService.getRoundById(roundId);
+                return ResponseEntity.ok(round);
+        }
+
 }
