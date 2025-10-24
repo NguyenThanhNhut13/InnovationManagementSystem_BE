@@ -28,6 +28,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.FormTemplateRepos
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.InnovationRoundRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.ResultPaginationDTO;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.Utils;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.Base64Utils;
 
 import java.util.List;
 import java.util.Map;
@@ -94,7 +95,8 @@ public class FormTemplateService {
             template.setTargetRole(request.getTargetRole());
         }
         if (request.getTemplateContent() != null) {
-            template.setTemplateContent(request.getTemplateContent());
+            String encodedContent = Base64Utils.encode(request.getTemplateContent());
+            template.setTemplateContent(encodedContent);
         }
 
         // Upsert danh sách FormField nếu có
@@ -116,7 +118,9 @@ public class FormTemplateService {
         FormTemplate template = new FormTemplate();
         template.setTemplateType(request.getTemplateType());
         template.setTargetRole(request.getTargetRole());
-        template.setTemplateContent(request.getTemplateContent());
+
+        String encodedContent = Base64Utils.encode(request.getTemplateContent());
+        template.setTemplateContent(encodedContent);
         template.setInnovationRound(innovationRound);
 
         FormTemplate savedTemplate = formTemplateRepository.save(template);
@@ -261,7 +265,9 @@ public class FormTemplateService {
         FormTemplate template = new FormTemplate();
         template.setTemplateType(request.getTemplateType());
         template.setTargetRole(request.getTargetRole());
-        template.setTemplateContent(request.getTemplateContent());
+
+        String encodedContent = Base64Utils.encode(request.getTemplateContent());
+        template.setTemplateContent(encodedContent);
 
         if (request.getRoundId() != null && !request.getRoundId().trim().isEmpty()) {
             InnovationRound innovationRound = innovationRoundRepository.findById(request.getRoundId().trim())

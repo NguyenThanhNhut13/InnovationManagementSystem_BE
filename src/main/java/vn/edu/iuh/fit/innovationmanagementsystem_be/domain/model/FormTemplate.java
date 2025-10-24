@@ -32,8 +32,7 @@ public class FormTemplate extends Auditable {
     @Column(name = "target_role", nullable = false)
     private TargetRoleCode targetRole;
 
-    @Lob
-    @Column(name = "template_content")
+    @Column(name = "template_content", columnDefinition = "TEXT")
     private String templateContent;
 
     // Relationships

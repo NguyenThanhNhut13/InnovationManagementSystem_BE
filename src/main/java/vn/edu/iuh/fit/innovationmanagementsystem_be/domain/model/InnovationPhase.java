@@ -56,9 +56,6 @@ public class InnovationPhase extends Auditable {
     @Column(name = "is_deadline", nullable = false)
     private Boolean isDeadline = false;
 
-    // @Column(name = "transition_reason", columnDefinition = "TEXT")
-    // private String transitionReason; // Lý do chuyển đổi phase
-
     // Relationships
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "innovation_round_id", nullable = false)
