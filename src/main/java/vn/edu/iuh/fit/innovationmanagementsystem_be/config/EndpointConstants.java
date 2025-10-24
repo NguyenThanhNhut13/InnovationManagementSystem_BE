@@ -76,7 +76,8 @@ public final class EndpointConstants {
         public static final String[] INNOVATION_ROUND_GET = {
                         "/api/v1/innovation-rounds",
                         "/api/v1/innovation-rounds/list",
-                        "/api/v1/innovation-rounds/current"
+                        "/api/v1/innovation-rounds/current",
+                        "/api/v1/innovation-rounds/{roundId}"
         };
 
         public static final String[] INNOVATION_ROUND_POST = {
