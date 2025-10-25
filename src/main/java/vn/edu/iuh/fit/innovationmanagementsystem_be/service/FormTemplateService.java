@@ -3,6 +3,7 @@ package vn.edu.iuh.fit.innovationmanagementsystem_be.service;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -15,6 +16,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.FormTemplate;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.InnovationRound;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationRoundStatusEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.FieldTypeEnum;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.TargetRoleCode;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.CreateTemplateRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.CreateTemplateWithFieldsRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.UpdateFormTemplateRequest;
@@ -22,6 +24,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.FieldDataR
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.CreateTemplateResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.CreateTemplateWithFieldsResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.FormTemplateResponse;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.UserResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.exception.IdInvalidException;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.mapper.FormTemplateMapper;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.FormTemplateRepository;
@@ -40,21 +43,25 @@ import java.util.stream.Collectors;
 
 @Service
 @Transactional
+@Slf4j
 public class FormTemplateService {
 
     private final FormTemplateRepository formTemplateRepository;
     private final FormTemplateMapper formTemplateMapper;
     private final InnovationRoundRepository innovationRoundRepository;
     private final HtmlTemplateUtils htmlTemplateUtils;
+    private final UserService userService;
 
     public FormTemplateService(FormTemplateRepository formTemplateRepository,
             InnovationRoundRepository innovationRoundRepository,
             FormTemplateMapper formTemplateMapper,
-            HtmlTemplateUtils htmlTemplateUtils) {
+            HtmlTemplateUtils htmlTemplateUtils,
+            UserService userService) {
         this.formTemplateRepository = formTemplateRepository;
         this.innovationRoundRepository = innovationRoundRepository;
         this.formTemplateMapper = formTemplateMapper;
         this.htmlTemplateUtils = htmlTemplateUtils;
+        this.userService = userService;
     }
 
     // 1. Lấy form template by id
@@ -68,10 +75,21 @@ public class FormTemplateService {
     // 2. Lấy tất cả form templates theo innovation round hiện tại
     public List<FormTemplateResponse> getFormTemplatesByCurrentRound() {
         InnovationRound currentRound = innovationRoundRepository.findCurrentActiveRound(LocalDate.now())
-                .orElseThrow(() -> new IdInvalidException("Không có innovation round hiện tại"));
+                .orElse(null);
 
-        List<FormTemplate> templates = formTemplateRepository
-                .findByInnovationRoundIdOrderByTemplateType(currentRound.getId());
+        List<FormTemplate> templates;
+
+        if (currentRound != null) {
+            // Có current round - lấy templates của round đó
+            templates = formTemplateRepository
+                    .findByInnovationRoundIdOrderByTemplateType(currentRound.getId());
+        } else {
+            // Không có current round - lấy templates từ template library
+            // (innovation_round_id = null)
+            templates = formTemplateRepository
+                    .findByInnovationRoundIsNullOrderByTemplateType();
+        }
+
         return templates.stream()
                 .map(formTemplateMapper::toFormTemplateResponse)
                 .collect(Collectors.toList());
@@ -346,6 +364,61 @@ public class FormTemplateService {
         return templates.stream()
                 .map(formTemplateMapper::toFormTemplateResponse)
                 .collect(Collectors.toList());
+    }
+
+    // 10. Lấy form templates theo innovation round hiện tại và target role
+    public List<FormTemplateResponse> getFormTemplatesByCurrentRoundAndTargetRole(String targetRole) {
+        InnovationRound currentRound = innovationRoundRepository.findCurrentActiveRound(LocalDate.now())
+                .orElse(null);
+
+        // Convert String to TargetRoleCode enum
+        TargetRoleCode targetRoleEnum = TargetRoleCode.valueOf(targetRole);
+
+        List<FormTemplate> templates;
+
+        if (currentRound != null) {
+            // Có current round - lấy templates của round đó
+            templates = formTemplateRepository
+                    .findByInnovationRoundIdAndTargetRoleOrderByTemplateType(currentRound.getId(), targetRoleEnum);
+        } else {
+            // Không có current round - lấy templates từ template library
+            // (innovation_round_id = null)
+            templates = formTemplateRepository
+                    .findByInnovationRoundIsNullAndTargetRoleOrderByTemplateType(targetRoleEnum);
+        }
+
+        return templates.stream()
+                .map(formTemplateMapper::toFormTemplateResponse)
+                .collect(Collectors.toList());
+    }
+
+    // 11. Lấy form templates theo roles của user hiện tại
+    public List<FormTemplateResponse> getFormTemplatesByCurrentUserRoles() {
+        UserResponse currentUser = userService.getCurrentUserResponse();
+        List<String> userRoles = currentUser.getRoles();
+
+        String targetRole = determineTargetRoleFromUserRoles(userRoles);
+
+        return getFormTemplatesByCurrentRoundAndTargetRole(targetRole);
+    }
+
+    private String determineTargetRoleFromUserRoles(List<String> userRoles) {
+        if (userRoles == null || userRoles.isEmpty()) {
+            return "EMPLOYEE";
+        }
+
+        // Kiểm tra theo thứ tự ưu tiên
+        for (String role : userRoles) {
+            switch (role) {
+                case "QUAN_TRI_VIEN_QLKH_HTQT":
+                    return "QLKH_SECRETARY";
+                case "TRUONG_KHOA":
+                    return "DEPARTMENT";
+                case "GIANG_VIEN":
+                    return "EMPLOYEE";
+            }
+        }
+        return "EMPLOYEE";
     }
 
     /**

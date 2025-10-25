@@ -164,4 +164,17 @@ public class FormTemplateController {
                         @Parameter(description = "Innovation round ID", required = true) @PathVariable String roundId) {
                 return ResponseEntity.ok(formTemplateService.getFormTemplatesByInnovationRound(roundId));
         }
+
+        // 10. Lấy form templates theo roles của user hiện tại - OK
+        @GetMapping("/current-user")
+        @ApiMessage("Lấy form templates theo roles của user hiện tại thành công")
+        @Operation(summary = "Get Form Templates by Current User Roles", description = "Get form templates for the current active innovation round based on current user's roles")
+        @ApiResponses(value = {
+                        @ApiResponse(responseCode = "200", description = "Form templates retrieved successfully", content = @Content(schema = @Schema(implementation = List.class))),
+                        @ApiResponse(responseCode = "404", description = "No current round found"),
+                        @ApiResponse(responseCode = "401", description = "Unauthorized")
+        })
+        public ResponseEntity<List<FormTemplateResponse>> getFormTemplatesByCurrentUserRoles() {
+                return ResponseEntity.ok(formTemplateService.getFormTemplatesByCurrentUserRoles());
+        }
 }

@@ -5,7 +5,7 @@ public final class EndpointConstants {
         private EndpointConstants() {
         }
 
-        // ================== AUTHENTICATION ==================
+        // 1. ================== AUTHENTICATION ==================
         public static final String[] PUBLIC = {
                         "/api/v1/auth/login",
                         "/api/v1/auth/refresh",
@@ -49,6 +49,7 @@ public final class EndpointConstants {
         public static final String[] USER_DELETE = {
                         "/api/v1/users/{userId}/roles/{roleId}"
         };
+
         public static final String[] ROLE_MANAGEMENT_POST = {
                         "/api/v1/users/{userId}/roles/{roleId}"
         };
@@ -96,7 +97,9 @@ public final class EndpointConstants {
                         "/api/v1/form-templates/innovation-round/current",
                         "/api/v1/form-templates",
                         "/api/v1/form-templates/library",
-                        "/api/v1/form-templates/innovation-round/{roundId}"
+                        "/api/v1/form-templates/innovation-round/{roundId}",
+                        "/api/v1/form-templates/current-round/target-role/{targetRole}",
+                        "/api/v1/form-templates/current-user"
         };
 
         public static final String[] FORM_TEMPLATE_POST = {
