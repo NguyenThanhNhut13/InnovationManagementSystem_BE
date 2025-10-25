@@ -18,8 +18,6 @@ public interface InnovationRepository extends JpaRepository<Innovation, String>,
 
         Page<Innovation> findByUserId(String userId, Pageable pageable);
 
-        Page<Innovation> findByUserIdAndStatus(String userId, InnovationStatusEnum status, Pageable pageable);
-
         // Thống kê innovation cho giảng viên
         long countByUserId(String userId);
 

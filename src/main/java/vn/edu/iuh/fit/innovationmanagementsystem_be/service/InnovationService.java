@@ -73,19 +73,154 @@ public class InnovationService {
                 this.activityLogService = activityLogService;
         }
 
-        // 1. Lấy tất cả sáng kiến
+        // 1. Lấy tất cả sáng kiến của user hiện tại với filter
+        public ResultPaginationDTO getAllInnovationsByCurrentUserWithFilter(Specification<Innovation> specification,
+                        Pageable pageable) {
+                if (pageable.getSort().isUnsorted()) {
+                        pageable = PageRequest.of(
+                                        pageable.getPageNumber(),
+                                        pageable.getPageSize(),
+                                        Sort.by("createdAt").descending());
+                }
+
+                String currentUserId = userService.getCurrentUserId();
+
+                Specification<Innovation> userSpec = (root, query, criteriaBuilder) -> criteriaBuilder
+                                .equal(root.get("user").get("id"), currentUserId);
+
+                Specification<Innovation> combinedSpec = userSpec.and(specification);
+
+                Page<Innovation> innovations = innovationRepository.findAll(combinedSpec, pageable);
+                Page<InnovationResponse> responses = innovations.map(innovationMapper::toInnovationResponse);
+                return Utils.toResultPaginationDTO(responses, pageable);
+        }
+
+        // 2. Lấy tất cả sáng kiến
         public ResultPaginationDTO getAllInnovations(Specification<Innovation> specification, Pageable pageable) {
 
                 if (pageable.getSort().isUnsorted()) {
-                        pageable = org.springframework.data.domain.PageRequest.of(
+                        pageable = PageRequest.of(
                                         pageable.getPageNumber(),
                                         pageable.getPageSize(),
-                                        org.springframework.data.domain.Sort.by("createdAt").descending());
+                                        Sort.by("createdAt").descending());
                 }
 
                 Page<Innovation> innovations = innovationRepository.findAll(specification, pageable);
                 Page<InnovationResponse> responses = innovations.map(innovationMapper::toInnovationResponse);
                 return Utils.toResultPaginationDTO(responses, pageable);
+        }
+
+        // 3. Thống kê innovation cho giảng viên
+        public InnovationStatisticsDTO getInnovationStatisticsForCurrentUser() {
+                User currentUser = userService.getCurrentUser();
+                String userId = currentUser.getId();
+
+                // Thống kê cơ bản
+                long totalInnovations = innovationRepository.countByUserId(userId);
+
+                List<InnovationStatusEnum> submittedStatuses = Arrays.asList(
+                                InnovationStatusEnum.DRAFT,
+                                InnovationStatusEnum.SUBMITTED,
+                                InnovationStatusEnum.PENDING_KHOA_REVIEW,
+                                InnovationStatusEnum.KHOA_REVIEWED,
+                                InnovationStatusEnum.KHOA_APPROVED,
+                                InnovationStatusEnum.PENDING_TRUONG_REVIEW,
+                                InnovationStatusEnum.TRUONG_REVIEWED);
+
+                List<InnovationStatusEnum> approvedStatuses = Arrays.asList(
+                                InnovationStatusEnum.TRUONG_APPROVED,
+                                InnovationStatusEnum.FINAL_APPROVED);
+
+                List<InnovationStatusEnum> rejectedStatuses = Arrays.asList(
+                                InnovationStatusEnum.TRUONG_REJECTED,
+                                InnovationStatusEnum.KHOA_REJECTED);
+
+                // Đếm số lượng
+                long submittedInnovations = innovationRepository.countByUserIdAndStatusIn(userId, submittedStatuses);
+                long approvedInnovations = innovationRepository.countByUserIdAndStatusIn(userId, approvedStatuses);
+                long rejectedInnovations = innovationRepository.countByUserIdAndStatusIn(userId, rejectedStatuses);
+
+                // Tính phần trăm
+                double achievedPercentage = totalInnovations > 0 ? (double) approvedInnovations / totalInnovations * 100
+                                : 0.0;
+                double notAchievedPercentage = totalInnovations > 0
+                                ? (double) rejectedInnovations / totalInnovations * 100
+                                : 0.0;
+                double pendingPercentage = totalInnovations > 0 ? (double) submittedInnovations / totalInnovations * 100
+                                : 0.0;
+
+                return InnovationStatisticsDTO.builder()
+                                .totalInnovations(totalInnovations)
+                                .submittedInnovations(submittedInnovations)
+                                .approvedInnovations(approvedInnovations)
+                                .rejectedInnovations(rejectedInnovations)
+                                .achievedPercentage(Math.round(achievedPercentage * 100.0) / 100.0)
+                                .notAchievedPercentage(Math.round(notAchievedPercentage * 100.0) / 100.0)
+                                .pendingPercentage(Math.round(pendingPercentage * 100.0) / 100.0)
+                                .build();
+
+                /**
+                 * pendingPercentage = DRAFT + SUBMITTED + PENDING_KHOA_REVIEW + KHOA_REVIEWED +
+                 * KHOA_APPROVED + PENDING_TRUONG_REVIEW + TRUONG_REVIEWED
+                 * achievedPercentage = FINAL_APPROVED + TRUONG_APPROVED
+                 * notAchievedPercentage = KHOA_REJECTED + TRUONG_REJECTED
+                 */
+        }
+
+        // 3. Lấy thống kê sáng kiến theo năm học cho user hiện tại - OK
+        public InnovationAcademicYearStatisticsDTO getInnovationStatisticsByAcademicYearForCurrentUser() {
+                User currentUser = userService.getCurrentUser();
+                String userId = currentUser.getId();
+                return getInnovationStatisticsByAcademicYear(userId);
+        }
+
+        // 4. Lấy hạn chót sắp tới từ round hiện tại - OK
+        public UpcomingDeadlinesResponse getUpcomingDeadlines() {
+                // Lấy round hiện tại
+                var currentRound = innovationRoundService.getCurrentRound();
+                if (currentRound == null) {
+                        return UpcomingDeadlinesResponse.builder()
+                                        .upcomingDeadlines(List.of())
+                                        .totalDeadlines(0)
+                                        .currentRoundName("Không có đợt sáng kiến nào đang diễn ra")
+                                        .academicYear("")
+                                        .build();
+                }
+
+                List<InnovationPhase> phases = innovationPhaseRepository
+                                .findByInnovationRoundIdOrderByPhaseOrder(currentRound.getId());
+
+                LocalDate today = LocalDate.now();
+                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+
+                List<UpcomingDeadlineResponse> upcomingDeadlines = phases.stream()
+                                .filter(phase -> phase.getPhaseEndDate().isAfter(today)
+                                                || phase.getPhaseEndDate().isEqual(today))
+                                .map(phase -> {
+                                        long daysRemaining = ChronoUnit.DAYS.between(today, phase.getPhaseEndDate());
+
+                                        return UpcomingDeadlineResponse.builder()
+                                                        .id(phase.getId())
+                                                        .title(generateDeadlineTitle(phase))
+                                                        .deadlineDate(phase.getPhaseEndDate())
+                                                        .formattedDate(phase.getPhaseEndDate().format(formatter))
+                                                        .daysRemaining(daysRemaining)
+                                                        .phaseType(phase.getPhaseType().getValue())
+                                                        .level(phase.getLevel() != null ? phase.getLevel().getValue()
+                                                                        : "")
+                                                        .description(phase.getDescription())
+                                                        .isDeadline(phase.getIsDeadline())
+                                                        .build();
+                                })
+                                .sorted((a, b) -> a.getDeadlineDate().compareTo(b.getDeadlineDate()))
+                                .collect(Collectors.toList());
+
+                return UpcomingDeadlinesResponse.builder()
+                                .upcomingDeadlines(upcomingDeadlines)
+                                .totalDeadlines(upcomingDeadlines.size())
+                                .currentRoundName(currentRound.getName())
+                                .academicYear(currentRound.getAcademicYear())
+                                .build();
         }
 
         // 2. Lấy sáng kiến bởi ID
@@ -268,115 +403,6 @@ public class InnovationService {
                 return response;
         }
 
-        // 6. Lấy sáng kiến bởi User và Status
-        public ResultPaginationDTO getInnovationsByUserAndStatus(String status, Pageable pageable) {
-                if (status == null || status.trim().isEmpty()) {
-                        throw new IdInvalidException("Status không được để trống");
-                }
-
-                if (pageable.getSort().isUnsorted()) {
-                        pageable = org.springframework.data.domain.PageRequest.of(
-                                        pageable.getPageNumber(),
-                                        pageable.getPageSize(),
-                                        org.springframework.data.domain.Sort.by("createdAt").descending());
-                }
-
-                try {
-                        InnovationStatusEnum statusEnum = InnovationStatusEnum.valueOf(status.toUpperCase());
-                        String currentUserId = userService.getCurrentUserId();
-                        Page<Innovation> innovations = innovationRepository.findByUserIdAndStatus(currentUserId,
-                                        statusEnum,
-                                        pageable);
-                        Page<InnovationResponse> responses = innovations.map(innovationMapper::toInnovationResponse);
-                        return Utils.toResultPaginationDTO(responses, pageable);
-                } catch (IllegalArgumentException e) {
-                        throw new IdInvalidException("Status không hợp lệ: " + status + ". Các status hợp lệ: " +
-                                        java.util.Arrays.toString(InnovationStatusEnum.values()));
-                }
-        }
-
-        // 7. Lấy tất cả sáng kiến của user hiện tại với filter
-        public ResultPaginationDTO getAllInnovationsByCurrentUserWithFilter(Specification<Innovation> specification,
-                        Pageable pageable) {
-                if (pageable.getSort().isUnsorted()) {
-                        pageable = PageRequest.of(
-                                        pageable.getPageNumber(),
-                                        pageable.getPageSize(),
-                                        Sort.by("createdAt").descending());
-                }
-
-                String currentUserId = userService.getCurrentUserId();
-
-                // Tạo Specification để filter theo user hiện tại
-                Specification<Innovation> userSpec = (root, query, criteriaBuilder) -> criteriaBuilder
-                                .equal(root.get("user").get("id"), currentUserId);
-
-                // Kết hợp với specification từ SpringFilter
-                Specification<Innovation> combinedSpec = userSpec.and(specification);
-
-                Page<Innovation> innovations = innovationRepository.findAll(combinedSpec, pageable);
-                Page<InnovationResponse> responses = innovations.map(innovationMapper::toInnovationResponse);
-                return Utils.toResultPaginationDTO(responses, pageable);
-        }
-
-        // 8. Thống kê innovation cho giảng viên
-        public InnovationStatisticsDTO getInnovationStatisticsForCurrentUser() {
-                User currentUser = userService.getCurrentUser();
-                String userId = currentUser.getId();
-
-                // Thống kê cơ bản
-                long totalInnovations = innovationRepository.countByUserId(userId);
-
-                // Các status cho từng loại
-                List<InnovationStatusEnum> submittedStatuses = Arrays.asList(
-                                InnovationStatusEnum.DRAFT,
-                                InnovationStatusEnum.SUBMITTED,
-                                InnovationStatusEnum.PENDING_KHOA_REVIEW,
-                                InnovationStatusEnum.KHOA_REVIEWED,
-                                InnovationStatusEnum.KHOA_APPROVED,
-                                InnovationStatusEnum.PENDING_TRUONG_REVIEW,
-                                InnovationStatusEnum.TRUONG_REVIEWED);
-
-                List<InnovationStatusEnum> approvedStatuses = Arrays.asList(
-                                InnovationStatusEnum.TRUONG_APPROVED,
-                                InnovationStatusEnum.FINAL_APPROVED);
-
-                List<InnovationStatusEnum> rejectedStatuses = Arrays.asList(
-                                InnovationStatusEnum.TRUONG_REJECTED,
-                                InnovationStatusEnum.KHOA_REJECTED);
-
-                // Đếm số lượng
-                long submittedInnovations = innovationRepository.countByUserIdAndStatusIn(userId, submittedStatuses);
-                long approvedInnovations = innovationRepository.countByUserIdAndStatusIn(userId, approvedStatuses);
-                long rejectedInnovations = innovationRepository.countByUserIdAndStatusIn(userId, rejectedStatuses);
-
-                // Tính phần trăm
-                double achievedPercentage = totalInnovations > 0 ? (double) approvedInnovations / totalInnovations * 100
-                                : 0.0;
-                double notAchievedPercentage = totalInnovations > 0
-                                ? (double) rejectedInnovations / totalInnovations * 100
-                                : 0.0;
-                double pendingPercentage = totalInnovations > 0 ? (double) submittedInnovations / totalInnovations * 100
-                                : 0.0;
-
-                return InnovationStatisticsDTO.builder()
-                                .totalInnovations(totalInnovations)
-                                .submittedInnovations(submittedInnovations)
-                                .approvedInnovations(approvedInnovations)
-                                .rejectedInnovations(rejectedInnovations)
-                                .achievedPercentage(Math.round(achievedPercentage * 100.0) / 100.0)
-                                .notAchievedPercentage(Math.round(notAchievedPercentage * 100.0) / 100.0)
-                                .pendingPercentage(Math.round(pendingPercentage * 100.0) / 100.0)
-                                .build();
-
-                /**
-                 * pendingPercentage = DRAFT + SUBMITTED + PENDING_KHOA_REVIEW + KHOA_REVIEWED +
-                 * KHOA_APPROVED + PENDING_TRUONG_REVIEW + TRUONG_REVIEWED
-                 * achievedPercentage = FINAL_APPROVED + TRUONG_APPROVED
-                 * notAchievedPercentage = KHOA_REJECTED + TRUONG_REJECTED
-                 */
-        }
-
         // 8.Lấy thống kê sáng kiến theo năm học cho user hiện tại
         public InnovationAcademicYearStatisticsDTO getInnovationStatisticsByAcademicYear(String userId) {
                 // Lấy thống kê tổng số sáng kiến theo năm học
@@ -474,63 +500,6 @@ public class InnovationService {
                                 .academicYearData(academicYearDataList)
                                 .totalInnovations(totalInnovations)
                                 .totalAcademicYears(sortedAcademicYears.size())
-                                .build();
-        }
-
-        // 9. Lấy thống kê sáng kiến theo năm học cho user hiện tại
-        public InnovationAcademicYearStatisticsDTO getInnovationStatisticsByAcademicYearForCurrentUser() {
-                User currentUser = userService.getCurrentUser();
-                String userId = currentUser.getId();
-                return getInnovationStatisticsByAcademicYear(userId);
-        }
-
-        // 10. Lấy hạn chót sắp tới từ round hiện tại
-        public UpcomingDeadlinesResponse getUpcomingDeadlines() {
-                // Lấy round hiện tại
-                var currentRound = innovationRoundService.getCurrentRound();
-                if (currentRound == null) {
-                        return UpcomingDeadlinesResponse.builder()
-                                        .upcomingDeadlines(List.of())
-                                        .totalDeadlines(0)
-                                        .currentRoundName("Không có đợt sáng kiến nào đang diễn ra")
-                                        .academicYear("")
-                                        .build();
-                }
-
-                // Lấy tất cả phases của round hiện tại
-                List<InnovationPhase> phases = innovationPhaseRepository
-                                .findByInnovationRoundIdOrderByPhaseOrder(currentRound.getId());
-
-                LocalDate today = LocalDate.now();
-                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
-
-                List<UpcomingDeadlineResponse> upcomingDeadlines = phases.stream()
-                                .filter(phase -> phase.getPhaseEndDate().isAfter(today)
-                                                || phase.getPhaseEndDate().isEqual(today))
-                                .map(phase -> {
-                                        long daysRemaining = ChronoUnit.DAYS.between(today, phase.getPhaseEndDate());
-
-                                        return UpcomingDeadlineResponse.builder()
-                                                        .id(phase.getId())
-                                                        .title(generateDeadlineTitle(phase))
-                                                        .deadlineDate(phase.getPhaseEndDate())
-                                                        .formattedDate(phase.getPhaseEndDate().format(formatter))
-                                                        .daysRemaining(daysRemaining)
-                                                        .phaseType(phase.getPhaseType().getValue())
-                                                        .level(phase.getLevel() != null ? phase.getLevel().getValue()
-                                                                        : "")
-                                                        .description(phase.getDescription())
-                                                        .isDeadline(phase.getIsDeadline())
-                                                        .build();
-                                })
-                                .sorted((a, b) -> a.getDeadlineDate().compareTo(b.getDeadlineDate()))
-                                .collect(Collectors.toList());
-
-                return UpcomingDeadlinesResponse.builder()
-                                .upcomingDeadlines(upcomingDeadlines)
-                                .totalDeadlines(upcomingDeadlines.size())
-                                .currentRoundName(currentRound.getName())
-                                .academicYear(currentRound.getAcademicYear())
                                 .build();
         }
 

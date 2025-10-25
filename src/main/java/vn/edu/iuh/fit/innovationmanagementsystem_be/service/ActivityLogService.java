@@ -25,23 +25,7 @@ public class ActivityLogService {
     private final ActivityLogRepository activityLogRepository;
     private final ActivityResponseMapper activityResponseMapper;
 
-    // 1. Tạo activity log mới
-    public ActivityLog createActivityLog(String userId, String innovationId, String innovationName,
-            InnovationStatusEnum activityType, String message) {
-        ActivityLog activityLog = ActivityLog.builder()
-                .userId(userId)
-                .innovationId(innovationId)
-                .innovationName(innovationName)
-                .activityType(activityType)
-                .message(message)
-                .isRead(false)
-                .createdAt(LocalDateTime.now())
-                .build();
-
-        return activityLogRepository.save(activityLog);
-    }
-
-    // 2. Lấy hoạt động gần đây với phân trang
+    // 1. Lấy hoạt động gần đây với phân trang - OK
     @Transactional(readOnly = true)
     public RecentActivitiesResponse getRecentActivities(String userId, int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
@@ -63,7 +47,7 @@ public class ActivityLogService {
                 .build();
     }
 
-    // 3. Lấy hoạt động gần đây cho dashboard (không phân trang)
+    // 2. Lấy hoạt động gần đây cho dashboard (không phân trang) - OK
     @Transactional(readOnly = true)
     public List<ActivityResponse> getRecentActivitiesForDashboard(String userId, int limit) {
         Pageable pageable = PageRequest.of(0, limit);
@@ -74,23 +58,39 @@ public class ActivityLogService {
                 .collect(Collectors.toList());
     }
 
-    // 4. Lấy số hoạt động chưa đọc
+    // 3. Đánh dấu tất cả hoạt động là đã đọc - OK
+    public void markAllAsRead(String userId) {
+        activityLogRepository.markAllAsReadByUserId(userId);
+    }
+
+    // 4. Lấy số hoạt động chưa đọc - OK
     @Transactional(readOnly = true)
     public Long getUnreadCount(String userId) {
         return activityLogRepository.countByUserIdAndIsReadFalse(userId);
     }
 
-    // 5. Đánh dấu tất cả hoạt động là đã đọc
-    public void markAllAsRead(String userId) {
-        activityLogRepository.markAllAsReadByUserId(userId);
-    }
-
-    // 6. Đánh dấu một hoạt động cụ thể là đã đọc
+    // 5. Đánh dấu một hoạt động cụ thể là đã đọc - OK
     public void markAsRead(String activityId) {
         activityLogRepository.findById(activityId).ifPresent(activity -> {
             activity.setIsRead(true);
             activityLogRepository.save(activity);
         });
+    }
+
+    // 6. Tạo activity log mới
+    public ActivityLog createActivityLog(String userId, String innovationId, String innovationName,
+            InnovationStatusEnum activityType, String message) {
+        ActivityLog activityLog = ActivityLog.builder()
+                .userId(userId)
+                .innovationId(innovationId)
+                .innovationName(innovationName)
+                .activityType(activityType)
+                .message(message)
+                .isRead(false)
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        return activityLogRepository.save(activityLog);
     }
 
 }
