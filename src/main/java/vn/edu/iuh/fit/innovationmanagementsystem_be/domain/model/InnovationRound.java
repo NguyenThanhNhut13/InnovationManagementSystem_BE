@@ -15,8 +15,8 @@ import java.util.Set;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@EqualsAndHashCode(callSuper = true, exclude = {"innovationPhases", "formTemplates", "innovations"})
-@ToString(callSuper = true, exclude = {"innovationPhases", "formTemplates", "innovations", "innovationDecision"})
+@EqualsAndHashCode(callSuper = true, exclude = { "innovationPhases", "formTemplates", "innovations" })
+@ToString(callSuper = true, exclude = { "innovationPhases", "formTemplates", "innovations", "innovationDecision" })
 public class InnovationRound extends Auditable {
 
     @Id
@@ -56,7 +56,6 @@ public class InnovationRound extends Auditable {
 
     @OneToMany(mappedBy = "innovationRound", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
     private Set<InnovationPhase> innovationPhases = new HashSet<>();
-
 
     public boolean isPhaseWithinRoundTimeframe(LocalDate phaseStartDate,
             LocalDate phaseEndDate) {
