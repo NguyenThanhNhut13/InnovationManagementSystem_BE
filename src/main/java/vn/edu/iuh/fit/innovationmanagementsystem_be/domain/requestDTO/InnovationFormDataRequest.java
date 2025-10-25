@@ -21,11 +21,9 @@ public class InnovationFormDataRequest {
     @NotEmpty(message = "Danh sách form data không được để trống")
     private List<FormDataItemRequest> formDataItems;
 
-    // Action type: DRAFT (lưu nháp) hoặc SUBMITTED (nộp chính thức)
     @Pattern(regexp = "^(DRAFT|SUBMITTED)$", message = "Action type chỉ được là DRAFT hoặc SUBMITTED")
     private String actionType = InnovationStatusEnum.DRAFT.name();
 
-    // Thông tin sáng kiến
     private String innovationName;
     private String innovationPhaseId;
     private Boolean isScore;

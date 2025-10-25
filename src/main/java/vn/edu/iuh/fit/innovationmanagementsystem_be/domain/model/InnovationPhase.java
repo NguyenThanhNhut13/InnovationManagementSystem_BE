@@ -29,7 +29,6 @@ public class InnovationPhase extends Auditable {
     @Column(name = "name", nullable = false)
     private String name;
 
-    // Thông tin giai đoạn cụ thể
     @Column(name = "phase_type", nullable = false)
     @Enumerated(EnumType.STRING)
     private InnovationPhaseTypeEnum phaseType;

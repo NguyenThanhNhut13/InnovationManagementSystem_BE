@@ -11,15 +11,11 @@ public enum FieldTypeEnum {
     FILE,
     TABLE,
     SECTION,
-
     LOCATION_DATE,
     ACADEMIC_YEAR,
-
     CONTRIBUTED,
     REFERENCE,
-
     INNOVATION_DATA,
     USER_DATA,
-
     SIGNATURE,
 }

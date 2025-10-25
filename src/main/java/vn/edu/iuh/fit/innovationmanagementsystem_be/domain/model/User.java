@@ -72,7 +72,6 @@ public class User extends Auditable {
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<DigitalSignature> digitalSignatures;
 
-    // Pre-persist method để set status mặc định
     @PrePersist
     protected void onCreate() {
         if (status == null) {

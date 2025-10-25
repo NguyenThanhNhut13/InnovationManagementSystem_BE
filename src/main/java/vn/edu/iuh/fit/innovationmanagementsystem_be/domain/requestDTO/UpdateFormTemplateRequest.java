@@ -23,5 +23,5 @@ public class UpdateFormTemplateRequest {
     private String roundId;
 
     @Valid
-    private List<FieldDataRequest> fields;
+    private List<FormFieldRequest> fields;
 }

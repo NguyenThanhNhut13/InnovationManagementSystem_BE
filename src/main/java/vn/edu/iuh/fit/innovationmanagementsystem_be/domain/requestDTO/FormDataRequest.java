@@ -10,7 +10,6 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class FormDataRequest {
 
-    // Fields cho Create/Update single FormData
     @NotBlank(message = "Field value không được để trống")
     private String fieldValue;
 

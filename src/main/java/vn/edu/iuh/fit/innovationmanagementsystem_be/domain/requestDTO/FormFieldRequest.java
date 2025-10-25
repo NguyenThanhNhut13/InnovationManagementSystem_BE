@@ -12,7 +12,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.UserRoleE
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class FieldDataRequest {
+public class FormFieldRequest {
 
     private String id;
 

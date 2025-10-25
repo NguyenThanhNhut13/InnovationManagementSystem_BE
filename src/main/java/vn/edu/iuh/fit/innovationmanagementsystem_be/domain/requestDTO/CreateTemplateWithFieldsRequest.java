@@ -31,5 +31,5 @@ public class CreateTemplateWithFieldsRequest {
 
     @NotEmpty(message = "Danh sách fields không được để trống")
     @Valid
-    private List<FieldDataRequest> fields;
+    private List<FormFieldRequest> fields;
 }

@@ -23,7 +23,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.TemplateT
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.CreateTemplateRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.CreateTemplateWithFieldsRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.UpdateFormTemplateRequest;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.FieldDataRequest;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.FormFieldRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.CreateTemplateResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.CreateTemplateWithFieldsResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.FormTemplateResponse;
@@ -207,7 +207,7 @@ public class FormTemplateService {
         return Utils.toResultPaginationDTO(templates.map(formTemplateMapper::toFormTemplateResponse), pageable);
     }
 
-    private void processFormFields(FormTemplate template, List<FieldDataRequest> fields) {
+    private void processFormFields(FormTemplate template, List<FormFieldRequest> fields) {
         if (fields == null || fields.isEmpty()) {
             return;
         }
@@ -219,7 +219,7 @@ public class FormTemplateService {
         Set<String> incomingIds = new java.util.HashSet<>();
 
         List<FormField> newList = new java.util.ArrayList<>();
-        for (FieldDataRequest fd : fields) {
+        for (FormFieldRequest fd : fields) {
             FormField entity = null;
 
             // Ưu tiên tìm theo ID trước
