@@ -690,6 +690,7 @@ public class FormTemplateService {
             fieldResponse.setFieldType(field.getFieldType());
             fieldResponse.setRequired(field.getRequired());
             fieldResponse.setIsReadOnly(field.getIsReadOnly());
+            fieldResponse.setFormTemplateId(template.getId()); // Set formTemplateId từ template hiện tại
             fieldResponse.setContributionConfig(field.getContributionConfig());
             allFields.add(fieldResponse);
         }
