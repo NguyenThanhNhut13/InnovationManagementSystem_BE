@@ -26,7 +26,7 @@ import com.turkraft.springfilter.boot.Filter;
 import jakarta.validation.Valid;
 
 @RestController
-@RequestMapping("/api/v1/innovation-rounds")
+@RequestMapping("/api/v1")
 @Tag(name = "Innovation Round", description = "Innovation round management APIs")
 @SecurityRequirement(name = "Bearer Authentication")
 public class InnovationRoundController {
@@ -38,7 +38,7 @@ public class InnovationRoundController {
         }
 
         // 1. Get All Innovation Rounds với Pagination và Filtering
-        @GetMapping
+        @GetMapping("/innovation-rounds")
         @ApiMessage("Lấy danh sách tất cả đợt sáng kiến với phân trang và lọc thành công")
         @Operation(summary = "Get All Innovation Rounds", description = "Get paginated list of all innovation rounds with filtering")
         @ApiResponses(value = {
@@ -53,7 +53,7 @@ public class InnovationRoundController {
         }
 
         // 2. Get Innovation Rounds List - No InnovationDecision and InnovationPhase
-        @GetMapping("/list")
+        @GetMapping("/innovation-rounds/list")
         @ApiMessage("Lấy danh sách đợt sáng kiến cho hiển thị bảng thành công")
         @Operation(summary = "Get Innovation Rounds List for Table", description = "Get paginated list of innovation rounds with specific fields for table display")
         @ApiResponses(value = {
@@ -68,7 +68,7 @@ public class InnovationRoundController {
         }
 
         // 3. Tạo innovationRound
-        @PostMapping
+        @PostMapping("/innovation-rounds")
         @PreAuthorize("hasAnyRole('QUAN_TRI_VIEN_QLKH_HTQT', 'QUAN_TRI_VIEN_HE_THONG')")
         @ApiMessage("Tạo đợt sáng kiến thành công")
         @Operation(summary = "Create Innovation Round", description = "Create a new innovation round with default status DRAFT")
@@ -84,7 +84,7 @@ public class InnovationRoundController {
         }
 
         // 4. Cập nhật round
-        @PutMapping("/{roundId}")
+        @PutMapping("/innovation-rounds/{roundId}")
         @PreAuthorize("hasAnyRole('QUAN_TRI_VIEN_QLKH_HTQT', 'QUAN_TRI_VIEN_HE_THONG')")
         @ApiMessage("Cập nhật đợt sáng kiến thành công")
         @Operation(summary = "Update Innovation Round", description = "Update innovation round details")
@@ -102,7 +102,7 @@ public class InnovationRoundController {
         }
 
         // 5. Lấy current round
-        @GetMapping("/current")
+        @GetMapping("/innovation-rounds/current")
         @ApiMessage("Lấy thông tin đợt sáng kiến hiện tại thành công")
         @Operation(summary = "Get Current Round", description = "Get current active innovation round (restricted to TRUONG_KHOA, QUAN_TRI_VIEN_QLKH_HTQT, QUAN_TRI_VIEN_HE_THONG)")
         @ApiResponses(value = {
@@ -119,7 +119,7 @@ public class InnovationRoundController {
         }
 
         // 6. Công bố Round
-        @PutMapping("/{roundId}/publish")
+        @PutMapping("/innovation-rounds/{roundId}/publish")
         @PreAuthorize("hasAnyRole('QUAN_TRI_VIEN_QLKH_HTQT', 'QUAN_TRI_VIEN_HE_THONG')")
         @ApiMessage("Công bố đợt sáng kiến thành công")
         @Operation(summary = "Publish Innovation Round", description = "Publish innovation round by changing status from DRAFT to OPEN")
@@ -135,7 +135,7 @@ public class InnovationRoundController {
         }
 
         // 7. Đóng Round
-        @PutMapping("/{roundId}/close")
+        @PutMapping("/innovation-rounds/{roundId}/close")
         @PreAuthorize("hasAnyRole('QUAN_TRI_VIEN_QLKH_HTQT', 'QUAN_TRI_VIEN_HE_THONG')")
         @ApiMessage("Đóng đợt sáng kiến thành công")
         @Operation(summary = "Close Innovation Round", description = "Close innovation round by changing status to CLOSED")
@@ -151,7 +151,7 @@ public class InnovationRoundController {
         }
 
         // 8. Get Round by ID
-        @GetMapping("/{roundId}")
+        @GetMapping("/innovation-rounds/{roundId}")
         @ApiMessage("Lấy thông tin đợt sáng kiến thành công")
         @Operation(summary = "Get Round by ID", description = "Get innovation round by ID")
         @ApiResponses(value = {

@@ -31,7 +31,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.annotation.ApiMessage;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/v1/form-templates")
+@RequestMapping("/api/v1")
 @Tag(name = "Form Template", description = "Form template management APIs")
 @SecurityRequirement(name = "Bearer Authentication")
 public class FormTemplateController {
@@ -43,7 +43,7 @@ public class FormTemplateController {
         }
 
         // 1. Lấy FormTemplate by id - OK
-        @GetMapping("/{id}")
+        @GetMapping("/form-templates/{id}")
         @ApiMessage("Lấy form template theo id thành công")
         @Operation(summary = "Get Form Template by ID", description = "Get form template details by ID")
         @ApiResponses(value = {
@@ -57,7 +57,7 @@ public class FormTemplateController {
         }
 
         // 2. Lấy FormTemplate by current InnovationRound - OK
-        @GetMapping("/innovation-round/current")
+        @GetMapping("/form-templates/innovation-round/current")
         @ApiMessage("Lấy form templates theo innovation round hiện tại thành công")
         @Operation(summary = "Get Form Templates by Current Round", description = "Get form templates for the current active innovation round")
         @ApiResponses(value = {
@@ -69,7 +69,7 @@ public class FormTemplateController {
         }
 
         // 3. Cập nhật FormTemplate by id - OK
-        @PutMapping("/{id}")
+        @PutMapping("/form-templates/{id}")
         @PreAuthorize("hasAnyRole( 'QUAN_TRI_VIEN_QLKH_HTQT', 'QUAN_TRI_VIEN_HE_THONG')")
         @ApiMessage("Cập nhật form template thành công")
         @Operation(summary = "Update Form Template", description = "Update form template by ID")
@@ -85,7 +85,7 @@ public class FormTemplateController {
         }
 
         // 4. Tạo FormTemplate với FormFields - OK
-        @PostMapping("/with-fields")
+        @PostMapping("/form-templates/with-fields")
         @PreAuthorize("hasAnyRole( 'QUAN_TRI_VIEN_QLKH_HTQT', 'QUAN_TRI_VIEN_HE_THONG')")
         @ApiMessage("Tạo form template với fields thành công")
         @Operation(summary = "Create Form Template with Fields", description = "Create a new form template with fields and table configuration")
@@ -114,7 +114,7 @@ public class FormTemplateController {
         }
 
         // 6. Xóa FormTemplate by id (InnovationRound ở trạng thái DRAFT) - OK
-        @DeleteMapping("/{id}")
+        @DeleteMapping("/form-templates/{id}")
         @PreAuthorize("hasAnyRole( 'QUAN_TRI_VIEN_QLKH_HTQT', 'QUAN_TRI_VIEN_HE_THONG')")
         @ApiMessage("Xóa form template thành công")
         @Operation(summary = "Delete Form Template", description = "Delete a form template by ID (only when round is DRAFT)")
@@ -130,7 +130,7 @@ public class FormTemplateController {
         }
 
         // 7. Tạo FormTemplate (không gắn InnovationRoundId ) - OK
-        @PostMapping
+        @PostMapping("/form-templates")
         @PreAuthorize("hasAnyRole( 'QUAN_TRI_VIEN_QLKH_HTQT', 'QUAN_TRI_VIEN_HE_THONG')")
         @ApiMessage("Tạo form template không gắn với round cụ thể thành công")
         @Operation(summary = "Create Form Template no roundId", description = "Create a new form template with optional round association")
@@ -144,7 +144,7 @@ public class FormTemplateController {
         }
 
         // 8. Lấy FormTemplate (InnovationRoundId = null) với pagination, filtering - OK
-        @GetMapping("/library")
+        @GetMapping("/form-templates/library")
         @ApiMessage("Lấy thư viện form templates với phân trang và tìm kiếm thành công")
         @Operation(summary = "Get Template Library", description = "Get all form templates that are not associated with any specific round (template library) with pagination and filtering")
         @ApiResponses(value = {
@@ -158,7 +158,7 @@ public class FormTemplateController {
         }
 
         // 9. Lấy form templates theo innovation round ID - OK
-        @GetMapping("/innovation-round/{roundId}")
+        @GetMapping("/form-templates/innovation-round/{roundId}")
         @ApiMessage("Lấy form templates theo innovation round thành công")
         @Operation(summary = "Get Form Templates by Innovation Round", description = "Get form templates filtered by innovation round ID")
         @ApiResponses(value = {
@@ -171,7 +171,7 @@ public class FormTemplateController {
         }
 
         // 10. Lấy form templates theo roles của user hiện tại - OK
-        @GetMapping("/current-user")
+        @GetMapping("/form-templates/current-user")
         @ApiMessage("Lấy form templates theo roles của user hiện tại thành công")
         @Operation(summary = "Get Form Templates by Current User Roles", description = "Get form templates for the current active innovation round based on current user's roles")
         @ApiResponses(value = {
