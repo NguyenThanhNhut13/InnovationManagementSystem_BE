@@ -107,9 +107,7 @@ public class UserSeeder implements DatabaseSeeder {
         return user;
     }
 
-    /**
-     * Tạo UserSignatureProfile cho tất cả user trong danh sách
-     */
+    // Tạo UserSignatureProfile cho tất cả user trong danh sách
     private void createUserSignatureProfiles(List<User> users) {
         log.info("Bắt đầu tạo UserSignatureProfile cho {} users...", users.size());
 
@@ -125,9 +123,7 @@ public class UserSeeder implements DatabaseSeeder {
         log.info("Hoàn thành tạo UserSignatureProfile cho {} users.", users.size());
     }
 
-    /**
-     * Tạo UserSignatureProfile cho một user cụ thể
-     */
+    // Tạo UserSignatureProfile cho một user cụ thể
     private void createUserSignatureProfile(User user) {
         try {
             UserSignatureProfileRequest request = new UserSignatureProfileRequest();
@@ -140,9 +136,7 @@ public class UserSeeder implements DatabaseSeeder {
         }
     }
 
-    /**
-     * Lấy trình độ học vấn dựa trên role
-     */
+    // Lấy trình độ học vấn dựa trên role
     private String getQualificationByRole(UserRoleEnum roleEnum) {
         return switch (roleEnum) {
             case QUAN_TRI_VIEN_HE_THONG -> "Thạc sĩ Quản trị Hệ thống";
@@ -156,9 +150,7 @@ public class UserSeeder implements DatabaseSeeder {
         };
     }
 
-    /**
-     * Lấy chức danh dựa trên role
-     */
+    // Lấy chức danh dựa trên role
     private String getTitleByRole(UserRoleEnum roleEnum) {
         return switch (roleEnum) {
             case QUAN_TRI_VIEN_HE_THONG -> "Quản trị viên hệ thống";

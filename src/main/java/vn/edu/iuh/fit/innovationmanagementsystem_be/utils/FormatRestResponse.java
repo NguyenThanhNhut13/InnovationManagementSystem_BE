@@ -62,7 +62,6 @@ public class FormatRestResponse implements ResponseBodyAdvice<Object> {
         if (body instanceof Resource || status >= 400) {
             return body;
         } else if (body instanceof String) {
-            // Handle String responses by wrapping them in RestResponse
             res.setData(body);
             ApiMessage message = returnType.getMethodAnnotation(ApiMessage.class);
             res.setMessage(message != null ? message.value() : "Thành công");

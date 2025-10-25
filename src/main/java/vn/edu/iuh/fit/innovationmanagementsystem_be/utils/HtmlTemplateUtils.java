@@ -20,13 +20,7 @@ public class HtmlTemplateUtils {
     private static final Pattern FIELD_ID_PATTERN = Pattern.compile("data-field-id=\"([^\"]+)\"");
     private static final Pattern SECTION_ID_PATTERN = Pattern.compile("data-section-id=\"([^\"]+)\"");
 
-    /**
-     * Cập nhật HTML template content với field IDs mới
-     * 
-     * @param htmlContent HTML content gốc (có data-field-id cũ)
-     * @param fields      Danh sách FormField với IDs mới (UUID từ database)
-     * @return HTML content đã được cập nhật (data-field-id = UUID mới)
-     */
+    // Cập nhật HTML template content với field IDs mới
     public String updateFieldIdsInHtml(String htmlContent, List<FormField> fields) {
         if (htmlContent == null || fields == null || fields.isEmpty()) {
             return htmlContent;
@@ -46,12 +40,7 @@ public class HtmlTemplateUtils {
         return updateFieldIds(htmlContent, oldIdToNewIdMap);
     }
 
-    /**
-     * Flatten tất cả fields bao gồm cả children trong sections
-     * 
-     * @param fields Danh sách fields gốc (có thể có nested children)
-     * @return Danh sách tất cả fields đã được flatten theo thứ tự xuất hiện
-     */
+    // Flatten tất cả fields bao gồm cả children trong sections
     public static List<FormField> flattenAllFields(List<FormField> fields) {
         List<FormField> flattenedFields = new ArrayList<>();
         ObjectMapper objectMapper = new ObjectMapper();
@@ -96,10 +85,8 @@ public class HtmlTemplateUtils {
         return flattenedFields;
     }
 
-    /**
-     * Trích xuất tất cả field IDs và section IDs từ HTML content
-     * Bao gồm cả data-field-id và data-section-id
-     */
+    // Trích xuất tất cả field IDs và section IDs từ HTML content
+    // Bao gồm cả data-field-id và data-section-id
     private static List<String> extractOldFieldIds(String htmlContent) {
         List<String> fieldIds = new ArrayList<>();
 
@@ -120,10 +107,8 @@ public class HtmlTemplateUtils {
         return fieldIds;
     }
 
-    /**
-     * Cập nhật các data-field-id và data-section-id trong HTML từ oldFieldId ->
-     * newFieldId (UUID)
-     */
+    // Cập nhật các data-field-id và data-section-id trong HTML từ oldFieldId ->
+    // newFieldId (UUID)
     private static String updateFieldIds(String htmlContent, Map<String, String> oldIdToNewIdMap) {
         if (htmlContent == null) {
             return htmlContent;

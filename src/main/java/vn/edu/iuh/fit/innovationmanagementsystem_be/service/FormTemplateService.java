@@ -35,7 +35,6 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.FormTemplateRepos
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.InnovationRoundRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.ResultPaginationDTO;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.Utils;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.Base64Utils;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.HtmlTemplateUtils;
 
 import java.util.LinkedHashMap;
@@ -126,7 +125,7 @@ public class FormTemplateService {
             template.setTargetRole(request.getTargetRole());
         }
         if (request.getTemplateContent() != null) {
-            String encodedContent = Base64Utils.encode(request.getTemplateContent());
+            String encodedContent = Utils.encode(request.getTemplateContent());
             template.setTemplateContent(encodedContent);
         }
 
@@ -155,7 +154,7 @@ public class FormTemplateService {
         template.setTemplateType(request.getTemplateType());
         template.setTargetRole(request.getTargetRole());
 
-        String encodedContent = Base64Utils.encode(request.getTemplateContent());
+        String encodedContent = Utils.encode(request.getTemplateContent());
         template.setTemplateContent(encodedContent);
         template.setInnovationRound(innovationRound);
 
@@ -310,9 +309,9 @@ public class FormTemplateService {
         }
 
         try {
-            String htmlContent = Base64Utils.decode(template.getTemplateContent());
+            String htmlContent = Utils.decode(template.getTemplateContent());
             String updatedHtmlContent = htmlTemplateUtils.updateFieldIdsInHtml(htmlContent, template.getFormFields());
-            String encodedContent = Base64Utils.encode(updatedHtmlContent);
+            String encodedContent = Utils.encode(updatedHtmlContent);
             template.setTemplateContent(encodedContent);
 
         } catch (Exception e) {
@@ -328,7 +327,7 @@ public class FormTemplateService {
             template.setTemplateType(request.getTemplateType());
             template.setTargetRole(request.getTargetRole());
 
-            String encodedContent = Base64Utils.encode(request.getTemplateContent());
+            String encodedContent = Utils.encode(request.getTemplateContent());
             template.setTemplateContent(encodedContent);
 
             if (request.getRoundId() != null && !request.getRoundId().trim().isEmpty()) {
