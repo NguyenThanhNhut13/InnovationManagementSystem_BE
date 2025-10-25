@@ -8,6 +8,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -69,6 +70,7 @@ public class UserController {
 
     // 3. Gán Role To User
     @PostMapping("/users/{userId}/roles/{roleId}")
+    @PreAuthorize("hasAnyRole('QUAN_TRI_VIEN_QLKH_HTQT', 'QUAN_TRI_VIEN_HE_THONG', 'TRUONG_KHOA', 'QUAN_TRI_VIEN_KHOA')")
     @ApiMessage("Gán vai trò cho người dùng thành công")
     public ResponseEntity<UserRoleResponse> assignRoleToUser(@PathVariable String userId, @PathVariable String roleId) {
         return ResponseEntity.ok(userService.assignRoleToUser(userId, roleId));
@@ -76,6 +78,7 @@ public class UserController {
 
     // 4. Xóa Role From User
     @DeleteMapping("/users/{userId}/roles/{roleId}")
+    @PreAuthorize("hasAnyRole('QUAN_TRI_VIEN_QLKH_HTQT', 'QUAN_TRI_VIEN_HE_THONG', 'TRUONG_KHOA', 'QUAN_TRI_VIEN_KHOA')")
     @ApiMessage("Xóa vai trò khỏi người dùng thành công")
     public ResponseEntity<Void> removeRoleFromUser(@PathVariable String userId, @PathVariable String roleId) {
         userService.removeRoleFromUser(userId, roleId);

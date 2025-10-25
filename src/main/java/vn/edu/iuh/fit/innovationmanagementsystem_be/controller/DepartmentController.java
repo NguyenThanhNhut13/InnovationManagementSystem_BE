@@ -11,6 +11,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -28,6 +29,7 @@ import java.util.List;
 @Tag(name = "Department", description = "Department management APIs")
 @SecurityRequirement(name = "Bearer Authentication")
 public class DepartmentController {
+
         private final DepartmentService departmentService;
 
         public DepartmentController(DepartmentService departmentService) {
@@ -50,6 +52,7 @@ public class DepartmentController {
 
         // 2. Lấy thống kê số lượng Innovation của tất cả các Department
         @GetMapping("/departments/innovations/statistics")
+        @PreAuthorize("hasAnyRole('QUAN_TRI_VIEN_HE_THONG', 'QUAN_TRI_VIEN_QLKH_HTQT')")
         @ApiMessage("Lấy thống kê số lượng sáng kiến của tất cả các khoa thành công")
         @Operation(summary = "Get Department Innovation Statistics", description = "Get innovation statistics for all departments")
         @ApiResponses(value = {

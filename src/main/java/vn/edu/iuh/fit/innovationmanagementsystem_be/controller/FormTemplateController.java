@@ -12,6 +12,7 @@ import jakarta.validation.Valid;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import com.turkraft.springfilter.boot.Filter;
@@ -69,6 +70,7 @@ public class FormTemplateController {
 
         // 3. Cập nhật FormTemplate by id - OK
         @PutMapping("/{id}")
+        @PreAuthorize("hasAnyRole( 'QUAN_TRI_VIEN_QLKH_HTQT', 'QUAN_TRI_VIEN_HE_THONG')")
         @ApiMessage("Cập nhật form template thành công")
         @Operation(summary = "Update Form Template", description = "Update form template by ID")
         @ApiResponses(value = {
@@ -84,6 +86,7 @@ public class FormTemplateController {
 
         // 4. Tạo FormTemplate với FormFields - OK
         @PostMapping("/with-fields")
+        @PreAuthorize("hasAnyRole( 'QUAN_TRI_VIEN_QLKH_HTQT', 'QUAN_TRI_VIEN_HE_THONG')")
         @ApiMessage("Tạo form template với fields thành công")
         @Operation(summary = "Create Form Template with Fields", description = "Create a new form template with fields and table configuration")
         @ApiResponses(value = {
@@ -112,6 +115,7 @@ public class FormTemplateController {
 
         // 6. Xóa FormTemplate by id (InnovationRound ở trạng thái DRAFT) - OK
         @DeleteMapping("/{id}")
+        @PreAuthorize("hasAnyRole( 'QUAN_TRI_VIEN_QLKH_HTQT', 'QUAN_TRI_VIEN_HE_THONG')")
         @ApiMessage("Xóa form template thành công")
         @Operation(summary = "Delete Form Template", description = "Delete a form template by ID (only when round is DRAFT)")
         @ApiResponses(value = {
@@ -127,6 +131,7 @@ public class FormTemplateController {
 
         // 7. Tạo FormTemplate (không gắn InnovationRoundId ) - OK
         @PostMapping
+        @PreAuthorize("hasAnyRole( 'QUAN_TRI_VIEN_QLKH_HTQT', 'QUAN_TRI_VIEN_HE_THONG')")
         @ApiMessage("Tạo form template không gắn với round cụ thể thành công")
         @Operation(summary = "Create Form Template no roundId", description = "Create a new form template with optional round association")
         @ApiResponses(value = {
@@ -178,12 +183,4 @@ public class FormTemplateController {
                 return ResponseEntity.ok(formTemplateService.getFormTemplatesByCurrentUserRoles());
         }
 
-        // Debug endpoint để kiểm tra templates
-        @GetMapping("/debug")
-        @ApiMessage("Debug templates")
-        @Operation(summary = "Debug Templates", description = "Debug templates in database")
-        public ResponseEntity<String> debugTemplates() {
-                formTemplateService.debugTemplates();
-                return ResponseEntity.ok("Debug completed - check logs");
-        }
 }

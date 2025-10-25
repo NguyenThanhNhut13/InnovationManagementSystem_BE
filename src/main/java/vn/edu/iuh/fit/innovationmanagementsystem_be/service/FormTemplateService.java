@@ -404,38 +404,6 @@ public class FormTemplateService {
                 .collect(Collectors.toList());
     }
 
-    // Debug method để kiểm tra templates
-    public void debugTemplates() {
-        log.info("=== DEBUG TEMPLATES ===");
-
-        // Kiểm tra tất cả templates
-        List<FormTemplate> allTemplates = formTemplateRepository.findAll();
-        log.info("Total templates: {}", allTemplates.size());
-
-        // Kiểm tra templates trong library
-        List<FormTemplate> libraryTemplates = formTemplateRepository.findByInnovationRoundIsNullOrderByTemplateType();
-        log.info("Library templates: {}", libraryTemplates.size());
-
-        for (FormTemplate template : libraryTemplates) {
-            log.info("Library: {} - {} - {}", template.getId(), template.getTemplateType(), template.getTargetRole());
-        }
-
-        // Kiểm tra current round
-        InnovationRound currentRound = innovationRoundRepository.findCurrentActiveRound(LocalDate.now()).orElse(null);
-        log.info("Current round: {}", currentRound != null ? currentRound.getId() : "null");
-
-        if (currentRound != null) {
-            List<FormTemplate> roundTemplates = formTemplateRepository
-                    .findByInnovationRoundIdOrderByTemplateType(currentRound.getId());
-            log.info("Round templates: {}", roundTemplates.size());
-            for (FormTemplate template : roundTemplates) {
-                log.info("Round: {} - {} - {}", template.getId(), template.getTemplateType(), template.getTargetRole());
-            }
-        }
-
-        log.info("=== END DEBUG ===");
-    }
-
     /**
      * Loại bỏ các field trùng lặp theo fieldKey trong danh sách templates
      */

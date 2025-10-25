@@ -11,6 +11,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.InnovationRound;
@@ -68,6 +69,7 @@ public class InnovationRoundController {
 
         // 3. Tạo innovationRound
         @PostMapping
+        @PreAuthorize("hasAnyRole('QUAN_TRI_VIEN_QLKH_HTQT', 'QUAN_TRI_VIEN_HE_THONG')")
         @ApiMessage("Tạo đợt sáng kiến thành công")
         @Operation(summary = "Create Innovation Round", description = "Create a new innovation round with default status DRAFT")
         @ApiResponses(value = {
@@ -83,6 +85,7 @@ public class InnovationRoundController {
 
         // 4. Cập nhật round
         @PutMapping("/{roundId}")
+        @PreAuthorize("hasAnyRole('QUAN_TRI_VIEN_QLKH_HTQT', 'QUAN_TRI_VIEN_HE_THONG')")
         @ApiMessage("Cập nhật đợt sáng kiến thành công")
         @Operation(summary = "Update Innovation Round", description = "Update innovation round details")
         @ApiResponses(value = {
@@ -117,6 +120,7 @@ public class InnovationRoundController {
 
         // 6. Công bố Round
         @PutMapping("/{roundId}/publish")
+        @PreAuthorize("hasAnyRole('QUAN_TRI_VIEN_QLKH_HTQT', 'QUAN_TRI_VIEN_HE_THONG')")
         @ApiMessage("Công bố đợt sáng kiến thành công")
         @Operation(summary = "Publish Innovation Round", description = "Publish innovation round by changing status from DRAFT to OPEN")
         @ApiResponses(value = {
@@ -132,6 +136,7 @@ public class InnovationRoundController {
 
         // 7. Đóng Round
         @PutMapping("/{roundId}/close")
+        @PreAuthorize("hasAnyRole('QUAN_TRI_VIEN_QLKH_HTQT', 'QUAN_TRI_VIEN_HE_THONG')")
         @ApiMessage("Đóng đợt sáng kiến thành công")
         @Operation(summary = "Close Innovation Round", description = "Close innovation round by changing status to CLOSED")
         @ApiResponses(value = {
