@@ -700,7 +700,7 @@ public class FormTemplateService {
     }
 
     /**
-     * Tự sinh UUID cho các column trong JsonNode tableConfig nếu chưa có ID
+     * Tự sinh UUID mới cho các column trong JsonNode tableConfig
      */
     private JsonNode generateColumnIdsIfNeeded(JsonNode tableConfig) {
         if (tableConfig != null && tableConfig.has("columns")) {
@@ -710,10 +710,8 @@ public class FormTemplateService {
 
                 for (int i = 0; i < columnsNode.size(); i++) {
                     ObjectNode columnNode = (ObjectNode) columnsNode.get(i);
-                    if (!columnNode.has("id") || columnNode.get("id").isNull() ||
-                            columnNode.get("id").asText().trim().isEmpty()) {
-                        columnNode.put("id", UUID.randomUUID().toString());
-                    }
+                    // Sinh UUID mới cho mỗi column
+                    columnNode.put("id", UUID.randomUUID().toString());
                 }
 
                 return tableConfigNode;
@@ -725,7 +723,7 @@ public class FormTemplateService {
     }
 
     /**
-     * Tự sinh UUID cho các children trong JsonNode children nếu chưa có ID
+     * Tự sinh UUID mới cho các children trong JsonNode children
      */
     private JsonNode generateChildrenIdsIfNeeded(JsonNode children) {
         if (children != null && children.isArray()) {
@@ -734,10 +732,8 @@ public class FormTemplateService {
 
                 for (int i = 0; i < childrenNode.size(); i++) {
                     ObjectNode childNode = (ObjectNode) childrenNode.get(i);
-                    if (!childNode.has("id") || childNode.get("id").isNull() ||
-                            childNode.get("id").asText().trim().isEmpty()) {
-                        childNode.put("id", UUID.randomUUID().toString());
-                    }
+                    // Sinh UUID mới cho mỗi child
+                    childNode.put("id", UUID.randomUUID().toString());
                 }
 
                 return childrenNode;
