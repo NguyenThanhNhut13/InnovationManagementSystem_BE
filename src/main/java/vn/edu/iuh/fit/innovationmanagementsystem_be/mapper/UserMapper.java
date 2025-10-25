@@ -23,8 +23,8 @@ public interface UserMapper {
     @Mapping(target = "dateOfBirth", source = "dateOfBirth")
     @Mapping(target = "qualification", source = "qualification")
     @Mapping(target = "title", source = "title")
-    @Mapping(target = "password", ignore = true) // Will be set separately in service
-    @Mapping(target = "department", ignore = true) // Will be set separately in service
+    @Mapping(target = "password", ignore = true)
+    @Mapping(target = "department", ignore = true)
     @Mapping(target = "userRoles", ignore = true)
     @Mapping(target = "innovations", ignore = true)
     @Mapping(target = "coInnovations", ignore = true)

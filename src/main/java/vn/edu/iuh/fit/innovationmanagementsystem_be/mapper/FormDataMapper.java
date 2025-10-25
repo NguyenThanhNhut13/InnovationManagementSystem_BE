@@ -19,7 +19,7 @@ public interface FormDataMapper {
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "fieldValue", source = "fieldValue")
-    @Mapping(target = "innovation", ignore = true) // Will be set separately in service
-    @Mapping(target = "formField", ignore = true) // Will be set separately in service
+    @Mapping(target = "innovation", ignore = true)
+    @Mapping(target = "formField", ignore = true)
     FormData toFormData(FormDataRequest formDataRequest);
 }

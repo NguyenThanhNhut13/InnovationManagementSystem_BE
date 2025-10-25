@@ -10,7 +10,7 @@ public interface AuthenticationMapper {
 
     @Mapping(target = "department", source = "department.departmentName")
     @Mapping(target = "roles", source = "userRoles", qualifiedByName = "mapUserRolesToStringsWithDefault")
-    @Mapping(target = "accessToken", ignore = true) // Will be set separately
-    @Mapping(target = "refreshToken", ignore = true) // Will be set separately
+    @Mapping(target = "accessToken", ignore = true)
+    @Mapping(target = "refreshToken", ignore = true)
     LoginResponse toLoginResponse(User user);
 }

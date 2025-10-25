@@ -4,12 +4,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.Innovatio
 
 public class ActivityIconMapper {
 
-    /**
-     * Lấy loại icon dựa trên InnovationStatusEnum
-     * 
-     * @param status InnovationStatusEnum
-     * @return String icon type
-     */
+    // Lấy loại icon dựa trên InnovationStatusEnum
     public static String getIconType(InnovationStatusEnum status) {
         if (status == null) {
             return "default";

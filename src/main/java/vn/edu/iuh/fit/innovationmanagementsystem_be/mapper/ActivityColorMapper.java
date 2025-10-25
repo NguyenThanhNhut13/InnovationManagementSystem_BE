@@ -4,12 +4,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.Innovatio
 
 public class ActivityColorMapper {
 
-    /**
-     * Lấy màu icon dựa trên InnovationStatusEnum
-     * 
-     * @param status InnovationStatusEnum
-     * @return String color
-     */
+    // Lấy màu icon dựa trên InnovationStatusEnum
     public static String getIconColor(InnovationStatusEnum status) {
         if (status == null) {
             return "gray";
