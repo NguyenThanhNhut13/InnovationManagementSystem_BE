@@ -177,4 +177,13 @@ public class FormTemplateController {
         public ResponseEntity<List<FormTemplateResponse>> getFormTemplatesByCurrentUserRoles() {
                 return ResponseEntity.ok(formTemplateService.getFormTemplatesByCurrentUserRoles());
         }
+
+        // Debug endpoint để kiểm tra templates
+        @GetMapping("/debug")
+        @ApiMessage("Debug templates")
+        @Operation(summary = "Debug Templates", description = "Debug templates in database")
+        public ResponseEntity<String> debugTemplates() {
+                formTemplateService.debugTemplates();
+                return ResponseEntity.ok("Debug completed - check logs");
+        }
 }

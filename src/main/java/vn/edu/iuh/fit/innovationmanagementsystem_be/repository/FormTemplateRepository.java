@@ -9,6 +9,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.FormTemplate;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.TargetRoleCode;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.TemplateTypeEnum;
 
 import java.util.List;
 
@@ -32,4 +33,15 @@ public interface FormTemplateRepository extends JpaRepository<FormTemplate, Stri
 
         Page<FormTemplate> findAll(Specification<FormTemplate> specification,
                         Pageable pageable);
+
+        // Method để lấy templates theo innovation round và template types
+        @Query("SELECT ft FROM FormTemplate ft WHERE ft.innovationRound.id = :innovationRoundId AND ft.templateType IN :templateTypes ORDER BY ft.templateType")
+        List<FormTemplate> findByInnovationRoundIdAndTemplateTypeIn(
+                        @Param("innovationRoundId") String innovationRoundId,
+                        @Param("templateTypes") List<TemplateTypeEnum> templateTypes);
+
+        // Method để lấy templates từ template library theo template types
+        @Query("SELECT ft FROM FormTemplate ft WHERE ft.innovationRound IS NULL AND ft.templateType IN :templateTypes ORDER BY ft.templateType")
+        List<FormTemplate> findByInnovationRoundIsNullAndTemplateTypeIn(
+                        @Param("templateTypes") List<TemplateTypeEnum> templateTypes);
 }
