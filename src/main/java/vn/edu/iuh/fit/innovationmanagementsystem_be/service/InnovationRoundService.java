@@ -532,13 +532,10 @@ public class InnovationRoundService {
         // 10. Kiểm tra FormTemplate phải có đầy đủ các loại template cần thiết
         validateTemplateTypes(round);
 
-        // 11. Kiểm tra FormTemplate phải có đầy đủ các target role cần thiết
-        validateTemplateRoles(round);
-
-        // 12. Kiểm tra thời gian phase phải hợp lý
+        // 11. Kiểm tra thời gian phase phải hợp lý
         validatePhaseDuration(round);
 
-        // 13. Kiểm tra Round không được công bố nếu đã có Round khác đang ACTIVE
+        // 12. Kiểm tra Round không được công bố nếu đã có Round khác đang ACTIVE
         validateActiveRound(round);
     }
 
@@ -786,29 +783,6 @@ public class InnovationRoundService {
             if (entry.getValue() > 1) {
                 throw new IllegalArgumentException("Không được có nhiều hơn 1 template cùng loại: " +
                         entry.getKey().getValue());
-            }
-        }
-    }
-
-    /*
-     * Helper method: Kiểm tra FormTemplate phải có đầy đủ các target role cần thiết
-     */
-    private void validateTemplateRoles(InnovationRound round) {
-        List<FormTemplate> templates = round.getFormTemplates();
-        Set<TargetRoleCode> targetRoles = templates.stream()
-                .map(FormTemplate::getTargetRole)
-                .collect(Collectors.toSet());
-
-        // Kiểm tra các target role bắt buộc
-        Set<TargetRoleCode> requiredRoles = Set.of(
-                TargetRoleCode.EMPLOYEE,
-                TargetRoleCode.DEPARTMENT,
-                TargetRoleCode.QLKH_SECRETARY);
-
-        for (TargetRoleCode requiredRole : requiredRoles) {
-            if (!targetRoles.contains(requiredRole)) {
-                throw new IllegalArgumentException(
-                        "InnovationRound phải có Template có TargetRole: " + requiredRole.getValue());
             }
         }
     }
