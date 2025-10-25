@@ -1,1 +1,2 @@
-- repermisson
+- Create Innovation -> create activeLog -> Hash Document
+- clean signatures - repo - service - dto - model vv.

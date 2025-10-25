@@ -24,8 +24,8 @@ public class UserSignatureProfile extends Auditable {
     @Column(name = "path_url")
     private String pathUrl;
 
-    @Column(name = "private_key", columnDefinition = "TEXT")
-    private String privateKey;
+    @Column(name = "encrypted_private_key", columnDefinition = "TEXT")
+    private String encryptedPrivateKey; // Private key đã được mã hóa bằng HSM
 
     @Column(name = "public_key", columnDefinition = "TEXT")
     private String publicKey;
@@ -35,6 +35,23 @@ public class UserSignatureProfile extends Auditable {
 
     @Column(name = "certificate_issuer")
     private String certificateIssuer; // Tổ chức phát hành chứng chỉ
+
+    @Column(name = "certificate_data", columnDefinition = "TEXT")
+    private String certificateData; // X.509 Certificate data (Base64)
+
+    @Column(name = "certificate_chain", columnDefinition = "TEXT")
+    private String certificateChain; // Certificate chain (JSON format)
+
+    @Column(name = "certificate_expiry_date")
+    private java.time.LocalDateTime certificateExpiryDate; // Ngày hết hạn certificate
+
+    @Column(name = "certificate_status")
+    private String certificateStatus; // Status: VALID, EXPIRED, REVOKED, etc.
+
+    @Column(name = "last_certificate_validation")
+    private java.time.LocalDateTime lastCertificateValidation; // Lần cuối validate certificate
+
+    // TSA fields removed for academic project
 
     // Relationships
     @ManyToOne(fetch = FetchType.LAZY, optional = false)

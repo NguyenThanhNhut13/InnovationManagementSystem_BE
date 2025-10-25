@@ -62,6 +62,12 @@ public class DigitalSignature extends Auditable {
     @JoinColumn(name = "report_id")
     private Report report;
 
+    @Column(name = "timestamp_token", columnDefinition = "TEXT")
+    private String timestampToken; // RFC 3161 Timestamp token (disabled for academic project)
+
+    @Column(name = "certificate_validation_status")
+    private String certificateValidationStatus; // Status của certificate validation
+
     @PrePersist
     protected void ensureSignAt() {
         if (signAt == null) {

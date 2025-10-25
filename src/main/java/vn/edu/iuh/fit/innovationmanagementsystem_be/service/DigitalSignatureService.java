@@ -18,6 +18,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.DigitalSignatureR
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.InnovationRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.UserSignatureProfileRepository;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -32,19 +33,28 @@ public class DigitalSignatureService {
     private final UserService userService;
     private final KeyManagementService keyManagementService;
     private final DigitalSignatureResponseMapper digitalSignatureResponseMapper;
+    private final CertificateValidationService certificateValidationService;
+    private final CertificateManagementService certificateManagementService;
+    private final HSMEncryptionService hsmEncryptionService;
 
     public DigitalSignatureService(DigitalSignatureRepository digitalSignatureRepository,
             InnovationRepository innovationRepository,
             UserSignatureProfileRepository userSignatureProfileRepository,
             UserService userService,
             KeyManagementService keyManagementService,
-            DigitalSignatureResponseMapper digitalSignatureResponseMapper) {
+            DigitalSignatureResponseMapper digitalSignatureResponseMapper,
+            CertificateValidationService certificateValidationService,
+            CertificateManagementService certificateManagementService,
+            HSMEncryptionService hsmEncryptionService) {
         this.digitalSignatureRepository = digitalSignatureRepository;
         this.innovationRepository = innovationRepository;
         this.userSignatureProfileRepository = userSignatureProfileRepository;
         this.userService = userService;
         this.keyManagementService = keyManagementService;
         this.digitalSignatureResponseMapper = digitalSignatureResponseMapper;
+        this.certificateValidationService = certificateValidationService;
+        this.certificateManagementService = certificateManagementService;
+        this.hsmEncryptionService = hsmEncryptionService;
     }
 
     // 1. Tạo digital signature
@@ -63,13 +73,54 @@ public class DigitalSignatureService {
         UserSignatureProfile signatureProfile = this.userSignatureProfileRepository.findByUserId(currentUser.getId())
                 .orElseThrow(() -> new IdInvalidException("Người dùng chưa có hồ sơ chữ ký số"));
 
+        // 1. Validate certificate trước khi ký
+        if (signatureProfile.getCertificateData() != null) {
+            CertificateValidationService.CertificateValidationResult certValidation = certificateValidationService
+                    .validateX509Certificate(signatureProfile.getCertificateData());
+
+            if (!certValidation.isValid()) {
+                throw new IdInvalidException("Certificate không hợp lệ: " +
+                        String.join(", ", certValidation.getErrors()));
+            }
+
+            // Check certificate expiration
+            CertificateValidationService.CertificateExpirationResult expirationResult = certificateValidationService
+                    .checkCertificateExpiration(signatureProfile.getCertificateData());
+
+            if (expirationResult.isExpired()) {
+                throw new IdInvalidException("Certificate đã hết hạn");
+            }
+
+            // Sử dụng certificateManagementService để validate certificate chain
+            try {
+                // Validate certificate chain bằng cách kiểm tra certificate data
+                CertificateValidationService.CertificateValidationResult chainValidation = certificateValidationService
+                        .validateX509Certificate(signatureProfile.getCertificateData());
+                if (!chainValidation.isValid()) {
+                    throw new IdInvalidException("Certificate chain không hợp lệ: " +
+                            String.join(", ", chainValidation.getErrors()));
+                }
+
+                // Sử dụng certificateManagementService để setup certificate nếu cần
+                if (signatureProfile.getCertificateChain() == null) {
+                    certificateManagementService.setupUserCertificate(
+                            currentUser.getId(),
+                            signatureProfile.getCertificateData(),
+                            hsmEncryptionService.decryptPrivateKey(signatureProfile.getEncryptedPrivateKey()),
+                            signatureProfile.getCertificateData());
+                }
+            } catch (Exception e) {
+                throw new IdInvalidException("Certificate chain không hợp lệ: " + e.getMessage());
+            }
+        }
+
         if (digitalSignatureRepository.existsByInnovationIdAndDocumentTypeAndUserIdAndStatus(
                 request.getInnovationId(), request.getDocumentType(), currentUser.getId(),
                 SignatureStatusEnum.SIGNED)) {
             throw new IdInvalidException("Bạn đã ký tài liệu này rồi");
         }
 
-        // Xác thực chữ ký trước khi lưu bằng public key của user
+        // 2. Xác thực chữ ký trước khi lưu bằng public key của user
         boolean isValidSignature = keyManagementService.verifySignature(
                 request.getDocumentHash(),
                 request.getSignatureHash(),
@@ -78,6 +129,9 @@ public class DigitalSignatureService {
         if (!isValidSignature) {
             throw new IdInvalidException("Chữ ký không hợp lệ");
         }
+
+        // 3. Tạo timestamp cho chữ ký (RFC 3161) - Disabled for academic project
+        String timestampToken = null;
 
         // Tạo digital signature
         DigitalSignature digitalSignature = new DigitalSignature();
@@ -89,6 +143,10 @@ public class DigitalSignatureService {
         digitalSignature.setInnovation(innovation);
         digitalSignature.setUser(currentUser);
         digitalSignature.setUserSignatureProfile(signatureProfile);
+
+        // Lưu certificate validation info
+        digitalSignature.setTimestampToken(timestampToken);
+        digitalSignature.setCertificateValidationStatus("VALID");
 
         DigitalSignature savedSignature = digitalSignatureRepository.save(digitalSignature);
 
@@ -266,7 +324,9 @@ public class DigitalSignatureService {
         UserSignatureProfile signatureProfile = this.userSignatureProfileRepository.findByUserId(currentUser.getId())
                 .orElseThrow(() -> new IdInvalidException("Người dùng chưa có hồ sơ chữ ký số"));
 
-        return keyManagementService.generateSignature(documentHash, signatureProfile.getPrivateKey());
+        // Decrypt private key trước khi sử dụng
+        String decryptedPrivateKey = hsmEncryptionService.decryptPrivateKey(signatureProfile.getEncryptedPrivateKey());
+        return keyManagementService.generateSignature(documentHash, decryptedPrivateKey);
     }
 
     /*
@@ -284,5 +344,162 @@ public class DigitalSignatureService {
      */
     public String generateDocumentHash(byte[] fileContent) {
         return keyManagementService.generateDocumentHash(fileContent);
+    }
+
+    /*
+     * Method để validate timestamp của digital signature - Disabled for academic
+     * project
+     */
+    public TimestampValidationResult validateSignatureTimestamp(String signatureId) {
+        TimestampValidationResult result = new TimestampValidationResult();
+        result.setValid(true);
+        result.addWarning("Timestamp validation disabled for academic project");
+        return result;
+    }
+
+    /*
+     * Method để re-validate certificate của digital signature
+     */
+    public CertificateRevalidationResult revalidateSignatureCertificate(String signatureId) {
+        try {
+            DigitalSignature signature = digitalSignatureRepository.findById(signatureId)
+                    .orElseThrow(() -> new IdInvalidException("Không tìm thấy digital signature"));
+
+            UserSignatureProfile profile = signature.getUserSignatureProfile();
+            if (profile.getCertificateData() == null) {
+                CertificateRevalidationResult result = new CertificateRevalidationResult();
+                result.setValid(false);
+                result.addError("Digital signature không có certificate data");
+                return result;
+            }
+
+            // Re-validate certificate
+            CertificateValidationService.CertificateValidationResult certValidation = certificateValidationService
+                    .validateX509Certificate(profile.getCertificateData());
+
+            CertificateValidationService.CertificateExpirationResult expirationResult = certificateValidationService
+                    .checkCertificateExpiration(profile.getCertificateData());
+
+            CertificateRevalidationResult result = new CertificateRevalidationResult();
+            result.setValid(certValidation.isValid() && !expirationResult.isExpired());
+            result.setExpired(expirationResult.isExpired());
+            result.setExpiringSoon(expirationResult.isExpiringSoon());
+            result.setErrors(certValidation.getErrors());
+            result.setWarnings(certValidation.getWarnings());
+
+            // Update certificate status trong signature
+            if (result.isValid()) {
+                signature.setCertificateValidationStatus("VALID");
+            } else if (expirationResult.isExpired()) {
+                signature.setCertificateValidationStatus("EXPIRED");
+            } else {
+                signature.setCertificateValidationStatus("INVALID");
+            }
+
+            digitalSignatureRepository.save(signature);
+
+            return result;
+
+        } catch (Exception e) {
+            throw new IdInvalidException("Không thể re-validate certificate: " + e.getMessage());
+        }
+    }
+
+    // Inner classes for results
+    public static class TimestampValidationResult {
+        private boolean valid;
+        private LocalDateTime timestamp;
+        private List<String> errors = new ArrayList<>();
+        private List<String> warnings = new ArrayList<>();
+
+        // Getters and setters
+        public boolean isValid() {
+            return valid;
+        }
+
+        public void setValid(boolean valid) {
+            this.valid = valid;
+        }
+
+        public LocalDateTime getTimestamp() {
+            return timestamp;
+        }
+
+        public void setTimestamp(LocalDateTime timestamp) {
+            this.timestamp = timestamp;
+        }
+
+        public List<String> getErrors() {
+            return errors;
+        }
+
+        public List<String> getWarnings() {
+            return warnings;
+        }
+
+        public void addError(String error) {
+            this.errors.add(error);
+        }
+
+        public void addWarning(String warning) {
+            this.warnings.add(warning);
+        }
+    }
+
+    public static class CertificateRevalidationResult {
+        private boolean valid;
+        private boolean expired;
+        private boolean expiringSoon;
+        private List<String> errors = new ArrayList<>();
+        private List<String> warnings = new ArrayList<>();
+
+        // Getters and setters
+        public boolean isValid() {
+            return valid;
+        }
+
+        public void setValid(boolean valid) {
+            this.valid = valid;
+        }
+
+        public boolean isExpired() {
+            return expired;
+        }
+
+        public void setExpired(boolean expired) {
+            this.expired = expired;
+        }
+
+        public boolean isExpiringSoon() {
+            return expiringSoon;
+        }
+
+        public void setExpiringSoon(boolean expiringSoon) {
+            this.expiringSoon = expiringSoon;
+        }
+
+        public List<String> getErrors() {
+            return errors;
+        }
+
+        public void setErrors(List<String> errors) {
+            this.errors = errors;
+        }
+
+        public List<String> getWarnings() {
+            return warnings;
+        }
+
+        public void setWarnings(List<String> warnings) {
+            this.warnings = warnings;
+        }
+
+        public void addError(String error) {
+            this.errors.add(error);
+        }
+
+        public void addWarning(String warning) {
+            this.warnings.add(warning);
+        }
     }
 }

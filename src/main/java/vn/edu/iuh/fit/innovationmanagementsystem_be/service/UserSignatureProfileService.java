@@ -17,11 +17,14 @@ public class UserSignatureProfileService {
 
     private final UserSignatureProfileRepository userSignatureProfileRepository;
     private final KeyManagementService keyManagementService;
+    private final HSMEncryptionService hsmEncryptionService;
 
     public UserSignatureProfileService(UserSignatureProfileRepository userSignatureProfileRepository,
-            KeyManagementService keyManagementService) {
+            KeyManagementService keyManagementService,
+            HSMEncryptionService hsmEncryptionService) {
         this.userSignatureProfileRepository = userSignatureProfileRepository;
         this.keyManagementService = keyManagementService;
+        this.hsmEncryptionService = hsmEncryptionService;
     }
 
     // 1. Tạo UserSignatureProfile cho user
@@ -42,7 +45,10 @@ public class UserSignatureProfileService {
             UserSignatureProfile signatureProfile = new UserSignatureProfile();
             signatureProfile.setUser(user);
             signatureProfile.setPathUrl(request.getPathUrl());
-            signatureProfile.setPrivateKey(keyManagementService.privateKeyToString(keyPair.getPrivate()));
+            // Encrypt private key trước khi lưu
+            String privateKeyString = keyManagementService.privateKeyToString(keyPair.getPrivate());
+            String encryptedPrivateKey = hsmEncryptionService.encryptPrivateKey(privateKeyString);
+            signatureProfile.setEncryptedPrivateKey(encryptedPrivateKey);
             signatureProfile.setPublicKey(keyManagementService.publicKeyToString(keyPair.getPublic()));
             signatureProfile.setCertificateSerial(keyManagementService.generateCertificateSerial());
             signatureProfile.setCertificateIssuer(SignatureConstants.CERTIFICATE_ISSUER);
