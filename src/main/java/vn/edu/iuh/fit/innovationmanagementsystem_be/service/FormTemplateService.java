@@ -10,6 +10,8 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.FormField;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.FormTemplate;
@@ -45,6 +47,9 @@ import java.util.stream.Collectors;
 @Transactional
 @Slf4j
 public class FormTemplateService {
+
+    @PersistenceContext
+    private EntityManager entityManager;
 
     private final FormTemplateRepository formTemplateRepository;
     private final FormTemplateMapper formTemplateMapper;
@@ -199,13 +204,11 @@ public class FormTemplateService {
         return Utils.toResultPaginationDTO(templates.map(formTemplateMapper::toFormTemplateResponse), pageable);
     }
 
-    // Helper method để xử lý fields cho cả create và update
     private void processFormFields(FormTemplate template, List<FieldDataRequest> fields) {
         if (fields == null || fields.isEmpty()) {
             return;
         }
 
-        // Map các field hiện có theo id để tiện cập nhật/xóa
         Map<String, FormField> existingById = template.getFormFields().stream()
                 .filter(f -> f.getId() != null)
                 .collect(java.util.stream.Collectors.toMap(FormField::getId, f -> f));
@@ -254,7 +257,6 @@ public class FormTemplateService {
             }
 
             if (fd.getChildren() != null) {
-                // Tự sinh UUID cho các children nếu chưa có
                 JsonNode processedChildren = generateChildrenIdsIfNeeded(fd.getChildren());
                 entity.setChildren(processedChildren);
             }
@@ -265,6 +267,14 @@ public class FormTemplateService {
 
             if (fd.getUserDataConfig() != null) {
                 entity.setUserDataConfig(fd.getUserDataConfig());
+            }
+
+            if (fd.getInnovationDataConfig() != null) {
+                entity.setInnovationDataConfig(fd.getInnovationDataConfig());
+            }
+
+            if (fd.getContributionConfig() != null) {
+                entity.setContributionConfig(fd.getContributionConfig());
             }
 
             if (fd.getSigningRole() != null) {
@@ -286,72 +296,65 @@ public class FormTemplateService {
                 })
                 .collect(java.util.stream.Collectors.toList());
 
-        // Xóa các field không còn được sử dụng
         template.getFormFields().removeAll(fieldsToRemove);
-
-        // Thêm các field mới/cập nhật
         template.getFormFields().addAll(newList);
     }
 
-    /**
-     * Cập nhật HTML template content với field IDs mới
-     */
     private void updateHtmlTemplateContent(FormTemplate template) {
         if (template.getTemplateContent() == null || template.getFormFields().isEmpty()) {
             return;
         }
 
         try {
-            // Decode HTML content
             String htmlContent = Base64Utils.decode(template.getTemplateContent());
-
-            // Cập nhật field IDs trong HTML
             String updatedHtmlContent = htmlTemplateUtils.updateFieldIdsInHtml(htmlContent, template.getFormFields());
-
-            // Encode lại và lưu
             String encodedContent = Base64Utils.encode(updatedHtmlContent);
             template.setTemplateContent(encodedContent);
 
         } catch (Exception e) {
-            // Log lỗi nhưng không throw exception để không làm gián đoạn quá trình tạo/cập
-            // nhật
             System.err.println("Lỗi khi cập nhật HTML template content: " + e.getMessage());
         }
     }
 
-    // 8. Tạo form template không gắn round cụ thể (template chung)
     @Transactional
     public CreateTemplateResponse createTemplate(CreateTemplateRequest request) {
-        FormTemplate template = new FormTemplate();
-        template.setTemplateType(request.getTemplateType());
-        template.setTargetRole(request.getTargetRole());
+        try {
 
-        String encodedContent = Base64Utils.encode(request.getTemplateContent());
-        template.setTemplateContent(encodedContent);
+            FormTemplate template = new FormTemplate();
+            template.setTemplateType(request.getTemplateType());
+            template.setTargetRole(request.getTargetRole());
 
-        if (request.getRoundId() != null && !request.getRoundId().trim().isEmpty()) {
-            InnovationRound innovationRound = innovationRoundRepository.findById(request.getRoundId().trim())
-                    .orElseThrow(() -> new IdInvalidException(
-                            "Innovation round không tồn tại với ID: " + request.getRoundId()));
-            template.setInnovationRound(innovationRound);
-        } else {
-            template.setInnovationRound(null);
+            String encodedContent = Base64Utils.encode(request.getTemplateContent());
+            template.setTemplateContent(encodedContent);
+
+            if (request.getRoundId() != null && !request.getRoundId().trim().isEmpty()) {
+                InnovationRound innovationRound = innovationRoundRepository.findById(request.getRoundId().trim())
+                        .orElseThrow(() -> new IdInvalidException(
+                                "Innovation round không tồn tại với ID: " + request.getRoundId()));
+                template.setInnovationRound(innovationRound);
+            } else {
+                template.setInnovationRound(null);
+            }
+
+            FormTemplate savedTemplate = formTemplateRepository.save(template);
+            entityManager.flush();
+
+            if (request.getFields() != null && !request.getFields().isEmpty()) {
+                processFormFields(savedTemplate, request.getFields());
+            }
+
+            FormTemplate finalTemplate = formTemplateRepository.save(savedTemplate);
+            entityManager.flush();
+
+            updateHtmlTemplateContent(finalTemplate);
+            finalTemplate = formTemplateRepository.save(finalTemplate);
+            entityManager.flush();
+
+            return formTemplateMapper.toCreateTemplateResponse(finalTemplate);
+        } catch (Exception e) {
+            log.error("Lỗi khi tạo form template: {}", e.getMessage(), e);
+            throw e;
         }
-
-        FormTemplate savedTemplate = formTemplateRepository.save(template);
-
-        // Sử dụng cùng logic xử lý fields như các method khác
-        if (request.getFields() != null && !request.getFields().isEmpty()) {
-            processFormFields(savedTemplate, request.getFields());
-        }
-
-        FormTemplate finalTemplate = formTemplateRepository.save(savedTemplate);
-
-        // Cập nhật HTML template content với field IDs mới sau khi fields đã được save
-        updateHtmlTemplateContent(finalTemplate);
-        finalTemplate = formTemplateRepository.save(finalTemplate);
-
-        return formTemplateMapper.toCreateTemplateResponse(finalTemplate);
     }
 
     // 9. Lấy form templates theo innovation round ID
