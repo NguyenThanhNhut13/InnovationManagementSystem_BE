@@ -25,8 +25,7 @@ public interface UserRepository extends JpaRepository<User, String>, JpaSpecific
 
         @Query("SELECT u FROM User u WHERE " +
                         "LOWER(u.fullName) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
-                        "LOWER(u.email) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
                         "LOWER(u.personnelId) LIKE LOWER(CONCAT('%', :searchTerm, '%'))")
-        Page<User> searchUsersByFullNameOrEmailOrPersonnelId(@Param("searchTerm") String searchTerm, Pageable pageable);
+        Page<User> searchUsersByFullNameOrPersonnelId(@Param("searchTerm") String searchTerm, Pageable pageable);
 
 }

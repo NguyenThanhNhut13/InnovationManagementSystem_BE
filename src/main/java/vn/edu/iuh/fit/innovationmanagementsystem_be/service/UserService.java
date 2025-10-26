@@ -283,14 +283,14 @@ public class UserService {
 
     }
 
-    // 17. Tìm kiếm Users By Full Name, Email or Personnel ID
-    public ResultPaginationDTO searchUsersByFullNameOrEmailOrPersonnelId(@NonNull String searchTerm,
+    // 17. Tìm kiếm Users By Full Name or Personnel ID
+    public ResultPaginationDTO searchUsersByFullNameOrPersonnelId(@NonNull String searchTerm,
             @NonNull Pageable pageable) {
         if (searchTerm == null || searchTerm.trim().isEmpty()) {
             throw new IdInvalidException("Từ khóa tìm kiếm không được để trống");
         }
 
-        Page<User> userPage = userRepository.searchUsersByFullNameOrEmailOrPersonnelId(searchTerm.trim(), pageable);
+        Page<User> userPage = userRepository.searchUsersByFullNameOrPersonnelId(searchTerm.trim(), pageable);
         Page<UserResponse> userResponsePage = userPage.map(userMapper::toUserResponse);
         return Utils.toResultPaginationDTO(userResponsePage, pageable);
     }

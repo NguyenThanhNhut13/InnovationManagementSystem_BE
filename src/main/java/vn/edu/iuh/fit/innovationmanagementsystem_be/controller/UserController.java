@@ -89,11 +89,11 @@ public class UserController {
         return ResponseEntity.ok().build();
     }
 
-    // 5. Tìm kiếm Users By Full Name, Email or Personnel ID
+    // 5. Tìm kiếm Users By Full Name or Personnel ID
     @GetMapping("/users/search")
     @ApiMessage("Tìm kiếm người dùng thành công")
     public ResponseEntity<ResultPaginationDTO> searchUsers(@RequestParam String searchTerm, Pageable pageable) {
-        return ResponseEntity.ok(userService.searchUsersByFullNameOrEmailOrPersonnelId(searchTerm,
+        return ResponseEntity.ok(userService.searchUsersByFullNameOrPersonnelId(searchTerm,
                 pageable));
     }
 
