@@ -10,6 +10,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import jakarta.validation.Valid;
@@ -18,13 +19,16 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.UpdateProf
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.UserResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.UserRoleResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.service.UserService;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.ResultPaginationDTO;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.annotation.ApiMessage;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.data.domain.Pageable;
 
 @RestController
 @RequestMapping("/api/v1")
@@ -83,6 +87,14 @@ public class UserController {
     public ResponseEntity<Void> removeRoleFromUser(@PathVariable String userId, @PathVariable String roleId) {
         userService.removeRoleFromUser(userId, roleId);
         return ResponseEntity.ok().build();
+    }
+
+    // 5. Tìm kiếm Users By Full Name, Email or Personnel ID
+    @GetMapping("/users/search")
+    @ApiMessage("Tìm kiếm người dùng thành công")
+    public ResponseEntity<ResultPaginationDTO> searchUsers(@RequestParam String searchTerm, Pageable pageable) {
+        return ResponseEntity.ok(userService.searchUsersByFullNameOrEmailOrPersonnelId(searchTerm,
+                pageable));
     }
 
 }

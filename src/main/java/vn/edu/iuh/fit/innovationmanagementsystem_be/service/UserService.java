@@ -7,7 +7,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
-
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.transaction.Transactional;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.Department;
@@ -26,6 +27,8 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.RoleRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.UserRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.UserRoleRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.JwtTokenUtil;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.ResultPaginationDTO;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.Utils;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.mapper.UserMapper;
 
 import java.util.Optional;
@@ -278,5 +281,17 @@ public class UserService {
         }
         user.getUserRoles().add(userRole);
 
+    }
+
+    // 17. Tìm kiếm Users By Full Name, Email or Personnel ID
+    public ResultPaginationDTO searchUsersByFullNameOrEmailOrPersonnelId(@NonNull String searchTerm,
+            @NonNull Pageable pageable) {
+        if (searchTerm == null || searchTerm.trim().isEmpty()) {
+            throw new IdInvalidException("Từ khóa tìm kiếm không được để trống");
+        }
+
+        Page<User> userPage = userRepository.searchUsersByFullNameOrEmailOrPersonnelId(searchTerm.trim(), pageable);
+        Page<UserResponse> userResponsePage = userPage.map(userMapper::toUserResponse);
+        return Utils.toResultPaginationDTO(userResponsePage, pageable);
     }
 }
