@@ -10,6 +10,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.mapper.InnovationPhaseMapper
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.InnovationPhaseRepository;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 @Service
@@ -29,6 +30,15 @@ public class InnovationPhaseService {
     public Set<InnovationPhase> createPhasesForRound(InnovationRound round,
             Set<InnovationPhaseRequest> phaseRequests) {
 
+        // Kiểm tra thứ tự phase không được trùng lặp
+        validatePhaseOrders(phaseRequests);
+
+        // Kiểm tra các phase không chồng chéo thời gian
+        validatePhaseOverlap(phaseRequests);
+
+        // Kiểm tra các phase phải nằm trong thời gian của round
+        validatePhasesWithinRound(round, phaseRequests);
+
         Set<InnovationPhase> phases = new HashSet<>();
         for (InnovationPhaseRequest req : phaseRequests) {
             InnovationPhase phase = createPhaseFromRequest(round, req);
@@ -36,6 +46,65 @@ public class InnovationPhaseService {
         }
 
         return phases;
+    }
+
+    /**
+     * Kiểm tra thứ tự phase không được trùng lặp
+     */
+    private void validatePhaseOrders(Set<InnovationPhaseRequest> phaseRequests) {
+        Set<Integer> orders = new HashSet<>();
+        for (InnovationPhaseRequest req : phaseRequests) {
+            if (req.getPhaseOrder() != null) {
+                if (orders.contains(req.getPhaseOrder())) {
+                    throw new IdInvalidException(
+                            "Thứ tự phase không được trùng lặp: phaseOrder=" + req.getPhaseOrder());
+                }
+                orders.add(req.getPhaseOrder());
+            }
+        }
+    }
+
+    /**
+     * Kiểm tra các phase không chồng chéo thời gian
+     */
+    private void validatePhaseOverlap(Set<InnovationPhaseRequest> phaseRequests) {
+        List<InnovationPhaseRequest> sortedPhases = phaseRequests.stream()
+                .sorted((p1, p2) -> p1.getPhaseStartDate().compareTo(p2.getPhaseStartDate()))
+                .collect(java.util.stream.Collectors.toList());
+
+        for (int i = 0; i < sortedPhases.size(); i++) {
+            InnovationPhaseRequest currentPhase = sortedPhases.get(i);
+
+            for (int j = i + 1; j < sortedPhases.size(); j++) {
+                InnovationPhaseRequest nextPhase = sortedPhases.get(j);
+
+                if (nextPhase.getPhaseStartDate().isBefore(currentPhase.getPhaseEndDate()) ||
+                        nextPhase.getPhaseStartDate().equals(currentPhase.getPhaseEndDate())) {
+                    throw new IdInvalidException(
+                            "Giai đoạn phải không được chồng chéo thời gian. Giai đoạn '" +
+                                    nextPhase.getName() + "' bắt đầu (" + nextPhase.getPhaseStartDate() +
+                                    ") phải sau ngày kết thúc của giai đoạn '" + currentPhase.getName() +
+                                    "' (" + currentPhase.getPhaseEndDate() + ")");
+                }
+            }
+        }
+    }
+
+    /**
+     * Kiểm tra các phase phải nằm trong thời gian của round
+     */
+    private void validatePhasesWithinRound(InnovationRound round, Set<InnovationPhaseRequest> phaseRequests) {
+        for (InnovationPhaseRequest phaseRequest : phaseRequests) {
+            if (!round.isPhaseWithinRoundTimeframe(phaseRequest.getPhaseStartDate(),
+                    phaseRequest.getPhaseEndDate())) {
+                throw new IdInvalidException(
+                        "Thời gian giai đoạn phải nằm trong thời gian của InnovationRound. " +
+                                "Round: " + round.getRegistrationStartDate() + " đến " +
+                                round.getRegistrationEndDate() +
+                                ", Phase '" + phaseRequest.getName() + "': " +
+                                phaseRequest.getPhaseStartDate() + " đến " + phaseRequest.getPhaseEndDate());
+            }
+        }
     }
 
     /**
@@ -49,12 +118,6 @@ public class InnovationPhaseService {
 
         InnovationPhase phase = innovationPhaseMapper.toInnovationPhase(phaseRequest);
         phase.setInnovationRound(round);
-
-        // Kiểm tra thời gian giai đoạn
-        if (!round.isPhaseWithinRoundTimeframe(phaseRequest.getPhaseStartDate(), phaseRequest.getPhaseEndDate())) {
-            throw new IdInvalidException("Thời gian giai đoạn phải nằm trong thời gian của InnovationRound: " +
-                    round.getRegistrationStartDate() + " đến " + round.getRegistrationEndDate());
-        }
 
         return innovationPhaseRepository.save(phase);
     }
