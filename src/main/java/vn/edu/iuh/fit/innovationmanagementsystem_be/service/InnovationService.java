@@ -346,7 +346,8 @@ public class InnovationService {
         // 3. Tạo sáng kiến & Submit Form Data (Tạo sáng kiến tự động khi điền form)
         public InnovationFormDataResponse createInnovationAndSubmitFormData(InnovationFormDataRequest request) {
 
-                String actionType = request.getActionType() != null ? request.getActionType().toUpperCase() : "DRAFT";
+                String actionType = request.getActionType() != null ? request.getActionType().toUpperCase()
+                                : InnovationStatusEnum.DRAFT.name();
                 if (!InnovationStatusEnum.DRAFT.name().equals(actionType)
                                 && !InnovationStatusEnum.SUBMITTED.name().equals(actionType)) {
                         throw new IdInvalidException(
