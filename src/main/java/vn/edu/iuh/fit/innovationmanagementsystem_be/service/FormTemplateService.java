@@ -82,7 +82,8 @@ public class FormTemplateService {
 
     // 2. Lấy tất cả form templates theo innovation round hiện tại
     public List<FormTemplateResponse> getFormTemplatesByCurrentRound() {
-        InnovationRound currentRound = innovationRoundRepository.findCurrentActiveRound(LocalDate.now())
+        InnovationRound currentRound = innovationRoundRepository.findCurrentActiveRound(
+                LocalDate.now(), InnovationRoundStatusEnum.OPEN)
                 .orElse(null);
 
         List<FormTemplate> templates;
@@ -93,7 +94,6 @@ public class FormTemplateService {
                     .findByInnovationRoundIdOrderByTemplateType(currentRound.getId());
         } else {
             // Không có current round - lấy templates từ template library
-            // (innovation_round_id = null)
             templates = formTemplateRepository
                     .findByInnovationRoundIsNullOrderByTemplateType();
         }
@@ -129,7 +129,6 @@ public class FormTemplateService {
             template.setTemplateContent(encodedContent);
         }
 
-        // Upsert danh sách FormField nếu có
         if (request.getFields() != null) {
             processFormFields(template, request.getFields());
         }
@@ -160,7 +159,6 @@ public class FormTemplateService {
 
         FormTemplate savedTemplate = formTemplateRepository.save(template);
 
-        // Sử dụng cùng logic xử lý fields như updateFormTemplate
         if (request.getFields() != null && !request.getFields().isEmpty()) {
             processFormFields(savedTemplate, request.getFields());
         }
@@ -246,7 +244,7 @@ public class FormTemplateService {
             if (fd.getRepeatable() != null)
                 entity.setRepeatable(fd.getRepeatable());
 
-            // tableConfig/options/children: tận dụng mapper như create
+            // tableConfig/options/children: mapper như create
             if (fd.getType() == FieldTypeEnum.TABLE && fd.getTableConfig() != null) {
                 // Tự sinh UUID cho các column nếu chưa có
                 JsonNode processedTableConfig = generateColumnIdsIfNeeded(fd.getTableConfig());
@@ -374,14 +372,11 @@ public class FormTemplateService {
 
     // 10. Lấy form templates theo innovation round hiện tại và target role
     public List<FormTemplateResponse> getFormTemplatesByCurrentRoundAndTargetRole(String targetRole) {
-        InnovationRound currentRound = innovationRoundRepository.findCurrentActiveRound(LocalDate.now())
+        InnovationRound currentRound = innovationRoundRepository.findCurrentActiveRound(
+                LocalDate.now(), InnovationRoundStatusEnum.OPEN)
                 .orElse(null);
 
-        log.info("Current round: {}", currentRound != null ? currentRound.getId() : "null");
-
-        // Convert String to TargetRoleCode enum
         TargetRoleCode targetRoleEnum = TargetRoleCode.valueOf(targetRole);
-        log.info("Target role enum: {}", targetRoleEnum);
 
         List<FormTemplate> templates;
 
@@ -393,10 +388,8 @@ public class FormTemplateService {
                     targetRoleEnum);
         } else {
             // Không có current round - lấy templates từ template library
-            // (innovation_round_id = null)
             templates = formTemplateRepository
                     .findByInnovationRoundIsNullAndTargetRoleOrderByTemplateType(targetRoleEnum);
-            log.info("Found {} templates in template library for role {}", templates.size(), targetRoleEnum);
         }
 
         return templates.stream()
@@ -447,26 +440,9 @@ public class FormTemplateService {
         UserResponse currentUser = userService.getCurrentUserResponse();
         List<String> userRoles = currentUser.getRoles();
 
-        log.info("Current user: {}", currentUser.getEmail());
-        log.info("User roles: {}", userRoles);
-
         String targetRole = determineTargetRoleFromUserRoles(userRoles);
-        log.info("Determined target role: {}", targetRole);
 
         List<FormTemplateResponse> templates = getFormTemplatesByCurrentRoundAndTargetRole(targetRole);
-        log.info("Found {} templates for target role: {}", templates.size(), targetRole);
-
-        // Debug: Kiểm tra tất cả templates trong database
-        List<FormTemplate> allTemplates = formTemplateRepository.findAll();
-        log.info("Total templates in database: {}", allTemplates.size());
-
-        List<FormTemplate> libraryTemplates = formTemplateRepository.findByInnovationRoundIsNullOrderByTemplateType();
-        log.info("Templates in library: {}", libraryTemplates.size());
-
-        for (FormTemplate template : libraryTemplates) {
-            log.info("Library template: {} - {} - {}", template.getId(), template.getTemplateType(),
-                    template.getTargetRole());
-        }
 
         // Thêm logic quét CONTRIBUTED fields từ templates 3,4,5
         return enhanceTemplatesWithContributedFields(templates);
@@ -474,25 +450,24 @@ public class FormTemplateService {
 
     private String determineTargetRoleFromUserRoles(List<String> userRoles) {
         if (userRoles == null || userRoles.isEmpty()) {
-            return "EMPLOYEE";
+            return TargetRoleCode.EMPLOYEE.getValue();
         }
 
-        // Kiểm tra theo thứ tự ưu tiên
         for (String role : userRoles) {
             switch (role) {
                 case "QUAN_TRI_VIEN_QLKH_HTQT":
-                    return "QLKH_SECRETARY";
+                    return TargetRoleCode.QLKH_SECRETARY.getValue();
                 case "TRUONG_KHOA":
-                    return "DEPARTMENT";
+                    return TargetRoleCode.DEPARTMENT.getValue();
                 case "GIANG_VIEN":
                     return "EMPLOYEE";
             }
         }
-        return "EMPLOYEE";
+        return TargetRoleCode.EMPLOYEE.getValue();
     }
 
     /**
-     * Tăng cường templates với CONTRIBUTED fields từ templates 3,4,5
+     * Add templates với CONTRIBUTED fields từ templates 3,4,5
      */
     private List<FormTemplateResponse> enhanceTemplatesWithContributedFields(List<FormTemplateResponse> templates) {
         // Lấy danh sách template IDs từ templates 1,2 (DON_DE_NGHI, BAO_CAO_MO_TA)
@@ -522,7 +497,8 @@ public class FormTemplateService {
      * Lấy CONTRIBUTED fields từ templates 3,4,5 có targetTemplateIds khớp
      */
     private List<FormField> getContributedFieldsFromTemplates345(List<String> targetTemplateIds) {
-        InnovationRound currentRound = innovationRoundRepository.findCurrentActiveRound(LocalDate.now())
+        InnovationRound currentRound = innovationRoundRepository.findCurrentActiveRound(
+                LocalDate.now(), InnovationRoundStatusEnum.OPEN)
                 .orElse(null);
 
         List<FormTemplate> templates345;
@@ -642,7 +618,7 @@ public class FormTemplateService {
     }
 
     /**
-     * Tăng cường một template với contributed fields
+     * Add một template với contributed fields
      */
     private FormTemplateResponse enhanceTemplateWithContributedFields(FormTemplateResponse template,
             List<FormField> contributedFields) {
