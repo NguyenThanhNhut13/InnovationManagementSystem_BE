@@ -1,5 +1,8 @@
 package vn.edu.iuh.fit.innovationmanagementsystem_be.service;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -11,10 +14,14 @@ import org.springframework.transaction.annotation.Transactional;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.Innovation;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.InnovationPhase;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.User;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.FormField;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationStatusEnum;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationPhaseTypeEnum;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.FieldTypeEnum;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.UserRoleEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.FormDataRequest;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.UpdateFormDataRequest;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.InnovationFormDataRequest;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.CreateInnovationWithTemplatesRequest;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.TemplateDataRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.FormDataResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationFormDataResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationResponse;
@@ -26,15 +33,16 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.exception.IdInvalidException
 import vn.edu.iuh.fit.innovationmanagementsystem_be.mapper.InnovationMapper;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.InnovationRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.InnovationPhaseRepository;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.FormFieldRepository;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.FormTemplateRepository;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.InnovationRoundRepository;
+
+import java.util.ArrayList;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.ResultPaginationDTO;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.Utils;
 
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.util.Base64;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.Arrays;
@@ -54,6 +62,10 @@ public class InnovationService {
         private final DigitalSignatureService digitalSignatureService;
         private final InnovationRoundService innovationRoundService;
         private final ActivityLogService activityLogService;
+        private final FormFieldRepository formFieldRepository;
+        private final FormTemplateRepository formTemplateRepository;
+        private final InnovationRoundRepository innovationRoundRepository;
+        private final ObjectMapper objectMapper;
 
         public InnovationService(InnovationRepository innovationRepository,
                         InnovationPhaseRepository innovationPhaseRepository,
@@ -62,7 +74,11 @@ public class InnovationService {
                         UserService userService,
                         DigitalSignatureService digitalSignatureService,
                         InnovationRoundService innovationRoundService,
-                        ActivityLogService activityLogService) {
+                        ActivityLogService activityLogService,
+                        FormFieldRepository formFieldRepository,
+                        FormTemplateRepository formTemplateRepository,
+                        InnovationRoundRepository innovationRoundRepository,
+                        ObjectMapper objectMapper) {
                 this.innovationRepository = innovationRepository;
                 this.innovationPhaseRepository = innovationPhaseRepository;
                 this.formDataService = formDataService;
@@ -71,6 +87,10 @@ public class InnovationService {
                 this.digitalSignatureService = digitalSignatureService;
                 this.innovationRoundService = innovationRoundService;
                 this.activityLogService = activityLogService;
+                this.formFieldRepository = formFieldRepository;
+                this.formTemplateRepository = formTemplateRepository;
+                this.innovationRoundRepository = innovationRoundRepository;
+                this.objectMapper = objectMapper;
         }
 
         // 1. Lấy tất cả sáng kiến của user hiện tại với filter
@@ -343,35 +363,41 @@ public class InnovationService {
                 }
         }
 
-        // 3. Tạo sáng kiến & Submit Form Data (Tạo sáng kiến tự động khi điền form)
-        public InnovationFormDataResponse createInnovationAndSubmitFormData(InnovationFormDataRequest request) {
+        // 4. Tạo Innovation & Submit FormData theo nhiều Template
+        public InnovationFormDataResponse createInnovationWithMultipleTemplates(
+                        CreateInnovationWithTemplatesRequest request) {
 
-                String actionType = request.getActionType() != null ? request.getActionType().toUpperCase() : "DRAFT";
-                if (!InnovationStatusEnum.DRAFT.name().equals(actionType)
-                                && !InnovationStatusEnum.SUBMITTED.name().equals(actionType)) {
+                if (request.getStatus() != InnovationStatusEnum.DRAFT
+                                && request.getStatus() != InnovationStatusEnum.SUBMITTED) {
                         throw new IdInvalidException(
-                                        "Action type chỉ được là DRAFT hoặc SUBMITTED. Các trạng thái khác sẽ được xử lý bởi hội đồng chấm điểm.");
+                                        "Status chỉ được là DRAFT hoặc SUBMITTED. Các trạng thái khác sẽ được xử lý bởi hội đồng chấm điểm.");
                 }
 
-                InnovationPhase innovationPhase = innovationPhaseRepository.findById(request.getInnovationPhaseId())
-                                .orElseThrow(() -> new IdInvalidException(
-                                                "Không tìm thấy giai đoạn sáng kiến với ID: "
-                                                                + request.getInnovationPhaseId()));
+                InnovationPhase innovationPhase;
+                if (request.getInnovationPhaseId() != null && !request.getInnovationPhaseId().isEmpty()) {
+                        innovationPhase = innovationPhaseRepository.findById(request.getInnovationPhaseId())
+                                        .orElseThrow(() -> new IdInvalidException(
+                                                        "Không tìm thấy giai đoạn sáng kiến với ID: "
+                                                                        + request.getInnovationPhaseId()));
+                } else {
+                        innovationPhase = innovationPhaseRepository
+                                        .findSubmissionPhaseByOpenRound(InnovationPhaseTypeEnum.SUBMISSION)
+                                        .orElseThrow(() -> new IdInvalidException(
+                                                        "Không tìm thấy giai đoạn SUBMISSION của round OPEN. Vui lòng kiểm tra lại."));
+                }
 
                 User currentUser = userService.getCurrentUser();
 
+                // Tạo Innovation
                 Innovation innovation = new Innovation();
                 innovation.setInnovationName(request.getInnovationName());
                 innovation.setUser(currentUser);
                 innovation.setDepartment(currentUser.getDepartment());
                 innovation.setInnovationPhase(innovationPhase);
+                innovation.setInnovationRound(innovationPhase.getInnovationRound());
                 innovation.setIsScore(request.getIsScore() != null ? request.getIsScore() : false);
-
-                if (InnovationStatusEnum.SUBMITTED.name().equals(actionType)) {
-                        innovation.setStatus(InnovationStatusEnum.DRAFT);
-                } else {
-                        innovation.setStatus(InnovationStatusEnum.DRAFT);
-                }
+                innovation.setStatus(request.getStatus());
+                innovation.setBaseOn(request.getBaseOn());
 
                 Innovation savedInnovation = innovationRepository.save(innovation);
 
@@ -380,26 +406,90 @@ public class InnovationService {
                                 currentUser.getId(),
                                 savedInnovation.getId(),
                                 savedInnovation.getInnovationName(),
-                                InnovationStatusEnum.DRAFT,
+                                request.getStatus(),
                                 "Bạn đã tạo sáng kiến mới '" + savedInnovation.getInnovationName() + "'");
 
-                List<FormDataResponse> formDataResponses = request.getFormDataItems().stream()
-                                .map(item -> {
-                                        FormDataRequest createRequest = new FormDataRequest();
-                                        createRequest.setFieldValue(item.getFieldValue());
-                                        createRequest.setFormFieldId(item.getFormFieldId());
-                                        createRequest.setInnovationId(savedInnovation.getId());
-                                        return formDataService.createFormData(createRequest);
-                                })
-                                .collect(Collectors.toList());
+                // Lưu FormData cho tất cả các template
+                List<FormDataResponse> formDataResponses = new ArrayList<>();
 
-                // Tạo documentHash từ dữ liệu form
-                String documentHash = generateDocumentHash(request.getFormDataItems(), request.getTemplateId());
+                for (TemplateDataRequest templateRequest : request.getTemplates()) {
+                        if (templateRequest.getFormData() != null && !templateRequest.getFormData().isEmpty()) {
+                                // Tìm FormField theo templateId
+                                List<FormField> formFields = formFieldRepository
+                                                .findByTemplateId(templateRequest.getTemplateId());
+
+                                for (Map.Entry<String, Object> entry : templateRequest.getFormData().entrySet()) {
+                                        String fieldKey = entry.getKey();
+                                        Object fieldValue = entry.getValue();
+
+                                        // Tìm FormField theo fieldKey trong danh sách formFields (bao gồm cả children)
+                                        FormFieldSearchResult searchResult = findFormFieldByKeyWithParent(formFields,
+                                                        fieldKey, templateRequest.getTemplateId());
+
+                                        if (searchResult == null || searchResult.getFormField() == null) {
+                                                throw new IdInvalidException(
+                                                                "Không tìm thấy FormField với fieldKey: "
+                                                                                + fieldKey + " trong template "
+                                                                                + templateRequest
+                                                                                                .getTemplateId());
+                                        }
+
+                                        FormField targetFormField = searchResult.getFormField();
+
+                                        // Nếu field nằm trong children của parent field, cần lấy parent field
+                                        if (searchResult.hasParentField()) {
+                                                // Dùng parent field để lưu FormData
+                                                FormField parentField = searchResult.getParentField();
+                                                // Tạo một JSON object chứa fieldKey và value để lưu vào fieldValue
+                                                ObjectNode dataNode = objectMapper.createObjectNode();
+                                                dataNode.put("fieldKey", fieldKey);
+                                                dataNode.set("value",
+                                                                fieldValue != null
+                                                                                ? objectMapper.valueToTree(fieldValue)
+                                                                                : objectMapper.valueToTree(""));
+
+                                                FormDataRequest formDataRequest = new FormDataRequest();
+                                                formDataRequest.setFieldValue(dataNode);
+                                                formDataRequest.setFormFieldId(parentField.getId());
+                                                formDataRequest.setInnovationId(savedInnovation.getId());
+
+                                                FormDataResponse formDataResponse = formDataService
+                                                                .createFormData(formDataRequest);
+                                                formDataResponses.add(formDataResponse);
+                                        } else {
+                                                // Field ở level root, lưu bình thường
+                                                FormDataRequest formDataRequest = new FormDataRequest();
+
+                                                // Chuyển đổi fieldValue sang JsonNode
+                                                JsonNode jsonNodeValue = null;
+                                                if (fieldValue != null) {
+                                                        if (fieldValue instanceof String) {
+                                                                // Nếu là String, wrap trong JSON string
+                                                                jsonNodeValue = objectMapper.valueToTree(fieldValue);
+                                                        } else {
+                                                                // Nếu là object phức tạp, chuyển sang JsonNode
+                                                                jsonNodeValue = objectMapper.valueToTree(fieldValue);
+                                                        }
+                                                } else {
+                                                        jsonNodeValue = objectMapper.valueToTree("");
+                                                }
+
+                                                formDataRequest.setFieldValue(jsonNodeValue);
+                                                formDataRequest.setFormFieldId(targetFormField.getId());
+                                                formDataRequest.setInnovationId(savedInnovation.getId());
+
+                                                FormDataResponse formDataResponse = formDataService
+                                                                .createFormData(formDataRequest);
+                                                formDataResponses.add(formDataResponse);
+                                        }
+                                }
+                        }
+                }
 
                 InnovationFormDataResponse response = new InnovationFormDataResponse();
                 response.setInnovation(innovationMapper.toInnovationResponse(savedInnovation));
                 response.setFormDataList(formDataResponses);
-                response.setDocumentHash(documentHash);
+                response.setDocumentHash(null);
 
                 return response;
         }
@@ -560,71 +650,6 @@ public class InnovationService {
         // return completedTemplateIds.size() >= 2;
         // }
 
-        /*
-         * Helper method: Tạo documentHash từ dữ liệu form
-         */
-        private String generateDocumentHash(List<InnovationFormDataRequest.FormDataItemRequest> formDataItems,
-                        String templateId) {
-                try {
-                        // Tạo chuỗi dữ liệu để hash
-                        StringBuilder dataBuilder = new StringBuilder();
-                        dataBuilder.append("templateId:").append(templateId).append("|");
-
-                        // Sắp xếp formDataItems theo formFieldId để đảm bảo tính nhất quán
-                        formDataItems.stream()
-                                        .sorted((a, b) -> a.getFormFieldId().compareTo(b.getFormFieldId()))
-                                        .forEach(item -> {
-                                                dataBuilder.append("fieldId:").append(item.getFormFieldId())
-                                                                .append("|value:").append(item.getFieldValue())
-                                                                .append("|");
-                                        });
-
-                        String dataString = dataBuilder.toString();
-
-                        // Tạo SHA-256 hash
-                        MessageDigest digest = MessageDigest.getInstance("SHA-256");
-                        byte[] hash = digest.digest(dataString.getBytes());
-                        String hashString = Base64.getEncoder().encodeToString(hash);
-
-                        return "sha256:" + hashString;
-                } catch (NoSuchAlgorithmException e) {
-                        throw new IdInvalidException("Không thể tạo document hash: " + e.getMessage(), e);
-                }
-        }
-
-        // /*
-        // * Helper method: Tạo documentHash từ FormDataResponse
-        // */
-        // private String generateDocumentHashFromFormData(List<FormDataResponse>
-        // formDataList, String templateId) {
-        // try {
-        // // Tạo chuỗi dữ liệu để hash
-        // StringBuilder dataBuilder = new StringBuilder();
-        // dataBuilder.append("templateId:").append(templateId).append("|");
-
-        // // Sắp xếp formDataList theo formFieldId để đảm bảo tính nhất quán
-        // formDataList.stream()
-        // .sorted((a, b) -> a.getFormFieldId().compareTo(b.getFormFieldId()))
-        // .forEach(item -> {
-        // dataBuilder.append("fieldId:").append(item.getFormFieldId())
-        // .append("|value:").append(item.getFieldValue())
-        // .append("|");
-        // });
-
-        // String dataString = dataBuilder.toString();
-
-        // // Tạo SHA-256 hash
-        // MessageDigest digest = MessageDigest.getInstance("SHA-256");
-        // byte[] hash = digest.digest(dataString.getBytes());
-        // String hashString = Base64.getEncoder().encodeToString(hash);
-
-        // return "sha256:" + hashString;
-        // } catch (NoSuchAlgorithmException e) {
-        // throw new IdInvalidException("Không thể tạo document hash: " +
-        // e.getMessage(), e);
-        // }
-        // }
-
         // // 10. Duyệt sáng kiến
         // public InnovationResponse approveInnovation(String innovationId, String
         // reason) {
@@ -703,5 +728,210 @@ public class InnovationService {
 
         // return innovationMapper.toInnovationResponse(savedInnovation);
         // }
+
+        /**
+         * Tìm FormField theo fieldKey trong danh sách formFields và cả trong children
+         * Trả về result chứa FormField và parent field (nếu có)
+         */
+        private FormFieldSearchResult findFormFieldByKeyWithParent(List<FormField> formFields, String fieldKey,
+                        String templateId) {
+                // Tìm ở level đầu tiên
+                for (FormField field : formFields) {
+                        if (fieldKey.equals(field.getFieldKey())) {
+                                return new FormFieldSearchResult(field, null);
+                        }
+
+                        // Nếu field có children, tìm trong children
+                        if (field.getChildren() != null && field.getChildren().isArray()) {
+                                FormField foundField = findFormFieldInChildren(field.getChildren(), fieldKey,
+                                                templateId);
+                                if (foundField != null) {
+                                        // Trả về parent field
+                                        return new FormFieldSearchResult(foundField, field);
+                                }
+                        }
+
+                        // Nếu field có tableConfig (dùng cho TABLE field), tìm trong columns
+                        if (field.getFieldType() != null && field.getFieldType() == FieldTypeEnum.TABLE
+                                        && field.getTableConfig() != null) {
+                                FormField foundField = findFormFieldInTableColumns(field.getTableConfig(), fieldKey,
+                                                templateId);
+                                if (foundField != null) {
+                                        // Trả về parent field (TABLE field)
+                                        return new FormFieldSearchResult(foundField, field);
+                                }
+                        }
+                }
+
+                return null;
+        }
+
+        /**
+         * Inner class để lưu kết quả tìm kiếm FormField
+         */
+        private static class FormFieldSearchResult {
+                private FormField formField;
+                private FormField parentField;
+
+                public FormFieldSearchResult(FormField formField, FormField parentField) {
+                        this.formField = formField;
+                        this.parentField = parentField;
+                }
+
+                public FormField getFormField() {
+                        return formField;
+                }
+
+                public FormField getParentField() {
+                        return parentField;
+                }
+
+                public boolean hasParentField() {
+                        return parentField != null;
+                }
+        }
+
+        /**
+         * Tạo FormField từ JSON node
+         */
+        private FormField createFormFieldFromJson(JsonNode childNode, String templateId) {
+                FormField field = new FormField();
+
+                // Map tất cả các field từ JSON
+                JsonNode idNode = childNode.get("id");
+                if (idNode != null) {
+                        field.setId(idNode.asText());
+                }
+
+                if (childNode.get("fieldKey") != null) {
+                        field.setFieldKey(childNode.get("fieldKey").asText());
+                }
+
+                if (childNode.get("label") != null) {
+                        field.setLabel(childNode.get("label").asText());
+                }
+
+                JsonNode typeNode = childNode.get("type");
+                if (typeNode != null) {
+                        try {
+                                field.setFieldType(FieldTypeEnum.valueOf(typeNode.asText()));
+                        } catch (IllegalArgumentException e) {
+                                field.setFieldType(null);
+                        }
+                }
+
+                JsonNode requiredNode = childNode.get("required");
+                if (requiredNode != null) {
+                        field.setRequired(requiredNode.asBoolean());
+                }
+
+                JsonNode isReadOnlyNode = childNode.get("isReadOnly");
+                if (isReadOnlyNode != null) {
+                        field.setIsReadOnly(isReadOnlyNode.asBoolean());
+                }
+
+                JsonNode optionsNode = childNode.get("options");
+                if (optionsNode != null) {
+                        field.setOptions(optionsNode);
+                }
+
+                JsonNode referenceConfigNode = childNode.get("referenceConfig");
+                if (referenceConfigNode != null) {
+                        field.setReferenceConfig(referenceConfigNode);
+                }
+
+                JsonNode userDataConfigNode = childNode.get("userDataConfig");
+                if (userDataConfigNode != null) {
+                        field.setUserDataConfig(userDataConfigNode);
+                }
+
+                JsonNode innovationDataConfigNode = childNode.get("innovationDataConfig");
+                if (innovationDataConfigNode != null) {
+                        field.setInnovationDataConfig(innovationDataConfigNode);
+                }
+
+                JsonNode contributionConfigNode = childNode.get("contributionConfig");
+                if (contributionConfigNode != null) {
+                        field.setContributionConfig(contributionConfigNode);
+                }
+
+                JsonNode signingRoleNode = childNode.get("signingRole");
+                if (signingRoleNode != null) {
+                        try {
+                                field.setSigningRole(UserRoleEnum.valueOf(signingRoleNode.asText()));
+                        } catch (IllegalArgumentException e) {
+                                field.setSigningRole(null);
+                        }
+                }
+
+                JsonNode tableConfigNode = childNode.get("tableConfig");
+                if (tableConfigNode != null) {
+                        field.setTableConfig(tableConfigNode);
+                }
+
+                JsonNode repeatableNode = childNode.get("repeatable");
+                if (repeatableNode != null) {
+                        field.setRepeatable(repeatableNode.asBoolean());
+                }
+
+                // Lấy formTemplate từ templateId
+                if (templateId != null) {
+                        field.setFormTemplate(formTemplateRepository.findById(templateId).orElse(null));
+                }
+
+                return field;
+        }
+
+        /**
+         * Tìm FormField trong children JSON node
+         */
+        private FormField findFormFieldInChildren(JsonNode childrenNode, String fieldKey, String templateId) {
+                try {
+                        for (JsonNode childNode : childrenNode) {
+                                JsonNode childFieldKeyNode = childNode.get("fieldKey");
+                                if (childFieldKeyNode != null && fieldKey.equals(childFieldKeyNode.asText())) {
+                                        // Children trong database chỉ lưu dưới dạng JSON, không phải entity riêng
+                                        // Nên tạo FormField object từ JSON
+                                        return createFormFieldFromJson(childNode, templateId);
+                                }
+
+                                // Nếu child cũng có children, đệ quy tìm
+                                JsonNode childChildrenNode = childNode.get("children");
+                                if (childChildrenNode != null && childChildrenNode.isArray()) {
+                                        FormField foundField = findFormFieldInChildren(childChildrenNode, fieldKey,
+                                                        templateId);
+                                        if (foundField != null) {
+                                                return foundField;
+                                        }
+                                }
+                        }
+                } catch (Exception e) {
+                        throw new IdInvalidException("Lỗi khi tìm FormField trong children: " + e.getMessage());
+                }
+
+                return null;
+        }
+
+        /**
+         * Tìm FormField trong tableConfig.columns
+         */
+        private FormField findFormFieldInTableColumns(JsonNode tableConfig, String fieldKey, String templateId) {
+                try {
+                        JsonNode columnsNode = tableConfig.get("columns");
+                        if (columnsNode != null && columnsNode.isArray()) {
+                                for (JsonNode columnNode : columnsNode) {
+                                        JsonNode columnKeyNode = columnNode.get("key");
+                                        if (columnKeyNode != null && fieldKey.equals(columnKeyNode.asText())) {
+                                                // Tạo FormField object từ column JSON
+                                                return createFormFieldFromJson(columnNode, templateId);
+                                        }
+                                }
+                        }
+                } catch (Exception e) {
+                        throw new IdInvalidException("Lỗi khi tìm FormField trong tableConfig: " + e.getMessage());
+                }
+
+                return null;
+        }
 
 }

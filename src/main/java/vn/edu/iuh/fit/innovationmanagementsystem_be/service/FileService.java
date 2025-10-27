@@ -3,6 +3,8 @@ package vn.edu.iuh.fit.innovationmanagementsystem_be.service;
 import io.minio.*;
 import io.minio.http.Method;
 import lombok.RequiredArgsConstructor;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.exception.IdInvalidException;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -46,7 +48,7 @@ public class FileService {
             return uploadedFileNames;
 
         } catch (Exception e) {
-            throw new Exception("Failed to upload files: " + e.getMessage());
+            throw new IdInvalidException("Failed to upload files: " + e.getMessage());
         }
     }
 
@@ -76,7 +78,7 @@ public class FileService {
             return uniqueFileName;
 
         } catch (Exception e) {
-            throw new Exception("Failed to upload file: " + e.getMessage());
+            throw new IdInvalidException("Failed to upload file: " + e.getMessage());
         }
     }
 
@@ -89,7 +91,7 @@ public class FileService {
                             .object(fileName)
                             .build());
         } catch (Exception e) {
-            throw new Exception("Failed to download file: " + e.getMessage());
+            throw new IdInvalidException("Failed to download file: " + e.getMessage());
         }
     }
 
@@ -102,7 +104,7 @@ public class FileService {
                             .object(fileName)
                             .build());
         } catch (Exception e) {
-            throw new Exception("Failed to delete file: " + e.getMessage());
+            throw new IdInvalidException("Failed to delete file: " + e.getMessage());
         }
     }
 
@@ -129,7 +131,7 @@ public class FileService {
                             .object(fileName)
                             .build());
         } catch (Exception e) {
-            throw new Exception("Failed to get file info: " + e.getMessage());
+            throw new IdInvalidException("Failed to get file info: " + e.getMessage());
         }
     }
 
@@ -150,7 +152,7 @@ public class FileService {
                                 .build());
             }
         } catch (Exception e) {
-            throw new Exception("Failed to ensure bucket exists: " + e.getMessage());
+            throw new IdInvalidException("Failed to ensure bucket exists: " + e.getMessage());
         }
     }
 
@@ -187,7 +189,7 @@ public class FileService {
                             .expiry(expirySeconds)
                             .build());
         } catch (Exception e) {
-            throw new RuntimeException("Fail to view file");
+            throw new IdInvalidException("Fail to view file: " + e.getMessage());
         }
     }
 }

@@ -1,9 +1,12 @@
 package vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 @Entity
 @Table(name = "form_data")
@@ -17,8 +20,9 @@ public class FormData {
     @Column(name = "id")
     private String id;
 
-    @Column(name = "field_value", columnDefinition = "TEXT")
-    private String fieldValue;
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "field_value", columnDefinition = "JSON")
+    private JsonNode fieldValue;
 
     // Relationships
     @ManyToOne(fetch = FetchType.LAZY, optional = false)

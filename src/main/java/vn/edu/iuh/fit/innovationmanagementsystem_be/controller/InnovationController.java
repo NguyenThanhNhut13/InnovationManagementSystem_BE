@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.Innovation;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.InnovationFormDataRequest;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.CreateInnovationWithTemplatesRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationFormDataResponse;
 // import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationStatisticsDTO;
@@ -85,18 +85,18 @@ public class InnovationController {
                 return ResponseEntity.ok(statistics);
         }
 
-        // 4. Tạo sáng kiến & Submit Form Data (Tạo sáng kiến tự động khi điền form)
-        @PostMapping("/innovations/form-data")
-        @ApiMessage("Tạo sáng kiến và điền thông tin thành công")
-        @Operation(summary = "Create Innovation with Form Data", description = "Create a new innovation and submit form data")
+        // 4. Tạo Innovation & Submit FormData nhiều Template
+        @PostMapping("/innovations/templates")
+        @ApiMessage("Tạo sáng kiến với nhiều template thành công")
+        @Operation(summary = "Create Innovation with Multiple Templates", description = "Create a new innovation and submit form data for multiple templates")
         @ApiResponses(value = {
-                        @ApiResponse(responseCode = "200", description = "Innovation created and formdata submitted successfully", content = @Content(schema = @Schema(implementation = InnovationFormDataResponse.class))),
+                        @ApiResponse(responseCode = "200", description = "Innovation created and formdata for all templates submitted successfully", content = @Content(schema = @Schema(implementation = InnovationFormDataResponse.class))),
                         @ApiResponse(responseCode = "400", description = "Invalid request data"),
                         @ApiResponse(responseCode = "401", description = "Unauthorized")
         })
-        public ResponseEntity<InnovationFormDataResponse> createInnovationAndSubmitFormData(
-                        @Parameter(description = "Innovation form data request", required = true) @Valid @RequestBody InnovationFormDataRequest request) {
-                InnovationFormDataResponse response = innovationService.createInnovationAndSubmitFormData(request);
+        public ResponseEntity<InnovationFormDataResponse> createInnovationWithMultipleTemplates(
+                        @Parameter(description = "Innovation with multiple templates request", required = true) @Valid @RequestBody CreateInnovationWithTemplatesRequest request) {
+                InnovationFormDataResponse response = innovationService.createInnovationWithMultipleTemplates(request);
                 return ResponseEntity.ok(response);
         }
 

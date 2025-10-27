@@ -12,5 +12,4 @@ public enum InnovationPhaseLevelEnum {
         this.value = value;
     }
 
-
 }

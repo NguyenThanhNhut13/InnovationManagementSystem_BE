@@ -20,9 +20,13 @@ public interface InnovationRoundRepository
 
         List<InnovationRound> findByAcademicYearAndNameIgnoreCase(String academicYear, String name);
 
-        @Query("SELECT r FROM InnovationRound r WHERE :currentDate >= r.registrationStartDate " +
-                        "AND :currentDate <= r.registrationEndDate " +
+        @Query("SELECT r FROM InnovationRound r WHERE r.status = :status " +
                         "ORDER BY r.createdAt DESC")
-        Optional<InnovationRound> findCurrentActiveRound(@Param("currentDate") LocalDate currentDate);
+        Optional<InnovationRound> findCurrentActiveRound(@Param("currentDate") LocalDate currentDate,
+                        @Param("status") InnovationRoundStatusEnum status);
+
+        @Query("SELECT r FROM InnovationRound r WHERE r.status = :status " +
+                        "ORDER BY r.createdAt DESC")
+        Optional<InnovationRound> findByStatusOrderByCreatedAtDesc(@Param("status") InnovationRoundStatusEnum status);
 
 }

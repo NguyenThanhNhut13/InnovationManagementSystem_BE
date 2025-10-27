@@ -315,7 +315,8 @@ public class InnovationRoundService {
     }
 
     public InnovationRoundResponse getCurrentRound() {
-        Optional<InnovationRound> currentRound = innovationRoundRepository.findCurrentActiveRound(LocalDate.now());
+        Optional<InnovationRound> currentRound = innovationRoundRepository.findCurrentActiveRound(
+                LocalDate.now(), InnovationRoundStatusEnum.OPEN);
         if (currentRound.isEmpty()) {
             return null;
         }

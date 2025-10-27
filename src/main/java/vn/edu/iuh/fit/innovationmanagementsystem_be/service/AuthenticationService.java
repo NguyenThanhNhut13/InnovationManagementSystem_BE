@@ -272,7 +272,7 @@ public class AuthenticationService {
             }
             return null;
         } catch (Exception e) {
-            return null;
+            throw new IdInvalidException("Không thể lấy username hiện tại: " + e.getMessage());
         }
     }
 }

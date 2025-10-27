@@ -1,2 +1,3 @@
 - Create Innovation -> create activeLog -> Hash Document
 - clean signatures - repo - service - dto - model vv.
+- check phasescholl 2->1

@@ -48,11 +48,11 @@ public class GlobalExceptionHandler {
 
     // 2. Bắt lỗi không tìm thấy tài nguyên
     @ExceptionHandler(value = { NoResourceFoundException.class })
-    public ResponseEntity<RestResponse<Object>> handleNotFoundException(Exception ex) {
+    public ResponseEntity<RestResponse<Object>> handleNoResourceNotFoundException(Exception ex) {
         RestResponse<Object> res = new RestResponse<Object>();
         res.setStatusCode(HttpStatus.NOT_FOUND.value());
         res.setMessage("404 Not Found. URL có thể không tồn tại !");
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(res);
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(res);
     }
 
     // 3. Bắt các lỗi chung khác
@@ -89,8 +89,9 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(res);
     }
 
+    // 6. Bắt lỗi không tìm thấy resource (NotFoundException)
     @ExceptionHandler(NotFoundException.class)
-    public ResponseEntity<RestResponse<Object>> NotFoundException(NotFoundException ex) {
+    public ResponseEntity<RestResponse<Object>> handleNotFoundException(NotFoundException ex) {
         RestResponse<Object> res = new RestResponse<Object>();
         res.setStatusCode(HttpStatus.NOT_FOUND.value());
         res.setMessage(ex.getMessage());

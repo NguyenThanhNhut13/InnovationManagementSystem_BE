@@ -3,6 +3,8 @@ package vn.edu.iuh.fit.innovationmanagementsystem_be.service;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
+import vn.edu.iuh.fit.innovationmanagementsystem_be.exception.IdInvalidException;
+
 import java.util.concurrent.TimeUnit;
 
 @Service
@@ -52,7 +54,9 @@ public class RateLimitingService {
         try {
             redisTemplate.delete(key);
         } catch (Exception e) {
+            throw new IdInvalidException("Không thể reset rate limit: " + e.getMessage());
         }
+
     }
 
     // 3. Lấy thông tin rate limit hiện tại
