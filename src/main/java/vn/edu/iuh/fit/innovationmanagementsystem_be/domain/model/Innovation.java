@@ -33,6 +33,9 @@ public class Innovation extends Auditable {
     @Column(name = "is_score", columnDefinition = "BOOLEAN")
     private Boolean isScore;
 
+    @Column(name = "base_on", columnDefinition = "TEXT")
+    private String baseOn;
+
     // Relationships
 
     @OneToMany(mappedBy = "innovation", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
