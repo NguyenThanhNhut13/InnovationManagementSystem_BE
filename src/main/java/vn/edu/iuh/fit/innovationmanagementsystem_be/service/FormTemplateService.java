@@ -37,7 +37,6 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.ResultPaginationDTO;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.Utils;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.HtmlTemplateUtils;
 
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -74,6 +73,10 @@ public class FormTemplateService {
 
     // 1. Lấy form template by id
     public CreateTemplateWithFieldsResponse getFormTemplateById(String id) {
+        if (id == null || id.trim().isEmpty()) {
+            throw new IdInvalidException("ID không được để trống");
+        }
+
         FormTemplate template = formTemplateRepository.findById(id)
                 .orElseThrow(() -> new IdInvalidException("Form template không tồn tại với ID: " + id));
 
@@ -92,6 +95,11 @@ public class FormTemplateService {
             // Có current round - lấy templates của round đó
             templates = formTemplateRepository
                     .findByInnovationRoundIdOrderByTemplateType(currentRound.getId());
+
+            if (templates.isEmpty()) {
+                templates = formTemplateRepository
+                        .findByInnovationRoundIsNullOrderByTemplateType();
+            }
         } else {
             // Không có current round - lấy templates từ template library
             templates = formTemplateRepository
@@ -104,7 +112,16 @@ public class FormTemplateService {
     }
 
     // 3. Cập nhật form template
+    @Transactional
     public FormTemplateResponse updateFormTemplate(String id, UpdateFormTemplateRequest request) {
+        if (id == null || id.trim().isEmpty()) {
+            throw new IdInvalidException("ID không được để trống");
+        }
+
+        if (request == null) {
+            throw new IdInvalidException("Request không được null");
+        }
+
         FormTemplate template = formTemplateRepository.findById(id)
                 .orElseThrow(() -> new IdInvalidException("Form template không tồn tại với ID: " + id));
 
@@ -145,6 +162,14 @@ public class FormTemplateService {
     // 4. Tạo form template với fields
     @Transactional
     public CreateTemplateWithFieldsResponse createTemplateWithFields(CreateTemplateWithFieldsRequest request) {
+        if (request == null) {
+            throw new IdInvalidException("Request không được null");
+        }
+
+        if (request.getRoundId() == null || request.getRoundId().trim().isEmpty()) {
+            throw new IdInvalidException("RoundId không được để trống");
+        }
+
         InnovationRound innovationRound = innovationRoundRepository.findById(request.getRoundId().trim())
                 .orElseThrow(
                         () -> new IdInvalidException("Innovation round không tồn tại với ID: " + request.getRoundId()));
@@ -181,7 +206,12 @@ public class FormTemplateService {
     }
 
     // 6. Xóa form template (chỉ khi round đang DRAFT)
+    @Transactional
     public void deleteFormTemplate(String id) {
+        if (id == null || id.trim().isEmpty()) {
+            throw new IdInvalidException("ID không được để trống");
+        }
+
         FormTemplate template = formTemplateRepository.findById(id)
                 .orElseThrow(() -> new IdInvalidException("Form template không tồn tại với ID: " + id));
 
@@ -208,6 +238,10 @@ public class FormTemplateService {
     private void processFormFields(FormTemplate template, List<FormFieldRequest> fields) {
         if (fields == null || fields.isEmpty()) {
             return;
+        }
+
+        if (template == null) {
+            throw new IdInvalidException("Template không được null");
         }
 
         Map<String, FormField> existingById = template.getFormFields().stream()
@@ -302,6 +336,10 @@ public class FormTemplateService {
     }
 
     private void updateHtmlTemplateContent(FormTemplate template) {
+        if (template == null) {
+            throw new IdInvalidException("Template không được null");
+        }
+
         if (template.getTemplateContent() == null || template.getFormFields().isEmpty()) {
             return;
         }
@@ -313,14 +351,18 @@ public class FormTemplateService {
             template.setTemplateContent(encodedContent);
 
         } catch (Exception e) {
-            System.err.println("Lỗi khi cập nhật HTML template content: " + e.getMessage());
+            throw new IdInvalidException("Lỗi khi cập nhật HTML template content: " + e.getMessage());
         }
     }
 
+    // 8. Lấy FormTemplate (InnovationRoundId = null) với pagination, filtering - OK
     @Transactional
     public CreateTemplateResponse createTemplate(CreateTemplateRequest request) {
-        try {
+        if (request == null) {
+            throw new IdInvalidException("Request không được null");
+        }
 
+        try {
             FormTemplate template = new FormTemplate();
             template.setTemplateType(request.getTemplateType());
             template.setTargetRole(request.getTargetRole());
@@ -353,13 +395,16 @@ public class FormTemplateService {
 
             return formTemplateMapper.toCreateTemplateResponse(finalTemplate);
         } catch (Exception e) {
-            log.error("Lỗi khi tạo form template: {}", e.getMessage(), e);
-            throw e;
+            throw new IdInvalidException("Lỗi khi tạo template: " + e.getMessage());
         }
     }
 
     // 9. Lấy form templates theo innovation round ID
     public List<FormTemplateResponse> getFormTemplatesByInnovationRound(String roundId) {
+        if (roundId == null || roundId.trim().isEmpty()) {
+            throw new IdInvalidException("Round ID không được để trống");
+        }
+
         innovationRoundRepository.findById(roundId)
                 .orElseThrow(() -> new IdInvalidException("Innovation round không tồn tại với ID: " + roundId));
 
@@ -372,11 +417,20 @@ public class FormTemplateService {
 
     // 10. Lấy form templates theo innovation round hiện tại và target role
     public List<FormTemplateResponse> getFormTemplatesByCurrentRoundAndTargetRole(String targetRole) {
+        if (targetRole == null || targetRole.trim().isEmpty()) {
+            throw new IdInvalidException("Target role không được để trống");
+        }
+
         InnovationRound currentRound = innovationRoundRepository.findCurrentActiveRound(
                 LocalDate.now(), InnovationRoundStatusEnum.OPEN)
                 .orElse(null);
 
-        TargetRoleCode targetRoleEnum = TargetRoleCode.valueOf(targetRole);
+        TargetRoleCode targetRoleEnum;
+        try {
+            targetRoleEnum = TargetRoleCode.valueOf(targetRole);
+        } catch (IllegalArgumentException e) {
+            throw new IdInvalidException("Target role không hợp lệ: " + targetRole);
+        }
 
         List<FormTemplate> templates;
 
@@ -384,8 +438,11 @@ public class FormTemplateService {
             // Có current round - lấy templates của round đó
             templates = formTemplateRepository
                     .findByInnovationRoundIdAndTargetRoleOrderByTemplateType(currentRound.getId(), targetRoleEnum);
-            log.info("Found {} templates in current round {} for role {}", templates.size(), currentRound.getId(),
-                    targetRoleEnum);
+
+            if (templates.isEmpty()) {
+                templates = formTemplateRepository
+                        .findByInnovationRoundIsNullAndTargetRoleOrderByTemplateType(targetRoleEnum);
+            }
         } else {
             // Không có current round - lấy templates từ template library
             templates = formTemplateRepository
@@ -394,44 +451,6 @@ public class FormTemplateService {
 
         return templates.stream()
                 .map(formTemplateMapper::toFormTemplateResponse)
-                .collect(Collectors.toList());
-    }
-
-    /**
-     * Loại bỏ các field trùng lặp theo fieldKey trong danh sách templates
-     */
-    private List<FormTemplateResponse> removeDuplicateFields(List<FormTemplateResponse> templates) {
-        return templates.stream()
-                .map(template -> {
-                    // Tạo map để lưu trữ field theo fieldKey, giữ lại field đầu tiên
-                    Map<String, FormFieldResponse> fieldMap = new LinkedHashMap<>();
-
-                    for (FormFieldResponse field : template.getFormFields()) {
-                        String fieldKey = field.getFieldKey();
-                        if (!fieldMap.containsKey(fieldKey)) {
-                            fieldMap.put(fieldKey, field);
-                        } else {
-                            log.debug("Removing duplicate field with key: {} from template: {}",
-                                    fieldKey, template.getId());
-                        }
-                    }
-
-                    // Tạo template mới với danh sách field đã loại bỏ trùng lặp
-                    FormTemplateResponse newTemplate = new FormTemplateResponse();
-                    newTemplate.setId(template.getId());
-                    newTemplate.setTemplateType(template.getTemplateType());
-                    newTemplate.setTargetRole(template.getTargetRole());
-                    newTemplate.setTemplateContent(template.getTemplateContent());
-                    newTemplate.setInnovationRoundId(template.getInnovationRoundId());
-                    newTemplate.setInnovationRoundName(template.getInnovationRoundName());
-                    newTemplate.setFormFields(new ArrayList<>(fieldMap.values()));
-                    newTemplate.setCreatedAt(template.getCreatedAt());
-                    newTemplate.setUpdatedAt(template.getUpdatedAt());
-                    newTemplate.setCreatedBy(template.getCreatedBy());
-                    newTemplate.setUpdatedBy(template.getUpdatedBy());
-
-                    return newTemplate;
-                })
                 .collect(Collectors.toList());
     }
 
@@ -485,12 +504,9 @@ public class FormTemplateService {
         List<FormField> contributedFields = getContributedFieldsFromTemplates345(targetTemplateIds);
 
         // Thêm contributed fields vào templates tương ứng
-        List<FormTemplateResponse> enhancedTemplates = templates.stream()
+        return templates.stream()
                 .map(template -> enhanceTemplateWithContributedFields(template, contributedFields))
                 .collect(Collectors.toList());
-
-        // Loại bỏ các field trùng lặp theo fieldKey
-        return removeDuplicateFields(enhancedTemplates);
     }
 
     /**
@@ -507,15 +523,25 @@ public class FormTemplateService {
                     currentRound.getId(),
                     List.of(TemplateTypeEnum.BIEN_BAN_HOP, TemplateTypeEnum.TONG_HOP_DE_NGHI,
                             TemplateTypeEnum.TONG_HOP_CHAM_DIEM));
+
+            // Nếu không có template trong round hiện tại, lấy từ template library
+            if (templates345.isEmpty()) {
+                templates345 = formTemplateRepository.findByInnovationRoundIsNullAndTemplateTypeIn(
+                        List.of(TemplateTypeEnum.BIEN_BAN_HOP, TemplateTypeEnum.TONG_HOP_DE_NGHI,
+                                TemplateTypeEnum.TONG_HOP_CHAM_DIEM));
+            }
         } else {
             templates345 = formTemplateRepository.findByInnovationRoundIsNullAndTemplateTypeIn(
                     List.of(TemplateTypeEnum.BIEN_BAN_HOP, TemplateTypeEnum.TONG_HOP_DE_NGHI,
                             TemplateTypeEnum.TONG_HOP_CHAM_DIEM));
         }
 
-        return templates345.stream()
+        // Lấy tất cả CONTRIBUTED fields từ tất cả templates 3,4,5
+        List<FormField> allContributedFields = templates345.stream()
                 .flatMap(template -> extractContributedFields(template, targetTemplateIds).stream())
                 .collect(Collectors.toList());
+
+        return allContributedFields;
     }
 
     /**
@@ -570,6 +596,8 @@ public class FormTemplateService {
                                         columnField.setLabel(columnNode.get("label").asText());
                                         columnField.setFieldType(FieldTypeEnum.CONTRIBUTED);
                                         columnField.setContributionConfig(columnContributionConfig);
+                                        // Set formTemplate ID gốc
+                                        columnField.setFormTemplate(template);
                                         contributedFields.add(columnField);
                                     }
                                 }
@@ -604,6 +632,8 @@ public class FormTemplateService {
                                         childField.setLabel(childNode.get("label").asText());
                                         childField.setFieldType(FieldTypeEnum.CONTRIBUTED);
                                         childField.setContributionConfig(childContributionConfig);
+                                        // Set formTemplate ID gốc
+                                        childField.setFormTemplate(template);
                                         contributedFields.add(childField);
                                     }
                                 }
@@ -666,7 +696,8 @@ public class FormTemplateService {
             fieldResponse.setFieldType(field.getFieldType());
             fieldResponse.setRequired(field.getRequired());
             fieldResponse.setIsReadOnly(field.getIsReadOnly());
-            fieldResponse.setFormTemplateId(template.getId()); // Set formTemplateId từ template hiện tại
+            // Giữ nguyên formTemplateId gốc từ field (templates 3,4,5)
+            fieldResponse.setFormTemplateId(field.getFormTemplate() != null ? field.getFormTemplate().getId() : null);
             fieldResponse.setContributionConfig(field.getContributionConfig());
             allFields.add(fieldResponse);
         }
