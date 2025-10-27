@@ -30,6 +30,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.FormTempl
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.FormFieldResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.UserResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.exception.IdInvalidException;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.exception.NotFoundException;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.mapper.FormTemplateMapper;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.FormTemplateRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.InnovationRoundRepository;
@@ -96,9 +97,12 @@ public class FormTemplateService {
             templates = formTemplateRepository
                     .findByInnovationRoundIdOrderByTemplateType(currentRound.getId());
 
+            // if (templates.isEmpty()) {
+            // templates = formTemplateRepository
+            // .findByInnovationRoundIsNullOrderByTemplateType();
+            // }
             if (templates.isEmpty()) {
-                templates = formTemplateRepository
-                        .findByInnovationRoundIsNullOrderByTemplateType();
+                throw new NotFoundException("Không tìm thấy templates cho round hiện tại");
             }
         } else {
             // Không có current round - lấy templates từ template library
@@ -439,9 +443,12 @@ public class FormTemplateService {
             templates = formTemplateRepository
                     .findByInnovationRoundIdAndTargetRoleOrderByTemplateType(currentRound.getId(), targetRoleEnum);
 
+            // if (templates.isEmpty()) {
+            // templates = formTemplateRepository
+            // .findByInnovationRoundIsNullAndTargetRoleOrderByTemplateType(targetRoleEnum);
+            // }
             if (templates.isEmpty()) {
-                templates = formTemplateRepository
-                        .findByInnovationRoundIsNullAndTargetRoleOrderByTemplateType(targetRoleEnum);
+                throw new NotFoundException("Không tìm thấy templates cho round hiện tại");
             }
         } else {
             // Không có current round - lấy templates từ template library
