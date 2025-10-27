@@ -2,6 +2,8 @@ package vn.edu.iuh.fit.innovationmanagementsystem_be.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.InnovationPhase;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationPhaseTypeEnum;
@@ -27,4 +29,10 @@ public interface InnovationPhaseRepository
 
         Optional<InnovationPhase> findByInnovationRoundIdAndPhaseType(String innovationRoundId,
                         InnovationPhaseTypeEnum phaseType);
+
+        @Query("SELECT ip FROM InnovationPhase ip " +
+                        "JOIN ip.innovationRound ir " +
+                        "WHERE ir.status = 'OPEN' AND ip.phaseType = :phaseType " +
+                        "ORDER BY ip.phaseOrder ASC")
+        Optional<InnovationPhase> findSubmissionPhaseByOpenRound(@Param("phaseType") InnovationPhaseTypeEnum phaseType);
 }
