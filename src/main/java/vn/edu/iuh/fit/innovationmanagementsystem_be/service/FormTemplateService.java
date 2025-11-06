@@ -40,7 +40,6 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.HtmlTemplateUtils;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 import java.time.LocalDate;
 import java.util.stream.Collectors;
@@ -250,20 +249,19 @@ public class FormTemplateService {
 
         Map<String, FormField> existingById = template.getFormFields().stream()
                 .filter(f -> f.getId() != null)
-                .collect(java.util.stream.Collectors.toMap(FormField::getId, f -> f));
+                .collect(Collectors.toMap(FormField::getId, f -> f));
 
-        Set<String> incomingIds = new java.util.HashSet<>();
-
-        List<FormField> newList = new java.util.ArrayList<>();
+        // Tạo list mới theo đúng thứ tự của request
+        List<FormField> orderedFields = new ArrayList<>();
         for (FormFieldRequest fd : fields) {
             FormField entity = null;
 
             // Ưu tiên tìm theo ID trước
             if (fd.getId() != null && existingById.containsKey(fd.getId())) {
+                // Field đã tồn tại, cập nhật trực tiếp
                 entity = existingById.get(fd.getId());
-                incomingIds.add(fd.getId());
             } else {
-                // Nếu không có ID, tạo field mới
+                // Nếu không có ID hoặc ID không tồn tại, tạo field mới
                 entity = new FormField();
                 entity.setFormTemplate(template);
             }
@@ -284,7 +282,7 @@ public class FormTemplateService {
 
             // tableConfig/options/children: mapper như create
             if (fd.getType() == FieldTypeEnum.TABLE && fd.getTableConfig() != null) {
-                // Tự sinh UUID cho các column nếu chưa có
+                // Tự sinh UUID cho các column nếu chưa có hoặc ID không phải UUID hợp lệ
                 JsonNode processedTableConfig = generateColumnIdsIfNeeded(fd.getTableConfig());
                 entity.setTableConfig(processedTableConfig);
             } else if (fd.getType() != FieldTypeEnum.TABLE) {
@@ -320,23 +318,13 @@ public class FormTemplateService {
                 entity.setSigningRole(fd.getSigningRole());
             }
 
-            newList.add(entity);
+            // Add vào list theo thứ tự
+            orderedFields.add(entity);
         }
 
-        // Xóa các field không còn được sử dụng (chỉ dựa vào ID)
-        List<FormField> fieldsToRemove = template.getFormFields().stream()
-                .filter(field -> {
-                    // Giữ lại field nếu có ID trong incomingIds
-                    if (field.getId() != null && incomingIds.contains(field.getId())) {
-                        return false;
-                    }
-                    // Xóa field nếu không có ID hoặc ID không có trong incomingIds
-                    return true;
-                })
-                .collect(java.util.stream.Collectors.toList());
-
-        template.getFormFields().removeAll(fieldsToRemove);
-        template.getFormFields().addAll(newList);
+        // Thay thế toàn bộ list formFields bằng list mới theo đúng thứ tự
+        template.getFormFields().clear();
+        template.getFormFields().addAll(orderedFields);
     }
 
     private void updateHtmlTemplateContent(FormTemplate template) {
@@ -716,6 +704,7 @@ public class FormTemplateService {
 
     /**
      * Tự sinh UUID mới cho các column trong JsonNode tableConfig
+     * Thay thế các ID giả (không phải UUID format) bằng UUID mới
      */
     private JsonNode generateColumnIdsIfNeeded(JsonNode tableConfig) {
         if (tableConfig != null && tableConfig.has("columns")) {
@@ -725,8 +714,12 @@ public class FormTemplateService {
 
                 for (int i = 0; i < columnsNode.size(); i++) {
                     ObjectNode columnNode = (ObjectNode) columnsNode.get(i);
-                    // Sinh UUID mới cho mỗi column
-                    columnNode.put("id", UUID.randomUUID().toString());
+                    // Sinh UUID mới nếu column chưa có ID hoặc ID không phải UUID hợp lệ
+                    if (!columnNode.has("id") || columnNode.get("id").isNull()
+                            || columnNode.get("id").asText().isEmpty()
+                            || !isValidUUID(columnNode.get("id").asText())) {
+                        columnNode.put("id", UUID.randomUUID().toString());
+                    }
                 }
 
                 return tableConfigNode;
@@ -739,6 +732,7 @@ public class FormTemplateService {
 
     /**
      * Tự sinh UUID mới cho các children trong JsonNode children
+     * Thay thế các ID giả (không phải UUID format) bằng UUID mới
      */
     private JsonNode generateChildrenIdsIfNeeded(JsonNode children) {
         if (children != null && children.isArray()) {
@@ -747,8 +741,12 @@ public class FormTemplateService {
 
                 for (int i = 0; i < childrenNode.size(); i++) {
                     ObjectNode childNode = (ObjectNode) childrenNode.get(i);
-                    // Sinh UUID mới cho mỗi child
-                    childNode.put("id", UUID.randomUUID().toString());
+                    // Sinh UUID mới nếu child chưa có ID hoặc ID không phải UUID hợp lệ
+                    if (!childNode.has("id") || childNode.get("id").isNull()
+                            || childNode.get("id").asText().isEmpty()
+                            || !isValidUUID(childNode.get("id").asText())) {
+                        childNode.put("id", UUID.randomUUID().toString());
+                    }
                 }
 
                 return childrenNode;
@@ -757,5 +755,20 @@ public class FormTemplateService {
             }
         }
         return children;
+    }
+
+    /**
+     * Kiểm tra xem một chuỗi có phải là UUID hợp lệ không
+     */
+    private boolean isValidUUID(String id) {
+        if (id == null || id.trim().isEmpty()) {
+            return false;
+        }
+        try {
+            UUID.fromString(id);
+            return true;
+        } catch (IllegalArgumentException e) {
+            return false;
+        }
     }
 }
