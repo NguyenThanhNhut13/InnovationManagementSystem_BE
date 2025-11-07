@@ -5,6 +5,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.UserStatusEnum;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -19,6 +20,8 @@ public class LoginResponse {
     private String email;
     private UserStatusEnum status;
     private String department;
+    private String qualification;
+    private LocalDate dateOfBirth;
     private List<String> roles;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
