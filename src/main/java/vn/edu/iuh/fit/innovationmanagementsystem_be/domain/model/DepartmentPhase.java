@@ -46,7 +46,7 @@ public class DepartmentPhase extends Auditable {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "phase_status", nullable = false)
-    private PhaseStatusEnum phaseStatus = PhaseStatusEnum.PENDING;
+    private PhaseStatusEnum phaseStatus = PhaseStatusEnum.DRAFT;
 
     // Relationships
     @ManyToOne(fetch = FetchType.LAZY, optional = false)

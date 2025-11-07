@@ -2,15 +2,11 @@ package vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums;
 
 public enum PhaseStatusEnum {
 
-    PENDING("Chờ bắt đầu", "Giai đoạn chờ đến thời gian bắt đầu"),
+    DRAFT("Bản nháp", "Giai đoạn đang ở trạng thái bản nháp"),
 
     ACTIVE("Đang hoạt động", "Giai đoạn đang diễn ra"),
 
-    COMPLETED("Đã hoàn thành", "Giai đoạn đã kết thúc thành công"),
-
-    CANCELLED("Đã hủy", "Giai đoạn đã bị hủy"),
-
-    SUSPENDED("Tạm dừng", "Giai đoạn tạm thời bị dừng");
+    COMPLETED("Đã hoàn thành", "Giai đoạn đã kết thúc thành công");
 
     private final String displayName;
     private final String description;

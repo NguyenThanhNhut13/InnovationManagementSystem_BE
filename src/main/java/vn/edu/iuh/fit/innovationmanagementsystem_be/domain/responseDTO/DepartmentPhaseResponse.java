@@ -24,8 +24,10 @@ public class DepartmentPhaseResponse {
     private PhaseStatusEnum phaseStatus;
     private String innovationPhaseId;
     private String innovationPhaseName;
+    private Boolean isDeadline;
     private String departmentId;
     private String departmentName;
+    private String academicYear;
 
     // Audit info
     private LocalDateTime createdAt;

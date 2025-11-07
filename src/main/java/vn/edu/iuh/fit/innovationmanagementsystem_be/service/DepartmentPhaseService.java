@@ -1,5 +1,8 @@
 package vn.edu.iuh.fit.innovationmanagementsystem_be.service;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.Department;
@@ -10,6 +13,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.User;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationPhaseLevelEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationPhaseTypeEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationRoundStatusEnum;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.PhaseStatusEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.DepartmentPhaseRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.SimpleUpdateDepartmentPhaseRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.DepartmentPhaseResponse;
@@ -18,6 +22,8 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.mapper.DepartmentPhaseMapper
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.DepartmentPhaseRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.InnovationPhaseRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.InnovationRoundRepository;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.ResultPaginationDTO;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.Utils;
 
 import java.util.List;
 
@@ -233,5 +239,28 @@ public class DepartmentPhaseService {
                 departmentPhase = departmentPhaseRepository.save(departmentPhase);
 
                 return departmentPhaseMapper.toDepartmentPhaseResponse(departmentPhase);
+        }
+
+        // 3. Lấy danh sách tất cả giai đoạn khoa với pagination và filtering
+        public ResultPaginationDTO getAllDepartmentPhasesWithPaginationAndFilter(
+                        Specification<DepartmentPhase> specification, Pageable pageable) {
+                Page<DepartmentPhase> departmentPhases = departmentPhaseRepository.findAll(specification, pageable);
+                return Utils.toResultPaginationDTO(
+                                departmentPhases.map(departmentPhaseMapper::toDepartmentPhaseResponse), pageable);
+        }
+
+        // 4. Xóa phase (chỉ được xóa khi status là DRAFT)
+        public void deleteDepartmentPhase(String id) {
+                DepartmentPhase departmentPhase = departmentPhaseRepository.findById(id)
+                                .orElseThrow(() -> new IdInvalidException(
+                                                "Không tìm thấy giai đoạn khoa với ID: " + id));
+
+                if (!PhaseStatusEnum.DRAFT.equals(departmentPhase.getPhaseStatus())) {
+                        throw new IdInvalidException(
+                                        "Chỉ có thể xóa giai đoạn khi trạng thái là DRAFT. Trạng thái hiện tại: "
+                                                        + departmentPhase.getPhaseStatus().getDisplayName());
+                }
+
+                departmentPhaseRepository.delete(departmentPhase);
         }
 }

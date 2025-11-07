@@ -6,7 +6,6 @@ import lombok.*;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationPhaseLevelEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationPhaseTypeEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.PhaseStatusEnum;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.exception.IdInvalidException;
 
 import java.time.LocalDate;
 
@@ -44,7 +43,7 @@ public class InnovationPhase extends Auditable {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "phase_status", nullable = false)
-    private PhaseStatusEnum phaseStatus = PhaseStatusEnum.PENDING;
+    private PhaseStatusEnum phaseStatus = PhaseStatusEnum.DRAFT;
 
     @Enumerated(EnumType.STRING)
     private InnovationPhaseLevelEnum level;
@@ -61,48 +60,9 @@ public class InnovationPhase extends Auditable {
     @JsonIgnore
     private InnovationRound innovationRound;
 
-    // kiểm tra phase có nằm trong thời gian của round không
-    public boolean isPhaseWithinRoundTimeframe(LocalDate startDate, LocalDate endDate) {
-        return innovationRound != null &&
-                innovationRound.isPhaseWithinRoundTimeframe(startDate, endDate);
-    }
-
     // kiểm tra phase có nằm trong thời gian của phase không
     public boolean isPhaseWithinPhaseTimeframe(LocalDate startDate, LocalDate endDate) {
         return !startDate.isBefore(phaseStartDate) && !endDate.isAfter(phaseEndDate);
     }
 
-    // kiểm tra phase có thể chuyển đổi trạng thái không
-    public boolean canTransitionTo(PhaseStatusEnum targetStatus) {
-        return PhaseStatusEnum.PENDING.equals(this.phaseStatus) &&
-                (PhaseStatusEnum.ACTIVE.equals(targetStatus) || PhaseStatusEnum.CANCELLED.equals(targetStatus)) ||
-                PhaseStatusEnum.ACTIVE.equals(this.phaseStatus) &&
-                        (PhaseStatusEnum.COMPLETED.equals(targetStatus)
-                                || PhaseStatusEnum.SUSPENDED.equals(targetStatus)
-                                || PhaseStatusEnum.CANCELLED.equals(targetStatus))
-                ||
-                PhaseStatusEnum.SUSPENDED.equals(this.phaseStatus) &&
-                        (PhaseStatusEnum.ACTIVE.equals(targetStatus) || PhaseStatusEnum.CANCELLED.equals(targetStatus));
-    }
-
-    // kiểm tra phase có đến thời gian bắt đầu không
-    public boolean isTimeToStart() {
-        return PhaseStatusEnum.PENDING.equals(this.phaseStatus) &&
-                LocalDate.now().isAfter(phaseStartDate) || LocalDate.now().equals(phaseStartDate);
-    }
-
-    // kiểm tra phase có đến thời gian kết thúc không
-    public boolean isTimeToEnd() {
-        return PhaseStatusEnum.ACTIVE.equals(this.phaseStatus) &&
-                LocalDate.now().isAfter(phaseEndDate);
-    }
-
-    // chuyển đổi trạng thái của phase
-    public void transitionTo(PhaseStatusEnum targetStatus, String reason) {
-        if (canTransitionTo(targetStatus)) {
-            this.phaseStatus = targetStatus;
-        } else {
-            throw new IdInvalidException("Không thể chuyển đổi phase từ " + this.phaseStatus + " sang " + targetStatus);
-        }
-    }
 }

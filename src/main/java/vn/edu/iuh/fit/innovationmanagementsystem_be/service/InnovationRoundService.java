@@ -444,7 +444,7 @@ public class InnovationRoundService {
         phase.setPhaseStartDate(request.getPhaseStartDate());
         phase.setPhaseEndDate(request.getPhaseEndDate());
         phase.setDescription(request.getDescription());
-        phase.setPhaseStatus(PhaseStatusEnum.PENDING);
+        phase.setPhaseStatus(PhaseStatusEnum.DRAFT);
         phase.setIsDeadline(false);
 
         return innovationPhaseRepository.save(phase);

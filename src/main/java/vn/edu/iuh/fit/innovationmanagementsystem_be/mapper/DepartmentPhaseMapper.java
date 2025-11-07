@@ -11,8 +11,10 @@ public interface DepartmentPhaseMapper {
 
     @Mapping(target = "innovationPhaseId", source = "innovationPhase.id")
     @Mapping(target = "innovationPhaseName", source = "innovationPhase.name")
+    @Mapping(target = "isDeadline", source = "innovationPhase.isDeadline")
     @Mapping(target = "departmentId", source = "department.id")
     @Mapping(target = "departmentName", source = "department.departmentName")
+    @Mapping(target = "academicYear", source = "innovationRound.academicYear")
     DepartmentPhaseResponse toDepartmentPhaseResponse(DepartmentPhase departmentPhase);
 
     @Mapping(target = "id", ignore = true)
