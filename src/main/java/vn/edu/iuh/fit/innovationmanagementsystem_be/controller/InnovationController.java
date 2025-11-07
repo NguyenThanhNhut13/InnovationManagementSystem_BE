@@ -18,7 +18,7 @@ import jakarta.validation.Valid;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.Innovation;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.CreateInnovationWithTemplatesRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationFormDataResponse;
-// import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationResponse;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationStatisticsDTO;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationAcademicYearStatisticsDTO;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.service.InnovationService;
@@ -120,24 +120,19 @@ public class InnovationController {
         // pageable));
         // }
 
-        // 2. Lấy sáng kiến by Id
-        // @GetMapping("/innovations/{id}")
-        // @ApiMessage("Lấy thông tin sáng kiến bằng id thành công")
-        // @Operation(summary = "Get Innovation by ID", description = "Get innovation
-        // details by innovation ID")
-        // @ApiResponses(value = {
-        // @ApiResponse(responseCode = "200", description = "Innovation retrieved
-        // successfully", content = @Content(schema = @Schema(implementation =
-        // InnovationResponse.class))),
-        // @ApiResponse(responseCode = "404", description = "Innovation not found"),
-        // @ApiResponse(responseCode = "401", description = "Unauthorized")
-        // })
-
-        // public ResponseEntity<InnovationResponse> getInnovationById(
-        // @Parameter(description = "Innovation ID", required = true) @PathVariable
-        // String id) {
-        // return ResponseEntity.ok(innovationService.getInnovationById(id));
-        // }
+        // 2. Lấy sáng kiến by Id (bao gồm FormData và FormField)
+        @GetMapping("/innovations/{id}")
+        @ApiMessage("Lấy thông tin sáng kiến bằng id thành công")
+        @Operation(summary = "Get Innovation by ID", description = "Get innovation details with all form data and form fields by innovation ID")
+        @ApiResponses(value = {
+                        @ApiResponse(responseCode = "200", description = "Innovation with form data and form fields retrieved successfully", content = @Content(schema = @Schema(implementation = InnovationFormDataResponse.class))),
+                        @ApiResponse(responseCode = "404", description = "Innovation not found"),
+                        @ApiResponse(responseCode = "401", description = "Unauthorized")
+        })
+        public ResponseEntity<InnovationFormDataResponse> getInnovationById(
+                        @Parameter(description = "Innovation ID", required = true) @PathVariable String id) {
+                return ResponseEntity.ok(innovationService.getInnovationWithFormDataById(id));
+        }
 
         // 4. Cập nhật FormData sáng kiến
         // @PutMapping("/innovations/{innovationId}/form-data")

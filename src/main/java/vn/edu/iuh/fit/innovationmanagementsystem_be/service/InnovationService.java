@@ -11,10 +11,14 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.Innovation;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.InnovationPhase;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.User;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.FormField;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.FormData;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationStatusEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationPhaseTypeEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.FieldTypeEnum;
@@ -23,6 +27,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.FormDataRe
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.CreateInnovationWithTemplatesRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.TemplateDataRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.FormDataResponse;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.FormFieldResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationFormDataResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationStatisticsDTO;
@@ -31,7 +36,10 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.UpcomingD
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.UpcomingDeadlinesResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.exception.IdInvalidException;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.mapper.InnovationMapper;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.mapper.FormFieldMapper;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.mapper.FormDataMapper;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.InnovationRepository;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.FormDataRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.InnovationPhaseRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.FormFieldRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.FormTemplateRepository;
@@ -54,10 +62,15 @@ import java.time.temporal.ChronoUnit;
 @Transactional
 public class InnovationService {
 
+        private static final Logger logger = LoggerFactory.getLogger(InnovationService.class);
+
         private final InnovationRepository innovationRepository;
         private final InnovationPhaseRepository innovationPhaseRepository;
         private final FormDataService formDataService;
         private final InnovationMapper innovationMapper;
+        private final FormFieldMapper formFieldMapper;
+        private final FormDataMapper formDataMapper;
+        private final FormDataRepository formDataRepository;
         private final UserService userService;
         private final DigitalSignatureService digitalSignatureService;
         private final InnovationRoundService innovationRoundService;
@@ -71,6 +84,9 @@ public class InnovationService {
                         InnovationPhaseRepository innovationPhaseRepository,
                         FormDataService formDataService,
                         InnovationMapper innovationMapper,
+                        FormFieldMapper formFieldMapper,
+                        FormDataMapper formDataMapper,
+                        FormDataRepository formDataRepository,
                         UserService userService,
                         DigitalSignatureService digitalSignatureService,
                         InnovationRoundService innovationRoundService,
@@ -83,6 +99,9 @@ public class InnovationService {
                 this.innovationPhaseRepository = innovationPhaseRepository;
                 this.formDataService = formDataService;
                 this.innovationMapper = innovationMapper;
+                this.formFieldMapper = formFieldMapper;
+                this.formDataMapper = formDataMapper;
+                this.formDataRepository = formDataRepository;
                 this.userService = userService;
                 this.digitalSignatureService = digitalSignatureService;
                 this.innovationRoundService = innovationRoundService;
@@ -397,7 +416,7 @@ public class InnovationService {
                 innovation.setInnovationRound(innovationPhase.getInnovationRound());
                 innovation.setIsScore(request.getIsScore() != null ? request.getIsScore() : false);
                 innovation.setStatus(request.getStatus());
-                innovation.setBaseOn(request.getBaseOn());
+                innovation.setBasisText(request.getBasisText());
 
                 Innovation savedInnovation = innovationRepository.save(innovation);
 
@@ -494,13 +513,92 @@ public class InnovationService {
                 return response;
         }
 
-        // // 2. Lấy sáng kiến bởi ID
-        // public InnovationResponse getInnovationById(String id) {
-        // Innovation innovation = innovationRepository.findById(id)
-        // .orElseThrow(() -> new IdInvalidException("Không tìm thấy sáng kiến với ID: "
-        // + id));
-        // return innovationMapper.toInnovationResponse(innovation);
-        // }
+        // 5. Lấy Innovation & FormData theo ID (bao gồm FormField đầy đủ)
+        public InnovationFormDataResponse getInnovationWithFormDataById(String innovationId) {
+                logger.info("===== GET INNOVATION WITH FORM DATA BY ID =====");
+                logger.info("Innovation ID: {}", innovationId);
+                
+                // Lấy Innovation
+                Innovation innovation = innovationRepository.findById(innovationId)
+                                .orElseThrow(() -> {
+                                        logger.error("Không tìm thấy sáng kiến với ID: {}", innovationId);
+                                        return new IdInvalidException(
+                                                        "Không tìm thấy sáng kiến với ID: " + innovationId);
+                                });
+                
+                logger.info("Innovation found: {} - {}", innovation.getId(), innovation.getInnovationName());
+
+                // Lấy tất cả FormData của innovation (đã có FormField được load với relations)
+                List<FormData> formDataList = formDataRepository.findByInnovationIdWithRelations(innovationId);
+                logger.info("FormData count found: {}", formDataList.size());
+                
+                if (formDataList.isEmpty()) {
+                        logger.warn("Không tìm thấy FormData nào cho Innovation ID: {}", innovationId);
+                        // Kiểm tra xem có FormData nào trong database không (không có relations)
+                        long totalFormData = formDataRepository.count();
+                        logger.info("Total FormData records in database: {}", totalFormData);
+                        
+                        // Kiểm tra bằng cách query trực tiếp
+                        List<FormData> allFormDataForInnovation = formDataRepository.findAll().stream()
+                                        .filter(fd -> fd.getInnovation() != null && 
+                                                     innovationId.equals(fd.getInnovation().getId()))
+                                        .collect(Collectors.toList());
+                        logger.info("FormData found with direct query (no relations): {}", allFormDataForInnovation.size());
+                }
+
+                // Map FormData sang FormDataResponse và thêm FormFieldResponse đầy đủ
+                List<FormDataResponse> formDataResponses = new ArrayList<>();
+                
+                for (FormData formData : formDataList) {
+                        logger.debug("Processing FormData ID: {}", formData.getId());
+                        logger.debug("FormData fieldValue: {}", formData.getFieldValue());
+                        
+                        FormDataResponse formDataResponse = formDataMapper.toFormDataResponse(formData);
+                        logger.debug("Mapped FormDataResponse ID: {}, formFieldKey: {}", 
+                                    formDataResponse.getId(), formDataResponse.getFormFieldKey());
+                        
+                        // Đảm bảo FormField được load đầy đủ với formTemplate
+                        if (formData.getFormField() != null) {
+                                FormField formField = formData.getFormField();
+                                logger.debug("FormField found: ID={}, fieldKey={}, label={}", 
+                                            formField.getId(), formField.getFieldKey(), formField.getLabel());
+                                
+                                // Nếu formTemplate chưa được load hoặc cần refresh, load lại
+                                if (formField.getFormTemplate() == null) {
+                                        logger.warn("FormTemplate is null for FormField ID: {}, loading again...", formField.getId());
+                                        formField = formFieldRepository.findByIdWithTemplate(formField.getId())
+                                                        .orElse(formField);
+                                }
+                                
+                                if (formField.getFormTemplate() != null) {
+                                        logger.debug("FormTemplate loaded: ID={}", 
+                                                    formField.getFormTemplate().getId());
+                                }
+                                
+                                // Map FormField đầy đủ sang FormFieldResponse
+                                FormFieldResponse formFieldResponse = formFieldMapper
+                                                .toFormFieldResponse(formField);
+                                formDataResponse.setFormField(formFieldResponse);
+                                logger.debug("FormFieldResponse mapped with formTemplateId: {}", 
+                                            formFieldResponse.getFormTemplateId());
+                        } else {
+                                logger.warn("FormField is null for FormData ID: {}", formData.getId());
+                        }
+                        
+                        formDataResponses.add(formDataResponse);
+                }
+
+                logger.info("Total FormDataResponse created: {}", formDataResponses.size());
+
+                // Tạo response
+                InnovationFormDataResponse response = new InnovationFormDataResponse();
+                response.setInnovation(innovationMapper.toInnovationResponse(innovation));
+                response.setFormDataList(formDataResponses);
+                response.setDocumentHash(null);
+
+                logger.info("===== END GET INNOVATION WITH FORM DATA =====");
+                return response;
+        }
 
         // // 4. Cập nhật FormData sáng kiến (Cập nhật FormData cho sáng kiến đã tồn
         // tại)

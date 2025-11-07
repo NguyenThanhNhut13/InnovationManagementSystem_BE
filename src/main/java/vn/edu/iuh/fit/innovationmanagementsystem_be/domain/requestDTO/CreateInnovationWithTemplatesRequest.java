@@ -26,7 +26,7 @@ public class CreateInnovationWithTemplatesRequest {
 
     private Boolean isScore = false;
 
-    private String baseOn;
+    private String basisText;
 
     @NotEmpty(message = "Danh sách template không được để trống")
     @Valid

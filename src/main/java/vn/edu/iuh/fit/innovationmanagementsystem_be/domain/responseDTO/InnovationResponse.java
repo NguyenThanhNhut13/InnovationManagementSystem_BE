@@ -16,7 +16,7 @@ public class InnovationResponse {
     private String innovationName;
     private InnovationStatusEnum status;
     private Boolean isScore;
-    private String baseOn;
+    private String basisText;
 
     // User info
     private String userId;

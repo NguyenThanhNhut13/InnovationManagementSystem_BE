@@ -33,8 +33,8 @@ public class Innovation extends Auditable {
     @Column(name = "is_score", columnDefinition = "BOOLEAN")
     private Boolean isScore;
 
-    @Column(name = "base_on", columnDefinition = "TEXT")
-    private String baseOn;
+    @Column(name = "basis_text", columnDefinition = "TEXT")
+    private String basisText;
 
     // Relationships
 
