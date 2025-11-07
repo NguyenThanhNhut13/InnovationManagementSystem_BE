@@ -28,4 +28,7 @@ public interface UserRepository extends JpaRepository<User, String>, JpaSpecific
                         "LOWER(u.personnelId) LIKE LOWER(CONCAT('%', :searchTerm, '%'))")
         Page<User> searchUsersByFullNameOrPersonnelId(@Param("searchTerm") String searchTerm, Pageable pageable);
 
+        @Query("SELECT u FROM User u WHERE LOWER(TRIM(u.fullName)) = LOWER(TRIM(:fullName))")
+        Optional<User> findByFullNameIgnoreCase(@Param("fullName") String fullName);
+
 }

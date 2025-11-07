@@ -12,20 +12,21 @@ import java.util.Optional;
 @Repository
 public interface FormFieldRepository extends JpaRepository<FormField, String> {
 
-    @Query("SELECT ff FROM FormField ff " +
-            "LEFT JOIN FETCH ff.formTemplate ft " +
-            "WHERE ff.id = :id")
-    Optional<FormField> findByIdWithTemplate(@Param("id") String id);
+        @Query("SELECT ff FROM FormField ff " +
+                        "LEFT JOIN FETCH ff.formTemplate ft " +
+                        "WHERE ff.id = :id")
+        Optional<FormField> findByIdWithTemplate(@Param("id") String id);
 
-    @Query("SELECT ff FROM FormField ff " +
-            "LEFT JOIN FETCH ff.formTemplate ft " +
-            "WHERE ff.fieldKey = :fieldKey AND ft.id = :templateId")
-    Optional<FormField> findByFieldKeyAndTemplateId(@Param("fieldKey") String fieldKey,
-            @Param("templateId") String templateId);
+        @Query("SELECT ff FROM FormField ff " +
+                        "LEFT JOIN FETCH ff.formTemplate ft " +
+                        "WHERE ff.fieldKey = :fieldKey AND ft.id = :templateId")
+        Optional<FormField> findByFieldKeyAndTemplateId(@Param("fieldKey") String fieldKey,
+                        @Param("templateId") String templateId);
 
-    @Query("SELECT ff FROM FormField ff " +
-            "LEFT JOIN FETCH ff.formTemplate ft " +
-            "WHERE ft.id = :templateId")
-    List<FormField> findByTemplateId(@Param("templateId") String templateId);
+        @Query("SELECT ff FROM FormField ff " +
+                        "LEFT JOIN FETCH ff.formTemplate ft " +
+                        "WHERE ft.id = :templateId " +
+                        "ORDER BY ff.createdAt ASC")
+        List<FormField> findByTemplateId(@Param("templateId") String templateId);
 
 }

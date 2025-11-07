@@ -44,6 +44,9 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.InnovationPhaseRe
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.FormFieldRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.FormTemplateRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.InnovationRoundRepository;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.CoInnovationRepository;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.UserRepository;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.CoInnovation;
 
 import java.util.ArrayList;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.ResultPaginationDTO;
@@ -52,6 +55,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.Utils;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.Arrays;
 import java.time.LocalDate;
@@ -79,6 +83,8 @@ public class InnovationService {
         private final FormTemplateRepository formTemplateRepository;
         private final InnovationRoundRepository innovationRoundRepository;
         private final ObjectMapper objectMapper;
+        private final CoInnovationRepository coInnovationRepository;
+        private final UserRepository userRepository;
 
         public InnovationService(InnovationRepository innovationRepository,
                         InnovationPhaseRepository innovationPhaseRepository,
@@ -94,7 +100,9 @@ public class InnovationService {
                         FormFieldRepository formFieldRepository,
                         FormTemplateRepository formTemplateRepository,
                         InnovationRoundRepository innovationRoundRepository,
-                        ObjectMapper objectMapper) {
+                        ObjectMapper objectMapper,
+                        CoInnovationRepository coInnovationRepository,
+                        UserRepository userRepository) {
                 this.innovationRepository = innovationRepository;
                 this.innovationPhaseRepository = innovationPhaseRepository;
                 this.formDataService = formDataService;
@@ -110,6 +118,8 @@ public class InnovationService {
                 this.formTemplateRepository = formTemplateRepository;
                 this.innovationRoundRepository = innovationRoundRepository;
                 this.objectMapper = objectMapper;
+                this.coInnovationRepository = coInnovationRepository;
+                this.userRepository = userRepository;
         }
 
         // 1. Lấy tất cả sáng kiến của user hiện tại với filter
@@ -504,6 +514,9 @@ public class InnovationService {
                                 }
                         }
                 }
+
+                // Xử lý đồng sáng kiến từ formData
+                processCoInnovations(savedInnovation, request.getTemplates());
 
                 InnovationFormDataResponse response = new InnovationFormDataResponse();
                 response.setInnovation(innovationMapper.toInnovationResponse(savedInnovation));
@@ -1030,6 +1043,119 @@ public class InnovationService {
                 }
 
                 return null;
+        }
+
+        // 5. Xử lý đồng sáng kiến từ formData
+        private void processCoInnovations(Innovation innovation, List<TemplateDataRequest> templates) {
+                // Xóa các đồng sáng kiến cũ (nếu có)
+                coInnovationRepository.deleteByInnovationId(innovation.getId());
+
+                // Duyệt qua tất cả templates để tìm field chứa thông tin đồng sáng kiến
+                for (TemplateDataRequest templateRequest : templates) {
+                        if (templateRequest.getFormData() == null || templateRequest.getFormData().isEmpty()) {
+                                continue;
+                        }
+
+                        for (Map.Entry<String, Object> entry : templateRequest.getFormData().entrySet()) {
+                                String fieldKey = entry.getKey();
+                                Object fieldValue = entry.getValue();
+
+                                // Kiểm tra xem fieldKey có bắt đầu bằng "bang_dong" không (đồng tác giả)
+                                if (fieldKey != null && fieldKey.startsWith("bang_dong") && fieldValue != null) {
+                                        try {
+                                                // Chuyển đổi fieldValue sang JsonNode để xử lý
+                                                JsonNode valueNode = objectMapper.valueToTree(fieldValue);
+
+                                                // Kiểm tra xem có phải là mảng không
+                                                if (valueNode.isArray()) {
+                                                        // Duyệt qua từng item trong mảng
+                                                        for (JsonNode itemNode : valueNode) {
+                                                                processCoInnovationItem(innovation, itemNode);
+                                                        }
+                                                }
+                                        } catch (Exception e) {
+                                                throw new IdInvalidException(
+                                                                "Lỗi khi xử lý đồng sáng kiến: " + e.getMessage());
+                                        }
+                                }
+                        }
+                }
+        }
+
+        // 6. Xử lý một item đồng sáng kiến
+        private void processCoInnovationItem(Innovation innovation, JsonNode itemNode) {
+                try {
+                        // Extract thông tin từ itemNode
+                        JsonNode hoVaTenNode = itemNode.get("ho_va_ten");
+                        JsonNode maNhanSuNode = itemNode.get("ma_nhan_su");
+                        JsonNode noiCongTacNode = itemNode.get("noi_cong_tac_hoac_noi_thuong_tru");
+
+                        // Kiểm tra mã nhân sự - bắt buộc phải có để tìm User
+                        if (maNhanSuNode == null || maNhanSuNode.isNull()
+                                        || maNhanSuNode.asText().trim().isEmpty()) {
+                                throw new IdInvalidException(
+                                                "Không tìm thấy mã nhân sự trong item đồng sáng kiến, bỏ qua item này");
+                        }
+
+                        String maNhanSu = maNhanSuNode.asText().trim();
+                        String hoVaTen = hoVaTenNode != null && !hoVaTenNode.isNull()
+                                        ? hoVaTenNode.asText().trim()
+                                        : "";
+                        String noiCongTac = noiCongTacNode != null && !noiCongTacNode.isNull()
+                                        ? noiCongTacNode.asText().trim()
+                                        : "";
+
+                        // Tìm User theo mã nhân sự
+                        Optional<User> userOpt = userRepository.findByPersonnelId(maNhanSu);
+
+                        if (userOpt.isEmpty()) {
+                                throw new IdInvalidException(
+                                                "Không tìm thấy User với mã nhân sự: " + maNhanSu);
+                        }
+
+                        User user = userOpt.get();
+
+                        // Kiểm tra xem đã có CoInnovation cho user này và innovation này chưa
+                        boolean exists = coInnovationRepository.findByInnovationId(innovation.getId()).stream()
+                                        .anyMatch(co -> co.getUser().getId().equals(user.getId()));
+
+                        if (exists) {
+                                return; // Đã tồn tại, bỏ qua
+                        }
+
+                        // Tạo CoInnovation mới
+                        CoInnovation coInnovation = new CoInnovation();
+                        coInnovation.setInnovation(innovation);
+                        coInnovation.setUser(user);
+                        // Sử dụng tên từ formData nếu có, nếu không thì dùng tên từ User
+                        coInnovation.setCoInnovatorFullName(
+                                        !hoVaTen.isEmpty() ? hoVaTen : user.getFullName());
+                        coInnovation.setCoInnovatorDepartmentName(
+                                        !noiCongTac.isEmpty() ? noiCongTac
+                                                        : (user.getDepartment() != null
+                                                                        ? user.getDepartment().getDepartmentName()
+                                                                        : ""));
+
+                        // Tạo contactInfo từ các thông tin có sẵn
+                        StringBuilder contactInfo = new StringBuilder();
+                        if (user.getEmail() != null && !user.getEmail().isEmpty()) {
+                                contactInfo.append("Email: ").append(user.getEmail());
+                        }
+                        if (user.getPersonnelId() != null && !user.getPersonnelId().isEmpty()) {
+                                if (contactInfo.length() > 0) {
+                                        contactInfo.append("; ");
+                                }
+                                contactInfo.append("Mã NV: ").append(user.getPersonnelId());
+                        }
+                        coInnovation.setContactInfo(
+                                        contactInfo.length() > 0 ? contactInfo.toString()
+                                                        : "Chưa có thông tin liên hệ");
+
+                        coInnovationRepository.save(coInnovation);
+                } catch (Exception e) {
+                        throw new IdInvalidException(
+                                        "Lỗi khi xử lý item đồng sáng kiến: " + e.getMessage());
+                }
         }
 
 }

@@ -41,6 +41,7 @@ public class FormTemplate extends Auditable {
     private InnovationRound innovationRound;
 
     @OneToMany(mappedBy = "formTemplate", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
+    @OrderBy("createdAt ASC")
     private List<FormField> formFields = new ArrayList<>();
 
 }
