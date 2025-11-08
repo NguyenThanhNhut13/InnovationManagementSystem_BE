@@ -103,19 +103,20 @@ public class DepartmentPhaseService {
                                                         innovationRound.getRegistrationEndDate());
                 }
 
-                if (!innovationPhase.isPhaseWithinPhaseTimeframe(request.getPhaseStartDate(),
-                                request.getPhaseEndDate())) {
-                        throw new IdInvalidException(
-                                        "Thời gian giai đoạn của khoa phải nằm trong thời gian giai đoạn của trường: " +
-                                                        innovationPhase.getPhaseStartDate() + " đến " +
-                                                        innovationPhase.getPhaseEndDate());
-                }
+                // Check deadline constraint: Phải check với phase có isDeadline = true
+                // (không phụ thuộc vào phaseType của request)
+                InnovationPhase phaseWithDeadline = innovationPhaseRepository
+                                .findPhaseWithDeadlineByRoundId(innovationRound.getId())
+                                .orElse(null);
 
-                if (Boolean.TRUE.equals(innovationPhase.getIsDeadline())) {
-                        if (request.getPhaseEndDate().isAfter(innovationPhase.getPhaseEndDate())) {
+                if (phaseWithDeadline != null) {
+                        // Check thời gian phase khoa phải nằm trong thời gian phase có deadline
+                        if (!phaseWithDeadline.isPhaseWithinPhaseTimeframe(request.getPhaseStartDate(),
+                                        request.getPhaseEndDate())) {
                                 throw new IdInvalidException(
-                                                "Thời gian kết thúc giai đoạn của khoa không được vượt quá thời gian kết thúc của giai đoạn trường ("
-                                                                + innovationPhase.getPhaseEndDate() + ")");
+                                                "Thời gian giai đoạn của khoa phải nằm trong thời gian giai đoạn deadline: "
+                                                                + phaseWithDeadline.getPhaseStartDate() + " đến " +
+                                                                phaseWithDeadline.getPhaseEndDate());
                         }
                 }
 
@@ -220,19 +221,20 @@ public class DepartmentPhaseService {
                                                         + innovationRound.getRegistrationEndDate());
                 }
 
-                if (!innovationPhase.isPhaseWithinPhaseTimeframe(request.getPhaseStartDate(),
-                                request.getPhaseEndDate())) {
-                        throw new IdInvalidException(
-                                        "Thời gian giai đoạn của khoa phải nằm trong thời gian giai đoạn của trường: "
-                                                        + innovationPhase.getPhaseStartDate() + " đến "
-                                                        + innovationPhase.getPhaseEndDate());
-                }
+                // Check deadline constraint: Phải check với phase có isDeadline = true
+                // (không phụ thuộc vào phaseType của request)
+                InnovationPhase phaseWithDeadline = innovationPhaseRepository
+                                .findPhaseWithDeadlineByRoundId(innovationRound.getId())
+                                .orElse(null);
 
-                if (Boolean.TRUE.equals(innovationPhase.getIsDeadline())) {
-                        if (request.getPhaseEndDate().isAfter(innovationPhase.getPhaseEndDate())) {
+                if (phaseWithDeadline != null) {
+                        // Check thời gian phase khoa phải nằm trong thời gian phase có deadline
+                        if (!phaseWithDeadline.isPhaseWithinPhaseTimeframe(request.getPhaseStartDate(),
+                                        request.getPhaseEndDate())) {
                                 throw new IdInvalidException(
-                                                "Thời gian kết thúc giai đoạn của khoa không được vượt quá thời gian kết thúc của giai đoạn trường ("
-                                                                + innovationPhase.getPhaseEndDate() + ")");
+                                                "Thời gian giai đoạn của khoa phải nằm trong thời gian giai đoạn deadline: "
+                                                                + phaseWithDeadline.getPhaseStartDate() + " đến " +
+                                                                phaseWithDeadline.getPhaseEndDate());
                         }
                 }
 

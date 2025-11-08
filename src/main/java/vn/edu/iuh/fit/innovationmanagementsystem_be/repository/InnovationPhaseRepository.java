@@ -35,4 +35,13 @@ public interface InnovationPhaseRepository
                         "WHERE ir.status = 'OPEN' AND ip.phaseType = :phaseType " +
                         "ORDER BY ip.phaseOrder ASC")
         Optional<InnovationPhase> findSubmissionPhaseByOpenRound(@Param("phaseType") InnovationPhaseTypeEnum phaseType);
+
+        /**
+         * Tìm phase có isDeadline = true trong một round (bất kỳ phaseType nào)
+         * Dùng để check deadline constraint khi tạo/cập nhật DepartmentPhase
+         */
+        @Query("SELECT ip FROM InnovationPhase ip " +
+                        "WHERE ip.innovationRound.id = :roundId " +
+                        "AND ip.isDeadline = true")
+        Optional<InnovationPhase> findPhaseWithDeadlineByRoundId(@Param("roundId") String roundId);
 }
