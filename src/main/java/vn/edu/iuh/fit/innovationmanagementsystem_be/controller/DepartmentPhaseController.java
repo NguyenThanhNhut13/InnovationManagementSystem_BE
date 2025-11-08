@@ -39,7 +39,7 @@ public class DepartmentPhaseController {
 
         // 1. Tạo nhiều phase cho khoa cùng lúc
         @PostMapping("/multiple")
-        @PreAuthorize("hasAnyRole('TRUONG_KHOA', 'QUAN_TRI_VIEN_HE_THONG')")
+        @PreAuthorize("hasAnyRole('TRUONG_KHOA', 'QUAN_TRI_VIEN_HE_THONG', 'QUAN_TRI_VIEN_KHOA')")
         @ApiMessage("Tạo nhiều giai đoạn cho khoa thành công")
         @Operation(summary = "Create Multiple Department Phases", description = "Create multiple department phases at once")
         @ApiResponses(value = {
@@ -56,7 +56,7 @@ public class DepartmentPhaseController {
 
         // 2. Cập nhật nhiều phase theo phaseType cùng lúc (không cần ID)
         @PutMapping("/multiple/by-type")
-        @PreAuthorize("hasAnyRole('TRUONG_KHOA', 'QUAN_TRI_VIEN_HE_THONG')")
+        @PreAuthorize("hasAnyRole('TRUONG_KHOA', 'QUAN_TRI_VIEN_HE_THONG', 'QUAN_TRI_VIEN_KHOA')")
         @ApiMessage("Cập nhật nhiều giai đoạn khoa theo loại thành công")
         @Operation(summary = "Update Multiple Department Phases by Type", description = "Update multiple department phases by phase type without requiring ID")
         @ApiResponses(value = {
@@ -74,7 +74,7 @@ public class DepartmentPhaseController {
 
         // 3. Lấy danh sách tất cả giai đoạn khoa với pagination và filtering
         @GetMapping
-        @PreAuthorize("hasAnyRole('TRUONG_KHOA', 'QUAN_TRI_VIEN_HE_THONG', 'GIANG_VIEN')")
+        @PreAuthorize("hasAnyRole('TRUONG_KHOA', 'QUAN_TRI_VIEN_HE_THONG', 'GIANG_VIEN', 'QUAN_TRI_VIEN_KHOA')")
         @ApiMessage("Lấy danh sách giai đoạn khoa thành công")
         @Operation(summary = "Get All Department Phases", description = "Get paginated list of all department phases with filtering")
         @ApiResponses(value = {
@@ -90,7 +90,7 @@ public class DepartmentPhaseController {
 
         // 4. Xóa phase (chỉ được xóa khi status là DRAFT)
         @DeleteMapping("/{id}")
-        @PreAuthorize("hasAnyRole('TRUONG_KHOA', 'QUAN_TRI_VIEN_HE_THONG')")
+        @PreAuthorize("hasAnyRole('TRUONG_KHOA', 'QUAN_TRI_VIEN_HE_THONG', 'QUAN_TRI_VIEN_KHOA')")
         @ApiMessage("Xóa giai đoạn khoa thành công")
         @Operation(summary = "Delete Department Phase", description = "Delete department phase. Only allowed when status is DRAFT")
         @ApiResponses(value = {
