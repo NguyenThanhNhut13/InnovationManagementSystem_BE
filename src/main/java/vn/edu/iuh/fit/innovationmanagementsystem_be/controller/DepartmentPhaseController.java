@@ -16,6 +16,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.DepartmentPhase;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.InnovationRound;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.DepartmentPhaseRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.SimpleUpdateDepartmentPhaseRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.DepartmentPhaseResponse;
@@ -70,6 +71,23 @@ public class DepartmentPhaseController {
                 List<DepartmentPhaseResponse> departmentPhases = departmentPhaseService
                                 .updateMultipleDepartmentPhasesByType(requests);
                 return ResponseEntity.ok(departmentPhases);
+        }
+
+        // 3. Lấy danh sách giai đoạn khoa cho hiển thị bảng
+        @GetMapping("/list")
+        @PreAuthorize("hasAnyRole('TRUONG_KHOA', 'QUAN_TRI_VIEN_HE_THONG', 'QUAN_TRI_VIEN_KHOA')")
+        @ApiMessage("Lấy danh sách giai đoạn khoa cho hiển thị bảng thành công")
+        @Operation(summary = "Get Department Phases List for Table", description = "Get paginated list of innovation rounds with department phase information for table display. Only returns rounds with phases of the current user's department")
+        @ApiResponses(value = {
+                        @ApiResponse(responseCode = "200", description = "Department phases list retrieved successfully", content = @Content(schema = @Schema(implementation = ResultPaginationDTO.class))),
+                        @ApiResponse(responseCode = "400", description = "User does not belong to any department"),
+                        @ApiResponse(responseCode = "401", description = "Unauthorized")
+        })
+        public ResponseEntity<ResultPaginationDTO> getDepartmentPhasesListForTable(
+                        @Parameter(description = "Filter specification for innovation rounds") @Filter Specification<InnovationRound> specification,
+                        @Parameter(description = "Pagination parameters") Pageable pageable) {
+                return ResponseEntity
+                                .ok(departmentPhaseService.getDepartmentPhasesListForTable(specification, pageable));
         }
 
         // 3. Lấy danh sách tất cả giai đoạn khoa với pagination và filtering (theo khoa
@@ -128,23 +146,6 @@ public class DepartmentPhaseController {
                 List<DepartmentPhaseResponse> departmentPhases = departmentPhaseService
                                 .getDepartmentPhasesByRoundId(roundId);
                 return ResponseEntity.ok(departmentPhases);
-        }
-
-        // 6. Lấy danh sách giai đoạn khoa cho hiển thị bảng
-        @GetMapping("/list")
-        @PreAuthorize("hasAnyRole('TRUONG_KHOA', 'QUAN_TRI_VIEN_HE_THONG', 'QUAN_TRI_VIEN_KHOA')")
-        @ApiMessage("Lấy danh sách giai đoạn khoa cho hiển thị bảng thành công")
-        @Operation(summary = "Get Department Phases List for Table", description = "Get paginated list of department phases with specific fields for table display. Only returns phases of the current user's department")
-        @ApiResponses(value = {
-                        @ApiResponse(responseCode = "200", description = "Department phases list retrieved successfully", content = @Content(schema = @Schema(implementation = ResultPaginationDTO.class))),
-                        @ApiResponse(responseCode = "400", description = "User does not belong to any department"),
-                        @ApiResponse(responseCode = "401", description = "Unauthorized")
-        })
-        public ResponseEntity<ResultPaginationDTO> getDepartmentPhasesListForTable(
-                        @Parameter(description = "Filter specification for department phases") @Filter Specification<DepartmentPhase> specification,
-                        @Parameter(description = "Pagination parameters") Pageable pageable) {
-                return ResponseEntity
-                                .ok(departmentPhaseService.getDepartmentPhasesListForTable(specification, pageable));
         }
 
 }

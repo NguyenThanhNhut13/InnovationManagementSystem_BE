@@ -27,6 +27,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.InnovationRoundRe
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.ResultPaginationDTO;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.Utils;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @Service
@@ -122,14 +123,14 @@ public class DepartmentPhaseService {
                         }
                 }
 
-                if (departmentPhaseRepository
-                                .findByDepartmentIdAndInnovationRoundIdAndPhaseType(department.getId(),
-                                                innovationRound.getId(), request.getPhaseType())
-                                .isPresent()) {
-                        throw new IdInvalidException(
-                                        "Khoa đã có giai đoạn với loại: " + request.getPhaseType()
-                                                        + ". Không thể tạo trùng lặp.");
-                }
+                // if (departmentPhaseRepository
+                // .findByDepartmentIdAndInnovationRoundIdAndPhaseType(department.getId(),
+                // innovationRound.getId(), request.getPhaseType())
+                // .isPresent()) {
+                // throw new IdInvalidException(
+                // "Khoa đã có giai đoạn với loại: " + request.getPhaseType()
+                // + ". Không thể tạo trùng lặp.");
+                // }
 
                 DepartmentPhase departmentPhase = departmentPhaseMapper.toDepartmentPhase(request);
                 departmentPhase.setInnovationPhase(innovationPhase);
@@ -248,6 +249,63 @@ public class DepartmentPhaseService {
                 return departmentPhaseMapper.toDepartmentPhaseResponse(departmentPhase);
         }
 
+        // 3. Lấy department phase list với pagination và filtering (theo khoa của user)
+        public ResultPaginationDTO getDepartmentPhasesListForTable(
+                        Specification<InnovationRound> specification, Pageable pageable) {
+
+                if (pageable.getSort().isUnsorted()) {
+                        pageable = PageRequest.of(
+                                        pageable.getPageNumber(),
+                                        pageable.getPageSize(),
+                                        Sort.by("createdAt").descending());
+                }
+
+                User currentUser = userService.getCurrentUser();
+                Department department = currentUser.getDepartment();
+
+                if (department == null) {
+                        throw new IdInvalidException("Người dùng hiện tại không thuộc khoa nào");
+                }
+
+                Page<InnovationRound> roundPage = innovationRoundRepository.findAll(specification, pageable);
+                Page<DepartmentPhaseListResponse> responsePage = roundPage
+                                .map(round -> convertToListResponse(round, department));
+                return Utils.toResultPaginationDTO(responsePage, pageable);
+        }
+
+        private DepartmentPhaseListResponse convertToListResponse(InnovationRound round, Department department) {
+                DepartmentPhaseListResponse response = new DepartmentPhaseListResponse();
+                response.setId(round.getId());
+                response.setName(round.getName());
+                response.setAcademicYear(round.getAcademicYear());
+                response.setRegistrationStartDate(round.getRegistrationStartDate());
+                response.setRegistrationEndDate(round.getRegistrationEndDate());
+
+                // Đếm số DepartmentPhase của khoa trong round này
+                List<DepartmentPhase> departmentPhases = departmentPhaseRepository
+                                .findByDepartmentIdAndInnovationRoundId(department.getId(), round.getId());
+                response.setPhaseCount(departmentPhases != null ? departmentPhases.size() : 0);
+
+                // Lấy status từ DepartmentPhase đầu tiên (theo phaseOrder tăng dần)
+                if (departmentPhases != null && !departmentPhases.isEmpty()) {
+                        DepartmentPhase firstPhase = departmentPhases.stream()
+                                        .sorted((p1, p2) -> Integer.compare(p1.getPhaseOrder(), p2.getPhaseOrder()))
+                                        .findFirst()
+                                        .orElse(null);
+                        if (firstPhase != null) {
+                                response.setStatus(firstPhase.getStatus());
+                        }
+                }
+
+                // Tính daysRemaining: số ngày còn lại từ hôm nay đến ngày kết thúc đăng ký
+                // Dương: còn X ngày, 0: hết hạn hôm nay, Âm: đã quá hạn X ngày
+                LocalDate today = LocalDate.now();
+                long daysBetween = java.time.temporal.ChronoUnit.DAYS.between(today, round.getRegistrationEndDate());
+                response.setDaysRemaining((int) daysBetween);
+
+                return response;
+        }
+
         // 3. Lấy danh sách tất cả giai đoạn khoa với pagination và filtering (theo khoa
         // của user)
         public ResultPaginationDTO getAllDepartmentPhasesWithPaginationAndFilter(
@@ -300,59 +358,6 @@ public class DepartmentPhaseService {
                 return departmentPhases.stream()
                                 .map(departmentPhaseMapper::toDepartmentPhaseResponse)
                                 .toList();
-        }
-
-        // 6. Lấy department phase list với pagination và filtering (theo khoa của user)
-        public ResultPaginationDTO getDepartmentPhasesListForTable(
-                        Specification<DepartmentPhase> specification, Pageable pageable) {
-
-                if (pageable.getSort().isUnsorted()) {
-                        pageable = PageRequest.of(
-                                        pageable.getPageNumber(),
-                                        pageable.getPageSize(),
-                                        Sort.by("createdAt").descending());
-                }
-
-                User currentUser = userService.getCurrentUser();
-                Department department = currentUser.getDepartment();
-
-                if (department == null) {
-                        throw new IdInvalidException("Người dùng hiện tại không thuộc khoa nào");
-                }
-
-                Specification<DepartmentPhase> departmentSpec = (root, query, criteriaBuilder) -> criteriaBuilder
-                                .equal(root.get("department").get("id"), department.getId());
-
-                Specification<DepartmentPhase> combinedSpec = departmentSpec.and(specification);
-
-                Page<DepartmentPhase> departmentPhasePage = departmentPhaseRepository.findAll(combinedSpec, pageable);
-                Page<DepartmentPhaseListResponse> responsePage = departmentPhasePage.map(this::convertToListResponse);
-                return Utils.toResultPaginationDTO(responsePage, pageable);
-        }
-
-        private DepartmentPhaseListResponse convertToListResponse(DepartmentPhase departmentPhase) {
-                DepartmentPhaseListResponse response = new DepartmentPhaseListResponse();
-                response.setId(departmentPhase.getId());
-                response.setName(departmentPhase.getName());
-                response.setPhaseType(departmentPhase.getPhaseType());
-                response.setPhaseStartDate(departmentPhase.getPhaseStartDate());
-                response.setPhaseEndDate(departmentPhase.getPhaseEndDate());
-                response.setPhaseStatus(departmentPhase.getPhaseStatus());
-                response.setStatus(departmentPhase.getStatus());
-
-                if (departmentPhase.getInnovationPhase() != null) {
-                        response.setInnovationPhaseName(departmentPhase.getInnovationPhase().getName());
-                }
-
-                if (departmentPhase.getDepartment() != null) {
-                        response.setDepartmentName(departmentPhase.getDepartment().getDepartmentName());
-                }
-
-                if (departmentPhase.getInnovationRound() != null) {
-                        response.setAcademicYear(departmentPhase.getInnovationRound().getAcademicYear());
-                }
-
-                return response;
         }
 
 }

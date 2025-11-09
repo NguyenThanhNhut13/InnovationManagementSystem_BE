@@ -29,5 +29,7 @@ public interface DepartmentPhaseRepository
         Optional<DepartmentPhase> findByDepartmentIdAndInnovationRoundIdAndPhaseType(String departmentId,
                         String innovationRoundId, InnovationPhaseTypeEnum phaseType);
 
+        List<DepartmentPhase> findByDepartmentIdAndInnovationRoundId(String departmentId, String innovationRoundId);
+
         List<DepartmentPhase> findByInnovationRoundId(String innovationRoundId);
 }
