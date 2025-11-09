@@ -243,10 +243,23 @@ public class DepartmentPhaseService {
                 return departmentPhaseMapper.toDepartmentPhaseResponse(departmentPhase);
         }
 
-        // 3. Lấy danh sách tất cả giai đoạn khoa với pagination và filtering
+        // 3. Lấy danh sách tất cả giai đoạn khoa với pagination và filtering (theo khoa
+        // của user)
         public ResultPaginationDTO getAllDepartmentPhasesWithPaginationAndFilter(
                         Specification<DepartmentPhase> specification, Pageable pageable) {
-                Page<DepartmentPhase> departmentPhases = departmentPhaseRepository.findAll(specification, pageable);
+                User currentUser = userService.getCurrentUser();
+                Department department = currentUser.getDepartment();
+
+                if (department == null) {
+                        throw new IdInvalidException("Người dùng hiện tại không thuộc khoa nào");
+                }
+
+                Specification<DepartmentPhase> departmentSpec = (root, query, criteriaBuilder) -> criteriaBuilder
+                                .equal(root.get("department").get("id"), department.getId());
+
+                Specification<DepartmentPhase> combinedSpec = departmentSpec.and(specification);
+
+                Page<DepartmentPhase> departmentPhases = departmentPhaseRepository.findAll(combinedSpec, pageable);
                 return Utils.toResultPaginationDTO(
                                 departmentPhases.map(departmentPhaseMapper::toDepartmentPhaseResponse), pageable);
         }

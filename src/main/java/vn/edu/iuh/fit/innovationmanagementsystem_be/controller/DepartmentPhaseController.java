@@ -72,13 +72,15 @@ public class DepartmentPhaseController {
                 return ResponseEntity.ok(departmentPhases);
         }
 
-        // 3. Lấy danh sách tất cả giai đoạn khoa với pagination và filtering
+        // 3. Lấy danh sách tất cả giai đoạn khoa với pagination và filtering (theo khoa
+        // của user)
         @GetMapping
         @PreAuthorize("hasAnyRole('TRUONG_KHOA', 'QUAN_TRI_VIEN_HE_THONG', 'GIANG_VIEN', 'QUAN_TRI_VIEN_KHOA')")
         @ApiMessage("Lấy danh sách giai đoạn khoa thành công")
-        @Operation(summary = "Get All Department Phases", description = "Get paginated list of all department phases with filtering")
+        @Operation(summary = "Get All Department Phases", description = "Get paginated list of department phases with filtering. Only returns phases of the current user's department")
         @ApiResponses(value = {
                         @ApiResponse(responseCode = "200", description = "Department phases retrieved successfully", content = @Content(schema = @Schema(implementation = ResultPaginationDTO.class))),
+                        @ApiResponse(responseCode = "400", description = "User does not belong to any department"),
                         @ApiResponse(responseCode = "401", description = "Unauthorized")
         })
         public ResponseEntity<ResultPaginationDTO> getAllDepartmentPhases(
