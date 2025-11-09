@@ -12,20 +12,22 @@ import java.util.Optional;
 
 @Repository
 public interface DepartmentPhaseRepository
-        extends JpaRepository<DepartmentPhase, String>, JpaSpecificationExecutor<DepartmentPhase> {
+                extends JpaRepository<DepartmentPhase, String>, JpaSpecificationExecutor<DepartmentPhase> {
 
-    Optional<DepartmentPhase> findById(String id);
+        Optional<DepartmentPhase> findById(String id);
 
-    List<DepartmentPhase> findByDepartmentId(String departmentId);
+        List<DepartmentPhase> findByDepartmentId(String departmentId);
 
-    List<DepartmentPhase> findByInnovationPhaseId(String innovationPhaseId);
+        List<DepartmentPhase> findByInnovationPhaseId(String innovationPhaseId);
 
-    List<DepartmentPhase> findByDepartmentIdAndInnovationPhaseId(String departmentId, String innovationPhaseId);
+        List<DepartmentPhase> findByDepartmentIdAndInnovationPhaseId(String departmentId, String innovationPhaseId);
 
-    List<DepartmentPhase> findByPhaseStatus(PhaseStatusEnum phaseStatus);
+        List<DepartmentPhase> findByPhaseStatus(PhaseStatusEnum phaseStatus);
 
-    List<DepartmentPhase> findByDepartmentIdAndPhaseStatus(String departmentId, PhaseStatusEnum phaseStatus);
+        List<DepartmentPhase> findByDepartmentIdAndPhaseStatus(String departmentId, PhaseStatusEnum phaseStatus);
 
-    Optional<DepartmentPhase> findByDepartmentIdAndInnovationRoundIdAndPhaseType(String departmentId,
-            String innovationRoundId, InnovationPhaseTypeEnum phaseType);
+        Optional<DepartmentPhase> findByDepartmentIdAndInnovationRoundIdAndPhaseType(String departmentId,
+                        String innovationRoundId, InnovationPhaseTypeEnum phaseType);
+
+        List<DepartmentPhase> findByInnovationRoundId(String innovationRoundId);
 }

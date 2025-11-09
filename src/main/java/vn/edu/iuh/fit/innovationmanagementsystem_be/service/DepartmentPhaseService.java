@@ -265,4 +265,22 @@ public class DepartmentPhaseService {
 
                 departmentPhaseRepository.delete(departmentPhase);
         }
+
+        // 5. Lấy tất cả department phase trong một round bằng roundId
+        public List<DepartmentPhaseResponse> getDepartmentPhasesByRoundId(String roundId) {
+                if (roundId == null || roundId.trim().isEmpty()) {
+                        throw new IdInvalidException("Round ID không được để trống");
+                }
+
+                innovationRoundRepository.findById(roundId)
+                                .orElseThrow(() -> new IdInvalidException(
+                                                "Không tìm thấy đợt sáng kiến với ID: " + roundId));
+
+                List<DepartmentPhase> departmentPhases = departmentPhaseRepository
+                                .findByInnovationRoundId(roundId);
+
+                return departmentPhases.stream()
+                                .map(departmentPhaseMapper::toDepartmentPhaseResponse)
+                                .toList();
+        }
 }

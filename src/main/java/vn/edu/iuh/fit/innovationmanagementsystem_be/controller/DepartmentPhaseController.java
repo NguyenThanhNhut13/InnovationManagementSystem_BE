@@ -104,4 +104,21 @@ public class DepartmentPhaseController {
                 departmentPhaseService.deleteDepartmentPhase(id);
                 return ResponseEntity.ok().build();
         }
+
+        // 5. Lấy tất cả department phase trong một round bằng roundId
+        @GetMapping("/round/{roundId}")
+        @PreAuthorize("hasAnyRole('TRUONG_KHOA', 'QUAN_TRI_VIEN_HE_THONG', 'GIANG_VIEN', 'QUAN_TRI_VIEN_KHOA')")
+        @ApiMessage("Lấy danh sách giai đoạn khoa theo round thành công")
+        @Operation(summary = "Get Department Phases by Round ID", description = "Get all department phases in a round by round ID")
+        @ApiResponses(value = {
+                        @ApiResponse(responseCode = "200", description = "Department phases retrieved successfully"),
+                        @ApiResponse(responseCode = "404", description = "Round not found"),
+                        @ApiResponse(responseCode = "401", description = "Unauthorized")
+        })
+        public ResponseEntity<List<DepartmentPhaseResponse>> getDepartmentPhasesByRoundId(
+                        @Parameter(description = "Round ID", required = true) @PathVariable String roundId) {
+                List<DepartmentPhaseResponse> departmentPhases = departmentPhaseService
+                                .getDepartmentPhasesByRoundId(roundId);
+                return ResponseEntity.ok(departmentPhases);
+        }
 }
