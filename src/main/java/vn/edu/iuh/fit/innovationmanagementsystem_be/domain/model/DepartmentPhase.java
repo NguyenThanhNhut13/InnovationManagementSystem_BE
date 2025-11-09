@@ -7,6 +7,7 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationPhaseTypeEnum;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationRoundStatusEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.PhaseStatusEnum;
 
 import java.time.LocalDate;
@@ -46,7 +47,11 @@ public class DepartmentPhase extends Auditable {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "phase_status", nullable = false)
-    private PhaseStatusEnum phaseStatus = PhaseStatusEnum.DRAFT;
+    private PhaseStatusEnum phaseStatus = PhaseStatusEnum.SCHEDULED;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false)
+    private InnovationRoundStatusEnum status = InnovationRoundStatusEnum.DRAFT;
 
     // Relationships
     @ManyToOne(fetch = FetchType.LAZY, optional = false)

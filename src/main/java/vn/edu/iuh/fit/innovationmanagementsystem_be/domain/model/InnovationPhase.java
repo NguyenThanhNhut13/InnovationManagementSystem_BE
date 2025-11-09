@@ -43,7 +43,7 @@ public class InnovationPhase extends Auditable {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "phase_status", nullable = false)
-    private PhaseStatusEnum phaseStatus = PhaseStatusEnum.DRAFT;
+    private PhaseStatusEnum phaseStatus = PhaseStatusEnum.SCHEDULED;
 
     @Enumerated(EnumType.STRING)
     private InnovationPhaseLevelEnum level;
