@@ -1,7 +1,9 @@
 package vn.edu.iuh.fit.innovationmanagementsystem_be.service;
 
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,6 +19,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.PhaseStat
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.DepartmentPhaseRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.SimpleUpdateDepartmentPhaseRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.DepartmentPhaseResponse;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.DepartmentPhaseListResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.exception.IdInvalidException;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.mapper.DepartmentPhaseMapper;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.DepartmentPhaseRepository;
@@ -133,6 +136,9 @@ public class DepartmentPhaseService {
                 departmentPhase.setInnovationPhase(innovationPhase);
                 departmentPhase.setDepartment(department);
                 departmentPhase.setInnovationRound(innovationRound);
+                if (request.getStatus() != null) {
+                        departmentPhase.setStatus(request.getStatus());
+                }
 
                 departmentPhase = departmentPhaseRepository.save(departmentPhase);
 
@@ -212,6 +218,9 @@ public class DepartmentPhaseService {
                 departmentPhase.setPhaseStartDate(request.getPhaseStartDate());
                 departmentPhase.setPhaseEndDate(request.getPhaseEndDate());
                 departmentPhase.setDescription(request.getDescription());
+                if (request.getStatus() != null) {
+                        departmentPhase.setStatus(request.getStatus());
+                }
 
                 if (!innovationRound.isPhaseWithinRoundTimeframe(request.getPhaseStartDate(),
                                 request.getPhaseEndDate())) {
@@ -265,19 +274,19 @@ public class DepartmentPhaseService {
         }
 
         // 4. Xóa phase (chỉ được xóa khi status là DRAFT)
-        public void deleteDepartmentPhase(String id) {
-                DepartmentPhase departmentPhase = departmentPhaseRepository.findById(id)
-                                .orElseThrow(() -> new IdInvalidException(
-                                                "Không tìm thấy giai đoạn khoa với ID: " + id));
+        // public void deleteDepartmentPhase(String id) {
+        // DepartmentPhase departmentPhase = departmentPhaseRepository.findById(id)
+        // .orElseThrow(() -> new IdInvalidException(
+        // "Không tìm thấy giai đoạn khoa với ID: " + id));
 
-                if (!PhaseStatusEnum.DRAFT.equals(departmentPhase.getPhaseStatus())) {
-                        throw new IdInvalidException(
-                                        "Chỉ có thể xóa giai đoạn khi trạng thái là DRAFT. Trạng thái hiện tại: "
-                                                        + departmentPhase.getPhaseStatus().getDisplayName());
-                }
+        // if (!PhaseStatusEnum.DRAFT.equals(departmentPhase.getPhaseStatus())) {
+        // throw new IdInvalidException(
+        // "Chỉ có thể xóa giai đoạn khi trạng thái là DRAFT. Trạng thái hiện tại: "
+        // + departmentPhase.getPhaseStatus().getDisplayName());
+        // }
 
-                departmentPhaseRepository.delete(departmentPhase);
-        }
+        // departmentPhaseRepository.delete(departmentPhase);
+        // }
 
         // 5. Lấy tất cả department phase trong một round bằng roundId
         public List<DepartmentPhaseResponse> getDepartmentPhasesByRoundId(String roundId) {
@@ -296,4 +305,58 @@ public class DepartmentPhaseService {
                                 .map(departmentPhaseMapper::toDepartmentPhaseResponse)
                                 .toList();
         }
+
+        // 6. Lấy department phase list với pagination và filtering (theo khoa của user)
+        public ResultPaginationDTO getDepartmentPhasesListForTable(
+                        Specification<DepartmentPhase> specification, Pageable pageable) {
+
+                if (pageable.getSort().isUnsorted()) {
+                        pageable = PageRequest.of(
+                                        pageable.getPageNumber(),
+                                        pageable.getPageSize(),
+                                        Sort.by("createdAt").descending());
+                }
+
+                User currentUser = userService.getCurrentUser();
+                Department department = currentUser.getDepartment();
+
+                if (department == null) {
+                        throw new IdInvalidException("Người dùng hiện tại không thuộc khoa nào");
+                }
+
+                Specification<DepartmentPhase> departmentSpec = (root, query, criteriaBuilder) -> criteriaBuilder
+                                .equal(root.get("department").get("id"), department.getId());
+
+                Specification<DepartmentPhase> combinedSpec = departmentSpec.and(specification);
+
+                Page<DepartmentPhase> departmentPhasePage = departmentPhaseRepository.findAll(combinedSpec, pageable);
+                Page<DepartmentPhaseListResponse> responsePage = departmentPhasePage.map(this::convertToListResponse);
+                return Utils.toResultPaginationDTO(responsePage, pageable);
+        }
+
+        private DepartmentPhaseListResponse convertToListResponse(DepartmentPhase departmentPhase) {
+                DepartmentPhaseListResponse response = new DepartmentPhaseListResponse();
+                response.setId(departmentPhase.getId());
+                response.setName(departmentPhase.getName());
+                response.setPhaseType(departmentPhase.getPhaseType());
+                response.setPhaseStartDate(departmentPhase.getPhaseStartDate());
+                response.setPhaseEndDate(departmentPhase.getPhaseEndDate());
+                response.setPhaseStatus(departmentPhase.getPhaseStatus());
+                response.setStatus(departmentPhase.getStatus());
+
+                if (departmentPhase.getInnovationPhase() != null) {
+                        response.setInnovationPhaseName(departmentPhase.getInnovationPhase().getName());
+                }
+
+                if (departmentPhase.getDepartment() != null) {
+                        response.setDepartmentName(departmentPhase.getDepartment().getDepartmentName());
+                }
+
+                if (departmentPhase.getInnovationRound() != null) {
+                        response.setAcademicYear(departmentPhase.getInnovationRound().getAcademicYear());
+                }
+
+                return response;
+        }
+
 }

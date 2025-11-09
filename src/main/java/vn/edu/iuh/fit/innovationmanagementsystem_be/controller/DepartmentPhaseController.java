@@ -91,21 +91,27 @@ public class DepartmentPhaseController {
         }
 
         // 4. Xóa phase (chỉ được xóa khi status là DRAFT)
-        @DeleteMapping("/{id}")
-        @PreAuthorize("hasAnyRole('TRUONG_KHOA', 'QUAN_TRI_VIEN_HE_THONG', 'QUAN_TRI_VIEN_KHOA')")
-        @ApiMessage("Xóa giai đoạn khoa thành công")
-        @Operation(summary = "Delete Department Phase", description = "Delete department phase. Only allowed when status is DRAFT")
-        @ApiResponses(value = {
-                        @ApiResponse(responseCode = "200", description = "Department phase deleted successfully"),
-                        @ApiResponse(responseCode = "400", description = "Cannot delete phase with status other than DRAFT"),
-                        @ApiResponse(responseCode = "404", description = "Department phase not found"),
-                        @ApiResponse(responseCode = "401", description = "Unauthorized")
-        })
-        public ResponseEntity<Void> deleteDepartmentPhase(
-                        @Parameter(description = "Department phase ID", required = true) @PathVariable String id) {
-                departmentPhaseService.deleteDepartmentPhase(id);
-                return ResponseEntity.ok().build();
-        }
+        // @DeleteMapping("/{id}")
+        // @PreAuthorize("hasAnyRole('TRUONG_KHOA', 'QUAN_TRI_VIEN_HE_THONG',
+        // 'QUAN_TRI_VIEN_KHOA')")
+        // @ApiMessage("Xóa giai đoạn khoa thành công")
+        // @Operation(summary = "Delete Department Phase", description = "Delete
+        // department phase. Only allowed when status is DRAFT")
+        // @ApiResponses(value = {
+        // @ApiResponse(responseCode = "200", description = "Department phase deleted
+        // successfully"),
+        // @ApiResponse(responseCode = "400", description = "Cannot delete phase with
+        // status other than DRAFT"),
+        // @ApiResponse(responseCode = "404", description = "Department phase not
+        // found"),
+        // @ApiResponse(responseCode = "401", description = "Unauthorized")
+        // })
+        // public ResponseEntity<Void> deleteDepartmentPhase(
+        // @Parameter(description = "Department phase ID", required = true)
+        // @PathVariable String id) {
+        // departmentPhaseService.deleteDepartmentPhase(id);
+        // return ResponseEntity.ok().build();
+        // }
 
         // 5. Lấy tất cả department phase trong một round bằng roundId
         @GetMapping("/round/{roundId}")
@@ -123,4 +129,22 @@ public class DepartmentPhaseController {
                                 .getDepartmentPhasesByRoundId(roundId);
                 return ResponseEntity.ok(departmentPhases);
         }
+
+        // 6. Lấy danh sách giai đoạn khoa cho hiển thị bảng
+        @GetMapping("/list")
+        @PreAuthorize("hasAnyRole('TRUONG_KHOA', 'QUAN_TRI_VIEN_HE_THONG', 'QUAN_TRI_VIEN_KHOA')")
+        @ApiMessage("Lấy danh sách giai đoạn khoa cho hiển thị bảng thành công")
+        @Operation(summary = "Get Department Phases List for Table", description = "Get paginated list of department phases with specific fields for table display. Only returns phases of the current user's department")
+        @ApiResponses(value = {
+                        @ApiResponse(responseCode = "200", description = "Department phases list retrieved successfully", content = @Content(schema = @Schema(implementation = ResultPaginationDTO.class))),
+                        @ApiResponse(responseCode = "400", description = "User does not belong to any department"),
+                        @ApiResponse(responseCode = "401", description = "Unauthorized")
+        })
+        public ResponseEntity<ResultPaginationDTO> getDepartmentPhasesListForTable(
+                        @Parameter(description = "Filter specification for department phases") @Filter Specification<DepartmentPhase> specification,
+                        @Parameter(description = "Pagination parameters") Pageable pageable) {
+                return ResponseEntity
+                                .ok(departmentPhaseService.getDepartmentPhasesListForTable(specification, pageable));
+        }
+
 }

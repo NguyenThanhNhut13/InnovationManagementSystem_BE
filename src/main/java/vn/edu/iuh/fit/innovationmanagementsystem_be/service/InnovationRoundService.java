@@ -1,7 +1,9 @@
 package vn.edu.iuh.fit.innovationmanagementsystem_be.service;
 
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -227,10 +229,10 @@ public class InnovationRoundService {
             Specification<InnovationRound> specification, Pageable pageable) {
 
         if (pageable.getSort().isUnsorted()) {
-            pageable = org.springframework.data.domain.PageRequest.of(
+            pageable = PageRequest.of(
                     pageable.getPageNumber(),
                     pageable.getPageSize(),
-                    org.springframework.data.domain.Sort.by("createdAt").descending());
+                    Sort.by("createdAt").descending());
         }
 
         Page<InnovationRound> roundPage = innovationRoundRepository.findAll(specification, pageable);
@@ -247,10 +249,10 @@ public class InnovationRoundService {
             Specification<InnovationRound> specification, Pageable pageable) {
 
         if (pageable.getSort().isUnsorted()) {
-            pageable = org.springframework.data.domain.PageRequest.of(
+            pageable = PageRequest.of(
                     pageable.getPageNumber(),
                     pageable.getPageSize(),
-                    org.springframework.data.domain.Sort.by("createdAt").descending());
+                    Sort.by("createdAt").descending());
         }
 
         Page<InnovationRound> roundPage = innovationRoundRepository.findAll(specification, pageable);
@@ -444,7 +446,7 @@ public class InnovationRoundService {
         phase.setPhaseStartDate(request.getPhaseStartDate());
         phase.setPhaseEndDate(request.getPhaseEndDate());
         phase.setDescription(request.getDescription());
-        phase.setPhaseStatus(PhaseStatusEnum.DRAFT);
+        phase.setPhaseStatus(PhaseStatusEnum.SCHEDULED);
         phase.setIsDeadline(false);
 
         return innovationPhaseRepository.save(phase);
