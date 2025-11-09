@@ -306,43 +306,7 @@ public class DepartmentPhaseService {
                 return response;
         }
 
-        // 3. Lấy danh sách tất cả giai đoạn khoa với pagination và filtering (theo khoa
-        // của user)
-        public ResultPaginationDTO getAllDepartmentPhasesWithPaginationAndFilter(
-                        Specification<DepartmentPhase> specification, Pageable pageable) {
-                User currentUser = userService.getCurrentUser();
-                Department department = currentUser.getDepartment();
-
-                if (department == null) {
-                        throw new IdInvalidException("Người dùng hiện tại không thuộc khoa nào");
-                }
-
-                Specification<DepartmentPhase> departmentSpec = (root, query, criteriaBuilder) -> criteriaBuilder
-                                .equal(root.get("department").get("id"), department.getId());
-
-                Specification<DepartmentPhase> combinedSpec = departmentSpec.and(specification);
-
-                Page<DepartmentPhase> departmentPhases = departmentPhaseRepository.findAll(combinedSpec, pageable);
-                return Utils.toResultPaginationDTO(
-                                departmentPhases.map(departmentPhaseMapper::toDepartmentPhaseResponse), pageable);
-        }
-
-        // 4. Xóa phase (chỉ được xóa khi status là DRAFT)
-        // public void deleteDepartmentPhase(String id) {
-        // DepartmentPhase departmentPhase = departmentPhaseRepository.findById(id)
-        // .orElseThrow(() -> new IdInvalidException(
-        // "Không tìm thấy giai đoạn khoa với ID: " + id));
-
-        // if (!PhaseStatusEnum.DRAFT.equals(departmentPhase.getPhaseStatus())) {
-        // throw new IdInvalidException(
-        // "Chỉ có thể xóa giai đoạn khi trạng thái là DRAFT. Trạng thái hiện tại: "
-        // + departmentPhase.getPhaseStatus().getDisplayName());
-        // }
-
-        // departmentPhaseRepository.delete(departmentPhase);
-        // }
-
-        // 5. Lấy tất cả department phase trong một round bằng roundId
+        // 4. Lấy tất cả department phase trong một round bằng roundId
         public List<DepartmentPhaseResponse> getDepartmentPhasesByRoundId(String roundId) {
                 if (roundId == null || roundId.trim().isEmpty()) {
                         throw new IdInvalidException("Round ID không được để trống");
@@ -358,6 +322,21 @@ public class DepartmentPhaseService {
                 return departmentPhases.stream()
                                 .map(departmentPhaseMapper::toDepartmentPhaseResponse)
                                 .toList();
+        }
+
+        // 4. Xóa phase (chỉ được xóa khi status là DRAFT)
+        public void deleteDepartmentPhase(String id) {
+                DepartmentPhase departmentPhase = departmentPhaseRepository.findById(id)
+                                .orElseThrow(() -> new IdInvalidException(
+                                                "Không tìm thấy giai đoạn khoa với ID: " + id));
+
+                if (!InnovationRoundStatusEnum.DRAFT.equals(departmentPhase.getStatus())) {
+                        throw new IdInvalidException(
+                                        "Chỉ có thể xóa giai đoạn khi trạng thái là DRAFT. Trạng thái hiện tại: "
+                                                        + departmentPhase.getStatus().getValue());
+                }
+
+                departmentPhaseRepository.delete(departmentPhase);
         }
 
 }
