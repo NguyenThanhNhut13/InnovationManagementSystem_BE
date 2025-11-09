@@ -405,9 +405,9 @@ public class InnovationService {
                 InnovationPhase innovationPhase;
                 if (request.getInnovationPhaseId() != null && !request.getInnovationPhaseId().isEmpty()) {
                         innovationPhase = innovationPhaseRepository.findById(request.getInnovationPhaseId())
-                                        .orElseThrow(() -> new IdInvalidException(
-                                                        "Không tìm thấy giai đoạn sáng kiến với ID: "
-                                                                        + request.getInnovationPhaseId()));
+                                .orElseThrow(() -> new IdInvalidException(
+                                                "Không tìm thấy giai đoạn sáng kiến với ID: "
+                                                                + request.getInnovationPhaseId()));
                 } else {
                         innovationPhase = innovationPhaseRepository
                                         .findSubmissionPhaseByOpenRound(InnovationPhaseTypeEnum.SUBMISSION)

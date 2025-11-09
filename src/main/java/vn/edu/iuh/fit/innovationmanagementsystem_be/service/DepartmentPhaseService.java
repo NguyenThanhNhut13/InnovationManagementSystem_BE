@@ -15,7 +15,6 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.User;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationPhaseLevelEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationPhaseTypeEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationRoundStatusEnum;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.PhaseStatusEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.DepartmentPhaseRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.SimpleUpdateDepartmentPhaseRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.DepartmentPhaseResponse;
@@ -218,9 +217,6 @@ public class DepartmentPhaseService {
                 departmentPhase.setPhaseStartDate(request.getPhaseStartDate());
                 departmentPhase.setPhaseEndDate(request.getPhaseEndDate());
                 departmentPhase.setDescription(request.getDescription());
-                if (request.getStatus() != null) {
-                        departmentPhase.setStatus(request.getStatus());
-                }
 
                 if (!innovationRound.isPhaseWithinRoundTimeframe(request.getPhaseStartDate(),
                                 request.getPhaseEndDate())) {
