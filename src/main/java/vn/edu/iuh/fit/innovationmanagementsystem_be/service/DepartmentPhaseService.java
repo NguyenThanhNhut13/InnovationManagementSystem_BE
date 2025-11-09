@@ -339,4 +339,91 @@ public class DepartmentPhaseService {
                 departmentPhaseRepository.delete(departmentPhase);
         }
 
+        // 5. Công bố tất cả DepartmentPhase của InnovationRound - chuyển status từ
+        // DRAFT sang OPEN
+        @Transactional
+        public List<DepartmentPhaseResponse> publishDepartmentPhase(String innovationRoundId) {
+                if (innovationRoundId == null || innovationRoundId.trim().isEmpty()) {
+                        throw new IdInvalidException("InnovationRound ID không được để trống");
+                }
+
+                innovationRoundRepository.findById(innovationRoundId)
+                                .orElseThrow(() -> new IdInvalidException(
+                                                "Không tìm thấy đợt sáng kiến với ID: " + innovationRoundId));
+
+                List<DepartmentPhase> departmentPhases = departmentPhaseRepository
+                                .findByInnovationRoundId(innovationRoundId);
+
+                if (departmentPhases.isEmpty()) {
+                        throw new IdInvalidException(
+                                        "Không tìm thấy giai đoạn khoa nào thuộc đợt sáng kiến này");
+                }
+
+                // Kiểm tra tất cả departmentPhase đều có status DRAFT
+                for (DepartmentPhase phase : departmentPhases) {
+                        if (!InnovationRoundStatusEnum.DRAFT.equals(phase.getStatus())) {
+                                throw new IdInvalidException(
+                                                "Chỉ có thể công bố khi tất cả giai đoạn khoa có trạng thái DRAFT. "
+                                                                + "Giai đoạn '" + phase.getName() + "' có trạng thái: "
+                                                                + phase.getStatus().getValue());
+                        }
+                }
+
+                // Cập nhật status cho tất cả departmentPhase
+                for (DepartmentPhase phase : departmentPhases) {
+                        phase.setStatus(InnovationRoundStatusEnum.OPEN);
+                }
+
+                List<DepartmentPhase> savedPhases = departmentPhaseRepository.saveAll(departmentPhases);
+
+                return savedPhases.stream()
+                                .map(departmentPhaseMapper::toDepartmentPhaseResponse)
+                                .toList();
+        }
+
+        // 6. Đóng tất cả DepartmentPhase của InnovationRound - chuyển status sang
+        // CLOSED
+        @Transactional
+        public List<DepartmentPhaseResponse> closeDepartmentPhase(String innovationRoundId) {
+                if (innovationRoundId == null || innovationRoundId.trim().isEmpty()) {
+                        throw new IdInvalidException("InnovationRound ID không được để trống");
+                }
+
+                innovationRoundRepository.findById(innovationRoundId)
+                                .orElseThrow(() -> new IdInvalidException(
+                                                "Không tìm thấy đợt sáng kiến với ID: " + innovationRoundId));
+
+                List<DepartmentPhase> departmentPhases = departmentPhaseRepository
+                                .findByInnovationRoundId(innovationRoundId);
+
+                if (departmentPhases.isEmpty()) {
+                        throw new IdInvalidException(
+                                        "Không tìm thấy giai đoạn khoa nào thuộc đợt sáng kiến này");
+                }
+
+                LocalDate today = LocalDate.now();
+
+                // Kiểm tra tất cả departmentPhase đều có status OPEN và đã qua ngày kết thúc
+                for (DepartmentPhase phase : departmentPhases) {
+                        if (!InnovationRoundStatusEnum.OPEN.equals(phase.getStatus())) {
+                                throw new IdInvalidException(
+                                                "Chỉ có thể đóng khi tất cả giai đoạn khoa có trạng thái OPEN. "
+                                                                + "Giai đoạn '" + phase.getName() + "' có trạng thái: "
+                                                                + phase.getStatus().getValue());
+                        }
+
+                }
+
+                // Cập nhật status cho tất cả departmentPhase
+                for (DepartmentPhase phase : departmentPhases) {
+                        phase.setStatus(InnovationRoundStatusEnum.CLOSED);
+                }
+
+                List<DepartmentPhase> savedPhases = departmentPhaseRepository.saveAll(departmentPhases);
+
+                return savedPhases.stream()
+                                .map(departmentPhaseMapper::toDepartmentPhaseResponse)
+                                .toList();
+        }
+
 }
