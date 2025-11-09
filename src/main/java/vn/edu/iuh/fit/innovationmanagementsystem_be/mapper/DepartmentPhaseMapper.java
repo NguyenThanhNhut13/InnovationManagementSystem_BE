@@ -22,6 +22,7 @@ public interface DepartmentPhaseMapper {
     @Mapping(target = "department", ignore = true)
     @Mapping(target = "innovationRound", ignore = true)
     @Mapping(target = "phaseStatus", ignore = true)
+    @Mapping(target = "status", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     @Mapping(target = "createdBy", ignore = true)

@@ -6,6 +6,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationPhaseTypeEnum;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationRoundStatusEnum;
 
 import java.time.LocalDate;
 
@@ -32,4 +33,6 @@ public class SimpleUpdateDepartmentPhaseRequest {
     private LocalDate phaseEndDate;
 
     private String description;
+
+    private InnovationRoundStatusEnum status;
 }
