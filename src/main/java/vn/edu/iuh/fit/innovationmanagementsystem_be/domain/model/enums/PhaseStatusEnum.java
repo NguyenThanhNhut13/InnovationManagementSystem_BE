@@ -2,6 +2,8 @@ package vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums;
 
 public enum PhaseStatusEnum {
 
+    DRAFT("Bản nháp", "Giai đoạn chưa được công bố"),
+
     SCHEDULED("Đã lên lịch", "Giai đoạn đã được lên lịch nhưng chưa bắt đầu"),
 
     ACTIVE("Đang hoạt động", "Giai đoạn đang diễn ra"),
