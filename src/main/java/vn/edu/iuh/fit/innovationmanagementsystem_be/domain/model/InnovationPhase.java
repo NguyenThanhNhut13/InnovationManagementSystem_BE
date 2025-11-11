@@ -54,6 +54,9 @@ public class InnovationPhase extends Auditable {
     @Column(name = "is_deadline", nullable = false)
     private Boolean isDeadline = false;
 
+    @Column(name = "allow_late_submission", nullable = false)
+    private Boolean allowLateSubmission = false;
+
     // Relationships
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "innovation_round_id", nullable = false)

@@ -380,6 +380,14 @@ public class InnovationRoundService {
                     && !phaseRequest.getDescription().equals(existingPhase.getDescription())) {
                 return true;
             }
+            if (phaseRequest.getIsDeadline() != null
+                    && !phaseRequest.getIsDeadline().equals(existingPhase.getIsDeadline())) {
+                return true;
+            }
+            if (phaseRequest.getAllowLateSubmission() != null
+                    && !phaseRequest.getAllowLateSubmission().equals(existingPhase.getAllowLateSubmission())) {
+                return true;
+            }
         }
 
         return false;
@@ -424,6 +432,16 @@ public class InnovationRoundService {
                     existingPhase.setDescription(phaseRequest.getDescription());
                     phaseHasChanges = true;
                 }
+                if (phaseRequest.getAllowLateSubmission() != null
+                        && !phaseRequest.getAllowLateSubmission().equals(existingPhase.getAllowLateSubmission())) {
+                    existingPhase.setAllowLateSubmission(phaseRequest.getAllowLateSubmission());
+                    phaseHasChanges = true;
+                }
+                if (phaseRequest.getIsDeadline() != null
+                        && !phaseRequest.getIsDeadline().equals(existingPhase.getIsDeadline())) {
+                    existingPhase.setIsDeadline(phaseRequest.getIsDeadline());
+                    phaseHasChanges = true;
+                }
 
                 if (phaseHasChanges) {
                     innovationPhaseRepository.save(existingPhase);
@@ -447,7 +465,14 @@ public class InnovationRoundService {
         phase.setPhaseEndDate(request.getPhaseEndDate());
         phase.setDescription(request.getDescription());
         phase.setPhaseStatus(PhaseStatusEnum.SCHEDULED);
-        phase.setIsDeadline(false);
+        if (request.getIsDeadline() != null) {
+            phase.setIsDeadline(request.getIsDeadline());
+        } else {
+            phase.setIsDeadline(false);
+        }
+        if (request.getAllowLateSubmission() != null) {
+            phase.setAllowLateSubmission(request.getAllowLateSubmission());
+        }
 
         return innovationPhaseRepository.save(phase);
     }

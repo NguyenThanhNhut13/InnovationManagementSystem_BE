@@ -32,4 +32,6 @@ public class SimpleUpdateDepartmentPhaseRequest {
     private LocalDate phaseEndDate;
 
     private String description;
+
+    private Boolean allowLateSubmission = false;
 }

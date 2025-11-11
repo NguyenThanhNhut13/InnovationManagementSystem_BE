@@ -34,5 +34,7 @@ public class DepartmentPhaseRequest {
 
     private String description;
 
+    private Boolean allowLateSubmission = false;
+
     private InnovationRoundStatusEnum status;
 }

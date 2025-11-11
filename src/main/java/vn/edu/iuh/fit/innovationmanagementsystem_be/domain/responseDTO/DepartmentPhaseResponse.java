@@ -25,6 +25,7 @@ public class DepartmentPhaseResponse {
     private String innovationPhaseId;
     private String innovationPhaseName;
     private Boolean isDeadline;
+    private Boolean allowLateSubmission;
     private String departmentId;
     private String departmentName;
     private String academicYear;

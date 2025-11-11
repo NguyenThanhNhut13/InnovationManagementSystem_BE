@@ -45,6 +45,9 @@ public class DepartmentPhase extends Auditable {
     @Column(name = "description", columnDefinition = "TEXT")
     private String description;
 
+    @Column(name = "allow_late_submission", nullable = false)
+    private Boolean allowLateSubmission = false;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "phase_status", nullable = false)
     private PhaseStatusEnum phaseStatus = PhaseStatusEnum.DRAFT;

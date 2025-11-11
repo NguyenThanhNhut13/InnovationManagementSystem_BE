@@ -219,6 +219,9 @@ public class DepartmentPhaseService {
                 departmentPhase.setPhaseStartDate(request.getPhaseStartDate());
                 departmentPhase.setPhaseEndDate(request.getPhaseEndDate());
                 departmentPhase.setDescription(request.getDescription());
+                if (request.getAllowLateSubmission() != null) {
+                        departmentPhase.setAllowLateSubmission(request.getAllowLateSubmission());
+                }
 
                 if (!innovationRound.isPhaseWithinRoundTimeframe(request.getPhaseStartDate(),
                                 request.getPhaseEndDate())) {
