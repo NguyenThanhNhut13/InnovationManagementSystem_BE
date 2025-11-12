@@ -17,6 +17,9 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.constants.SignatureCon
 import java.security.KeyPair;
 import java.util.Arrays;
 import java.util.List;
+import java.util.ArrayList;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Service
 @Transactional
@@ -28,6 +31,7 @@ public class UserSignatureProfileService {
     private final UserService userService;
     private final FileService fileService;
     private final UserSignatureProfileResponseMapper userSignatureProfileResponseMapper;
+    private final ObjectMapper objectMapper;
 
     private static final List<String> ALLOWED_IMAGE_TYPES = Arrays.asList(
             "image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp", "image/bmp");
@@ -37,13 +41,15 @@ public class UserSignatureProfileService {
             HSMEncryptionService hsmEncryptionService,
             @Lazy UserService userService,
             FileService fileService,
-            UserSignatureProfileResponseMapper userSignatureProfileResponseMapper) {
+            UserSignatureProfileResponseMapper userSignatureProfileResponseMapper,
+            ObjectMapper objectMapper) {
         this.userSignatureProfileRepository = userSignatureProfileRepository;
         this.keyManagementService = keyManagementService;
         this.hsmEncryptionService = hsmEncryptionService;
         this.userService = userService;
         this.fileService = fileService;
         this.userSignatureProfileResponseMapper = userSignatureProfileResponseMapper;
+        this.objectMapper = objectMapper;
     }
 
     // 1. Tạo UserSignatureProfile cho user
@@ -99,19 +105,19 @@ public class UserSignatureProfileService {
         return userSignatureProfileRepository.save(signatureProfile);
     }
 
-    // 4. Upload ảnh chữ ký và cập nhật pathUrl của UserSignatureProfile
-    public UserSignatureProfileResponse uploadSignatureImageForCurrentUser(MultipartFile file) {
+    // 4. Upload ảnh chữ ký và thêm vào danh sách pathUrls của UserSignatureProfile
+    public UserSignatureProfileResponse uploadSignatureImageForCurrentUser(MultipartFile files) {
         try {
-            if (file == null || file.isEmpty()) {
+            if (files == null || files.isEmpty()) {
                 throw new IdInvalidException("File ảnh không được để trống");
             }
 
-            String contentType = file.getContentType();
+            String contentType = files.getContentType();
             if (contentType == null || !ALLOWED_IMAGE_TYPES.contains(contentType.toLowerCase())) {
                 throw new IdInvalidException("File phải là ảnh (JPEG, PNG, GIF, WEBP, BMP)");
             }
 
-            if (file.getSize() > 10 * 1024 * 1024) {
+            if (files.getSize() > 10 * 1024 * 1024) {
                 throw new IdInvalidException("Kích thước file không được vượt quá 10MB");
             }
 
@@ -120,28 +126,96 @@ public class UserSignatureProfileService {
             UserSignatureProfile signatureProfile = userSignatureProfileRepository.findByUserIdWithUser(currentUserId)
                     .orElseThrow(() -> new IdInvalidException("Không tìm thấy hồ sơ chữ ký số cho user hiện tại"));
 
-            String oldPathUrl = signatureProfile.getPathUrl();
+            String uploadedFileName = fileService.uploadFile(files);
 
-            String uploadedFileName = fileService.uploadFile(file);
+            List<String> pathUrls = parsePathUrlsFromString(signatureProfile.getPathUrl());
+            pathUrls.add(uploadedFileName);
 
-            signatureProfile.setPathUrl(uploadedFileName);
+            String updatedPathUrlJson = objectMapper.writeValueAsString(pathUrls);
+            signatureProfile.setPathUrl(updatedPathUrlJson);
 
             UserSignatureProfile savedProfile = userSignatureProfileRepository.save(signatureProfile);
 
-            if (oldPathUrl != null && !oldPathUrl.trim().isEmpty()) {
-                try {
-                    fileService.deleteFile(oldPathUrl);
-                } catch (Exception e) {
-                    // Log error nhưng không throw exception vì file mới đã upload thành công
-                    System.err.println("Không thể xóa file cũ: " + oldPathUrl + " - " + e.getMessage());
-                }
-            }
-
-            return userSignatureProfileResponseMapper.toUserSignatureProfileResponse(savedProfile);
+            return mapToResponseWithPathUrls(savedProfile);
         } catch (IdInvalidException e) {
             throw new IdInvalidException("Không thể upload ảnh chữ ký: " + e.getMessage());
         } catch (Exception e) {
             throw new IdInvalidException("Không thể upload ảnh chữ ký: " + e.getMessage());
         }
+    }
+
+    // 5. Lấy thông tin chữ ký của user hiện tại
+    public UserSignatureProfileResponse getCurrentUserSignatureProfile() {
+        String currentUserId = userService.getCurrentUserId();
+
+        UserSignatureProfile signatureProfile = userSignatureProfileRepository.findByUserIdWithUser(currentUserId)
+                .orElseThrow(() -> new IdInvalidException("Không tìm thấy hồ sơ chữ ký số cho user hiện tại"));
+
+        return mapToResponseWithPathUrls(signatureProfile);
+    }
+
+    // 6. Xóa một chữ ký cụ thể theo index
+    public UserSignatureProfileResponse deleteSignatureImageByIndex(int index) {
+        try {
+            String currentUserId = userService.getCurrentUserId();
+
+            UserSignatureProfile signatureProfile = userSignatureProfileRepository.findByUserIdWithUser(currentUserId)
+                    .orElseThrow(() -> new IdInvalidException("Không tìm thấy hồ sơ chữ ký số cho user hiện tại"));
+
+            List<String> pathUrls = parsePathUrlsFromString(signatureProfile.getPathUrl());
+
+            if (index < 0 || index >= pathUrls.size()) {
+                throw new IdInvalidException("Index không hợp lệ. Chỉ số phải từ 0 đến " + (pathUrls.size() - 1));
+            }
+
+            String pathUrlToDelete = pathUrls.get(index);
+            pathUrls.remove(index);
+
+            try {
+                fileService.deleteFile(pathUrlToDelete);
+            } catch (Exception e) {
+                System.err.println("Không thể xóa file: " + pathUrlToDelete + " - " + e.getMessage());
+            }
+
+            String updatedPathUrlJson = objectMapper.writeValueAsString(pathUrls);
+            signatureProfile.setPathUrl(updatedPathUrlJson);
+
+            UserSignatureProfile savedProfile = userSignatureProfileRepository.save(signatureProfile);
+
+            return mapToResponseWithPathUrls(savedProfile);
+        } catch (IdInvalidException e) {
+            throw new IdInvalidException("Không thể xóa ảnh chữ ký: " + e.getMessage());
+        } catch (Exception e) {
+            throw new IdInvalidException("Không thể xóa ảnh chữ ký: " + e.getMessage());
+        }
+    }
+
+    // Helper method: Parse pathUrl từ JSON string thành List<String>
+    private List<String> parsePathUrlsFromString(String pathUrl) {
+        if (pathUrl == null || pathUrl.trim().isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        try {
+            return objectMapper.readValue(pathUrl, new TypeReference<List<String>>() {
+            });
+        } catch (Exception e) {
+            try {
+                List<String> result = new ArrayList<>();
+                result.add(pathUrl);
+                return result;
+            } catch (Exception ex) {
+                return new ArrayList<>();
+            }
+        }
+    }
+
+    // Helper method: Map UserSignatureProfile to Response với pathUrls
+    private UserSignatureProfileResponse mapToResponseWithPathUrls(UserSignatureProfile signatureProfile) {
+        UserSignatureProfileResponse response = userSignatureProfileResponseMapper
+                .toUserSignatureProfileResponse(signatureProfile);
+        List<String> pathUrls = parsePathUrlsFromString(signatureProfile.getPathUrl());
+        response.setPathUrls(pathUrls);
+        return response;
     }
 }

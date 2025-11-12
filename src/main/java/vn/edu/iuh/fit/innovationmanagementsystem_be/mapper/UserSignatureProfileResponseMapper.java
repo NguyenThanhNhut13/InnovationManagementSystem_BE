@@ -8,8 +8,6 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.UserSigna
 @Mapper(componentModel = "spring")
 public interface UserSignatureProfileResponseMapper {
 
-    @Mapping(target = "userId", source = "user.id")
-    @Mapping(target = "userFullName", source = "user.fullName")
-    @Mapping(target = "userPersonnelId", source = "user.personnelId")
+    @Mapping(target = "pathUrls", ignore = true)
     UserSignatureProfileResponse toUserSignatureProfileResponse(UserSignatureProfile userSignatureProfile);
 }

@@ -46,4 +46,34 @@ public class UserSignatureProfileController {
         return ResponseEntity.ok(updatedProfile);
     }
 
+    // 2. Lấy thông tin chữ ký của user hiện tại
+    @GetMapping("/signature-profile/current")
+    @ApiMessage("Lấy thông tin chữ ký thành công")
+    @Operation(summary = "Get Current User Signature Profile", description = "Get signature profile information of current authenticated user")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Signature profile retrieved successfully", content = @Content(schema = @Schema(implementation = UserSignatureProfileResponse.class))),
+            @ApiResponse(responseCode = "401", description = "Unauthorized"),
+            @ApiResponse(responseCode = "404", description = "Signature profile not found")
+    })
+    public ResponseEntity<UserSignatureProfileResponse> getCurrentUserSignatureProfile() {
+        UserSignatureProfileResponse profile = userSignatureProfileService.getCurrentUserSignatureProfile();
+        return ResponseEntity.ok(profile);
+    }
+
+    // 3. Xóa một chữ ký cụ thể theo index
+    @DeleteMapping("/signature-profile/{index}")
+    @ApiMessage("Xóa ảnh chữ ký thành công")
+    @Operation(summary = "Delete Signature Image by Index", description = "Delete a specific signature image by index from current authenticated user's signature profile")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Signature image deleted successfully", content = @Content(schema = @Schema(implementation = UserSignatureProfileResponse.class))),
+            @ApiResponse(responseCode = "400", description = "Invalid index"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized"),
+            @ApiResponse(responseCode = "404", description = "Signature profile not found")
+    })
+    public ResponseEntity<UserSignatureProfileResponse> deleteSignatureImageByIndex(
+            @Parameter(description = "Index of signature image to delete (0-based)", required = true) @PathVariable int index) {
+        UserSignatureProfileResponse updatedProfile = userSignatureProfileService.deleteSignatureImageByIndex(index);
+        return ResponseEntity.ok(updatedProfile);
+    }
+
 }
