@@ -21,6 +21,7 @@ public class LoginResponse {
     private UserStatusEnum status;
     private String department;
     private String qualification;
+    private String title;
     private LocalDate dateOfBirth;
     private List<String> roles;
     private LocalDateTime createdAt;
