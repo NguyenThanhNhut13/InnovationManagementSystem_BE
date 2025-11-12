@@ -6,7 +6,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.FormData;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.FormDataRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.FormDataResponse;
 
-@Mapper(componentModel = "spring")
+@Mapper(componentModel = "spring", uses = FormFieldMapper.class)
 public interface FormDataMapper {
 
     @Mapping(target = "formFieldId", source = "formField.id")
@@ -15,6 +15,7 @@ public interface FormDataMapper {
     @Mapping(target = "fieldType", source = "formField.fieldType")
     @Mapping(target = "required", source = "formField.required")
     @Mapping(target = "templateId", source = "formField.formTemplate.id")
+    @Mapping(target = "formField", source = "formField")
     FormDataResponse toFormDataResponse(FormData formData);
 
     @Mapping(target = "id", ignore = true)

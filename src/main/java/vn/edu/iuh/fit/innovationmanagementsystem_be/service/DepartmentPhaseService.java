@@ -409,8 +409,6 @@ public class DepartmentPhaseService {
                                         "Không tìm thấy giai đoạn khoa nào thuộc đợt sáng kiến này");
                 }
 
-                LocalDate today = LocalDate.now();
-
                 // Kiểm tra tất cả departmentPhase đều có status OPEN và đã qua ngày kết thúc
                 for (DepartmentPhase phase : departmentPhases) {
                         if (!InnovationRoundStatusEnum.OPEN.equals(phase.getStatus())) {

@@ -76,4 +76,18 @@ public class UserSignatureProfileController {
         return ResponseEntity.ok(updatedProfile);
     }
 
+    // 4. Xóa tất cả pathUrl của signature profile
+    @DeleteMapping("/signature-profile/all")
+    @ApiMessage("Xóa tất cả ảnh chữ ký thành công")
+    @Operation(summary = "Delete All Signature Images", description = "Delete all signature images from current authenticated user's signature profile")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "All signature images deleted successfully", content = @Content(schema = @Schema(implementation = UserSignatureProfileResponse.class))),
+            @ApiResponse(responseCode = "401", description = "Unauthorized"),
+            @ApiResponse(responseCode = "404", description = "Signature profile not found")
+    })
+    public ResponseEntity<UserSignatureProfileResponse> deleteAllSignatureImages() {
+        UserSignatureProfileResponse updatedProfile = userSignatureProfileService.deleteAllSignatureImages();
+        return ResponseEntity.ok(updatedProfile);
+    }
+
 }
