@@ -14,6 +14,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.User;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.UserNotification;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.NotificationTypeEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.UserRoleEnum;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.NotificationDetailResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.NotificationResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.UnreadCountResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.exception.IdInvalidException;
@@ -61,46 +62,36 @@ public class NotificationService {
     public void notifyUsersByRole(UserRoleEnum role, String title, String message, NotificationTypeEnum type,
             Map<String, Object> data) {
         try {
+
             List<User> users = userRepository.findUsersByRole(role);
 
             if (users.isEmpty()) {
-                log.warn("Không tìm thấy user nào có role: {}", role);
-                return;
+                throw new IdInvalidException("Không tìm thấy user nào có role: " + role);
             }
 
-            // Lưu notification vào database
+            // Lưu notification vào database (lưu đầy đủ data)
             Notification notification = createNotification(title, message, type, data, null, role.name());
 
-            // Tạo UserNotification cho từng user
+            // Gửi WebSocket notification (gộp tất cả vào data)
+            Map<String, Object> wsNotification = createWebSocketNotification(
+                    notification.getId(), title, message, type, data);
+
             for (User user : users) {
+                // Tạo UserNotification cho user
                 UserNotification userNotification = new UserNotification();
                 userNotification.setUser(user);
                 userNotification.setNotification(notification);
                 userNotification.setIsRead(false);
                 userNotificationRepository.save(userNotification);
-            }
 
-            // Gửi WebSocket notification
-            Map<String, Object> wsNotification = new HashMap<>();
-            wsNotification.put("id", notification.getId());
-            wsNotification.put("title", title);
-            wsNotification.put("message", message);
-            wsNotification.put("type", type);
-            wsNotification.put("data", data);
-            wsNotification.put("timestamp", System.currentTimeMillis());
-
-            String destination = "/topic/notifications/" + role.name().toLowerCase();
-
-            for (User user : users) {
+                // Gửi WebSocket notification đến queue riêng của user
                 String userDestination = "/queue/notifications/" + user.getId();
                 messagingTemplate.convertAndSend(userDestination, wsNotification);
-                log.info("Đã gửi notification đến user: {} (ID: {})", user.getFullName(), user.getId());
             }
 
-            messagingTemplate.convertAndSend(destination, wsNotification);
             log.info("Đã gửi và lưu notification đến {} users có role: {}", users.size(), role);
         } catch (Exception e) {
-            log.error("Lỗi khi gửi notification đến users có role {}: {}", role, e.getMessage(), e);
+            throw new IdInvalidException("Lỗi khi gửi notification đến users có role " + role);
         }
     }
 
@@ -111,47 +102,71 @@ public class NotificationService {
             List<User> users = userRepository.findByDepartmentId(departmentId);
 
             if (users.isEmpty()) {
-                log.warn("Không tìm thấy user nào thuộc khoa với ID: {}", departmentId);
-                return;
+                throw new IdInvalidException("Không tìm thấy user nào thuộc khoa với ID: " + departmentId);
+
             }
 
             Department department = departmentRepository.findById(departmentId)
                     .orElseThrow(() -> new IdInvalidException("Không tìm thấy khoa với ID: " + departmentId));
 
-            // Lưu notification vào database
+            // Lưu notification vào database (lưu đầy đủ data)
             Notification notification = createNotification(title, message, type, data, department, null);
 
-            // Tạo UserNotification cho từng user
+            // Gửi WebSocket notification (gộp tất cả vào data)
+            Map<String, Object> wsNotification = createWebSocketNotification(
+                    notification.getId(), title, message, type, data);
+
             for (User user : users) {
+                // Tạo UserNotification cho user
                 UserNotification userNotification = new UserNotification();
                 userNotification.setUser(user);
                 userNotification.setNotification(notification);
                 userNotification.setIsRead(false);
                 userNotificationRepository.save(userNotification);
-            }
 
-            // Gửi WebSocket notification
-            Map<String, Object> wsNotification = new HashMap<>();
-            wsNotification.put("id", notification.getId());
-            wsNotification.put("title", title);
-            wsNotification.put("message", message);
-            wsNotification.put("type", type);
-            wsNotification.put("data", data);
-            wsNotification.put("timestamp", System.currentTimeMillis());
-
-            String destination = "/topic/notifications/department/" + departmentId;
-
-            for (User user : users) {
+                // Gửi WebSocket notification đến queue riêng của user
                 String userDestination = "/queue/notifications/" + user.getId();
                 messagingTemplate.convertAndSend(userDestination, wsNotification);
-                log.info("Đã gửi notification đến user: {} (ID: {})", user.getFullName(), user.getId());
             }
 
-            messagingTemplate.convertAndSend(destination, wsNotification);
-            log.info("Đã gửi và lưu notification đến {} users thuộc khoa ID: {}", users.size(), departmentId);
+            log.info("Đã gửi và lưu notification đến {} users thuộc khoa: {}",
+                    users.size(), department.getDepartmentName());
         } catch (Exception e) {
-            log.error("Lỗi khi gửi notification đến users thuộc khoa {}: {}", departmentId, e.getMessage(), e);
+            throw new IdInvalidException("Lỗi khi gửi notification đến users thuộc khoa :" + departmentId);
         }
+    }
+
+    // Helper method: Tạo WebSocket notification data (chỉ gửi data cần thiết)
+    private Map<String, Object> createWebSocketData(Map<String, Object> fullData) {
+        Map<String, Object> wsData = new HashMap<>();
+        if (fullData != null) {
+            // Chỉ gửi các trường cần thiết, không gửi url và roundName
+            if (fullData.containsKey("roundId")) {
+                wsData.put("roundId", fullData.get("roundId"));
+            }
+            if (fullData.containsKey("action")) {
+                wsData.put("action", fullData.get("action"));
+            }
+            if (fullData.containsKey("departmentId")) {
+                wsData.put("departmentId", fullData.get("departmentId"));
+            }
+        }
+        return wsData;
+    }
+
+    // Helper method: Tạo WebSocket notification (gộp tất cả vào data)
+    private Map<String, Object> createWebSocketNotification(String notificationId, String title, String message,
+            NotificationTypeEnum type, Map<String, Object> fullData) {
+        Map<String, Object> wsData = createWebSocketData(fullData);
+        wsData.put("id", notificationId);
+        wsData.put("title", title);
+        wsData.put("message", message);
+        wsData.put("type", type);
+        wsData.put("timestamp", System.currentTimeMillis());
+
+        Map<String, Object> wsNotification = new HashMap<>();
+        wsNotification.put("data", wsData);
+        return wsNotification;
     }
 
     private Notification createNotification(String title, String message, NotificationTypeEnum type,
@@ -169,7 +184,7 @@ public class NotificationService {
             try {
                 notification.setData(objectMapper.writeValueAsString(data));
             } catch (JsonProcessingException e) {
-                log.error("Lỗi khi serialize data: {}", e.getMessage());
+                throw new IdInvalidException("Lỗi khi serialize data: {}" + e.getMessage());
             }
         }
 
@@ -181,9 +196,11 @@ public class NotificationService {
         data.put("roundId", roundId);
         data.put("roundName", roundName);
         data.put("action", "publish");
+        data.put("url", "/innovation-rounds/" + roundId);
 
-        String title = "Công bố đợt sáng kiến";
-        String message = "Đợt sáng kiến '" + roundName + "' đã được công bố";
+        String title = "Công bố đợt sáng kiến mới";
+        String message = "Đợt sáng kiến \"" + roundName + "\" đã được công bố. " +
+                "Vui lòng kiểm tra và chuẩn bị các giai đoạn cho khoa của bạn.";
         notifyUsersByRole(UserRoleEnum.TRUONG_KHOA, title, message, NotificationTypeEnum.ROUND_PUBLISHED, data);
     }
 
@@ -192,9 +209,11 @@ public class NotificationService {
         data.put("roundId", roundId);
         data.put("roundName", roundName);
         data.put("action", "close");
+        data.put("url", "/innovation-rounds/" + roundId);
 
         String title = "Đóng đợt sáng kiến";
-        String message = "Đợt sáng kiến '" + roundName + "' đã được đóng";
+        String message = "Đợt sáng kiến \"" + roundName + "\" đã được đóng. " +
+                "Không thể thực hiện thêm thay đổi nào cho đợt này.";
         notifyUsersByRole(UserRoleEnum.TRUONG_KHOA, title, message, NotificationTypeEnum.ROUND_CLOSED, data);
     }
 
@@ -204,9 +223,12 @@ public class NotificationService {
         data.put("departmentName", departmentName);
         data.put("roundName", roundName);
         data.put("action", "publish");
+        data.put("url", "/department-phases?departmentId=" + departmentId);
 
         String title = "Công bố giai đoạn khoa";
-        String message = "Khoa " + departmentName + " đã công bố giai đoạn cho đợt sáng kiến '" + roundName + "'";
+        String message = "Khoa " + departmentName + " đã công bố các giai đoạn cho đợt sáng kiến \"" + roundName
+                + "\". " +
+                "Vui lòng xem chi tiết và chuẩn bị nộp hồ sơ sáng kiến.";
         notifyUsersByDepartment(departmentId, title, message, NotificationTypeEnum.DEPARTMENT_PHASE_PUBLISHED, data);
     }
 
@@ -216,9 +238,11 @@ public class NotificationService {
         data.put("departmentName", departmentName);
         data.put("roundName", roundName);
         data.put("action", "close");
+        data.put("url", "/department-phases?departmentId=" + departmentId);
 
         String title = "Đóng giai đoạn khoa";
-        String message = "Khoa " + departmentName + " đã đóng giai đoạn cho đợt sáng kiến '" + roundName + "'";
+        String message = "Khoa " + departmentName + " đã đóng các giai đoạn cho đợt sáng kiến \"" + roundName + "\". " +
+                "Không thể nộp hoặc chỉnh sửa hồ sơ sáng kiến nữa.";
         notifyUsersByDepartment(departmentId, title, message, NotificationTypeEnum.DEPARTMENT_PHASE_CLOSED, data);
     }
 
@@ -284,31 +308,61 @@ public class NotificationService {
 
     private NotificationResponse toNotificationResponse(UserNotification userNotification) {
         Notification notification = userNotification.getNotification();
-        NotificationResponse response = new NotificationResponse();
-        response.setId(notification.getId());
-        response.setTitle(notification.getTitle());
-        response.setMessage(notification.getMessage());
-        response.setType(notification.getType());
-        response.setReferenceId(notification.getReferenceId());
-        response.setReferenceType(notification.getReferenceType());
-        response.setTargetRole(notification.getTargetRole());
-        response.setCreatedAt(notification.getCreatedAt());
-        response.setIsRead(userNotification.getIsRead());
-        response.setReadAt(userNotification.getReadAt());
+
+        // Sử dụng NotificationDetailResponse với format đẹp
+        NotificationDetailResponse detailResponse = new NotificationDetailResponse();
+
+        detailResponse.setId(notification.getId());
+        detailResponse.setTitle(notification.getTitle());
+        detailResponse.setMessage(notification.getMessage());
+        detailResponse.setType(notification.getType());
+        detailResponse.setReferenceId(notification.getReferenceId());
+        detailResponse.setReferenceType(notification.getReferenceType());
+        detailResponse.setTargetRole(notification.getTargetRole());
+        detailResponse.setCreatedAt(notification.getCreatedAt());
+        detailResponse.setIsRead(userNotification.getIsRead());
+        detailResponse.setReadAt(userNotification.getReadAt());
 
         if (notification.getDepartment() != null) {
-            response.setDepartmentId(notification.getDepartment().getId());
-            response.setDepartmentName(notification.getDepartment().getDepartmentName());
+            detailResponse.setDepartmentId(notification.getDepartment().getId());
+            detailResponse.setDepartmentName(notification.getDepartment().getDepartmentName());
         }
 
         if (notification.getData() != null) {
             try {
                 @SuppressWarnings("unchecked")
                 Map<String, Object> dataMap = objectMapper.readValue(notification.getData(), Map.class);
-                response.setData(dataMap);
+                detailResponse.setData(dataMap);
             } catch (JsonProcessingException e) {
-                log.error("Lỗi khi deserialize data: {}", e.getMessage());
+                throw new IdInvalidException("Lỗi khi deserialize data: " + e.getMessage());
             }
+        }
+
+        // Cast to NotificationResponse để return
+        NotificationResponse response = new NotificationResponse();
+        response.setId(detailResponse.getId());
+        response.setTitle(detailResponse.getTitle());
+        response.setMessage(detailResponse.getMessage());
+        response.setType(detailResponse.getType());
+        response.setReferenceId(detailResponse.getReferenceId());
+        response.setReferenceType(detailResponse.getReferenceType());
+        response.setDepartmentId(detailResponse.getDepartmentId());
+        response.setDepartmentName(detailResponse.getDepartmentName());
+        response.setTargetRole(detailResponse.getTargetRole());
+        response.setCreatedAt(detailResponse.getCreatedAt());
+        response.setIsRead(detailResponse.getIsRead());
+        response.setReadAt(detailResponse.getReadAt());
+
+        // Thêm formatted dates vào data
+        if (response.getData() == null) {
+            response.setData(new HashMap<>());
+        }
+        response.getData().put("createdAtFormatted", detailResponse.getCreatedAtFormatted());
+        response.getData().put("createdDate", detailResponse.getCreatedDate());
+        response.getData().put("createdTime", detailResponse.getCreatedTime());
+        response.getData().put("createdDateTimeFull", detailResponse.getCreatedDateTimeFull());
+        if (detailResponse.getReadAtFormatted() != null) {
+            response.getData().put("readAtFormatted", detailResponse.getReadAtFormatted());
         }
 
         return response;

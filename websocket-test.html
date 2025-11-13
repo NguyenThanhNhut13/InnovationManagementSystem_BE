@@ -166,22 +166,23 @@
                 isConnected = true;
                 updateStatus(true);
 
-                // Subscribe vao topic cho TRUONG_KHOA
-                stompClient.subscribe('/topic/notifications/truong_khoa', function (message) {
-                    console.log('Received message (TRUONG_KHOA):', message);
-                    showNotification(JSON.parse(message.body));
-                });
-                console.log('Da subscribe vao /topic/notifications/truong_khoa');
+                var userId = prompt('Nhap User ID cua ban (VD: ce8bd90e-c133-4fe5-bd24-3be351587ba9):');
+                if (userId && userId.trim() !== '') {
+                    var destination = '/queue/notifications/' + userId.trim();
+                    stompClient.subscribe(destination, function (message) {
+                        console.log('=== RAW STOMP MESSAGE ===');
+                        console.log(message);
 
-                // Subscribe vao topic cho department (thay YOUR_DEPARTMENT_ID bang department ID that)
-                // Vi du: stompClient.subscribe('/topic/notifications/department/dept123', ...)
-                var departmentId = prompt('Nhap Department ID de nhan thong bao (hoac de trong de bo qua):');
-                if (departmentId && departmentId.trim() !== '') {
-                    stompClient.subscribe('/topic/notifications/department/' + departmentId, function (message) {
-                        console.log('Received message (Department):', message);
-                        showNotification(JSON.parse(message.body));
+                        var parsedBody = JSON.parse(message.body);
+                        console.log('=== PARSED JSON ===');
+                        console.log(parsedBody);
+
+                        showNotification(parsedBody);
                     });
-                    console.log('Da subscribe vao /topic/notifications/department/' + departmentId);
+                    console.log('Da subscribe vao: ' + destination);
+                    console.log('Ban se nhan duoc notification dua tren role va department cua ban');
+                } else {
+                    alert('Ban can nhap User ID de nhan notification!');
                 }
             }, function (error) {
                 console.error('Connection error: ', error);
@@ -217,28 +218,30 @@
             }
         }
 
-        function showNotification(notification) {
+        function showNotification(wsMessage) {
             var messagesDiv = document.getElementById('messages');
 
             if (messagesDiv.querySelector('p')) {
                 messagesDiv.innerHTML = '';
             }
 
+            // Parse notification từ data
+            var notification = wsMessage.data || wsMessage;
+
             var messageDiv = document.createElement('div');
             messageDiv.className = 'message';
 
-            var time = new Date(notification.timestamp).toLocaleString('vi-VN');
+            var time = notification.timestamp ? new Date(notification.timestamp).toLocaleString('vi-VN') : new Date().toLocaleString('vi-VN');
+            var title = notification.title || 'Notification';
+            var message = notification.message || JSON.stringify(notification);
 
-            var dataHtml = '';
-            if (notification.data) {
-                dataHtml = '<div style="margin-top: 8px; padding: 8px; background: #f0f0f0; border-radius: 4px; font-size: 13px;"><strong>Chi tiet:</strong><br>' + JSON.stringify(notification.data, null, 2) + '</div>';
-            }
+            var dataHtml = '<div style="margin-top: 8px; padding: 8px; background: #f0f0f0; border-radius: 4px; font-size: 11px;"><strong>Data:</strong><br>' + JSON.stringify(notification, null, 2) + '</div>';
 
-            messageDiv.innerHTML = '<div class="message-time">' + time + '</div><div class="message-content"><strong>' + notification.message + '</strong>' + dataHtml + '</div>';
+            messageDiv.innerHTML = '<div class="message-time">' + time + '</div><div class="message-content"><strong>' + title + '</strong><p style="margin: 5px 0; color: #666;">' + message + '</p>' + dataHtml + '</div>';
 
             messagesDiv.insertBefore(messageDiv, messagesDiv.firstChild);
 
-            console.log('Received notification:', notification);
+            console.log('Received notification:', wsMessage);
         }
 
         function sendTest() {
