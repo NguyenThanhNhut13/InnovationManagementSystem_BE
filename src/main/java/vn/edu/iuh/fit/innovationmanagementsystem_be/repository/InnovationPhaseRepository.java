@@ -44,4 +44,20 @@ public interface InnovationPhaseRepository
                         "WHERE ip.innovationRound.id = :roundId " +
                         "AND ip.isDeadline = true")
         Optional<InnovationPhase> findPhaseWithDeadlineByRoundId(@Param("roundId") String roundId);
+
+        /**
+         * Tìm các phase có trạng thái SCHEDULED và đã đến ngày bắt đầu
+         */
+        @Query("SELECT ip FROM InnovationPhase ip " +
+                        "WHERE ip.phaseStatus = 'SCHEDULED' " +
+                        "AND ip.phaseStartDate <= :currentDate")
+        List<InnovationPhase> findScheduledPhasesReadyToStart(@Param("currentDate") java.time.LocalDate currentDate);
+
+        /**
+         * Tìm các phase có trạng thái ACTIVE và đã qua ngày kết thúc
+         */
+        @Query("SELECT ip FROM InnovationPhase ip " +
+                        "WHERE ip.phaseStatus = 'ACTIVE' " +
+                        "AND ip.phaseEndDate < :currentDate")
+        List<InnovationPhase> findActivePhasesReadyToComplete(@Param("currentDate") java.time.LocalDate currentDate);
 }

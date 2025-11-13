@@ -14,6 +14,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.CreateInno
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.UpdateInnovationRoundRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.InnovationPhaseRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationRoundResponse;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.event.InnovationRoundPublishedEvent;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationRoundListResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationStatusEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationPhaseTypeEnum;
@@ -517,7 +518,7 @@ public class InnovationRoundService {
 
         // Publish event - Event listener sẽ xử lý notification
         eventPublisher
-                .publishEvent(new vn.edu.iuh.fit.innovationmanagementsystem_be.event.InnovationRoundPublishedEvent(
+                .publishEvent(new InnovationRoundPublishedEvent(
                         this, savedRound.getId(), savedRound.getName()));
 
         return response;

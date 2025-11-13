@@ -122,4 +122,31 @@ public class InnovationPhaseService {
         return innovationPhaseRepository.save(phase);
     }
 
+    /**
+     * Cập nhật trạng thái của một phase
+     */
+    public InnovationPhase updatePhaseStatus(String phaseId,
+            vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.PhaseStatusEnum newStatus) {
+        InnovationPhase phase = innovationPhaseRepository.findById(phaseId)
+                .orElseThrow(() -> new IdInvalidException("Không tìm thấy phase với id: " + phaseId));
+
+        phase.setPhaseStatus(newStatus);
+        return innovationPhaseRepository.save(phase);
+    }
+
+    /**
+     * Lấy phase theo id
+     */
+    public InnovationPhase getPhaseById(String phaseId) {
+        return innovationPhaseRepository.findById(phaseId)
+                .orElseThrow(() -> new IdInvalidException("Không tìm thấy phase với id: " + phaseId));
+    }
+
+    /**
+     * Lấy tất cả phases theo round id
+     */
+    public List<InnovationPhase> getPhasesByRoundId(String roundId) {
+        return innovationPhaseRepository.findByInnovationRoundIdOrderByPhaseOrder(roundId);
+    }
+
 }
