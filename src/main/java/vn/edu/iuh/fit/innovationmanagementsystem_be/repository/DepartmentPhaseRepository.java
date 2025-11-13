@@ -32,4 +32,22 @@ public interface DepartmentPhaseRepository
         List<DepartmentPhase> findByDepartmentIdAndInnovationRoundId(String departmentId, String innovationRoundId);
 
         List<DepartmentPhase> findByInnovationRoundId(String innovationRoundId);
+
+        /**
+         * Tìm các department phase có trạng thái SCHEDULED và đã đến ngày bắt đầu
+         */
+        @org.springframework.data.jpa.repository.Query("SELECT dp FROM DepartmentPhase dp " +
+                        "WHERE dp.phaseStatus = 'SCHEDULED' " +
+                        "AND dp.phaseStartDate <= :currentDate")
+        List<DepartmentPhase> findScheduledDepartmentPhasesReadyToStart(
+                        @org.springframework.data.repository.query.Param("currentDate") java.time.LocalDate currentDate);
+
+        /**
+         * Tìm các department phase có trạng thái ACTIVE và đã qua ngày kết thúc
+         */
+        @org.springframework.data.jpa.repository.Query("SELECT dp FROM DepartmentPhase dp " +
+                        "WHERE dp.phaseStatus = 'ACTIVE' " +
+                        "AND dp.phaseEndDate < :currentDate")
+        List<DepartmentPhase> findActiveDepartmentPhasesReadyToComplete(
+                        @org.springframework.data.repository.query.Param("currentDate") java.time.LocalDate currentDate);
 }

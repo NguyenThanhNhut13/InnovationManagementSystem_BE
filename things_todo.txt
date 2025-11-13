@@ -3,8 +3,6 @@
 - check phasescholl 2->1
 
 => Check allow của department phase không cho nộp nếu quá hạn hoặc cho nộp nếu cho phép nộp muộn=> trước thời gian có hội động 
-=>
-=> tự động chuyển status của departmentPhase + round
 => Hết thời gian nhưng có bản nháp vẫn cho nộp nhưng ghi là nộp trễ, 
 => sủa message => Hiện tại chưa có đợt nào
 
