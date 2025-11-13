@@ -1,5 +1,6 @@
 package vn.edu.iuh.fit.innovationmanagementsystem_be.repository;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -30,5 +31,12 @@ public interface UserRepository extends JpaRepository<User, String>, JpaSpecific
 
         @Query("SELECT u FROM User u WHERE LOWER(TRIM(u.fullName)) = LOWER(TRIM(:fullName))")
         Optional<User> findByFullNameIgnoreCase(@Param("fullName") String fullName);
+
+        @Query("SELECT DISTINCT u FROM User u " +
+                        "JOIN u.userRoles ur " +
+                        "JOIN ur.role r " +
+                        "WHERE r.roleName = :roleName")
+        List<User> findUsersByRole(
+                        @Param("roleName") vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.UserRoleEnum roleName);
 
 }
