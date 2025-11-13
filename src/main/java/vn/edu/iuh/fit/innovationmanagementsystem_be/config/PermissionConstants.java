@@ -14,6 +14,7 @@ public class PermissionConstants {
                         "/api-docs/**",
                         "/swagger-resources/**",
                         "/webjars/**",
-                        "/api/v1/users" // Method POST
+                        "/api/v1/users", // Method POST
+                        "/ws/**"
         };
 }
