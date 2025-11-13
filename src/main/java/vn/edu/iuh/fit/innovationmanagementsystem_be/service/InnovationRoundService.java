@@ -50,21 +50,21 @@ public class InnovationRoundService {
     private final InnovationPhaseRepository innovationPhaseRepository;
     private final InnovationRoundMapper innovationRoundMapper;
     private final InnovationPhaseService innovationPhaseService;
-    private final NotificationService notificationService;
+    private final org.springframework.context.ApplicationEventPublisher eventPublisher;
 
     public InnovationRoundService(InnovationDecisionService innovationDecisionService,
             InnovationRoundRepository innovationRoundRepository,
             InnovationDecisionRepository innovationDecisionRepository,
             InnovationPhaseRepository innovationPhaseRepository,
             InnovationRoundMapper innovationRoundMapper, InnovationPhaseService innovationPhaseService,
-            NotificationService notificationService) {
+            org.springframework.context.ApplicationEventPublisher eventPublisher) {
         this.innovationDecisionService = innovationDecisionService;
         this.innovationRoundRepository = innovationRoundRepository;
         this.innovationDecisionRepository = innovationDecisionRepository;
         this.innovationPhaseRepository = innovationPhaseRepository;
         this.innovationRoundMapper = innovationRoundMapper;
         this.innovationPhaseService = innovationPhaseService;
-        this.notificationService = notificationService;
+        this.eventPublisher = eventPublisher;
     }
 
     // 1. Tạo innovationRound
@@ -515,13 +515,10 @@ public class InnovationRoundService {
         InnovationRoundResponse response = innovationRoundMapper.toInnovationRoundResponse(savedRound);
         setStatistics(response, savedRound);
 
-        // Gửi notification đến users có role TRUONG_KHOA
-        try {
-            notificationService.notifyRoundPublished(savedRound.getId(), savedRound.getName());
-        } catch (Exception e) {
-            // Log lỗi nhưng không throw để không ảnh hưởng đến flow chính
-            System.err.println("Lỗi khi gửi notification: " + e.getMessage());
-        }
+        // Publish event - Event listener sẽ xử lý notification
+        eventPublisher
+                .publishEvent(new vn.edu.iuh.fit.innovationmanagementsystem_be.event.InnovationRoundPublishedEvent(
+                        this, savedRound.getId(), savedRound.getName()));
 
         return response;
     }
@@ -542,13 +539,9 @@ public class InnovationRoundService {
         InnovationRoundResponse response = innovationRoundMapper.toInnovationRoundResponse(savedRound);
         setStatistics(response, savedRound);
 
-        // Gửi notification đến users có role TRUONG_KHOA
-        try {
-            notificationService.notifyRoundClosed(savedRound.getId(), savedRound.getName());
-        } catch (Exception e) {
-            // Log lỗi nhưng không throw để không ảnh hưởng đến flow chính
-            System.err.println("Lỗi khi gửi notification: " + e.getMessage());
-        }
+        // Publish event - Event listener sẽ xử lý notification
+        eventPublisher.publishEvent(new vn.edu.iuh.fit.innovationmanagementsystem_be.event.InnovationRoundClosedEvent(
+                this, savedRound.getId(), savedRound.getName()));
 
         return response;
     }

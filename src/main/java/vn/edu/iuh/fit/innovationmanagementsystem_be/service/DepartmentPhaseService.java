@@ -40,20 +40,20 @@ public class DepartmentPhaseService {
         private final InnovationRoundRepository innovationRoundRepository;
         private final UserService userService;
         private final DepartmentPhaseMapper departmentPhaseMapper;
-        private final NotificationService notificationService;
+        private final org.springframework.context.ApplicationEventPublisher eventPublisher;
 
         public DepartmentPhaseService(DepartmentPhaseRepository departmentPhaseRepository,
                         InnovationPhaseRepository innovationPhaseRepository,
                         InnovationRoundRepository innovationRoundRepository,
                         UserService userService,
                         DepartmentPhaseMapper departmentPhaseMapper,
-                        NotificationService notificationService) {
+                        org.springframework.context.ApplicationEventPublisher eventPublisher) {
                 this.departmentPhaseRepository = departmentPhaseRepository;
                 this.innovationPhaseRepository = innovationPhaseRepository;
                 this.innovationRoundRepository = innovationRoundRepository;
                 this.userService = userService;
                 this.departmentPhaseMapper = departmentPhaseMapper;
-                this.notificationService = notificationService;
+                this.eventPublisher = eventPublisher;
         }
 
         // 1. Tạo nhiều phase cho khoa cùng lúc
@@ -394,15 +394,11 @@ public class DepartmentPhaseService {
 
                 List<DepartmentPhase> savedPhases = departmentPhaseRepository.saveAll(departmentPhases);
 
-                // Gửi notification đến toàn bộ users cùng khoa
-                try {
-                        notificationService.notifyDepartmentPhasePublished(
-                                        department.getId(),
-                                        department.getDepartmentName(),
-                                        innovationRound.getName());
-                } catch (Exception e) {
-                        System.err.println("Lỗi khi gửi notification: " + e.getMessage());
-                }
+                // Publish event - Event listener sẽ xử lý notification
+                eventPublisher.publishEvent(
+                                new vn.edu.iuh.fit.innovationmanagementsystem_be.event.DepartmentPhasePublishedEvent(
+                                                this, department.getId(), department.getDepartmentName(),
+                                                innovationRound.getName()));
 
                 return savedPhases.stream()
                                 .map(departmentPhaseMapper::toDepartmentPhaseResponse)
@@ -454,15 +450,11 @@ public class DepartmentPhaseService {
 
                 List<DepartmentPhase> savedPhases = departmentPhaseRepository.saveAll(departmentPhases);
 
-                // Gửi notification đến toàn bộ users cùng khoa
-                try {
-                        notificationService.notifyDepartmentPhaseClosed(
-                                        department.getId(),
-                                        department.getDepartmentName(),
-                                        innovationRound.getName());
-                } catch (Exception e) {
-                        System.err.println("Lỗi khi gửi notification: " + e.getMessage());
-                }
+                // Publish event - Event listener sẽ xử lý notification
+                eventPublisher.publishEvent(
+                                new vn.edu.iuh.fit.innovationmanagementsystem_be.event.DepartmentPhaseClosedEvent(
+                                                this, department.getId(), department.getDepartmentName(),
+                                                innovationRound.getName()));
 
                 return savedPhases.stream()
                                 .map(departmentPhaseMapper::toDepartmentPhaseResponse)
