@@ -71,4 +71,57 @@ public class NotificationService {
         String message = "Đợt sáng kiến '" + roundName + "' đã được đóng";
         notifyUsersByRole(UserRoleEnum.TRUONG_KHOA, message, data);
     }
+
+    public void notifyUsersByDepartment(String departmentId, String message, Map<String, Object> data) {
+        try {
+            List<User> users = userRepository.findByDepartmentId(departmentId);
+
+            if (users.isEmpty()) {
+                throw new IdInvalidException("Không tìm thấy user nào thuộc khoa với ID: " + departmentId);
+            }
+
+            Map<String, Object> notification = new HashMap<>();
+            notification.put("message", message);
+            notification.put("data", data);
+            notification.put("timestamp", System.currentTimeMillis());
+
+            String destination = "/topic/notifications/department/" + departmentId;
+
+            for (User user : users) {
+                String userDestination = "/queue/notifications/" + user.getId();
+                messagingTemplate.convertAndSend(userDestination, notification);
+                log.info("Đã gửi notification đến user: {} (ID: {})", user.getFullName(), user.getId());
+            }
+
+            messagingTemplate.convertAndSend(destination, notification);
+            log.info("Đã gửi notification đến {} users thuộc khoa ID: {}", users.size(), departmentId);
+        } catch (Exception e) {
+            log.error("Lỗi khi gửi notification đến users thuộc khoa {}: {}", departmentId, e.getMessage(), e);
+            throw new IdInvalidException("Lỗi khi gửi notification đến users thuộc khoa: " + departmentId, e);
+        }
+    }
+
+    public void notifyDepartmentPhasePublished(String departmentId, String departmentName, String roundName) {
+        Map<String, Object> data = new HashMap<>();
+        data.put("departmentId", departmentId);
+        data.put("departmentName", departmentName);
+        data.put("roundName", roundName);
+        data.put("type", "DEPARTMENT_PHASE_PUBLISHED");
+        data.put("action", "publish");
+
+        String message = "Khoa " + departmentName + " đã công bố giai đoạn cho đợt sáng kiến '" + roundName + "'";
+        notifyUsersByDepartment(departmentId, message, data);
+    }
+
+    public void notifyDepartmentPhaseClosed(String departmentId, String departmentName, String roundName) {
+        Map<String, Object> data = new HashMap<>();
+        data.put("departmentId", departmentId);
+        data.put("departmentName", departmentName);
+        data.put("roundName", roundName);
+        data.put("type", "DEPARTMENT_PHASE_CLOSED");
+        data.put("action", "close");
+
+        String message = "Khoa " + departmentName + " đã đóng giai đoạn cho đợt sáng kiến '" + roundName + "'";
+        notifyUsersByDepartment(departmentId, message, data);
+    }
 }

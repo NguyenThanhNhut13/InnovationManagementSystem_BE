@@ -39,4 +39,7 @@ public interface UserRepository extends JpaRepository<User, String>, JpaSpecific
         List<User> findUsersByRole(
                         @Param("roleName") vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.UserRoleEnum roleName);
 
+        @Query("SELECT u FROM User u WHERE u.department.id = :departmentId")
+        List<User> findByDepartmentId(@Param("departmentId") String departmentId);
+
 }

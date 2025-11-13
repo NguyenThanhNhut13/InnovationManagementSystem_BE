@@ -40,17 +40,20 @@ public class DepartmentPhaseService {
         private final InnovationRoundRepository innovationRoundRepository;
         private final UserService userService;
         private final DepartmentPhaseMapper departmentPhaseMapper;
+        private final NotificationService notificationService;
 
         public DepartmentPhaseService(DepartmentPhaseRepository departmentPhaseRepository,
                         InnovationPhaseRepository innovationPhaseRepository,
                         InnovationRoundRepository innovationRoundRepository,
                         UserService userService,
-                        DepartmentPhaseMapper departmentPhaseMapper) {
+                        DepartmentPhaseMapper departmentPhaseMapper,
+                        NotificationService notificationService) {
                 this.departmentPhaseRepository = departmentPhaseRepository;
                 this.innovationPhaseRepository = innovationPhaseRepository;
                 this.innovationRoundRepository = innovationRoundRepository;
                 this.userService = userService;
                 this.departmentPhaseMapper = departmentPhaseMapper;
+                this.notificationService = notificationService;
         }
 
         // 1. Tạo nhiều phase cho khoa cùng lúc
@@ -351,12 +354,19 @@ public class DepartmentPhaseService {
                         throw new IdInvalidException("InnovationRound ID không được để trống");
                 }
 
-                innovationRoundRepository.findById(innovationRoundId)
+                InnovationRound innovationRound = innovationRoundRepository.findById(innovationRoundId)
                                 .orElseThrow(() -> new IdInvalidException(
                                                 "Không tìm thấy đợt sáng kiến với ID: " + innovationRoundId));
 
+                User currentUser = userService.getCurrentUser();
+                Department department = currentUser.getDepartment();
+
+                if (department == null) {
+                        throw new IdInvalidException("Người dùng hiện tại không thuộc khoa nào");
+                }
+
                 List<DepartmentPhase> departmentPhases = departmentPhaseRepository
-                                .findByInnovationRoundId(innovationRoundId);
+                                .findByDepartmentIdAndInnovationRoundId(department.getId(), innovationRoundId);
 
                 if (departmentPhases.isEmpty()) {
                         throw new IdInvalidException(
@@ -384,6 +394,16 @@ public class DepartmentPhaseService {
 
                 List<DepartmentPhase> savedPhases = departmentPhaseRepository.saveAll(departmentPhases);
 
+                // Gửi notification đến toàn bộ users cùng khoa
+                try {
+                        notificationService.notifyDepartmentPhasePublished(
+                                        department.getId(),
+                                        department.getDepartmentName(),
+                                        innovationRound.getName());
+                } catch (Exception e) {
+                        System.err.println("Lỗi khi gửi notification: " + e.getMessage());
+                }
+
                 return savedPhases.stream()
                                 .map(departmentPhaseMapper::toDepartmentPhaseResponse)
                                 .toList();
@@ -397,12 +417,19 @@ public class DepartmentPhaseService {
                         throw new IdInvalidException("InnovationRound ID không được để trống");
                 }
 
-                innovationRoundRepository.findById(innovationRoundId)
+                InnovationRound innovationRound = innovationRoundRepository.findById(innovationRoundId)
                                 .orElseThrow(() -> new IdInvalidException(
                                                 "Không tìm thấy đợt sáng kiến với ID: " + innovationRoundId));
 
+                User currentUser = userService.getCurrentUser();
+                Department department = currentUser.getDepartment();
+
+                if (department == null) {
+                        throw new IdInvalidException("Người dùng hiện tại không thuộc khoa nào");
+                }
+
                 List<DepartmentPhase> departmentPhases = departmentPhaseRepository
-                                .findByInnovationRoundId(innovationRoundId);
+                                .findByDepartmentIdAndInnovationRoundId(department.getId(), innovationRoundId);
 
                 if (departmentPhases.isEmpty()) {
                         throw new IdInvalidException(
@@ -426,6 +453,16 @@ public class DepartmentPhaseService {
                 }
 
                 List<DepartmentPhase> savedPhases = departmentPhaseRepository.saveAll(departmentPhases);
+
+                // Gửi notification đến toàn bộ users cùng khoa
+                try {
+                        notificationService.notifyDepartmentPhaseClosed(
+                                        department.getId(),
+                                        department.getDepartmentName(),
+                                        innovationRound.getName());
+                } catch (Exception e) {
+                        System.err.println("Lỗi khi gửi notification: " + e.getMessage());
+                }
 
                 return savedPhases.stream()
                                 .map(departmentPhaseMapper::toDepartmentPhaseResponse)
