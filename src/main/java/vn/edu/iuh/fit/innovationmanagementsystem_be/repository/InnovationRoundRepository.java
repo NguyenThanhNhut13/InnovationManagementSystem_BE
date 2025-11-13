@@ -29,4 +29,7 @@ public interface InnovationRoundRepository
                         "ORDER BY r.createdAt DESC")
         Optional<InnovationRound> findByStatusOrderByCreatedAtDesc(@Param("status") InnovationRoundStatusEnum status);
 
+        @Query("SELECT r FROM InnovationRound r ORDER BY r.createdAt DESC")
+        Optional<InnovationRound> findLatestRound();
+
 }

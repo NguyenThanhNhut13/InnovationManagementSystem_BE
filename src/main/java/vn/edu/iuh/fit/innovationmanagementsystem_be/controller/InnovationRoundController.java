@@ -107,14 +107,11 @@ public class InnovationRoundController {
         @Operation(summary = "Get Current Round", description = "Get current active innovation round (restricted to TRUONG_KHOA, QUAN_TRI_VIEN_QLKH_HTQT, QUAN_TRI_VIEN_HE_THONG)")
         @ApiResponses(value = {
                         @ApiResponse(responseCode = "200", description = "Current round retrieved successfully", content = @Content(schema = @Schema(implementation = InnovationRoundResponse.class))),
-                        @ApiResponse(responseCode = "404", description = "No current round found"),
+                        @ApiResponse(responseCode = "400", description = "No current round found or round is in DRAFT status"),
                         @ApiResponse(responseCode = "403", description = "Access denied - insufficient privileges")
         })
         public ResponseEntity<InnovationRoundResponse> getCurrentRound() {
                 InnovationRoundResponse currentRound = innovationRoundService.getCurrentRound();
-                if (currentRound == null) {
-                        return ResponseEntity.notFound().build();
-                }
                 return ResponseEntity.ok(currentRound);
         }
 

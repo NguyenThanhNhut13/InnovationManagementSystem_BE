@@ -317,16 +317,35 @@ public class InnovationRoundService {
     }
 
     public InnovationRoundResponse getCurrentRound() {
+        // Kiểm tra xem có round nào với status OPEN không
         Optional<InnovationRound> currentRound = innovationRoundRepository.findCurrentActiveRound(
                 LocalDate.now(), InnovationRoundStatusEnum.OPEN);
-        if (currentRound.isEmpty()) {
-            return null;
+
+        if (currentRound.isPresent()) {
+            InnovationRound round = currentRound.get();
+            InnovationRoundResponse response = innovationRoundMapper.toInnovationRoundResponse(round);
+            setStatistics(response, round);
+            return response;
         }
 
-        InnovationRound round = currentRound.get();
-        InnovationRoundResponse response = innovationRoundMapper.toInnovationRoundResponse(round);
-        setStatistics(response, round);
-        return response;
+        // Nếu không có round OPEN, kiểm tra xem có round nào không
+        Optional<InnovationRound> latestRound = innovationRoundRepository.findLatestRound();
+
+        if (latestRound.isEmpty()) {
+            throw new IdInvalidException("Hiện tại không có đợt sáng kiến nào trong hệ thống");
+        }
+
+        InnovationRound round = latestRound.get();
+        if (InnovationRoundStatusEnum.DRAFT.equals(round.getStatus())) {
+            throw new IdInvalidException(
+                    "Đợt sáng kiến '" + round.getName() + "' đang ở trạng thái DRAFT. " +
+                            "Vui lòng công bố đợt sáng kiến để có thể sử dụng");
+        }
+
+        throw new IdInvalidException(
+                "Hiện tại không có đợt sáng kiến nào đang mở. " +
+                        "Đợt sáng kiến gần nhất '" + round.getName() + "' có trạng thái: "
+                        + round.getStatus().getValue());
     }
 
     /*
