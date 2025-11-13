@@ -376,10 +376,12 @@ public class DepartmentPhaseService {
                 // Kiểm tra tất cả departmentPhase đều có status DRAFT
                 for (DepartmentPhase phase : departmentPhases) {
                         if (!InnovationRoundStatusEnum.DRAFT.equals(phase.getStatus())) {
+                                // throw new IdInvalidException(
+                                // "Chỉ có thể công bố khi tất cả giai đoạn khoa có trạng thái DRAFT. "
+                                // + "Giai đoạn '" + phase.getName() + "' có trạng thái: "
+                                // + phase.getStatus().getValue());
                                 throw new IdInvalidException(
-                                                "Chỉ có thể công bố khi tất cả giai đoạn khoa có trạng thái DRAFT. "
-                                                                + "Giai đoạn '" + phase.getName() + "' có trạng thái: "
-                                                                + phase.getStatus().getValue());
+                                                "Không tìm thấy giai đoạn khoa nào thuộc đợt sáng kiến này");
                         }
                 }
 
