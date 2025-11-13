@@ -190,36 +190,6 @@ public class UserSignatureProfileService {
         }
     }
 
-    // 7. Xóa tất cả pathUrl của signature profile
-    public UserSignatureProfileResponse deleteAllSignatureImages() {
-        try {
-            String currentUserId = userService.getCurrentUserId();
-
-            UserSignatureProfile signatureProfile = userSignatureProfileRepository.findByUserIdWithUser(currentUserId)
-                    .orElseThrow(() -> new IdInvalidException("Không tìm thấy hồ sơ chữ ký số cho user hiện tại"));
-
-            List<String> pathUrls = parsePathUrlsFromString(signatureProfile.getPathUrl());
-
-            for (String pathUrl : pathUrls) {
-                try {
-                    fileService.deleteFile(pathUrl);
-                } catch (Exception e) {
-                    System.err.println("Không thể xóa file: " + pathUrl + " - " + e.getMessage());
-                }
-            }
-
-            signatureProfile.setPathUrl(null);
-
-            UserSignatureProfile savedProfile = userSignatureProfileRepository.save(signatureProfile);
-
-            return mapToResponseWithPathUrls(savedProfile);
-        } catch (IdInvalidException e) {
-            throw new IdInvalidException("Không thể xóa tất cả ảnh chữ ký: " + e.getMessage());
-        } catch (Exception e) {
-            throw new IdInvalidException("Không thể xóa tất cả ảnh chữ ký: " + e.getMessage());
-        }
-    }
-
     // Helper method: Parse pathUrl từ JSON string thành List<String>
     private List<String> parsePathUrlsFromString(String pathUrl) {
         if (pathUrl == null || pathUrl.trim().isEmpty()) {
