@@ -232,7 +232,7 @@ public class FormTemplateService {
             @NonNull Pageable pageable) {
 
         Specification<FormTemplate> librarySpecification = specification
-                .and((root, query, criteriaBuilder) -> criteriaBuilder.isNull(root.get("innovationRound")));
+                .and((root, query, criteriaBuilder) -> criteriaBuilder.isTrue(root.get("isLibrary")));
 
         Page<FormTemplate> templates = formTemplateRepository.findAll(librarySpecification, pageable);
         return Utils.toResultPaginationDTO(templates.map(formTemplateMapper::toFormTemplateResponse), pageable);

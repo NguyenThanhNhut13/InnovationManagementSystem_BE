@@ -20,6 +20,7 @@ public class CreateTemplateResponse {
     private String templateContent;
     private TemplateTypeEnum templateType;
     private TargetRoleCode targetRole;
+    private Boolean isLibrary;
     private String roundId;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

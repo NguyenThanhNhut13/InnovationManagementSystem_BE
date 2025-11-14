@@ -37,8 +37,9 @@ public class TemplateSeeder implements DatabaseSeeder {
 
         log.info("Bắt đầu seed dữ liệu {}...", getConfigPrefix());
 
-        if (!isForce() && isDataExists()) {
-            log.info("Dữ liệu {} đã tồn tại, bỏ qua seeding.", getConfigPrefix());
+        // Kiểm tra nếu đã có template library trong database
+        if (!isForce() && hasLibraryTemplates()) {
+            log.info("Dữ liệu template library đã tồn tại (is_library = true), bỏ qua seeding.");
             return;
         }
 
@@ -71,14 +72,14 @@ public class TemplateSeeder implements DatabaseSeeder {
         return force;
     }
 
-    private boolean isDataExists() {
+    private boolean hasLibraryTemplates() {
         try {
-            // Kiểm tra xem đã có dữ liệu template chưa
-            String countQuery = "SELECT COUNT(*) FROM form_templates";
+            // Kiểm tra xem đã có template với is_library = true chưa
+            String countQuery = "SELECT COUNT(*) FROM form_templates WHERE is_library = true";
             Integer count = jdbcTemplate.queryForObject(countQuery, Integer.class);
             return count != null && count > 0;
         } catch (Exception e) {
-            log.debug("Bảng form_templates chưa tồn tại hoặc chưa có dữ liệu: {}", e.getMessage());
+            log.debug("Bảng form_templates chưa tồn tại hoặc chưa có dữ liệu library: {}", e.getMessage());
             return false;
         }
     }

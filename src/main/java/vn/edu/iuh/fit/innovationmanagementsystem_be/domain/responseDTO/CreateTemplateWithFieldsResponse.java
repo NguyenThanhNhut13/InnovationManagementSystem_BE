@@ -21,6 +21,7 @@ public class CreateTemplateWithFieldsResponse {
     private String templateContent;
     private TemplateTypeEnum templateType;
     private TargetRoleCode targetRole;
+    private Boolean isLibrary;
     private String roundId;
     private List<FieldResponse> fields;
     private LocalDateTime createdAt;

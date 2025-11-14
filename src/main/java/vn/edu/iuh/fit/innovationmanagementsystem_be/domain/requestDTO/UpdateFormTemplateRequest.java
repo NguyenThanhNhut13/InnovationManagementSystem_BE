@@ -20,6 +20,8 @@ public class UpdateFormTemplateRequest {
 
     private String templateContent;
 
+    private Boolean isLibrary;
+
     private String roundId;
 
     @Valid

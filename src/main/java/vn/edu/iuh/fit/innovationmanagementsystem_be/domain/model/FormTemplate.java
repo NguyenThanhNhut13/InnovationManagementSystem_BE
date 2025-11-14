@@ -35,6 +35,9 @@ public class FormTemplate extends Auditable {
     @Column(name = "template_content", columnDefinition = "TEXT")
     private String templateContent;
 
+    @Column(name = "is_library", nullable = false)
+    private Boolean isLibrary = false;
+
     // Relationships
     @ManyToOne(fetch = FetchType.LAZY, optional = true)
     @JoinColumn(name = "innovation_round_id", nullable = true)
