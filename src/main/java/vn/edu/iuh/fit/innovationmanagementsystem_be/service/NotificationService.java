@@ -136,6 +136,53 @@ public class NotificationService {
         }
     }
 
+    @Transactional
+    public void notifyUsersByDepartmentAndRoles(String departmentId, List<UserRoleEnum> roles, String title,
+            String message, NotificationTypeEnum type, Map<String, Object> data) {
+        try {
+            Department department = departmentRepository.findById(departmentId)
+                    .orElseThrow(() -> new IdInvalidException("Không tìm thấy khoa với ID: " + departmentId));
+
+            // Lấy users thuộc department và có một trong các roles
+            List<User> users = userRepository.findByDepartmentIdAndRoles(departmentId, roles);
+
+            if (users.isEmpty()) {
+                log.warn("Không tìm thấy user nào thuộc khoa {} với roles: {}",
+                        department.getDepartmentName(), roles);
+                return;
+            }
+
+            // Lưu notification vào database
+            String targetRoles = roles.stream()
+                    .map(UserRoleEnum::name)
+                    .collect(java.util.stream.Collectors.joining(","));
+            Notification notification = createNotification(title, message, type, data, department, targetRoles);
+
+            // Gửi WebSocket notification
+            Map<String, Object> wsNotification = createWebSocketNotification(
+                    notification.getId(), title, message, type, data);
+
+            for (User user : users) {
+                // Tạo UserNotification cho user
+                UserNotification userNotification = new UserNotification();
+                userNotification.setUser(user);
+                userNotification.setNotification(notification);
+                userNotification.setIsRead(false);
+                userNotificationRepository.save(userNotification);
+
+                // Gửi WebSocket notification đến queue riêng của user
+                String userDestination = "/queue/notifications/" + user.getId();
+                messagingTemplate.convertAndSend(userDestination, wsNotification);
+            }
+
+            log.info("Đã gửi và lưu notification đến {} users thuộc khoa {} với roles: {}",
+                    users.size(), department.getDepartmentName(), roles);
+        } catch (Exception e) {
+            log.error("Lỗi khi gửi notification đến users thuộc khoa {} với roles {}: {}",
+                    departmentId, roles, e.getMessage());
+        }
+    }
+
     // Helper method: Tạo WebSocket notification data (chỉ gửi data cần thiết)
     private Map<String, Object> createWebSocketData(Map<String, Object> fullData) {
         Map<String, Object> wsData = new HashMap<>();
@@ -229,7 +276,21 @@ public class NotificationService {
         String message = "Khoa " + departmentName + " đã công bố các giai đoạn cho đợt sáng kiến \"" + roundName
                 + "\". " +
                 "Vui lòng xem chi tiết và chuẩn bị nộp hồ sơ sáng kiến.";
+
+        // Gửi thông báo cho tất cả users trong department
         notifyUsersByDepartment(departmentId, title, message, NotificationTypeEnum.DEPARTMENT_PHASE_PUBLISHED, data);
+
+        // Gửi thông báo bổ sung cho TRUONG_KHOA và QUAN_TRI_VIEN_KHOA (nếu họ chưa nhận
+        // được)
+        // Thông báo này có nội dung khác để phân biệt với thông báo chung
+        String titleForManagers = "Công bố giai đoạn khoa - Quản lý";
+        String messageForManagers = "Khoa " + departmentName + " đã công bố các giai đoạn cho đợt sáng kiến \""
+                + roundName
+                + "\". " +
+                "Vui lòng theo dõi và quản lý quá trình nộp hồ sơ sáng kiến của giảng viên.";
+        notifyUsersByDepartmentAndRoles(departmentId,
+                List.of(UserRoleEnum.TRUONG_KHOA, UserRoleEnum.QUAN_TRI_VIEN_KHOA),
+                titleForManagers, messageForManagers, NotificationTypeEnum.DEPARTMENT_PHASE_PUBLISHED, data);
     }
 
     public void notifyDepartmentPhaseClosed(String departmentId, String departmentName, String roundName) {
@@ -243,7 +304,20 @@ public class NotificationService {
         String title = "Đóng giai đoạn khoa";
         String message = "Khoa " + departmentName + " đã đóng các giai đoạn cho đợt sáng kiến \"" + roundName + "\". " +
                 "Không thể nộp hoặc chỉnh sửa hồ sơ sáng kiến nữa.";
+
+        // Gửi thông báo cho tất cả users trong department
         notifyUsersByDepartment(departmentId, title, message, NotificationTypeEnum.DEPARTMENT_PHASE_CLOSED, data);
+
+        // Gửi thông báo bổ sung cho TRUONG_KHOA và QUAN_TRI_VIEN_KHOA (nếu họ chưa nhận
+        // được)
+        // Thông báo này có nội dung khác để phân biệt với thông báo chung
+        String titleForManagers = "Đóng giai đoạn khoa - Quản lý";
+        String messageForManagers = "Khoa " + departmentName + " đã đóng các giai đoạn cho đợt sáng kiến \"" + roundName
+                + "\". " +
+                "Vui lòng kiểm tra và tổng hợp kết quả nộp hồ sơ sáng kiến.";
+        notifyUsersByDepartmentAndRoles(departmentId,
+                List.of(UserRoleEnum.TRUONG_KHOA, UserRoleEnum.QUAN_TRI_VIEN_KHOA),
+                titleForManagers, messageForManagers, NotificationTypeEnum.DEPARTMENT_PHASE_CLOSED, data);
     }
 
     // API: Lấy danh sách notification của user hiện tại

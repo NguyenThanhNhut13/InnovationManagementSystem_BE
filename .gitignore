@@ -39,4 +39,4 @@ src/main/resources/keys/*
 .env
 
 .cursor/
-KIRO_ROLE.yml
+.kiro-rules.yml
