@@ -13,6 +13,18 @@ pipeline {
     }
     
     stages {
+        stage('Prepare Network') {
+            steps {
+                script {
+                    echo 'Ensuring Docker network exists...'
+                    sh '''
+                        docker network inspect innovation-network >/dev/null 2>&1 || \
+                        docker network create innovation-network
+                    '''
+                }
+            }
+        }
+        
         stage('Build') {
             steps {
                 script {
@@ -41,7 +53,7 @@ pipeline {
                     sh '''
                         docker run -d \
                             --name ${CONTAINER_NAME} \
-                            --network innovation-management-system-be_default \
+                            --network innovation-network \
                             -p 8081:8081 \
                             -e SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/innovation_management \
                             -e SPRING_DATASOURCE_USERNAME=postgresADMIN \

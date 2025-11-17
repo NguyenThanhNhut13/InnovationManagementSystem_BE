@@ -112,3 +112,8 @@ volumes:
     driver: local
   jenkins_home:
     driver: local
+
+networks:
+  default:
+    name: innovation-network
+    driver: bridge
