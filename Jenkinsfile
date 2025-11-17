@@ -101,9 +101,56 @@ pipeline {
     post {
         success {
             echo 'Deployment successful!'
+            emailext (
+                subject: "✅ Deployment SUCCESS: ${env.JOB_NAME} - Build #${env.BUILD_NUMBER}",
+                body: """
+                    <h2>Deployment Successful!</h2>
+                    <p><strong>Project:</strong> ${env.JOB_NAME}</p>
+                    <p><strong>Build Number:</strong> ${env.BUILD_NUMBER}</p>
+                    <p><strong>Build URL:</strong> <a href="${env.BUILD_URL}">${env.BUILD_URL}</a></p>
+                    <p><strong>Commit:</strong> ${env.GIT_COMMIT}</p>
+                    <p><strong>Branch:</strong> ${env.GIT_BRANCH}</p>
+                    <p><strong>Status:</strong> <span style="color: green;">SUCCESS</span></p>
+                    <hr>
+                    <p>Application is now running at: <a href="http://localhost:8081">http://localhost:8081</a></p>
+                """,
+                to: '${DEFAULT_RECIPIENTS}',
+                mimeType: 'text/html'
+            )
         }
         failure {
             echo 'Deployment failed!'
+            emailext (
+                subject: "❌ Deployment FAILED: ${env.JOB_NAME} - Build #${env.BUILD_NUMBER}",
+                body: """
+                    <h2>Deployment Failed!</h2>
+                    <p><strong>Project:</strong> ${env.JOB_NAME}</p>
+                    <p><strong>Build Number:</strong> ${env.BUILD_NUMBER}</p>
+                    <p><strong>Build URL:</strong> <a href="${env.BUILD_URL}">${env.BUILD_URL}</a></p>
+                    <p><strong>Commit:</strong> ${env.GIT_COMMIT}</p>
+                    <p><strong>Branch:</strong> ${env.GIT_BRANCH}</p>
+                    <p><strong>Status:</strong> <span style="color: red;">FAILED</span></p>
+                    <hr>
+                    <p>Please check the console output for details: <a href="${env.BUILD_URL}console">${env.BUILD_URL}console</a></p>
+                """,
+                to: '${DEFAULT_RECIPIENTS}',
+                mimeType: 'text/html'
+            )
+        }
+        unstable {
+            echo 'Deployment unstable!'
+            emailext (
+                subject: "⚠️ Deployment UNSTABLE: ${env.JOB_NAME} - Build #${env.BUILD_NUMBER}",
+                body: """
+                    <h2>Deployment Unstable!</h2>
+                    <p><strong>Project:</strong> ${env.JOB_NAME}</p>
+                    <p><strong>Build Number:</strong> ${env.BUILD_NUMBER}</p>
+                    <p><strong>Build URL:</strong> <a href="${env.BUILD_URL}">${env.BUILD_URL}</a></p>
+                    <p><strong>Status:</strong> <span style="color: orange;">UNSTABLE</span></p>
+                """,
+                to: '${DEFAULT_RECIPIENTS}',
+                mimeType: 'text/html'
+            )
         }
     }
 }
