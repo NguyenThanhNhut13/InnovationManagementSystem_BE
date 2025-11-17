@@ -28,9 +28,18 @@ pipeline {
         stage('Prepare Environment') {
             steps {
                 script {
-                    echo 'Creating .env file from Jenkins credentials...'
-                    withCredentials([file(credentialsId: 'env-file', variable: 'ENV_FILE')]) {
-                        sh 'cp $ENV_FILE .env'
+                    echo 'Creating .env file and keys from Jenkins credentials...'
+                    withCredentials([
+                        file(credentialsId: 'env-file', variable: 'ENV_FILE'),
+                        file(credentialsId: 'public-key', variable: 'PUBLIC_KEY'),
+                        file(credentialsId: 'private-key', variable: 'PRIVATE_KEY')
+                    ]) {
+                        sh '''
+                            cp $ENV_FILE .env
+                            mkdir -p src/main/resources/keys
+                            cp $PUBLIC_KEY src/main/resources/keys/public_key.pem
+                            cp $PRIVATE_KEY src/main/resources/keys/private_key.pem
+                        '''
                     }
                 }
             }
