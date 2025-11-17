@@ -320,13 +320,18 @@ public class NotificationService {
         String othersMessage = actorDisplayName + " vừa đóng đợt sáng kiến \"" + roundName
                 + "\". Không thể thực hiện thêm thay đổi nào cho đợt này.";
 
-        List<UserRoleEnum> targetRoles = List.of(
-                UserRoleEnum.TRUONG_KHOA,
-                UserRoleEnum.QUAN_TRI_VIEN_QLKH_HTQT);
+        boolean actorIsQlkhHtqt = isUserInRole(actorId, UserRoleEnum.QUAN_TRI_VIEN_QLKH_HTQT);
 
-        for (UserRoleEnum role : targetRoles) {
+        if (actorIsQlkhHtqt) {
+            notifyDepartmentManagersRoundClosed(
+                    roundId,
+                    roundName,
+                    actorId,
+                    actorDisplayName,
+                    data);
+        } else {
             notifyUsersByRole(
-                    role,
+                    UserRoleEnum.TRUONG_KHOA,
                     actorId,
                     actorDisplayName,
                     selfTitle,
@@ -336,6 +341,17 @@ public class NotificationService {
                     NotificationTypeEnum.ROUND_CLOSED,
                     data);
         }
+
+        notifyUsersByRole(
+                UserRoleEnum.QUAN_TRI_VIEN_QLKH_HTQT,
+                actorId,
+                actorDisplayName,
+                selfTitle,
+                othersTitle,
+                selfMessage,
+                othersMessage,
+                NotificationTypeEnum.ROUND_CLOSED,
+                data);
     }
 
     public void notifyDepartmentPhasePublished(String departmentId, String departmentName, String roundName) {
@@ -552,5 +568,36 @@ public class NotificationService {
             return false;
         }
         return userRepository.userHasRole(userId, role);
+    }
+
+    private void notifyDepartmentManagersRoundClosed(String roundId,
+            String roundName,
+            String actorId,
+            String actorDisplayName,
+            Map<String, Object> baseData) {
+
+        Map<String, Object> managerData = baseData != null ? new HashMap<>(baseData) : new HashMap<>();
+        managerData.put("task", "finalize_department_phases");
+
+        String title = "Đợt sáng kiến đã đóng";
+        String message = "Đợt sáng kiến \"" + roundName + "\" đã được " + actorDisplayName
+                + " đóng lại. Vui lòng rà soát và hoàn tất báo cáo cho khoa của bạn.";
+
+        List<UserRoleEnum> targetRoles = List.of(
+                UserRoleEnum.TRUONG_KHOA,
+                UserRoleEnum.QUAN_TRI_VIEN_KHOA);
+
+        for (UserRoleEnum role : targetRoles) {
+            notifyUsersByRole(
+                    role,
+                    actorId,
+                    actorDisplayName,
+                    title,
+                    title,
+                    message,
+                    message,
+                    NotificationTypeEnum.ROUND_CLOSED,
+                    managerData);
+        }
     }
 }
