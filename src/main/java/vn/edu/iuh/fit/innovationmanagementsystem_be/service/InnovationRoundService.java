@@ -10,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.InnovationDecision;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.InnovationPhase;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.InnovationRound;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.User;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.CreateInnovationRoundRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.UpdateInnovationRoundRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.InnovationPhaseRequest;
@@ -52,13 +53,14 @@ public class InnovationRoundService {
     private final InnovationRoundMapper innovationRoundMapper;
     private final InnovationPhaseService innovationPhaseService;
     private final org.springframework.context.ApplicationEventPublisher eventPublisher;
+    private final UserService userService;
 
     public InnovationRoundService(InnovationDecisionService innovationDecisionService,
             InnovationRoundRepository innovationRoundRepository,
             InnovationDecisionRepository innovationDecisionRepository,
             InnovationPhaseRepository innovationPhaseRepository,
             InnovationRoundMapper innovationRoundMapper, InnovationPhaseService innovationPhaseService,
-            org.springframework.context.ApplicationEventPublisher eventPublisher) {
+            org.springframework.context.ApplicationEventPublisher eventPublisher, UserService userService) {
         this.innovationDecisionService = innovationDecisionService;
         this.innovationRoundRepository = innovationRoundRepository;
         this.innovationDecisionRepository = innovationDecisionRepository;
@@ -66,6 +68,7 @@ public class InnovationRoundService {
         this.innovationRoundMapper = innovationRoundMapper;
         this.innovationPhaseService = innovationPhaseService;
         this.eventPublisher = eventPublisher;
+        this.userService = userService;
     }
 
     // 1. Tạo innovationRound
@@ -516,10 +519,12 @@ public class InnovationRoundService {
         InnovationRoundResponse response = innovationRoundMapper.toInnovationRoundResponse(savedRound);
         setStatistics(response, savedRound);
 
+        User actor = userService.getCurrentUser();
+
         // Publish event - Event listener sẽ xử lý notification
         eventPublisher
                 .publishEvent(new InnovationRoundPublishedEvent(
-                        this, savedRound.getId(), savedRound.getName()));
+                        this, savedRound.getId(), savedRound.getName(), actor.getId(), actor.getFullName()));
 
         return response;
     }
@@ -540,9 +545,11 @@ public class InnovationRoundService {
         InnovationRoundResponse response = innovationRoundMapper.toInnovationRoundResponse(savedRound);
         setStatistics(response, savedRound);
 
+        User actor = userService.getCurrentUser();
+
         // Publish event - Event listener sẽ xử lý notification
         eventPublisher.publishEvent(new vn.edu.iuh.fit.innovationmanagementsystem_be.event.InnovationRoundClosedEvent(
-                this, savedRound.getId(), savedRound.getName()));
+                this, savedRound.getId(), savedRound.getName(), actor.getId(), actor.getFullName()));
 
         return response;
     }

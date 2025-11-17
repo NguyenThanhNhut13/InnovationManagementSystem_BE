@@ -59,32 +59,46 @@ public class NotificationService {
     }
 
     @Transactional
-    public void notifyUsersByRole(UserRoleEnum role, String title, String message, NotificationTypeEnum type,
+    public void notifyUsersByRole(UserRoleEnum role,
+            String actorId,
+            String actorFullName,
+            String selfTitle,
+            String othersTitle,
+            String selfMessage,
+            String othersMessage,
+            NotificationTypeEnum type,
             Map<String, Object> data) {
         try {
-
             List<User> users = userRepository.findUsersByRole(role);
 
             if (users.isEmpty()) {
                 throw new IdInvalidException("Không tìm thấy user nào có role: " + role);
             }
 
-            // Lưu notification vào database (lưu đầy đủ data)
-            Notification notification = createNotification(title, message, type, data, null, role.name());
-
-            // Gửi WebSocket notification (gộp tất cả vào data)
-            Map<String, Object> wsNotification = createWebSocketNotification(
-                    notification.getId(), title, message, type, data);
+            String resolvedActorName = actorFullName != null ? actorFullName : "Người phụ trách";
 
             for (User user : users) {
-                // Tạo UserNotification cho user
+                boolean isActor = actorId != null && actorId.equals(user.getId());
+                String finalTitle = isActor ? selfTitle : othersTitle;
+                String finalMessage = isActor ? selfMessage : othersMessage;
+
+                Map<String, Object> personalizedData = data != null ? new HashMap<>(data) : new HashMap<>();
+                personalizedData.put("actorId", actorId);
+                personalizedData.put("actorName", resolvedActorName);
+                personalizedData.put("isActor", isActor);
+
+                Notification notification = createNotification(finalTitle, finalMessage, type, personalizedData, null,
+                        role.name());
+
+                Map<String, Object> wsNotification = createWebSocketNotification(
+                        notification.getId(), finalTitle, finalMessage, type, personalizedData);
+
                 UserNotification userNotification = new UserNotification();
                 userNotification.setUser(user);
                 userNotification.setNotification(notification);
                 userNotification.setIsRead(false);
                 userNotificationRepository.save(userNotification);
 
-                // Gửi WebSocket notification đến queue riêng của user
                 String userDestination = "/queue/notifications/" + user.getId();
                 messagingTemplate.convertAndSend(userDestination, wsNotification);
             }
@@ -238,30 +252,74 @@ public class NotificationService {
         return notificationRepository.save(notification);
     }
 
-    public void notifyRoundPublished(String roundId, String roundName) {
+    public void notifyRoundPublished(String roundId, String roundName, String actorId, String actorFullName) {
         Map<String, Object> data = new HashMap<>();
         data.put("roundId", roundId);
         data.put("roundName", roundName);
         data.put("action", "publish");
         data.put("url", "/innovation-rounds/" + roundId);
 
-        String title = "Công bố đợt sáng kiến mới";
-        String message = "Đợt sáng kiến \"" + roundName + "\" đã được công bố. " +
-                "Vui lòng kiểm tra và chuẩn bị các giai đoạn cho khoa của bạn.";
-        notifyUsersByRole(UserRoleEnum.TRUONG_KHOA, title, message, NotificationTypeEnum.ROUND_PUBLISHED, data);
+        String actorDisplayName = actorFullName != null ? actorFullName : "Người phụ trách";
+
+        String selfTitle = "Bạn đã công bố đợt sáng kiến mới";
+        String othersTitle = actorDisplayName + " đã công bố đợt sáng kiến mới";
+
+        String selfMessage = "Bạn vừa công bố đợt sáng kiến \"" + roundName
+                + "\" thành công. ";
+        String othersMessage = actorDisplayName + " vừa công bố đợt sáng kiến \"" + roundName
+                + "\". Vui lòng kiểm tra và chuẩn bị các giai đoạn cho khoa của bạn.";
+
+        List<UserRoleEnum> targetRoles = List.of(
+                UserRoleEnum.TRUONG_KHOA,
+                UserRoleEnum.QUAN_TRI_VIEN_QLKH_HTQT);
+
+        for (UserRoleEnum role : targetRoles) {
+            notifyUsersByRole(
+                    role,
+                    actorId,
+                    actorDisplayName,
+                    selfTitle,
+                    othersTitle,
+                    selfMessage,
+                    othersMessage,
+                    NotificationTypeEnum.ROUND_PUBLISHED,
+                    data);
+        }
     }
 
-    public void notifyRoundClosed(String roundId, String roundName) {
+    public void notifyRoundClosed(String roundId, String roundName, String actorId, String actorFullName) {
         Map<String, Object> data = new HashMap<>();
         data.put("roundId", roundId);
         data.put("roundName", roundName);
         data.put("action", "close");
         data.put("url", "/innovation-rounds/" + roundId);
 
-        String title = "Đóng đợt sáng kiến";
-        String message = "Đợt sáng kiến \"" + roundName + "\" đã được đóng. " +
-                "Không thể thực hiện thêm thay đổi nào cho đợt này.";
-        notifyUsersByRole(UserRoleEnum.TRUONG_KHOA, title, message, NotificationTypeEnum.ROUND_CLOSED, data);
+        String actorDisplayName = actorFullName != null ? actorFullName : "Người phụ trách";
+
+        String selfTitle = "Bạn đã đóng đợt sáng kiến";
+        String othersTitle = actorDisplayName + " đã đóng đợt sáng kiến";
+
+        String selfMessage = "Bạn vừa đóng đợt sáng kiến \"" + roundName
+                + "\". Hệ thống sẽ ngừng nhận thêm chỉnh sửa cho đợt này.";
+        String othersMessage = actorDisplayName + " vừa đóng đợt sáng kiến \"" + roundName
+                + "\". Không thể thực hiện thêm thay đổi nào cho đợt này.";
+
+        List<UserRoleEnum> targetRoles = List.of(
+                UserRoleEnum.TRUONG_KHOA,
+                UserRoleEnum.QUAN_TRI_VIEN_QLKH_HTQT);
+
+        for (UserRoleEnum role : targetRoles) {
+            notifyUsersByRole(
+                    role,
+                    actorId,
+                    actorDisplayName,
+                    selfTitle,
+                    othersTitle,
+                    selfMessage,
+                    othersMessage,
+                    NotificationTypeEnum.ROUND_CLOSED,
+                    data);
+        }
     }
 
     public void notifyDepartmentPhasePublished(String departmentId, String departmentName, String roundName) {

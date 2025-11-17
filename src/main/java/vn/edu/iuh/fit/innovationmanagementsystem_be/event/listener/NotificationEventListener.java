@@ -24,7 +24,8 @@ public class NotificationEventListener {
     public void handleInnovationRoundPublished(InnovationRoundPublishedEvent event) {
         log.info("Handling InnovationRoundPublishedEvent for round: {}", event.getRoundName());
         try {
-            notificationService.notifyRoundPublished(event.getRoundId(), event.getRoundName());
+            notificationService.notifyRoundPublished(event.getRoundId(), event.getRoundName(), event.getActorId(),
+                    event.getActorFullName());
         } catch (Exception e) {
             throw new IdInvalidException("Error handling InnovationRoundPublishedEvent: " + e.getMessage(), e);
         }
@@ -35,7 +36,8 @@ public class NotificationEventListener {
     public void handleInnovationRoundClosed(InnovationRoundClosedEvent event) {
         log.info("Handling InnovationRoundClosedEvent for round: {}", event.getRoundName());
         try {
-            notificationService.notifyRoundClosed(event.getRoundId(), event.getRoundName());
+            notificationService.notifyRoundClosed(event.getRoundId(), event.getRoundName(), event.getActorId(),
+                    event.getActorFullName());
         } catch (Exception e) {
             throw new IdInvalidException("Error handling InnovationRoundClosedEvent: " + e.getMessage(), e);
         }

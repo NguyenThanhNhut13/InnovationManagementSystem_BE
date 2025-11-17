@@ -7,10 +7,15 @@ import org.springframework.context.ApplicationEvent;
 public class InnovationRoundClosedEvent extends ApplicationEvent {
     private final String roundId;
     private final String roundName;
+    private final String actorId;
+    private final String actorFullName;
 
-    public InnovationRoundClosedEvent(Object source, String roundId, String roundName) {
+    public InnovationRoundClosedEvent(Object source, String roundId, String roundName, String actorId,
+            String actorFullName) {
         super(source);
         this.roundId = roundId;
         this.roundName = roundName;
+        this.actorId = actorId;
+        this.actorFullName = actorFullName;
     }
 }
