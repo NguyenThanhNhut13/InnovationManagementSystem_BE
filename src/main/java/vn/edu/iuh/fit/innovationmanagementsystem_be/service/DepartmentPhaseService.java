@@ -399,8 +399,12 @@ public class DepartmentPhaseService {
                 // Publish event - Event listener sẽ xử lý notification
                 eventPublisher.publishEvent(
                                 new vn.edu.iuh.fit.innovationmanagementsystem_be.event.DepartmentPhasePublishedEvent(
-                                                this, department.getId(), department.getDepartmentName(),
-                                                innovationRound.getName()));
+                                                this,
+                                                department.getId(),
+                                                department.getDepartmentName(),
+                                                innovationRound.getName(),
+                                                currentUser.getId(),
+                                                currentUser.getFullName()));
 
                 return savedPhases.stream()
                                 .map(departmentPhaseMapper::toDepartmentPhaseResponse)
@@ -455,8 +459,12 @@ public class DepartmentPhaseService {
                 // Publish event - Event listener sẽ xử lý notification
                 eventPublisher.publishEvent(
                                 new vn.edu.iuh.fit.innovationmanagementsystem_be.event.DepartmentPhaseClosedEvent(
-                                                this, department.getId(), department.getDepartmentName(),
-                                                innovationRound.getName()));
+                                                this,
+                                                department.getId(),
+                                                department.getDepartmentName(),
+                                                innovationRound.getName(),
+                                                currentUser.getId(),
+                                                currentUser.getFullName()));
 
                 return savedPhases.stream()
                                 .map(departmentPhaseMapper::toDepartmentPhaseResponse)

@@ -26,13 +26,21 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.ResultPaginationDTO;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.Utils;
 
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
 public class NotificationService {
+
+    private static final List<UserRoleEnum> DEPARTMENT_MANAGER_ROLES = List.of(
+            UserRoleEnum.TRUONG_KHOA,
+            UserRoleEnum.QUAN_TRI_VIEN_KHOA);
+    private static final String MANAGER_TARGET_ROLE = "TRUONG_KHOA,QUAN_TRI_VIEN_KHOA";
 
     private final SimpMessagingTemplate messagingTemplate;
     private final UserRepository userRepository;
@@ -354,60 +362,88 @@ public class NotificationService {
                 data);
     }
 
-    public void notifyDepartmentPhasePublished(String departmentId, String departmentName, String roundName) {
-        Map<String, Object> data = new HashMap<>();
-        data.put("departmentId", departmentId);
-        data.put("departmentName", departmentName);
-        data.put("roundName", roundName);
-        data.put("action", "publish");
-        data.put("url", "/department-phases?departmentId=" + departmentId);
+    public void notifyDepartmentPhasePublished(String departmentId,
+            String departmentName,
+            String roundName,
+            String actorId,
+            String actorFullName) {
 
-        String title = "Công bố giai đoạn khoa";
-        String message = "Khoa " + departmentName + " đã công bố các giai đoạn cho đợt sáng kiến \"" + roundName
-                + "\". " +
-                "Vui lòng xem chi tiết và chuẩn bị nộp hồ sơ sáng kiến.";
+        Department department = departmentRepository.findById(departmentId)
+                .orElseThrow(() -> new IdInvalidException("Không tìm thấy khoa với ID: " + departmentId));
 
-        // Gửi thông báo cho tất cả users trong department
-        notifyUsersByDepartment(departmentId, title, message, NotificationTypeEnum.DEPARTMENT_PHASE_PUBLISHED, data);
+        String resolvedDepartmentName = departmentName != null ? departmentName : department.getDepartmentName();
+        String actorDisplayName = actorFullName != null ? actorFullName : "Người phụ trách";
 
-        // Gửi thông báo bổ sung cho TRUONG_KHOA và QUAN_TRI_VIEN_KHOA (nếu họ chưa nhận
-        // được)
-        // Thông báo này có nội dung khác để phân biệt với thông báo chung
-        String titleForManagers = "Công bố giai đoạn khoa - Quản lý";
-        String messageForManagers = "Khoa " + departmentName + " đã công bố các giai đoạn cho đợt sáng kiến \""
-                + roundName
-                + "\". " +
-                "Vui lòng theo dõi và quản lý quá trình nộp hồ sơ sáng kiến của giảng viên.";
-        notifyUsersByDepartmentAndRoles(departmentId,
-                List.of(UserRoleEnum.TRUONG_KHOA, UserRoleEnum.QUAN_TRI_VIEN_KHOA),
-                titleForManagers, messageForManagers, NotificationTypeEnum.DEPARTMENT_PHASE_PUBLISHED, data);
+        Map<String, Object> baseData = buildDepartmentPhaseData(
+                departmentId,
+                resolvedDepartmentName,
+                roundName,
+                "publish");
+
+        List<User> departmentManagers = userRepository.findByDepartmentIdAndRoles(
+                departmentId,
+                DEPARTMENT_MANAGER_ROLES);
+
+        notifyDepartmentManagersPhaseAction(
+                department,
+                departmentManagers,
+                actorId,
+                actorDisplayName,
+                roundName,
+                DepartmentPhaseAction.PUBLISH,
+                baseData,
+                NotificationTypeEnum.DEPARTMENT_PHASE_PUBLISHED);
+
+        notifyDepartmentMembersAboutPhaseAction(
+                department,
+                departmentManagers,
+                actorDisplayName,
+                roundName,
+                DepartmentPhaseAction.PUBLISH,
+                baseData,
+                NotificationTypeEnum.DEPARTMENT_PHASE_PUBLISHED);
     }
 
-    public void notifyDepartmentPhaseClosed(String departmentId, String departmentName, String roundName) {
-        Map<String, Object> data = new HashMap<>();
-        data.put("departmentId", departmentId);
-        data.put("departmentName", departmentName);
-        data.put("roundName", roundName);
-        data.put("action", "close");
-        data.put("url", "/department-phases?departmentId=" + departmentId);
+    public void notifyDepartmentPhaseClosed(String departmentId,
+            String departmentName,
+            String roundName,
+            String actorId,
+            String actorFullName) {
 
-        String title = "Đóng giai đoạn khoa";
-        String message = "Khoa " + departmentName + " đã đóng các giai đoạn cho đợt sáng kiến \"" + roundName + "\". " +
-                "Không thể nộp hoặc chỉnh sửa hồ sơ sáng kiến nữa.";
+        Department department = departmentRepository.findById(departmentId)
+                .orElseThrow(() -> new IdInvalidException("Không tìm thấy khoa với ID: " + departmentId));
 
-        // Gửi thông báo cho tất cả users trong department
-        notifyUsersByDepartment(departmentId, title, message, NotificationTypeEnum.DEPARTMENT_PHASE_CLOSED, data);
+        String resolvedDepartmentName = departmentName != null ? departmentName : department.getDepartmentName();
+        String actorDisplayName = actorFullName != null ? actorFullName : "Người phụ trách";
 
-        // Gửi thông báo bổ sung cho TRUONG_KHOA và QUAN_TRI_VIEN_KHOA (nếu họ chưa nhận
-        // được)
-        // Thông báo này có nội dung khác để phân biệt với thông báo chung
-        String titleForManagers = "Đóng giai đoạn khoa - Quản lý";
-        String messageForManagers = "Khoa " + departmentName + " đã đóng các giai đoạn cho đợt sáng kiến \"" + roundName
-                + "\". " +
-                "Vui lòng kiểm tra và tổng hợp kết quả nộp hồ sơ sáng kiến.";
-        notifyUsersByDepartmentAndRoles(departmentId,
-                List.of(UserRoleEnum.TRUONG_KHOA, UserRoleEnum.QUAN_TRI_VIEN_KHOA),
-                titleForManagers, messageForManagers, NotificationTypeEnum.DEPARTMENT_PHASE_CLOSED, data);
+        Map<String, Object> baseData = buildDepartmentPhaseData(
+                departmentId,
+                resolvedDepartmentName,
+                roundName,
+                "close");
+
+        List<User> departmentManagers = userRepository.findByDepartmentIdAndRoles(
+                departmentId,
+                DEPARTMENT_MANAGER_ROLES);
+
+        notifyDepartmentManagersPhaseAction(
+                department,
+                departmentManagers,
+                actorId,
+                actorDisplayName,
+                roundName,
+                DepartmentPhaseAction.CLOSE,
+                baseData,
+                NotificationTypeEnum.DEPARTMENT_PHASE_CLOSED);
+
+        notifyDepartmentMembersAboutPhaseAction(
+                department,
+                departmentManagers,
+                actorDisplayName,
+                roundName,
+                DepartmentPhaseAction.CLOSE,
+                baseData,
+                NotificationTypeEnum.DEPARTMENT_PHASE_CLOSED);
     }
 
     // API: Lấy danh sách notification của user hiện tại
@@ -599,5 +635,163 @@ public class NotificationService {
                     NotificationTypeEnum.ROUND_CLOSED,
                     managerData);
         }
+    }
+
+    private Map<String, Object> buildDepartmentPhaseData(String departmentId,
+            String departmentName,
+            String roundName,
+            String action) {
+
+        Map<String, Object> data = new HashMap<>();
+        data.put("departmentId", departmentId);
+        data.put("departmentName", departmentName);
+        data.put("roundName", roundName);
+        data.put("action", action);
+        data.put("url", "/department-phases?departmentId=" + departmentId);
+        return data;
+    }
+
+    private void notifyDepartmentManagersPhaseAction(Department department,
+            List<User> departmentManagers,
+            String actorId,
+            String actorDisplayName,
+            String roundName,
+            DepartmentPhaseAction action,
+            Map<String, Object> baseData,
+            NotificationTypeEnum type) {
+
+        if (departmentManagers == null || departmentManagers.isEmpty()) {
+            log.warn("Không tìm thấy quản lý thuộc khoa {}", department.getDepartmentName());
+            return;
+        }
+
+        for (User manager : departmentManagers) {
+            boolean isActor = actorId != null && actorId.equals(manager.getId());
+
+            String title;
+            String message;
+
+            if (action == DepartmentPhaseAction.PUBLISH) {
+                title = isActor ? "Bạn đã công bố giai đoạn sáng kiến của khoa"
+                        : actorDisplayName + " đã công bố giai đoạn sáng kiến của khoa";
+                message = isActor
+                        ? "Bạn vừa công bố các giai đoạn nộp hồ sơ sáng kiến cho đợt \"" + roundName
+                                + "\". Hãy tiếp tục theo dõi và hỗ trợ giảng viên."
+                        : actorDisplayName + " vừa công bố các giai đoạn nộp hồ sơ sáng kiến cho đợt \"" + roundName
+                                + "\". Vui lòng phối hợp hướng dẫn giảng viên thực hiện đúng kế hoạch.";
+            } else {
+                title = isActor ? "Bạn đã đóng giai đoạn sáng kiến của khoa"
+                        : actorDisplayName + " đã đóng giai đoạn sáng kiến của khoa";
+                message = isActor
+                        ? "Bạn vừa đóng các giai đoạn nộp hồ sơ sáng kiến cho đợt \"" + roundName
+                                + "\". Vui lòng rà soát hồ sơ và hoàn tất báo cáo khoa."
+                        : actorDisplayName + " vừa đóng các giai đoạn nộp hồ sơ sáng kiến cho đợt \"" + roundName
+                                + "\". Vui lòng tổng hợp kết quả và chuẩn bị báo cáo khoa.";
+            }
+
+            Map<String, Object> personalizedData = baseData != null ? new HashMap<>(baseData) : new HashMap<>();
+            personalizedData.put("actorId", actorId);
+            personalizedData.put("actorName", actorDisplayName);
+            personalizedData.put("isActor", isActor);
+            personalizedData.put("audience", "DEPARTMENT_MANAGERS");
+
+            sendNotificationToDepartmentUser(
+                    manager,
+                    title,
+                    message,
+                    type,
+                    personalizedData,
+                    department,
+                    MANAGER_TARGET_ROLE);
+        }
+    }
+
+    private void notifyDepartmentMembersAboutPhaseAction(Department department,
+            List<User> departmentManagers,
+            String actorDisplayName,
+            String roundName,
+            DepartmentPhaseAction action,
+            Map<String, Object> baseData,
+            NotificationTypeEnum type) {
+
+        List<User> users = userRepository.findByDepartmentId(department.getId());
+        if (users.isEmpty()) {
+            log.warn("Không có người dùng nào thuộc khoa {}", department.getDepartmentName());
+            return;
+        }
+
+        Set<String> managerIds = (departmentManagers == null || departmentManagers.isEmpty())
+                ? Collections.emptySet()
+                : departmentManagers.stream()
+                        .map(User::getId)
+                        .collect(Collectors.toSet());
+
+        List<User> recipients = users.stream()
+                .filter(user -> !managerIds.contains(user.getId()))
+                .collect(Collectors.toList());
+
+        if (recipients.isEmpty()) {
+            log.info("Tất cả người dùng trong khoa {} đều thuộc nhóm quản lý, bỏ qua thông báo chung",
+                    department.getDepartmentName());
+            return;
+        }
+
+        String title;
+        String message;
+
+        if (action == DepartmentPhaseAction.PUBLISH) {
+            title = "Khoa của bạn đã công bố giai đoạn nộp hồ sơ sáng kiến";
+            message = "Đơn vị của bạn vừa công bố các giai đoạn nộp hồ sơ sáng kiến cho đợt \"" + roundName
+                    + "\". Vui lòng chuẩn bị hồ sơ và nộp đúng kế hoạch.";
+        } else {
+            title = "Khoa của bạn đã đóng giai đoạn nộp hồ sơ sáng kiến";
+            message = "Đơn vị của bạn vừa đóng các giai đoạn nộp hồ sơ sáng kiến cho đợt \"" + roundName
+                    + "\". Nếu còn hồ sơ dang dở, vui lòng liên hệ quản lý khoa để được hỗ trợ.";
+        }
+
+        Map<String, Object> audienceData = baseData != null ? new HashMap<>(baseData) : new HashMap<>();
+        audienceData.put("audience", "DEPARTMENT_MEMBERS");
+        audienceData.put("actorName", actorDisplayName);
+
+        Notification notification = createNotification(title, message, type, audienceData, department, null);
+        Map<String, Object> wsNotification = createWebSocketNotification(
+                notification.getId(), title, message, type, audienceData);
+
+        for (User user : recipients) {
+            UserNotification userNotification = new UserNotification();
+            userNotification.setUser(user);
+            userNotification.setNotification(notification);
+            userNotification.setIsRead(false);
+            userNotificationRepository.save(userNotification);
+
+            messagingTemplate.convertAndSend("/queue/notifications/" + user.getId(), wsNotification);
+        }
+    }
+
+    private void sendNotificationToDepartmentUser(User user,
+            String title,
+            String message,
+            NotificationTypeEnum type,
+            Map<String, Object> data,
+            Department department,
+            String targetRole) {
+
+        Notification notification = createNotification(title, message, type, data, department, targetRole);
+        Map<String, Object> wsNotification = createWebSocketNotification(
+                notification.getId(), title, message, type, data);
+
+        UserNotification userNotification = new UserNotification();
+        userNotification.setUser(user);
+        userNotification.setNotification(notification);
+        userNotification.setIsRead(false);
+        userNotificationRepository.save(userNotification);
+
+        String userDestination = "/queue/notifications/" + user.getId();
+        messagingTemplate.convertAndSend(userDestination, wsNotification);
+    }
+
+    private enum DepartmentPhaseAction {
+        PUBLISH,
+        CLOSE
     }
 }

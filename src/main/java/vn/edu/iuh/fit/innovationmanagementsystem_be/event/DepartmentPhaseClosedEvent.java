@@ -8,11 +8,20 @@ public class DepartmentPhaseClosedEvent extends ApplicationEvent {
     private final String departmentId;
     private final String departmentName;
     private final String roundName;
+    private final String actorId;
+    private final String actorFullName;
 
-    public DepartmentPhaseClosedEvent(Object source, String departmentId, String departmentName, String roundName) {
+    public DepartmentPhaseClosedEvent(Object source,
+            String departmentId,
+            String departmentName,
+            String roundName,
+            String actorId,
+            String actorFullName) {
         super(source);
         this.departmentId = departmentId;
         this.departmentName = departmentName;
         this.roundName = roundName;
+        this.actorId = actorId;
+        this.actorFullName = actorFullName;
     }
 }

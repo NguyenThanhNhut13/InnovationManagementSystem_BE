@@ -46,12 +46,14 @@ public class NotificationEventListener {
     @Async
     @EventListener
     public void handleDepartmentPhasePublished(DepartmentPhasePublishedEvent event) {
-        log.info("Handling DepartmentPhasePublishedEvent for department: ", event.getDepartmentName());
+        log.info("Handling DepartmentPhasePublishedEvent for department: {}", event.getDepartmentName());
         try {
             notificationService.notifyDepartmentPhasePublished(
                     event.getDepartmentId(),
                     event.getDepartmentName(),
-                    event.getRoundName());
+                    event.getRoundName(),
+                    event.getActorId(),
+                    event.getActorFullName());
         } catch (Exception e) {
             throw new IdInvalidException("Error handling DepartmentPhasePublishedEvent: " + e.getMessage());
         }
@@ -60,12 +62,14 @@ public class NotificationEventListener {
     @Async
     @EventListener
     public void handleDepartmentPhaseClosed(DepartmentPhaseClosedEvent event) {
-        log.info("Handling DepartmentPhaseClosedEvent for department: ", event.getDepartmentName());
+        log.info("Handling DepartmentPhaseClosedEvent for department: {}", event.getDepartmentName());
         try {
             notificationService.notifyDepartmentPhaseClosed(
                     event.getDepartmentId(),
                     event.getDepartmentName(),
-                    event.getRoundName());
+                    event.getRoundName(),
+                    event.getActorId(),
+                    event.getActorFullName());
         } catch (Exception e) {
             throw new IdInvalidException("Error handling DepartmentPhaseClosedEvent: " + e.getMessage());
         }
