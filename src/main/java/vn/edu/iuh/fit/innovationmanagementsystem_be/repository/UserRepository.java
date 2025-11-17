@@ -12,6 +12,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.User;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.UserRoleEnum;
 
 @Repository
 public interface UserRepository extends JpaRepository<User, String>, JpaSpecificationExecutor<User> {
@@ -50,5 +51,11 @@ public interface UserRepository extends JpaRepository<User, String>, JpaSpecific
         List<User> findByDepartmentIdAndRoles(
                         @Param("departmentId") String departmentId,
                         @Param("roles") List<vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.UserRoleEnum> roles);
+
+        @Query("SELECT CASE WHEN COUNT(u) > 0 THEN true ELSE false END FROM User u "
+                        + "JOIN u.userRoles ur "
+                        + "JOIN ur.role r "
+                        + "WHERE u.id = :userId AND r.roleName = :roleName")
+        boolean userHasRole(@Param("userId") String userId, @Param("roleName") UserRoleEnum roleName);
 
 }

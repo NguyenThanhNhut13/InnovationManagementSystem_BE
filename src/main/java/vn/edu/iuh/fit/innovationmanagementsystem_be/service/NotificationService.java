@@ -269,13 +269,18 @@ public class NotificationService {
         String othersMessage = actorDisplayName + " vừa công bố đợt sáng kiến \"" + roundName
                 + "\". Vui lòng kiểm tra và chuẩn bị các giai đoạn cho khoa của bạn.";
 
-        List<UserRoleEnum> targetRoles = List.of(
-                UserRoleEnum.TRUONG_KHOA,
-                UserRoleEnum.QUAN_TRI_VIEN_QLKH_HTQT);
+        boolean actorIsQlkhHtqt = isUserInRole(actorId, UserRoleEnum.QUAN_TRI_VIEN_QLKH_HTQT);
 
-        for (UserRoleEnum role : targetRoles) {
+        if (actorIsQlkhHtqt) {
+            notifyDepartmentManagersToConfigureRound(
+                    roundId,
+                    roundName,
+                    actorId,
+                    actorDisplayName,
+                    data);
+        } else {
             notifyUsersByRole(
-                    role,
+                    UserRoleEnum.TRUONG_KHOA,
                     actorId,
                     actorDisplayName,
                     selfTitle,
@@ -285,6 +290,17 @@ public class NotificationService {
                     NotificationTypeEnum.ROUND_PUBLISHED,
                     data);
         }
+
+        notifyUsersByRole(
+                UserRoleEnum.QUAN_TRI_VIEN_QLKH_HTQT,
+                actorId,
+                actorDisplayName,
+                selfTitle,
+                othersTitle,
+                selfMessage,
+                othersMessage,
+                NotificationTypeEnum.ROUND_PUBLISHED,
+                data);
     }
 
     public void notifyRoundClosed(String roundId, String roundName, String actorId, String actorFullName) {
@@ -498,5 +514,43 @@ public class NotificationService {
         }
 
         return response;
+    }
+
+    private void notifyDepartmentManagersToConfigureRound(String roundId,
+            String roundName,
+            String actorId,
+            String actorDisplayName,
+            Map<String, Object> baseData) {
+
+        Map<String, Object> managerData = baseData != null ? new HashMap<>(baseData) : new HashMap<>();
+        managerData.put("task", "configure_department_phases");
+
+        String title = "Đợt sáng kiến đã mở";
+        String message = "Đợt sáng kiến \"" + roundName + "\" đã được " + actorDisplayName
+                + " công bố. Vui lòng cấu hình thời gian cho khoa của bạn.";
+
+        List<UserRoleEnum> targetRoles = List.of(
+                UserRoleEnum.TRUONG_KHOA,
+                UserRoleEnum.QUAN_TRI_VIEN_KHOA);
+
+        for (UserRoleEnum role : targetRoles) {
+            notifyUsersByRole(
+                    role,
+                    actorId,
+                    actorDisplayName,
+                    title,
+                    title,
+                    message,
+                    message,
+                    NotificationTypeEnum.ROUND_PUBLISHED,
+                    managerData);
+        }
+    }
+
+    private boolean isUserInRole(String userId, UserRoleEnum role) {
+        if (userId == null || role == null) {
+            return false;
+        }
+        return userRepository.userHasRole(userId, role);
     }
 }
