@@ -9,6 +9,7 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.Department;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.DepartmentPhase;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.Notification;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.User;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.UserNotification;
@@ -788,6 +789,86 @@ public class NotificationService {
 
         String userDestination = "/queue/notifications/" + user.getId();
         messagingTemplate.convertAndSend(userDestination, wsNotification);
+    }
+
+    public void notifyDepartmentMembersWhenPhaseStarts(DepartmentPhase departmentPhase) {
+        Department department = departmentPhase.getDepartment();
+        if (department == null) {
+            log.warn("DepartmentPhase '{}' không có khoa, bỏ qua thông báo", departmentPhase.getName());
+            return;
+        }
+
+        List<User> users = userRepository.findByDepartmentId(department.getId());
+        if (users.isEmpty()) {
+            log.warn("Không có người dùng nào thuộc khoa {}", department.getDepartmentName());
+            return;
+        }
+
+        List<User> departmentManagers = userRepository.findByDepartmentIdAndRoles(
+                department.getId(),
+                DEPARTMENT_MANAGER_ROLES);
+
+        Set<String> managerIds = (departmentManagers == null || departmentManagers.isEmpty())
+                ? Collections.emptySet()
+                : departmentManagers.stream()
+                        .map(User::getId)
+                        .collect(Collectors.toSet());
+
+        List<User> recipients = users.stream()
+                .filter(user -> !managerIds.contains(user.getId()))
+                .collect(Collectors.toList());
+
+        if (recipients.isEmpty()) {
+            log.info("Tất cả người dùng trong khoa {} đều thuộc nhóm quản lý, bỏ qua thông báo",
+                    department.getDepartmentName());
+            return;
+        }
+
+        String roundName = departmentPhase.getInnovationRound() != null
+                ? departmentPhase.getInnovationRound().getName()
+                : "đợt sáng kiến";
+
+        String title = "Giai đoạn sáng kiến đã bắt đầu";
+        String message = "Giai đoạn \"" + departmentPhase.getName() + "\" của đợt \"" + roundName
+                + "\" đã bắt đầu từ hôm nay. Vui lòng chuẩn bị và nộp hồ sơ đúng thời hạn.";
+
+        Map<String, Object> data = new HashMap<>();
+        data.put("departmentId", department.getId());
+        data.put("departmentName", department.getDepartmentName());
+        data.put("phaseId", departmentPhase.getId());
+        data.put("phaseName", departmentPhase.getName());
+        data.put("phaseType", departmentPhase.getPhaseType() != null ? departmentPhase.getPhaseType().name() : null);
+        data.put("roundName", roundName);
+        data.put("roundId", departmentPhase.getInnovationRound() != null
+                ? departmentPhase.getInnovationRound().getId()
+                : null);
+        data.put("phaseStartDate", departmentPhase.getPhaseStartDate() != null
+                ? departmentPhase.getPhaseStartDate().toString()
+                : null);
+        data.put("phaseEndDate", departmentPhase.getPhaseEndDate() != null
+                ? departmentPhase.getPhaseEndDate().toString()
+                : null);
+        data.put("action", "phase_started");
+        data.put("url", "/department-phases?departmentId=" + department.getId());
+        data.put("audience", "DEPARTMENT_MEMBERS");
+
+        Notification notification = createNotification(title, message, NotificationTypeEnum.DEPARTMENT_PHASE_PUBLISHED,
+                data, department, null);
+        Map<String, Object> wsNotification = createWebSocketNotification(
+                notification.getId(), title, message, NotificationTypeEnum.DEPARTMENT_PHASE_PUBLISHED, data);
+
+        for (User user : recipients) {
+            UserNotification userNotification = new UserNotification();
+            userNotification.setUser(user);
+            userNotification.setNotification(notification);
+            userNotification.setIsRead(false);
+            userNotificationRepository.save(userNotification);
+
+            messagingTemplate.convertAndSend("/queue/notifications/" + user.getId(), wsNotification);
+        }
+
+        log.info("Đã gửi thông báo bắt đầu phase '{}' đến {} giảng viên thuộc khoa {}",
+                departmentPhase.getName(), recipients.size(), department.getDepartmentName());
     }
 
     private enum DepartmentPhaseAction {

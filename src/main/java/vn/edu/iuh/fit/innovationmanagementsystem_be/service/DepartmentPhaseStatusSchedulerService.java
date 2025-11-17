@@ -20,9 +20,12 @@ import java.util.List;
 public class DepartmentPhaseStatusSchedulerService {
 
     private final DepartmentPhaseRepository departmentPhaseRepository;
+    private final NotificationService notificationService;
 
-    public DepartmentPhaseStatusSchedulerService(DepartmentPhaseRepository departmentPhaseRepository) {
+    public DepartmentPhaseStatusSchedulerService(DepartmentPhaseRepository departmentPhaseRepository,
+            NotificationService notificationService) {
         this.departmentPhaseRepository = departmentPhaseRepository;
+        this.notificationService = notificationService;
     }
 
     /**
@@ -81,6 +84,41 @@ public class DepartmentPhaseStatusSchedulerService {
         }
 
         return activePhases.size();
+    }
+
+    /**
+     * Chạy mỗi ngày lúc 00:03 để gửi thông báo cho giảng viên khi phase bắt đầu
+     * Chạy sau task cập nhật status (00:02) để đảm bảo phase đã được chuyển sang
+     * ACTIVE
+     * Cron format: giây phút giờ ngày tháng thứ
+     */
+    @Scheduled(cron = "0 3 0 * * ?")
+    @Transactional
+    public void notifyDepartmentMembersWhenPhaseStarts() {
+        log.info("Bắt đầu kiểm tra và gửi thông báo cho giảng viên khi phase bắt đầu...");
+
+        LocalDate today = LocalDate.now();
+        List<DepartmentPhase> phasesStartingToday = departmentPhaseRepository
+                .findDepartmentPhasesStartingToday(today);
+
+        if (phasesStartingToday.isEmpty()) {
+            log.info("Không có phase nào bắt đầu hôm nay");
+            return;
+        }
+
+        int notificationCount = 0;
+        for (DepartmentPhase phase : phasesStartingToday) {
+            try {
+                notificationService.notifyDepartmentMembersWhenPhaseStarts(phase);
+                notificationCount++;
+            } catch (Exception e) {
+                log.error("Lỗi khi gửi thông báo cho phase '{}' (ID: {}): {}",
+                        phase.getName(), phase.getId(), e.getMessage(), e);
+            }
+        }
+
+        log.info("Hoàn thành gửi thông báo. Đã gửi thông báo cho {} phase bắt đầu hôm nay",
+                notificationCount);
     }
 
 }
