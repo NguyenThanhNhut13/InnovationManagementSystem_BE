@@ -13,14 +13,6 @@ pipeline {
     }
     
     stages {
-        stage('Checkout') {
-            steps {
-                git branch: 'feat-giangvien',
-                    url: 'https://github.com/NguyenThanhNhut13/InnovationManagementSystem_BE.git',
-                    credentialsId: 'github-token'
-            }
-        }
-        
         stage('Build') {
             steps {
                 script {
