@@ -81,6 +81,12 @@
 			<artifactId>spring-boot-starter-websocket</artifactId>
 		</dependency>
 
+		<!-- Spring Boot Actuator - Health check & monitoring -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-actuator</artifactId>
+		</dependency>
+
 		<!-- ===== DATABASE & EXTERNAL LIBRARIES ===== -->
 
 		<!-- PostgreSQL Driver - Database connection -->
