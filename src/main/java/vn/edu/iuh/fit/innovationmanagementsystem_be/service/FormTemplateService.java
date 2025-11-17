@@ -591,6 +591,12 @@ public class FormTemplateService {
                                         columnField.setLabel(columnNode.get("label").asText());
                                         columnField.setFieldType(FieldTypeEnum.CONTRIBUTED);
                                         columnField.setContributionConfig(columnContributionConfig);
+                                        columnField.setRequired(columnNode.has("required")
+                                                ? columnNode.get("required").asBoolean()
+                                                : Boolean.FALSE);
+                                        columnField.setIsReadOnly(columnNode.has("isReadOnly")
+                                                ? columnNode.get("isReadOnly").asBoolean()
+                                                : Boolean.FALSE);
                                         // Set formTemplate ID gốc
                                         columnField.setFormTemplate(template);
                                         contributedFields.add(columnField);
@@ -627,6 +633,12 @@ public class FormTemplateService {
                                         childField.setLabel(childNode.get("label").asText());
                                         childField.setFieldType(FieldTypeEnum.CONTRIBUTED);
                                         childField.setContributionConfig(childContributionConfig);
+                                        childField.setRequired(childNode.has("required")
+                                                ? childNode.get("required").asBoolean()
+                                                : Boolean.FALSE);
+                                        childField.setIsReadOnly(childNode.has("isReadOnly")
+                                                ? childNode.get("isReadOnly").asBoolean()
+                                                : Boolean.FALSE);
                                         // Set formTemplate ID gốc
                                         childField.setFormTemplate(template);
                                         contributedFields.add(childField);
