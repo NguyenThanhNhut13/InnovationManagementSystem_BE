@@ -405,9 +405,9 @@ public class InnovationService {
                 InnovationPhase innovationPhase;
                 if (request.getInnovationPhaseId() != null && !request.getInnovationPhaseId().isEmpty()) {
                         innovationPhase = innovationPhaseRepository.findById(request.getInnovationPhaseId())
-                                .orElseThrow(() -> new IdInvalidException(
-                                                "Không tìm thấy giai đoạn sáng kiến với ID: "
-                                                                + request.getInnovationPhaseId()));
+                                        .orElseThrow(() -> new IdInvalidException(
+                                                        "Không tìm thấy giai đoạn sáng kiến với ID: "
+                                                                        + request.getInnovationPhaseId()));
                 } else {
                         innovationPhase = innovationPhaseRepository
                                         .findSubmissionPhaseByOpenRound(InnovationPhaseTypeEnum.SUBMISSION)
@@ -530,7 +530,7 @@ public class InnovationService {
         public InnovationFormDataResponse getInnovationWithFormDataById(String innovationId) {
                 logger.info("===== GET INNOVATION WITH FORM DATA BY ID =====");
                 logger.info("Innovation ID: {}", innovationId);
-                
+
                 // Lấy Innovation
                 Innovation innovation = innovationRepository.findById(innovationId)
                                 .orElseThrow(() -> {
@@ -538,66 +538,68 @@ public class InnovationService {
                                         return new IdInvalidException(
                                                         "Không tìm thấy sáng kiến với ID: " + innovationId);
                                 });
-                
+
                 logger.info("Innovation found: {} - {}", innovation.getId(), innovation.getInnovationName());
 
                 // Lấy tất cả FormData của innovation (đã có FormField được load với relations)
                 List<FormData> formDataList = formDataRepository.findByInnovationIdWithRelations(innovationId);
                 logger.info("FormData count found: {}", formDataList.size());
-                
+
                 if (formDataList.isEmpty()) {
                         logger.warn("Không tìm thấy FormData nào cho Innovation ID: {}", innovationId);
                         // Kiểm tra xem có FormData nào trong database không (không có relations)
                         long totalFormData = formDataRepository.count();
                         logger.info("Total FormData records in database: {}", totalFormData);
-                        
+
                         // Kiểm tra bằng cách query trực tiếp
                         List<FormData> allFormDataForInnovation = formDataRepository.findAll().stream()
-                                        .filter(fd -> fd.getInnovation() != null && 
-                                                     innovationId.equals(fd.getInnovation().getId()))
+                                        .filter(fd -> fd.getInnovation() != null &&
+                                                        innovationId.equals(fd.getInnovation().getId()))
                                         .collect(Collectors.toList());
-                        logger.info("FormData found with direct query (no relations): {}", allFormDataForInnovation.size());
+                        logger.info("FormData found with direct query (no relations): {}",
+                                        allFormDataForInnovation.size());
                 }
 
                 // Map FormData sang FormDataResponse và thêm FormFieldResponse đầy đủ
                 List<FormDataResponse> formDataResponses = new ArrayList<>();
-                
+
                 for (FormData formData : formDataList) {
                         logger.debug("Processing FormData ID: {}", formData.getId());
                         logger.debug("FormData fieldValue: {}", formData.getFieldValue());
-                        
+
                         FormDataResponse formDataResponse = formDataMapper.toFormDataResponse(formData);
-                        logger.debug("Mapped FormDataResponse ID: {}, formFieldKey: {}", 
-                                    formDataResponse.getId(), formDataResponse.getFormFieldKey());
-                        
+                        logger.debug("Mapped FormDataResponse ID: {}, formFieldKey: {}",
+                                        formDataResponse.getId(), formDataResponse.getFormFieldKey());
+
                         // Đảm bảo FormField được load đầy đủ với formTemplate
                         if (formData.getFormField() != null) {
                                 FormField formField = formData.getFormField();
-                                logger.debug("FormField found: ID={}, fieldKey={}, label={}", 
-                                            formField.getId(), formField.getFieldKey(), formField.getLabel());
-                                
+                                logger.debug("FormField found: ID={}, fieldKey={}, label={}",
+                                                formField.getId(), formField.getFieldKey(), formField.getLabel());
+
                                 // Nếu formTemplate chưa được load hoặc cần refresh, load lại
                                 if (formField.getFormTemplate() == null) {
-                                        logger.warn("FormTemplate is null for FormField ID: {}, loading again...", formField.getId());
+                                        logger.warn("FormTemplate is null for FormField ID: {}, loading again...",
+                                                        formField.getId());
                                         formField = formFieldRepository.findByIdWithTemplate(formField.getId())
                                                         .orElse(formField);
                                 }
-                                
+
                                 if (formField.getFormTemplate() != null) {
-                                        logger.debug("FormTemplate loaded: ID={}", 
-                                                    formField.getFormTemplate().getId());
+                                        logger.debug("FormTemplate loaded: ID={}",
+                                                        formField.getFormTemplate().getId());
                                 }
-                                
+
                                 // Map FormField đầy đủ sang FormFieldResponse
                                 FormFieldResponse formFieldResponse = formFieldMapper
                                                 .toFormFieldResponse(formField);
-                                formDataResponse.setFormField(formFieldResponse);
-                                logger.debug("FormFieldResponse mapped with formTemplateId: {}", 
-                                            formFieldResponse.getFormTemplateId());
+                                // formDataResponse.setFormField(formFieldResponse);
+                                logger.debug("FormFieldResponse mapped with formTemplateId: {}",
+                                                formFieldResponse.getFormTemplateId());
                         } else {
                                 logger.warn("FormField is null for FormData ID: {}", formData.getId());
                         }
-                        
+
                         formDataResponses.add(formDataResponse);
                 }
 

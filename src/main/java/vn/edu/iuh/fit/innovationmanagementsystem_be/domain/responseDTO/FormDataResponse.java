@@ -19,8 +19,8 @@ public class FormDataResponse {
     private FieldTypeEnum fieldType;
     private Boolean required;
     private String templateId;
-    
+
     // Thông tin FormField đầy đủ (bao gồm children, tableConfig, options, etc.)
-    private FormFieldResponse formField;
+    // private FormFieldResponse formField;
 
 }
