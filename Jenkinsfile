@@ -25,6 +25,17 @@ pipeline {
             }
         }
         
+        stage('Prepare Environment') {
+            steps {
+                script {
+                    echo 'Creating .env file from Jenkins credentials...'
+                    withCredentials([file(credentialsId: 'env-file', variable: 'ENV_FILE')]) {
+                        sh 'cp $ENV_FILE .env'
+                    }
+                }
+            }
+        }
+        
         stage('Build') {
             steps {
                 script {
@@ -55,16 +66,10 @@ pipeline {
                             --name ${CONTAINER_NAME} \
                             --network innovation-network \
                             -p 8081:8081 \
+                            --env-file .env \
                             -e SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/innovation_management \
-                            -e SPRING_DATASOURCE_USERNAME=postgresADMIN \
-                            -e SPRING_DATASOURCE_PASSWORD=InnovationSystemPostgresql!Secure!Quinton \
                             -e SPRING_DATA_REDIS_HOST=redis \
-                            -e SPRING_DATA_REDIS_PORT=6379 \
-                            -e SPRING_DATA_REDIS_PASSWORD=InnovationSystemRedis!Secure!Quinton \
                             -e MINIO_ENDPOINT=http://minio:9000 \
-                            -e MINIO_ACCESS_KEY=minioADMIN \
-                            -e MINIO_SECRET_KEY=InnovationSystemMinIO!Secure!Quinton \
-                            -e PORT=8081 \
                             ${DOCKER_IMAGE}:latest
                     '''
                 }
