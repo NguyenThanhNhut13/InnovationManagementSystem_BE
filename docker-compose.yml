@@ -9,8 +9,8 @@ services:
       - "5432:5432"
     environment:
       POSTGRES_DB: innovation_management
-      POSTGRES_USER: postgresADMIN
-      POSTGRES_PASSWORD: InnovationSystemPostgresql!Secure!Quinton
+      POSTGRES_USER: ${SPRING_DATASOURCE_USERNAME}
+      POSTGRES_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
       POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --locale=C"
     volumes:
       - postgres_data:/var/lib/postgresql/data
@@ -28,7 +28,7 @@ services:
     container_name: redis
     ports:
       - "6379:6379"
-    command: redis-server --appendonly yes --requirepass InnovationSystemRedis!Secure!Quinton
+    command: redis-server --appendonly yes --requirepass ${SPRING_DATA_REDIS_PASSWORD}
     volumes:
       - redis_data:/data
     restart: unless-stopped
@@ -46,8 +46,8 @@ services:
       - "9000:9000"
       - "9001:9001"
     environment:
-      MINIO_ROOT_USER: minioADMIN
-      MINIO_ROOT_PASSWORD: InnovationSystemMinIO!Secure!Quinton
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY}
     volumes:
       - minio_data:/data
     command: server /data --console-address ":9001"
@@ -85,14 +85,14 @@ services:
       - "8081:8081"
     environment:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/innovation_management
-      - SPRING_DATASOURCE_USERNAME=postgresADMIN
-      - SPRING_DATASOURCE_PASSWORD=InnovationSystemPostgresql!Secure!Quinton
+      - SPRING_DATASOURCE_USERNAME=${SPRING_DATASOURCE_USERNAME}
+      - SPRING_DATASOURCE_PASSWORD=${SPRING_DATASOURCE_PASSWORD}
       - SPRING_DATA_REDIS_HOST=redis
       - SPRING_DATA_REDIS_PORT=6379
-      - SPRING_DATA_REDIS_PASSWORD=InnovationSystemRedis!Secure!Quinton
+      - SPRING_DATA_REDIS_PASSWORD=${SPRING_DATA_REDIS_PASSWORD}
       - MINIO_ENDPOINT=http://minio:9000
-      - MINIO_ACCESS_KEY=minioADMIN
-      - MINIO_SECRET_KEY=InnovationSystemMinIO!Secure!Quinton
+      - MINIO_ACCESS_KEY=${MINIO_ACCESS_KEY}
+      - MINIO_SECRET_KEY=${MINIO_SECRET_KEY}
       - PORT=8081
     depends_on:
       postgres:
