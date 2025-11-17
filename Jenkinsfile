@@ -7,9 +7,7 @@ pipeline {
     }
     
     triggers {
-        // Poll GitHub mỗi 5 phút để check code mới (dùng cho local test)
-        // Có thể tắt khi đã setup webhook
-        pollSCM('H/5 * * * *')
+        githubPush()
     }
     
     stages {
@@ -112,7 +110,7 @@ pipeline {
                     <p><strong>Branch:</strong> ${env.GIT_BRANCH}</p>
                     <p><strong>Status:</strong> <span style="color: green;">SUCCESS</span></p>
                     <hr>
-                    <p>Application is now running at: <a href="http://localhost:8081">http://localhost:8081</a></p>
+                    <p>Application is now running at: <a href="http://192.168.2.32:8081">http://192.168.2.32:8081</a></p>
                 """,
                 to: '${DEFAULT_RECIPIENTS}',
                 mimeType: 'text/html'
