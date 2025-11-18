@@ -28,6 +28,9 @@ public class CreateInnovationWithTemplatesRequest {
 
     private String basisText;
 
+    // HTML render của templates (được encode Base64 từ FE khi status = SUBMITTED)
+    private String htmlContentBase64;
+
     // Innovation ID để update DRAFT sang SUBMITTED (optional)
     private String innovationId;
 

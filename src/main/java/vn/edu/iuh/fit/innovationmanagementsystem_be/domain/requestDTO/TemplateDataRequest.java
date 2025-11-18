@@ -17,4 +17,9 @@ public class TemplateDataRequest {
 
     private Map<String, Object> formData;
 
+    /**
+     * Nội dung HTML của template ở dạng Base64 để phục vụ ký số
+     */
+    private String htmlContentBase64;
+
 }

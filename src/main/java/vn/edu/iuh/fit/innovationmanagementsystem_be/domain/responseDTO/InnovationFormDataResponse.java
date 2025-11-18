@@ -5,6 +5,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.util.List;
+import java.util.ArrayList;
 
 @Data
 @NoArgsConstructor
@@ -15,8 +16,7 @@ public class InnovationFormDataResponse {
 
     private List<FormDataResponse> formDataList;
 
-    // Thêm documentHash để client có thể tạo chữ ký
-    private String documentHash;
+    private List<TemplateSignatureResponse> templateSignatures = new ArrayList<>();
 
     // Số giây đã trễ từ deadline (dương nếu đã quá deadline, 0 nếu chưa quá
     // deadline, null nếu không có deadline)
