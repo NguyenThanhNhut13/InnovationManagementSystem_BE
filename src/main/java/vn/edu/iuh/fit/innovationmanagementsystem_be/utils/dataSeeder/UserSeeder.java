@@ -49,10 +49,10 @@ public class UserSeeder implements DatabaseSeeder {
         }
 
         List<User> users = createDefaultUsers();
-        userRepository.saveAll(users);
+        List<User> savedUsers = userRepository.saveAll(users);
 
         // Tạo UserSignatureProfile cho tất cả user
-        createUserSignatureProfiles(users);
+        createUserSignatureProfiles(savedUsers);
 
         log.info("Đã seed thành công {} {} và {} UserSignatureProfile.", users.size(), getConfigPrefix(), users.size());
     }
