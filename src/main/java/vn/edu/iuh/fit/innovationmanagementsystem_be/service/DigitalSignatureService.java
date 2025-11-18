@@ -21,6 +21,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.UserSignatureProf
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -128,6 +129,30 @@ public class DigitalSignatureService {
 
         if (!isValidSignature) {
             throw new IdInvalidException("Chữ ký không hợp lệ");
+        }
+
+        // 2.1 Xử lý idempotent theo signature_hash để tránh lỗi trùng khóa DB
+        Optional<DigitalSignature> existingByHashOpt = digitalSignatureRepository
+                .findBySignatureHash(request.getSignatureHash());
+
+        if (existingByHashOpt.isPresent()) {
+            DigitalSignature existingByHash = existingByHashOpt.get();
+
+            boolean sameContext = existingByHash.getInnovation() != null
+                    && existingByHash.getInnovation().getId().equals(innovation.getId())
+                    && existingByHash.getDocumentType() == request.getDocumentType()
+                    && existingByHash.getUser() != null
+                    && existingByHash.getUser().getId().equals(currentUser.getId())
+                    && existingByHash.getStatus() == SignatureStatusEnum.SIGNED;
+
+            if (sameContext) {
+                // Ký lại cùng một tài liệu cho cùng sáng kiến, trả về chữ ký cũ (idempotent)
+                return digitalSignatureResponseMapper.toResponse(existingByHash);
+            }
+
+            // Nếu signature_hash đã được dùng cho tài liệu khác thì không cho phép
+            throw new IdInvalidException(
+                    "Chữ ký số này đã được sử dụng cho tài liệu khác. Vui lòng tạo lại tài liệu và ký lại.");
         }
 
         // 3. Tạo timestamp cho chữ ký (RFC 3161) - Disabled for academic project

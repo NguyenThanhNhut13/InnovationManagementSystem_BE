@@ -10,6 +10,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.Signature
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.UserRoleEnum;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface DigitalSignatureRepository extends JpaRepository<DigitalSignature, String> {
@@ -40,4 +41,6 @@ public interface DigitalSignatureRepository extends JpaRepository<DigitalSignatu
                         DocumentTypeEnum documentType,
                         UserRoleEnum signedAsRole,
                         SignatureStatusEnum status);
+
+        Optional<DigitalSignature> findBySignatureHash(String signatureHash);
 }
