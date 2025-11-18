@@ -813,6 +813,175 @@ public class InnovationService {
                 return response;
         }
 
+        // 6. Lấy Innovation & FormData theo ID của user hiện tại (chỉ cho phép xem sáng
+        // kiến của chính mình)
+        public InnovationFormDataResponse getMyInnovationWithFormDataById(String innovationId) {
+                logger.info("===== GET MY INNOVATION WITH FORM DATA BY ID =====");
+                logger.info("Innovation ID: {}", innovationId);
+
+                String currentUserId = userService.getCurrentUserId();
+
+                Innovation innovation = innovationRepository.findById(innovationId)
+                                .orElseThrow(() -> {
+                                        logger.error("Không tìm thấy sáng kiến với ID: {}", innovationId);
+                                        return new IdInvalidException(
+                                                        "Không tìm thấy sáng kiến với ID: " + innovationId);
+                                });
+
+                if (innovation.getUser() == null || !innovation.getUser().getId().equals(currentUserId)) {
+                        logger.error("User {} không có quyền xem sáng kiến {}", currentUserId, innovationId);
+                        throw new IdInvalidException("Bạn không có quyền xem sáng kiến này");
+                }
+
+                logger.info("Innovation found: {} - {}", innovation.getId(), innovation.getInnovationName());
+
+                List<FormData> formDataList = formDataRepository.findByInnovationIdWithRelations(innovationId);
+                logger.info("FormData count found: {}", formDataList.size());
+
+                List<FormDataResponse> formDataResponses = new ArrayList<>();
+
+                for (FormData formData : formDataList) {
+                        logger.debug("Processing FormData ID: {}", formData.getId());
+
+                        FormDataResponse formDataResponse = formDataMapper.toFormDataResponse(formData);
+
+                        if (formData.getFormField() != null) {
+                                FormField formField = formData.getFormField();
+
+                                if (formField.getFormTemplate() == null) {
+                                        logger.warn("FormTemplate is null for FormField ID: {}, loading again...",
+                                                        formField.getId());
+                                        formField = formFieldRepository.findByIdWithTemplate(formField.getId())
+                                                        .orElse(formField);
+                                }
+
+                                if (formField.getFormTemplate() != null) {
+                                        logger.debug("FormTemplate loaded: ID={}",
+                                                        formField.getFormTemplate().getId());
+                                }
+
+                                FormFieldResponse formFieldResponse = formFieldMapper
+                                                .toFormFieldResponse(formField);
+                                logger.debug("FormFieldResponse mapped with formTemplateId: {}",
+                                                formFieldResponse.getFormTemplateId());
+                        } else {
+                                logger.warn("FormField is null for FormData ID: {}", formData.getId());
+                        }
+
+                        formDataResponses.add(formDataResponse);
+                }
+
+                logger.info("Total FormDataResponse created: {}", formDataResponses.size());
+
+                InnovationFormDataResponse response = new InnovationFormDataResponse();
+                InnovationResponse innovationResponse = innovationMapper.toInnovationResponse(innovation);
+                Long timeRemainingSeconds = getSubmissionTimeRemainingSeconds(innovation);
+                innovationResponse.setSubmissionTimeRemainingSeconds(timeRemainingSeconds);
+                response.setInnovation(innovationResponse);
+                response.setFormDataList(formDataResponses);
+                response.setDocumentHash(null);
+                response.setSubmissionTimeRemainingSeconds(timeRemainingSeconds);
+
+                logger.info("===== END GET MY INNOVATION WITH FORM DATA =====");
+                return response;
+        }
+
+        // 7. Lấy Innovation & FormData theo ID cho QUAN_TRI_VIEN_KHOA và TRUONG_KHOA
+        // (chỉ cho phép xem sáng kiến của phòng ban mình)
+        public InnovationFormDataResponse getDepartmentInnovationWithFormDataById(String innovationId) {
+                logger.info("===== GET DEPARTMENT INNOVATION WITH FORM DATA BY ID =====");
+                logger.info("Innovation ID: {}", innovationId);
+
+                User currentUser = userService.getCurrentUser();
+
+                boolean hasQuanTriVienKhoaRole = currentUser.getUserRoles().stream()
+                                .anyMatch(userRole -> userRole.getRole()
+                                                .getRoleName() == UserRoleEnum.QUAN_TRI_VIEN_KHOA);
+
+                boolean hasTruongKhoaRole = currentUser.getUserRoles().stream()
+                                .anyMatch(userRole -> userRole.getRole().getRoleName() == UserRoleEnum.TRUONG_KHOA);
+
+                if (!hasQuanTriVienKhoaRole && !hasTruongKhoaRole) {
+                        logger.error("User {} không có quyền QUAN_TRI_VIEN_KHOA hoặc TRUONG_KHOA", currentUser.getId());
+                        throw new IdInvalidException(
+                                        "Chỉ QUAN_TRI_VIEN_KHOA hoặc TRUONG_KHOA mới có quyền xem sáng kiến của phòng ban");
+                }
+
+                Innovation innovation = innovationRepository.findById(innovationId)
+                                .orElseThrow(() -> {
+                                        logger.error("Không tìm thấy sáng kiến với ID: {}", innovationId);
+                                        return new IdInvalidException(
+                                                        "Không tìm thấy sáng kiến với ID: " + innovationId);
+                                });
+
+                if (innovation.getDepartment() == null || currentUser.getDepartment() == null) {
+                        logger.error("Innovation hoặc User không có phòng ban");
+                        throw new IdInvalidException("Không thể xác định phòng ban của sáng kiến hoặc người dùng");
+                }
+
+                if (!innovation.getDepartment().getId().equals(currentUser.getDepartment().getId())) {
+                        logger.error("User {} không có quyền xem sáng kiến {} của phòng ban khác", currentUser.getId(),
+                                        innovationId);
+                        throw new IdInvalidException(
+                                        "Bạn chỉ có thể xem sáng kiến của phòng ban mình. Phòng ban của sáng kiến: "
+                                                        + innovation.getDepartment().getDepartmentName()
+                                                        + ", Phòng ban của bạn: "
+                                                        + currentUser.getDepartment().getDepartmentName());
+                }
+
+                logger.info("Innovation found: {} - {}", innovation.getId(), innovation.getInnovationName());
+
+                List<FormData> formDataList = formDataRepository.findByInnovationIdWithRelations(innovationId);
+                logger.info("FormData count found: {}", formDataList.size());
+
+                List<FormDataResponse> formDataResponses = new ArrayList<>();
+
+                for (FormData formData : formDataList) {
+                        logger.debug("Processing FormData ID: {}", formData.getId());
+
+                        FormDataResponse formDataResponse = formDataMapper.toFormDataResponse(formData);
+
+                        if (formData.getFormField() != null) {
+                                FormField formField = formData.getFormField();
+
+                                if (formField.getFormTemplate() == null) {
+                                        logger.warn("FormTemplate is null for FormField ID: {}, loading again...",
+                                                        formField.getId());
+                                        formField = formFieldRepository.findByIdWithTemplate(formField.getId())
+                                                        .orElse(formField);
+                                }
+
+                                if (formField.getFormTemplate() != null) {
+                                        logger.debug("FormTemplate loaded: ID={}",
+                                                        formField.getFormTemplate().getId());
+                                }
+
+                                FormFieldResponse formFieldResponse = formFieldMapper
+                                                .toFormFieldResponse(formField);
+                                logger.debug("FormFieldResponse mapped with formTemplateId: {}",
+                                                formFieldResponse.getFormTemplateId());
+                        } else {
+                                logger.warn("FormField is null for FormData ID: {}", formData.getId());
+                        }
+
+                        formDataResponses.add(formDataResponse);
+                }
+
+                logger.info("Total FormDataResponse created: {}", formDataResponses.size());
+
+                InnovationFormDataResponse response = new InnovationFormDataResponse();
+                InnovationResponse innovationResponse = innovationMapper.toInnovationResponse(innovation);
+                Long timeRemainingSeconds = getSubmissionTimeRemainingSeconds(innovation);
+                innovationResponse.setSubmissionTimeRemainingSeconds(timeRemainingSeconds);
+                response.setInnovation(innovationResponse);
+                response.setFormDataList(formDataResponses);
+                response.setDocumentHash(null);
+                response.setSubmissionTimeRemainingSeconds(timeRemainingSeconds);
+
+                logger.info("===== END GET DEPARTMENT INNOVATION WITH FORM DATA =====");
+                return response;
+        }
+
         // // 4. Cập nhật FormData sáng kiến (Cập nhật FormData cho sáng kiến đã tồn
         // tại)
         // public InnovationFormDataResponse updateInnovationFormData(String

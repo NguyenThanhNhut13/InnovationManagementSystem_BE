@@ -12,6 +12,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
@@ -99,6 +100,40 @@ public class InnovationController {
                 return ResponseEntity.ok(response);
         }
 
+        // 5. Lấy sáng kiến by Id của user hiện tại (chỉ cho phép xem sáng kiến của
+        // chính mình)
+        @GetMapping("/my-innovations/{id}")
+        @PreAuthorize("hasAnyRole('GIANG_VIEN')")
+        @ApiMessage("Lấy thông tin sáng kiến của tôi bằng id thành công")
+        @Operation(summary = "Get My Innovation by ID", description = "Get innovation details with all form data and form fields by innovation ID (only for current user's innovations)")
+        @ApiResponses(value = {
+                        @ApiResponse(responseCode = "200", description = "Innovation with form data and form fields retrieved successfully", content = @Content(schema = @Schema(implementation = InnovationFormDataResponse.class))),
+                        @ApiResponse(responseCode = "404", description = "Innovation not found"),
+                        @ApiResponse(responseCode = "403", description = "Forbidden - You can only view your own innovations"),
+                        @ApiResponse(responseCode = "401", description = "Unauthorized")
+        })
+        public ResponseEntity<InnovationFormDataResponse> getMyInnovationById(
+                        @Parameter(description = "Innovation ID", required = true) @PathVariable String id) {
+                return ResponseEntity.ok(innovationService.getMyInnovationWithFormDataById(id));
+        }
+
+        // 6. Lấy sáng kiến by Id cho QUAN_TRI_VIEN_KHOA và TRUONG_KHOA (chỉ cho phép
+        // xem sáng kiến của phòng ban mình)
+        @GetMapping("/department-innovations/{id}")
+        @PreAuthorize("hasAnyRole('QUAN_TRI_VIEN_KHOA', 'TRUONG_KHOA')")
+        @ApiMessage("Lấy thông tin sáng kiến của phòng ban bằng id thành công")
+        @Operation(summary = "Get Department Innovation by ID", description = "Get innovation details with all form data and form fields by innovation ID (only for QUAN_TRI_VIEN_KHOA and TRUONG_KHOA to view innovations of their department)")
+        @ApiResponses(value = {
+                        @ApiResponse(responseCode = "200", description = "Innovation with form data and form fields retrieved successfully", content = @Content(schema = @Schema(implementation = InnovationFormDataResponse.class))),
+                        @ApiResponse(responseCode = "404", description = "Innovation not found"),
+                        @ApiResponse(responseCode = "403", description = "Forbidden - You can only view innovations of your department"),
+                        @ApiResponse(responseCode = "401", description = "Unauthorized")
+        })
+        public ResponseEntity<InnovationFormDataResponse> getDepartmentInnovationById(
+                        @Parameter(description = "Innovation ID", required = true) @PathVariable String id) {
+                return ResponseEntity.ok(innovationService.getDepartmentInnovationWithFormDataById(id));
+        }
+
         // 1. Lấy danh sách sáng kiến
         // @GetMapping("/innovations")
         // @ApiMessage("Lấy danh sách sáng kiến thành công")
@@ -118,20 +153,6 @@ public class InnovationController {
         // return ResponseEntity.ok(innovationService.getAllInnovations(specification,
         // pageable));
         // }
-
-        // 2. Lấy sáng kiến by Id (bao gồm FormData và FormField)
-        @GetMapping("/innovations/{id}")
-        @ApiMessage("Lấy thông tin sáng kiến bằng id thành công")
-        @Operation(summary = "Get Innovation by ID", description = "Get innovation details with all form data and form fields by innovation ID")
-        @ApiResponses(value = {
-                        @ApiResponse(responseCode = "200", description = "Innovation with form data and form fields retrieved successfully", content = @Content(schema = @Schema(implementation = InnovationFormDataResponse.class))),
-                        @ApiResponse(responseCode = "404", description = "Innovation not found"),
-                        @ApiResponse(responseCode = "401", description = "Unauthorized")
-        })
-        public ResponseEntity<InnovationFormDataResponse> getInnovationById(
-                        @Parameter(description = "Innovation ID", required = true) @PathVariable String id) {
-                return ResponseEntity.ok(innovationService.getInnovationWithFormDataById(id));
-        }
 
         // 4. Cập nhật FormData sáng kiến
         // @PutMapping("/innovations/{innovationId}/form-data")
