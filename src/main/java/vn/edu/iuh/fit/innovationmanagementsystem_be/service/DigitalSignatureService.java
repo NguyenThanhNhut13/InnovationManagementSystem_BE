@@ -13,6 +13,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.DigitalSig
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.DigitalSignatureResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.SignatureStatusResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.UserDocumentSignatureStatusResponse;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.VerifyDigitalSignatureResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.exception.IdInvalidException;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.mapper.DigitalSignatureResponseMapper;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.DigitalSignatureRepository;
@@ -298,7 +299,8 @@ public class DigitalSignatureService {
                     documentType,
                     signedAsRole,
                     false,
-                    null);
+                    null,
+                    false);
         }
 
         DigitalSignature latestSignature = latestSignatureOpt.get();
@@ -308,16 +310,13 @@ public class DigitalSignatureService {
                 latestSignature.getSignatureHash(),
                 signatureProfile.getPublicKey());
 
-        if (!isValidSignature) {
-            throw new IdInvalidException("Chữ ký không hợp lệ");
-        }
-
         return new UserDocumentSignatureStatusResponse(
                 innovationId,
                 documentType,
                 signedAsRole,
-                true,
-                latestSignature.getSignAt());
+                latestSignature.getStatus() == SignatureStatusEnum.SIGNED,
+                latestSignature.getSignAt(),
+                isValidSignature);
     }
 
     // Helper methods
@@ -434,11 +433,40 @@ public class DigitalSignatureService {
     /*
      * Method để xác thực chữ ký bằng public key của user
      */
-    public boolean verifyDocumentSignature(String documentHash, String signatureHash, String userId) {
+    public VerifyDigitalSignatureResponse verifyDocumentSignature(String documentHash, String signatureHash,
+            String userId) {
         UserSignatureProfile signatureProfile = userSignatureProfileRepository.findByUserId(userId)
                 .orElseThrow(() -> new IdInvalidException("Không tìm thấy hồ sơ chữ ký số của user"));
 
-        return keyManagementService.verifySignature(documentHash, signatureHash, signatureProfile.getPublicKey());
+        boolean isValid = keyManagementService.verifySignature(documentHash, signatureHash,
+                signatureProfile.getPublicKey());
+
+        VerifyDigitalSignatureResponse response = new VerifyDigitalSignatureResponse();
+        response.setVerified(isValid);
+
+        Optional<DigitalSignature> digitalSignatureOpt = digitalSignatureRepository.findBySignatureHash(signatureHash);
+        if (digitalSignatureOpt.isPresent()) {
+            DigitalSignature digitalSignature = digitalSignatureOpt.get();
+
+            response.setDocumentType(digitalSignature.getDocumentType());
+            response.setSignedAsRole(digitalSignature.getSignedAsRole());
+            response.setSignAt(digitalSignature.getSignAt());
+
+            User signer = digitalSignature.getUser();
+            if (signer != null) {
+                response.setUserId(signer.getId());
+                response.setUserFullName(signer.getFullName());
+                response.setUserPersonnelId(signer.getPersonnelId());
+            }
+
+            Innovation innovation = digitalSignature.getInnovation();
+            if (innovation != null) {
+                response.setInnovationId(innovation.getId());
+                response.setInnovationName(innovation.getInnovationName());
+            }
+        }
+
+        return response;
     }
 
     /*

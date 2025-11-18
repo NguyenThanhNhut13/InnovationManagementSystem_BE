@@ -1,6 +1,5 @@
 package vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO;
 
-import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.DocumentTypeEnum;
@@ -10,13 +9,21 @@ import java.time.LocalDateTime;
 
 @Data
 @NoArgsConstructor
-@AllArgsConstructor
-public class UserDocumentSignatureStatusResponse {
+public class VerifyDigitalSignatureResponse {
 
-    private String innovationId;
+    private boolean verified;
     private DocumentTypeEnum documentType;
     private UserRoleEnum signedAsRole;
-    private boolean signed;
-    private LocalDateTime signedAt;
-    private boolean verified;
+
+    // Thông tin người ký
+    private String userId;
+    private String userFullName;
+    private String userPersonnelId;
+
+    // Thời gian ký
+    private LocalDateTime signAt;
+
+    // Thông tin sáng kiến (nếu có)
+    private String innovationId;
+    private String innovationName;
 }

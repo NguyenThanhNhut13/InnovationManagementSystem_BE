@@ -12,8 +12,10 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.VerifyDigitalSignatureRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.UserDocumentSignatureStatusRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.UserDocumentSignatureStatusResponse;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.VerifyDigitalSignatureResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.service.DigitalSignatureService;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.annotation.ApiMessage;
 
@@ -48,5 +50,26 @@ public class DigitalSignatureController {
                         request.getDocumentType(),
                         request.getSignedAsRole());
         return ResponseEntity.ok(result);
+    }
+
+    // 2. Xác thực chữ ký dựa trên document hash, signature hash và user ID
+    @PostMapping("/digital-signatures/verify")
+    @ApiMessage("Xác thực chữ ký số thành công")
+    @Operation(summary = "Verify digital signature", description = "Nhận JSON gồm document hash, signature hash và user ID, sử dụng public key lưu trong hồ sơ chữ ký số để xác thực chữ ký")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Trả về trạng thái xác thực chữ ký", content = @Content(schema = @Schema(implementation = VerifyDigitalSignatureResponse.class))),
+            @ApiResponse(responseCode = "400", description = "Yêu cầu không hợp lệ"),
+            @ApiResponse(responseCode = "401", description = "Không được phép truy cập"),
+            @ApiResponse(responseCode = "404", description = "Không tìm thấy dữ liệu liên quan")
+    })
+    public ResponseEntity<VerifyDigitalSignatureResponse> verifyDigitalSignature(
+            @RequestBody VerifyDigitalSignatureRequest request) {
+
+        VerifyDigitalSignatureResponse response = digitalSignatureService.verifyDocumentSignature(
+                request.getDocumentHash(),
+                request.getSignatureHash(),
+                request.getUserId());
+
+        return ResponseEntity.ok(response);
     }
 }
