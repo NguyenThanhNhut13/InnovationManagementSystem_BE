@@ -14,6 +14,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.Notification;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.User;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.UserNotification;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationPhaseTypeEnum;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationStatusEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.NotificationTypeEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.UserRoleEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.NotificationDetailResponse;
@@ -1024,6 +1025,71 @@ public class NotificationService {
 
                 log.info("Đã gửi thông báo chuẩn bị chấm điểm cho TV_HOI_DONG_KHOA của khoa {}",
                                 department.getDepartmentName());
+        }
+
+        @Transactional
+        public void notifyUserOnInnovationCreated(String userId, String innovationId, String innovationName,
+                        InnovationStatusEnum status) {
+                try {
+                        User user = userRepository.findById(userId)
+                                        .orElseThrow(() -> new IdInvalidException(
+                                                        "Không tìm thấy user với ID: " + userId));
+
+                        String statusDisplayName = getStatusDisplayName(status);
+
+                        String title = "Chúc mừng! Bạn đã tạo sáng kiến thành công";
+                        String message = String.format(
+                                        "Chúc mừng bạn vừa tạo sáng kiến \"%s\" thành công. Sáng kiến đang ở trạng thái: %s",
+                                        innovationName, statusDisplayName);
+
+                        Map<String, Object> data = new HashMap<>();
+                        data.put("innovationId", innovationId);
+                        data.put("innovationName", innovationName);
+                        data.put("status", status.name());
+                        data.put("statusDisplayName", statusDisplayName);
+                        data.put("action", "innovation_created");
+                        data.put("url", "/innovations/" + innovationId);
+
+                        Notification notification = createNotification(title, message,
+                                        NotificationTypeEnum.INNOVATION_SUBMITTED, data, user.getDepartment(), null);
+
+                        Map<String, Object> wsNotification = createWebSocketNotification(
+                                        notification.getId(), title, message, NotificationTypeEnum.INNOVATION_SUBMITTED,
+                                        data);
+
+                        UserNotification userNotification = new UserNotification();
+                        userNotification.setUser(user);
+                        userNotification.setNotification(notification);
+                        userNotification.setIsRead(false);
+                        userNotificationRepository.save(userNotification);
+
+                        String userDestination = "/queue/notifications/" + user.getId();
+                        messagingTemplate.convertAndSend(userDestination, wsNotification);
+
+                        log.info("Đã gửi thông báo tạo sáng kiến thành công cho user: {} (Innovation: {})",
+                                        user.getFullName(), innovationName);
+                } catch (Exception e) {
+                        log.error("Lỗi khi gửi thông báo tạo sáng kiến cho user {}: {}", userId, e.getMessage(), e);
+                }
+        }
+
+        private String getStatusDisplayName(InnovationStatusEnum status) {
+                if (status == null) {
+                        return "Không xác định";
+                }
+                return switch (status) {
+                        case DRAFT -> "Nháp";
+                        case SUBMITTED -> "Đã nộp";
+                        case PENDING_KHOA_REVIEW -> "Chờ khoa duyệt";
+                        case KHOA_REVIEWED -> "Khoa đã duyệt";
+                        case KHOA_APPROVED -> "Khoa đã phê duyệt";
+                        case KHOA_REJECTED -> "Khoa đã từ chối";
+                        case PENDING_TRUONG_REVIEW -> "Chờ trưởng khoa duyệt";
+                        case TRUONG_REVIEWED -> "Trưởng khoa đã duyệt";
+                        case TRUONG_APPROVED -> "Trưởng khoa đã phê duyệt";
+                        case TRUONG_REJECTED -> "Trưởng khoa đã từ chối";
+                        case FINAL_APPROVED -> "Đã phê duyệt cuối cùng";
+                };
         }
 
         private enum DepartmentPhaseAction {

@@ -85,6 +85,7 @@ public class InnovationService {
         private final ObjectMapper objectMapper;
         private final CoInnovationRepository coInnovationRepository;
         private final UserRepository userRepository;
+        private final NotificationService notificationService;
 
         public InnovationService(InnovationRepository innovationRepository,
                         InnovationPhaseRepository innovationPhaseRepository,
@@ -102,7 +103,8 @@ public class InnovationService {
                         InnovationRoundRepository innovationRoundRepository,
                         ObjectMapper objectMapper,
                         CoInnovationRepository coInnovationRepository,
-                        UserRepository userRepository) {
+                        UserRepository userRepository,
+                        NotificationService notificationService) {
                 this.innovationRepository = innovationRepository;
                 this.innovationPhaseRepository = innovationPhaseRepository;
                 this.formDataService = formDataService;
@@ -120,6 +122,7 @@ public class InnovationService {
                 this.objectMapper = objectMapper;
                 this.coInnovationRepository = coInnovationRepository;
                 this.userRepository = userRepository;
+                this.notificationService = notificationService;
         }
 
         // 1. Lấy tất cả sáng kiến của user hiện tại với filter
@@ -517,6 +520,17 @@ public class InnovationService {
 
                 // Xử lý đồng sáng kiến từ formData
                 processCoInnovations(savedInnovation, request.getTemplates());
+
+                // Gửi thông báo cho user khi tạo sáng kiến thành công
+                try {
+                        notificationService.notifyUserOnInnovationCreated(
+                                        currentUser.getId(),
+                                        savedInnovation.getId(),
+                                        savedInnovation.getInnovationName(),
+                                        savedInnovation.getStatus());
+                } catch (Exception e) {
+                        logger.error("Lỗi khi gửi thông báo tạo sáng kiến: {}", e.getMessage(), e);
+                }
 
                 InnovationFormDataResponse response = new InnovationFormDataResponse();
                 response.setInnovation(innovationMapper.toInnovationResponse(savedInnovation));
