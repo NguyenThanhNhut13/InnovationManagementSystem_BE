@@ -9,6 +9,5 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class Base64EncodeResponse {
 
-    private String plainText;
     private String base64Text;
 }

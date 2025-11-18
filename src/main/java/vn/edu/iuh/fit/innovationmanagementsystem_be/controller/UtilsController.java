@@ -27,7 +27,6 @@ import org.springframework.beans.factory.annotation.Value;
 import jakarta.validation.Valid;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.Base64DecodeRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.Base64EncodeRequest;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.Base64DecodeResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.Base64EncodeResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.FileExistsResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.FileInfoResponse;
@@ -451,24 +450,21 @@ public class UtilsController {
             @Valid @RequestBody Base64EncodeRequest request) {
 
         String encoded = base64Service.encode(request.getPlainText());
-        Base64EncodeResponse response = new Base64EncodeResponse(
-                request.getPlainText(),
-                encoded);
+        Base64EncodeResponse response = new Base64EncodeResponse(encoded);
         return ResponseEntity.ok(response);
     }
 
     // 11. Decode Base64 to text
     @PostMapping("/utils/base64/decode")
     @ApiMessage("Decode Base64 thành text thành công")
-    @Operation(summary = "Decode Base64 to text", description = "Nhận chuỗi Base64 và trả về plain text để test.")
-    public ResponseEntity<Base64DecodeResponse> decodeBase64(
+    @Operation(summary = "Decode Base64 to HTML", description = "Nhận chuỗi Base64 và trả về nội dung HTML để hiển thị.")
+    public ResponseEntity<String> decodeBase64(
             @Valid @RequestBody Base64DecodeRequest request) {
 
         String decoded = base64Service.decode(request.getBase64Text());
-        Base64DecodeResponse response = new Base64DecodeResponse(
-                request.getBase64Text(),
-                decoded);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok()
+                .contentType(MediaType.TEXT_HTML)
+                .body(decoded);
     }
 
 }

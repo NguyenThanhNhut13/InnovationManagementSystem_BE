@@ -39,6 +39,11 @@ public class FormatRestResponse implements ResponseBodyAdvice<Object> {
             return false;
         }
 
+        // Skip formatting for base64 endpoints that return raw strings
+        if (methodName.contains("encodeBase64") || methodName.contains("decodeBase64")) {
+            return false;
+        }
+
         // Skip formatting for digital signature endpoints that return raw strings
         if (methodName.contains("generateSignature") || methodName.contains("generateDocumentHash")) {
             return false;
