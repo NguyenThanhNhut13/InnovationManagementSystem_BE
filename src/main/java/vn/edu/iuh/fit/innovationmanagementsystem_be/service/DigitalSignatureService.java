@@ -10,16 +10,18 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.DocumentT
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.SignatureStatusEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.UserRoleEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.DigitalSignatureRequest;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.mapper.DigitalSignatureResponseMapper;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.DigitalSignatureResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.SignatureStatusResponse;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.UserDocumentSignatureStatusResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.exception.IdInvalidException;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.mapper.DigitalSignatureResponseMapper;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.DigitalSignatureRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.InnovationRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.UserSignatureProfileRepository;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -92,27 +94,7 @@ public class DigitalSignatureService {
                 throw new IdInvalidException("Certificate đã hết hạn");
             }
 
-            // Sử dụng certificateManagementService để validate certificate chain
-            try {
-                // Validate certificate chain bằng cách kiểm tra certificate data
-                CertificateValidationService.CertificateValidationResult chainValidation = certificateValidationService
-                        .validateX509Certificate(signatureProfile.getCertificateData());
-                if (!chainValidation.isValid()) {
-                    throw new IdInvalidException("Certificate chain không hợp lệ: " +
-                            String.join(", ", chainValidation.getErrors()));
-                }
-
-                // Sử dụng certificateManagementService để setup certificate nếu cần
-                if (signatureProfile.getCertificateChain() == null) {
-                    certificateManagementService.setupUserCertificate(
-                            currentUser.getId(),
-                            signatureProfile.getCertificateData(),
-                            hsmEncryptionService.decryptPrivateKey(signatureProfile.getEncryptedPrivateKey()),
-                            signatureProfile.getCertificateData());
-                }
-            } catch (Exception e) {
-                throw new IdInvalidException("Certificate chain không hợp lệ: " + e.getMessage());
-            }
+            validateAndSetupCertificateIfNeeded(signatureProfile, currentUser);
         }
 
         if (digitalSignatureRepository.existsByInnovationIdAndDocumentTypeAndUserIdAndStatus(
@@ -264,6 +246,80 @@ public class DigitalSignatureService {
                 .collect(Collectors.toList());
     }
 
+    // 6. Kiểm tra trạng thái chữ ký của user hiện tại đối với một tài liệu
+    public UserDocumentSignatureStatusResponse getCurrentUserDocumentSignatureStatus(
+            String innovationId,
+            DocumentTypeEnum documentType,
+            UserRoleEnum signedAsRole) {
+
+        Innovation innovation = innovationRepository.findById(innovationId)
+                .orElseThrow(() -> new IdInvalidException("Không tìm thấy sáng kiến với ID: " + innovationId));
+
+        User currentUser = userService.getCurrentUser();
+
+        validateSigningPermission(innovation, currentUser, signedAsRole);
+
+        UserSignatureProfile signatureProfile = this.userSignatureProfileRepository.findByUserId(currentUser.getId())
+                .orElseThrow(() -> new IdInvalidException("Người dùng chưa có hồ sơ chữ ký số"));
+
+        if (signatureProfile.getCertificateData() != null) {
+            CertificateValidationService.CertificateValidationResult certValidation = certificateValidationService
+                    .validateX509Certificate(signatureProfile.getCertificateData());
+
+            if (!certValidation.isValid()) {
+                throw new IdInvalidException("Certificate không hợp lệ: " +
+                        String.join(", ", certValidation.getErrors()));
+            }
+
+            CertificateValidationService.CertificateExpirationResult expirationResult = certificateValidationService
+                    .checkCertificateExpiration(signatureProfile.getCertificateData());
+
+            if (expirationResult.isExpired()) {
+                throw new IdInvalidException("Certificate đã hết hạn");
+            }
+
+            validateAndSetupCertificateIfNeeded(signatureProfile, currentUser);
+        }
+
+        List<DigitalSignature> signatures = digitalSignatureRepository
+                .findByInnovationIdAndDocumentTypeWithRelations(innovationId, documentType);
+
+        Optional<DigitalSignature> latestSignatureOpt = signatures.stream()
+                .filter(sig -> sig.getUser() != null
+                        && sig.getUser().getId().equals(currentUser.getId())
+                        && sig.getSignedAsRole() == signedAsRole
+                        && sig.getStatus() == SignatureStatusEnum.SIGNED)
+                .sorted(Comparator.comparing(DigitalSignature::getSignAt).reversed())
+                .findFirst();
+
+        if (latestSignatureOpt.isEmpty()) {
+            return new UserDocumentSignatureStatusResponse(
+                    innovationId,
+                    documentType,
+                    signedAsRole,
+                    false,
+                    null);
+        }
+
+        DigitalSignature latestSignature = latestSignatureOpt.get();
+
+        boolean isValidSignature = keyManagementService.verifySignature(
+                latestSignature.getDocumentHash(),
+                latestSignature.getSignatureHash(),
+                signatureProfile.getPublicKey());
+
+        if (!isValidSignature) {
+            throw new IdInvalidException("Chữ ký không hợp lệ");
+        }
+
+        return new UserDocumentSignatureStatusResponse(
+                innovationId,
+                documentType,
+                signedAsRole,
+                true,
+                latestSignature.getSignAt());
+    }
+
     // Helper methods
     private void validateSigningPermission(Innovation innovation, User currentUser, UserRoleEnum signedAsRole) {
         // Kiểm tra xem user có phải là tác giả của sáng kiến không
@@ -298,6 +354,27 @@ public class DigitalSignatureService {
                                 "Phòng ban của sáng kiến: " + innovation.getDepartment().getId() +
                                 ", Phòng ban của bạn: " + currentUser.getDepartment().getId());
             }
+        }
+    }
+
+    private void validateAndSetupCertificateIfNeeded(UserSignatureProfile signatureProfile, User currentUser) {
+        try {
+            CertificateValidationService.CertificateValidationResult chainValidation = certificateValidationService
+                    .validateX509Certificate(signatureProfile.getCertificateData());
+            if (!chainValidation.isValid()) {
+                throw new IdInvalidException("Certificate chain không hợp lệ: " +
+                        String.join(", ", chainValidation.getErrors()));
+            }
+
+            if (signatureProfile.getCertificateChain() == null) {
+                certificateManagementService.setupUserCertificate(
+                        currentUser.getId(),
+                        signatureProfile.getCertificateData(),
+                        hsmEncryptionService.decryptPrivateKey(signatureProfile.getEncryptedPrivateKey()),
+                        signatureProfile.getCertificateData());
+            }
+        } catch (Exception e) {
+            throw new IdInvalidException("Certificate chain không hợp lệ: " + e.getMessage());
         }
     }
 
