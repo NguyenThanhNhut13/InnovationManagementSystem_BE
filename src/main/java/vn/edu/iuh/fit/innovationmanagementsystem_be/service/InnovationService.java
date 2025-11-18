@@ -33,6 +33,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.FormDataR
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.FormFieldResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationFormDataResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationResponse;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.MyInnovationResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationStatisticsDTO;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationAcademicYearStatisticsDTO;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.UpcomingDeadlineResponse;
@@ -153,9 +154,34 @@ public class InnovationService {
                 Specification<Innovation> combinedSpec = userSpec.and(specification);
 
                 Page<Innovation> innovations = innovationRepository.findAll(combinedSpec, pageable);
-                Page<InnovationResponse> responses = innovations.map(innovation -> {
-                        InnovationResponse response = innovationMapper.toInnovationResponse(innovation);
-                        response.setSubmissionTimeRemainingSeconds(getSubmissionTimeRemainingSeconds(innovation));
+
+                List<String> innovationIds = innovations.getContent().stream()
+                                .map(Innovation::getId)
+                                .collect(Collectors.toList());
+
+                List<FormData> allFormData = innovationIds.isEmpty()
+                                ? new ArrayList<>()
+                                : formDataRepository.findByInnovationIdsWithRelations(innovationIds);
+
+                Map<String, Integer> authorCountMap = allFormData.stream()
+                                .filter(fd -> fd.getFormField() != null
+                                                && "danh_sach_tac_gia".equals(fd.getFormField().getFieldKey()))
+                                .collect(Collectors.groupingBy(
+                                                fd -> fd.getInnovation().getId(),
+                                                Collectors.collectingAndThen(
+                                                                Collectors.toList(),
+                                                                list -> list.stream()
+                                                                                .mapToInt(this::countAuthorsFromFormData)
+                                                                                .max()
+                                                                                .orElse(0))));
+
+                int startIndex = pageable.getPageNumber() * pageable.getPageSize();
+                final int[] index = { 0 };
+                Page<MyInnovationResponse> responses = innovations.map(innovation -> {
+                        int authorCount = authorCountMap.getOrDefault(innovation.getId(), 0);
+                        MyInnovationResponse response = toMyInnovationResponse(innovation,
+                                        startIndex + index[0] + 1, authorCount);
+                        index[0]++;
                         return response;
                 });
                 return Utils.toResultPaginationDTO(responses, pageable);
@@ -1617,6 +1643,62 @@ public class InnovationService {
                                         e.getMessage());
                         return null;
                 }
+        }
+
+        /**
+         * Đếm số tác giả từ FormData có fieldKey = "danh_sach_tac_gia"
+         * 
+         * @param formData FormData chứa danh sách tác giả
+         * @return Số lượng tác giả (>= 2 thì là đồng sáng kiến)
+         */
+        private int countAuthorsFromFormData(FormData formData) {
+                if (formData == null || formData.getFieldValue() == null) {
+                        return 0;
+                }
+
+                try {
+                        JsonNode fieldValue = formData.getFieldValue();
+                        JsonNode valueNode = null;
+
+                        if (fieldValue.has("value")) {
+                                valueNode = fieldValue.get("value");
+                        } else if (fieldValue.isArray()) {
+                                valueNode = fieldValue;
+                        }
+
+                        if (valueNode != null && valueNode.isArray()) {
+                                return valueNode.size();
+                        }
+                } catch (Exception e) {
+                        logger.warn("Lỗi khi đếm số tác giả từ FormData: {}", e.getMessage());
+                }
+
+                return 0;
+        }
+
+        /**
+         * Map Innovation entity sang MyInnovationResponse
+         * 
+         * @param innovation  Innovation entity
+         * @param stt         Số thứ tự
+         * @param authorCount Số lượng tác giả từ danh_sach_tac_gia
+         * @return MyInnovationResponse
+         */
+        private MyInnovationResponse toMyInnovationResponse(Innovation innovation, int stt, int authorCount) {
+                MyInnovationResponse response = new MyInnovationResponse();
+                response.setStt(stt);
+                response.setInnovationName(innovation.getInnovationName());
+                response.setStatus(innovation.getStatus());
+                response.setSubmissionTimeRemainingSeconds(getSubmissionTimeRemainingSeconds(innovation));
+
+                if (innovation.getInnovationRound() != null) {
+                        response.setAcademicYear(innovation.getInnovationRound().getAcademicYear());
+                        response.setInnovationRoundName(innovation.getInnovationRound().getName());
+                }
+
+                response.setIsCoAuthor(authorCount >= 2);
+
+                return response;
         }
 
 }

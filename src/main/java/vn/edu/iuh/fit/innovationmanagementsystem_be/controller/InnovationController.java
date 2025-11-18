@@ -18,7 +18,6 @@ import jakarta.validation.Valid;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.Innovation;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.CreateInnovationWithTemplatesRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationFormDataResponse;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationStatisticsDTO;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationAcademicYearStatisticsDTO;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.service.InnovationService;

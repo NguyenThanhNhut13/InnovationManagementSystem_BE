@@ -35,6 +35,13 @@ public interface FormDataRepository extends JpaRepository<FormData, String> {
         List<FormData> findByInnovationIdAndTemplateIdWithRelations(@Param("innovationId") String innovationId,
                         @Param("templateId") String templateId);
 
+        @Query("SELECT fd FROM FormData fd " +
+                        "LEFT JOIN FETCH fd.formField ff " +
+                        "LEFT JOIN FETCH ff.formTemplate ft " +
+                        "LEFT JOIN FETCH fd.innovation i " +
+                        "WHERE fd.innovation.id IN :innovationIds")
+        List<FormData> findByInnovationIdsWithRelations(@Param("innovationIds") List<String> innovationIds);
+
         @Modifying
         @Query("DELETE FROM FormData fd WHERE fd.innovation.id = :innovationId")
         void deleteByInnovationId(@Param("innovationId") String innovationId);
