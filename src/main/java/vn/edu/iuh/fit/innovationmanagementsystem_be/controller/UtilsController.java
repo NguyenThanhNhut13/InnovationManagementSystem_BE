@@ -24,11 +24,17 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.beans.factory.annotation.Value;
+import jakarta.validation.Valid;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.Base64DecodeRequest;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.Base64EncodeRequest;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.Base64DecodeResponse;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.Base64EncodeResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.FileExistsResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.FileInfoResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.FileUploadResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.MultipleFileUploadResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.exception.IdInvalidException;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.service.Base64Service;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.service.FileService;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.RestResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.annotation.ApiMessage;
@@ -48,12 +54,14 @@ import java.util.List;
 public class UtilsController {
 
     private final FileService fileService;
+    private final Base64Service base64Service;
 
     @Value("${CONVERTAPI_TOKEN:}")
     private String convertApiToken;
 
-    public UtilsController(FileService fileService) {
+    public UtilsController(FileService fileService, Base64Service base64Service) {
         this.fileService = fileService;
+        this.base64Service = base64Service;
     }
 
     // 1. Upload một file to MinIO
@@ -433,6 +441,34 @@ public class UtilsController {
                 tempFile.delete();
             }
         }
+    }
+
+    // 10. Encode text to Base64
+    @PostMapping("/utils/base64/encode")
+    @ApiMessage("Encode text to Base64 thành công")
+    @Operation(summary = "Encode text to Base64", description = "Nhận plain text và trả về chuỗi Base64 để test.")
+    public ResponseEntity<Base64EncodeResponse> encodeBase64(
+            @Valid @RequestBody Base64EncodeRequest request) {
+
+        String encoded = base64Service.encode(request.getPlainText());
+        Base64EncodeResponse response = new Base64EncodeResponse(
+                request.getPlainText(),
+                encoded);
+        return ResponseEntity.ok(response);
+    }
+
+    // 11. Decode Base64 to text
+    @PostMapping("/utils/base64/decode")
+    @ApiMessage("Decode Base64 thành text thành công")
+    @Operation(summary = "Decode Base64 to text", description = "Nhận chuỗi Base64 và trả về plain text để test.")
+    public ResponseEntity<Base64DecodeResponse> decodeBase64(
+            @Valid @RequestBody Base64DecodeRequest request) {
+
+        String decoded = base64Service.decode(request.getBase64Text());
+        Base64DecodeResponse response = new Base64DecodeResponse(
+                request.getBase64Text(),
+                decoded);
+        return ResponseEntity.ok(response);
     }
 
 }
