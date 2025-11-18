@@ -24,6 +24,8 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.Innovatio
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.FieldTypeEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.UserRoleEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.PhaseStatusEnum;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.TemplateTypeEnum;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.FormTemplate;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.FormDataRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.CreateInnovationWithTemplatesRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.TemplateDataRequest;
@@ -532,6 +534,11 @@ public class InnovationService {
                         }
                 }
 
+                // Kiểm tra chữ ký trước khi nộp sáng kiến (chỉ khi status = SUBMITTED)
+                if (request.getStatus() == InnovationStatusEnum.SUBMITTED) {
+                        validateSignaturesBeforeSubmit(request);
+                }
+
                 // Tạo hoặc update Innovation
                 Innovation savedInnovation;
                 if (existingInnovation != null) {
@@ -1036,6 +1043,226 @@ public class InnovationService {
                 }
 
                 return null;
+        }
+
+        /**
+         * Kiểm tra chữ ký tác giả cho mẫu 1 (DON_DE_NGHI) và mẫu 2 (BAO_CAO_MO_TA)
+         * trước khi nộp sáng kiến
+         */
+        private void validateSignaturesBeforeSubmit(CreateInnovationWithTemplatesRequest request) {
+                List<String> missingSignatures = new ArrayList<>();
+
+                // Duyệt qua tất cả các template trong request
+                for (TemplateDataRequest templateRequest : request.getTemplates()) {
+                        // Lấy FormTemplate để kiểm tra templateType
+                        FormTemplate formTemplate = formTemplateRepository
+                                        .findById(templateRequest.getTemplateId())
+                                        .orElse(null);
+
+                        // Chỉ kiểm tra chữ ký cho mẫu 1 (DON_DE_NGHI) và mẫu 2 (BAO_CAO_MO_TA)
+                        if (formTemplate == null
+                                        || (formTemplate.getTemplateType() != TemplateTypeEnum.DON_DE_NGHI
+                                                        && formTemplate.getTemplateType() != TemplateTypeEnum.BAO_CAO_MO_TA)) {
+                                continue;
+                        }
+
+                        // Lấy tất cả FormField của template
+                        List<FormField> formFields = formFieldRepository
+                                        .findByTemplateId(templateRequest.getTemplateId());
+
+                        // Lấy tất cả FormField có fieldType = SIGNATURE và signingRole = GIANG_VIEN
+                        // (tác giả)
+                        // (bao gồm cả trong children và table columns)
+                        List<FormField> authorSignatureFields = getAuthorSignatureFields(formFields,
+                                        templateRequest.getTemplateId());
+
+                        // Lấy formData từ request (có thể null hoặc empty)
+                        Map<String, Object> formData = templateRequest.getFormData();
+                        if (formData == null) {
+                                formData = Map.of();
+                        }
+
+                        // Kiểm tra từng signature field của tác giả
+                        for (FormField signatureField : authorSignatureFields) {
+                                String fieldKey = signatureField.getFieldKey();
+                                String fieldLabel = signatureField.getLabel();
+
+                                // Kiểm tra xem fieldKey có trong formData không
+                                if (!formData.containsKey(fieldKey)) {
+                                        missingSignatures.add(fieldLabel + " (Template: "
+                                                        + formTemplate.getTemplateType().getValue() + ")");
+                                        continue;
+                                }
+
+                                // Kiểm tra fieldValue không null và không empty
+                                Object fieldValue = formData.get(fieldKey);
+                                if (fieldValue == null) {
+                                        missingSignatures.add(fieldLabel + " (Template: "
+                                                        + formTemplate.getTemplateType().getValue() + ")");
+                                        continue;
+                                }
+
+                                // Kiểm tra nếu là String thì không được empty
+                                if (fieldValue instanceof String && ((String) fieldValue).trim().isEmpty()) {
+                                        missingSignatures.add(fieldLabel + " (Template: "
+                                                        + formTemplate.getTemplateType().getValue() + ")");
+                                        continue;
+                                }
+
+                                // Kiểm tra nếu là JsonNode thì không được null hoặc empty
+                                if (fieldValue instanceof JsonNode) {
+                                        JsonNode jsonNode = (JsonNode) fieldValue;
+                                        if (jsonNode.isNull() || jsonNode.isMissingNode()
+                                                        || (jsonNode.isTextual()
+                                                                        && jsonNode.asText().trim().isEmpty())) {
+                                                missingSignatures.add(fieldLabel + " (Template: "
+                                                                + formTemplate.getTemplateType().getValue() + ")");
+                                        }
+                                }
+                        }
+                }
+
+                // Nếu có chữ ký bị thiếu, throw exception
+                if (!missingSignatures.isEmpty()) {
+                        String missingList = String.join(", ", missingSignatures);
+                        throw new IdInvalidException(
+                                        "Không thể nộp sáng kiến vì thiếu chữ ký. Các chữ ký còn thiếu: " + missingList
+                                                        + ". Vui lòng kiểm tra lại và ký đầy đủ trước khi nộp.");
+                }
+        }
+
+        /**
+         * Lấy tất cả FormField có fieldType = SIGNATURE và signingRole = GIANG_VIEN
+         * (tác giả)
+         * (bao gồm cả trong children và table columns)
+         */
+        private List<FormField> getAuthorSignatureFields(List<FormField> formFields, String templateId) {
+                List<FormField> signatureFields = new ArrayList<>();
+
+                for (FormField field : formFields) {
+                        // Kiểm tra field ở level root - chỉ lấy SIGNATURE của tác giả (GIANG_VIEN)
+                        if (field.getFieldType() == FieldTypeEnum.SIGNATURE
+                                        && field.getSigningRole() == UserRoleEnum.GIANG_VIEN) {
+                                signatureFields.add(field);
+                        }
+
+                        // Kiểm tra trong children
+                        if (field.getChildren() != null && field.getChildren().isArray()) {
+                                List<FormField> childSignatureFields = getAuthorSignatureFieldsFromChildren(
+                                                field.getChildren(),
+                                                templateId);
+                                signatureFields.addAll(childSignatureFields);
+                        }
+
+                        // Kiểm tra trong table columns
+                        if (field.getFieldType() == FieldTypeEnum.TABLE && field.getTableConfig() != null) {
+                                List<FormField> tableSignatureFields = getAuthorSignatureFieldsFromTableColumns(
+                                                field.getTableConfig(), templateId);
+                                signatureFields.addAll(tableSignatureFields);
+                        }
+                }
+
+                return signatureFields;
+        }
+
+        /**
+         * Lấy các FormField SIGNATURE của tác giả (GIANG_VIEN) từ children JSON node
+         */
+        private List<FormField> getAuthorSignatureFieldsFromChildren(JsonNode childrenNode, String templateId) {
+                List<FormField> signatureFields = new ArrayList<>();
+
+                try {
+                        for (JsonNode childNode : childrenNode) {
+                                JsonNode typeNode = childNode.get("type");
+                                if (typeNode != null) {
+                                        try {
+                                                FieldTypeEnum fieldType = FieldTypeEnum.valueOf(typeNode.asText());
+                                                if (fieldType == FieldTypeEnum.SIGNATURE) {
+                                                        // Kiểm tra signingRole = GIANG_VIEN
+                                                        JsonNode signingRoleNode = childNode.get("signingRole");
+                                                        if (signingRoleNode != null) {
+                                                                try {
+                                                                        UserRoleEnum signingRole = UserRoleEnum
+                                                                                        .valueOf(signingRoleNode
+                                                                                                        .asText());
+                                                                        if (signingRole == UserRoleEnum.GIANG_VIEN) {
+                                                                                FormField signatureField = createFormFieldFromJson(
+                                                                                                childNode,
+                                                                                                templateId);
+                                                                                signatureFields.add(signatureField);
+                                                                        }
+                                                                } catch (IllegalArgumentException e) {
+                                                                        // Ignore invalid enum values
+                                                                }
+                                                        }
+                                                }
+                                        } catch (IllegalArgumentException e) {
+                                                // Ignore invalid enum values
+                                        }
+                                }
+
+                                // Đệ quy tìm trong children của children
+                                JsonNode childChildrenNode = childNode.get("children");
+                                if (childChildrenNode != null && childChildrenNode.isArray()) {
+                                        signatureFields.addAll(
+                                                        getAuthorSignatureFieldsFromChildren(childChildrenNode,
+                                                                        templateId));
+                                }
+                        }
+                } catch (Exception e) {
+                        logger.error("Lỗi khi lấy signature fields từ children: {}", e.getMessage(), e);
+                }
+
+                return signatureFields;
+        }
+
+        /**
+         * Lấy các FormField SIGNATURE của tác giả (GIANG_VIEN) từ table columns
+         */
+        private List<FormField> getAuthorSignatureFieldsFromTableColumns(JsonNode tableConfig, String templateId) {
+                List<FormField> signatureFields = new ArrayList<>();
+
+                try {
+                        JsonNode columnsNode = tableConfig.get("columns");
+                        if (columnsNode != null && columnsNode.isArray()) {
+                                for (JsonNode columnNode : columnsNode) {
+                                        JsonNode typeNode = columnNode.get("type");
+                                        if (typeNode != null) {
+                                                try {
+                                                        FieldTypeEnum fieldType = FieldTypeEnum
+                                                                        .valueOf(typeNode.asText());
+                                                        if (fieldType == FieldTypeEnum.SIGNATURE) {
+                                                                // Kiểm tra signingRole = GIANG_VIEN
+                                                                JsonNode signingRoleNode = columnNode
+                                                                                .get("signingRole");
+                                                                if (signingRoleNode != null) {
+                                                                        try {
+                                                                                UserRoleEnum signingRole = UserRoleEnum
+                                                                                                .valueOf(signingRoleNode
+                                                                                                                .asText());
+                                                                                if (signingRole == UserRoleEnum.GIANG_VIEN) {
+                                                                                        FormField signatureField = createFormFieldFromJson(
+                                                                                                        columnNode,
+                                                                                                        templateId);
+                                                                                        signatureFields.add(
+                                                                                                        signatureField);
+                                                                                }
+                                                                        } catch (IllegalArgumentException e) {
+                                                                                // Ignore invalid enum values
+                                                                        }
+                                                                }
+                                                        }
+                                                } catch (IllegalArgumentException e) {
+                                                        // Ignore invalid enum values
+                                                }
+                                        }
+                                }
+                        }
+                } catch (Exception e) {
+                        logger.error("Lỗi khi lấy signature fields từ table columns: {}", e.getMessage(), e);
+                }
+
+                return signatureFields;
         }
 
         /**
