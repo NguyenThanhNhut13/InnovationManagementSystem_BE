@@ -18,4 +18,7 @@ public class InnovationFormDataResponse {
     // Thêm documentHash để client có thể tạo chữ ký
     private String documentHash;
 
+    // Số ngày trễ khi nộp sáng kiến (null nếu không trễ)
+    private Long lateSubmissionDays;
+
 }

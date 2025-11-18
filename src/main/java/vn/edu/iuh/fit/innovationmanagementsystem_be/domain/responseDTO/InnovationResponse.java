@@ -41,4 +41,7 @@ public class InnovationResponse {
     private LocalDateTime updatedAt;
     private String createdBy;
     private String updatedBy;
+
+    // Số ngày trễ khi nộp sáng kiến (null nếu không trễ)
+    private Long lateSubmissionDays;
 }

@@ -23,6 +23,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.Innovatio
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationPhaseTypeEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.FieldTypeEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.UserRoleEnum;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.PhaseStatusEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.FormDataRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.CreateInnovationWithTemplatesRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.TemplateDataRequest;
@@ -46,7 +47,9 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.FormTemplateRepos
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.InnovationRoundRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.CoInnovationRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.UserRepository;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.DepartmentPhaseRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.CoInnovation;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.DepartmentPhase;
 
 import java.util.ArrayList;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.ResultPaginationDTO;
@@ -86,6 +89,7 @@ public class InnovationService {
         private final CoInnovationRepository coInnovationRepository;
         private final UserRepository userRepository;
         private final NotificationService notificationService;
+        private final DepartmentPhaseRepository departmentPhaseRepository;
 
         public InnovationService(InnovationRepository innovationRepository,
                         InnovationPhaseRepository innovationPhaseRepository,
@@ -104,7 +108,8 @@ public class InnovationService {
                         ObjectMapper objectMapper,
                         CoInnovationRepository coInnovationRepository,
                         UserRepository userRepository,
-                        NotificationService notificationService) {
+                        NotificationService notificationService,
+                        DepartmentPhaseRepository departmentPhaseRepository) {
                 this.innovationRepository = innovationRepository;
                 this.innovationPhaseRepository = innovationPhaseRepository;
                 this.formDataService = formDataService;
@@ -123,6 +128,7 @@ public class InnovationService {
                 this.coInnovationRepository = coInnovationRepository;
                 this.userRepository = userRepository;
                 this.notificationService = notificationService;
+                this.departmentPhaseRepository = departmentPhaseRepository;
         }
 
         // 1. Lấy tất cả sáng kiến của user hiện tại với filter
@@ -143,7 +149,11 @@ public class InnovationService {
                 Specification<Innovation> combinedSpec = userSpec.and(specification);
 
                 Page<Innovation> innovations = innovationRepository.findAll(combinedSpec, pageable);
-                Page<InnovationResponse> responses = innovations.map(innovationMapper::toInnovationResponse);
+                Page<InnovationResponse> responses = innovations.map(innovation -> {
+                        InnovationResponse response = innovationMapper.toInnovationResponse(innovation);
+                        response.setLateSubmissionDays(calculateLateSubmissionDays(innovation));
+                        return response;
+                });
                 return Utils.toResultPaginationDTO(responses, pageable);
         }
 
@@ -158,7 +168,11 @@ public class InnovationService {
                 }
 
                 Page<Innovation> innovations = innovationRepository.findAll(specification, pageable);
-                Page<InnovationResponse> responses = innovations.map(innovationMapper::toInnovationResponse);
+                Page<InnovationResponse> responses = innovations.map(innovation -> {
+                        InnovationResponse response = innovationMapper.toInnovationResponse(innovation);
+                        response.setLateSubmissionDays(calculateLateSubmissionDays(innovation));
+                        return response;
+                });
                 return Utils.toResultPaginationDTO(responses, pageable);
         }
 
@@ -420,6 +434,74 @@ public class InnovationService {
 
                 User currentUser = userService.getCurrentUser();
 
+                // Kiểm tra allow_late_submission của department phase (chỉ khi nộp sáng kiến,
+                // không kiểm tra khi tạo DRAFT)
+                Long lateSubmissionDays = null;
+                if (request.getStatus() == InnovationStatusEnum.SUBMITTED
+                                && currentUser.getDepartment() != null
+                                && innovationPhase.getInnovationRound() != null) {
+                        Optional<DepartmentPhase> departmentPhaseOpt = departmentPhaseRepository
+                                        .findByDepartmentIdAndInnovationRoundIdAndPhaseType(
+                                                        currentUser.getDepartment().getId(),
+                                                        innovationPhase.getInnovationRound().getId(),
+                                                        InnovationPhaseTypeEnum.SUBMISSION);
+
+                        if (departmentPhaseOpt.isPresent()) {
+                                DepartmentPhase departmentPhase = departmentPhaseOpt.get();
+                                LocalDate currentDate = LocalDate.now();
+                                LocalDate phaseEndDate = departmentPhase.getPhaseEndDate();
+
+                                // Kiểm tra xem có vượt quá deadline không
+                                if (currentDate.isAfter(phaseEndDate)) {
+                                        // Đã vượt quá deadline
+                                        if (Boolean.FALSE.equals(departmentPhase.getAllowLateSubmission())) {
+                                                // Không cho phép nộp trễ
+                                                throw new IdInvalidException(
+                                                                "Đã hết hạn nộp sáng kiến. Hạn nộp là: "
+                                                                                + phaseEndDate.format(DateTimeFormatter
+                                                                                                .ofPattern("dd/MM/yyyy"))
+                                                                                + ". Khoa không cho phép nộp trễ.");
+                                        } else {
+                                                // Cho phép nộp trễ, nhưng cần kiểm tra xem giai đoạn SCORING hoặc
+                                                // ANNOUNCEMENT đã active chưa
+                                                // Kiểm tra xem có phase SCORING hoặc ANNOUNCEMENT đang ACTIVE không
+                                                List<DepartmentPhase> scoringPhases = departmentPhaseRepository
+                                                                .findByDepartmentIdAndInnovationRoundId(
+                                                                                currentUser.getDepartment().getId(),
+                                                                                innovationPhase.getInnovationRound()
+                                                                                                .getId())
+                                                                .stream()
+                                                                .filter(dp -> (dp
+                                                                                .getPhaseType() == InnovationPhaseTypeEnum.SCORING
+                                                                                || dp.getPhaseType() == InnovationPhaseTypeEnum.ANNOUNCEMENT)
+                                                                                && dp.getPhaseStatus() == PhaseStatusEnum.ACTIVE
+                                                                                && !currentDate.isBefore(
+                                                                                                dp.getPhaseStartDate())
+                                                                                && !currentDate.isAfter(
+                                                                                                dp.getPhaseEndDate()))
+                                                                .collect(Collectors.toList());
+
+                                                if (!scoringPhases.isEmpty()) {
+                                                        // Đã có giai đoạn SCORING hoặc ANNOUNCEMENT đang active, không
+                                                        // cho phép nộp
+                                                        String activePhaseNames = scoringPhases.stream()
+                                                                        .map(DepartmentPhase::getName)
+                                                                        .collect(Collectors.joining(", "));
+                                                        throw new IdInvalidException(
+                                                                        "Không thể nộp sáng kiến vì giai đoạn "
+                                                                                        + activePhaseNames
+                                                                                        + " đang trong thời gian hoạt động. Vui lòng liên hệ quản trị viên để biết thêm chi tiết.");
+                                                }
+
+                                                // Cho phép nộp trễ, tính số ngày trễ
+                                                lateSubmissionDays = ChronoUnit.DAYS.between(phaseEndDate, currentDate);
+                                                logger.info("Người dùng nộp sáng kiến trễ {} ngày. Hạn nộp: {}, Ngày nộp: {}",
+                                                                lateSubmissionDays, phaseEndDate, currentDate);
+                                        }
+                                }
+                        }
+                }
+
                 // Tạo Innovation
                 Innovation innovation = new Innovation();
                 innovation.setInnovationName(request.getInnovationName());
@@ -533,9 +615,12 @@ public class InnovationService {
                 }
 
                 InnovationFormDataResponse response = new InnovationFormDataResponse();
-                response.setInnovation(innovationMapper.toInnovationResponse(savedInnovation));
+                InnovationResponse innovationResponse = innovationMapper.toInnovationResponse(savedInnovation);
+                innovationResponse.setLateSubmissionDays(lateSubmissionDays);
+                response.setInnovation(innovationResponse);
                 response.setFormDataList(formDataResponses);
                 response.setDocumentHash(null);
+                response.setLateSubmissionDays(lateSubmissionDays);
 
                 return response;
         }
@@ -621,9 +706,13 @@ public class InnovationService {
 
                 // Tạo response
                 InnovationFormDataResponse response = new InnovationFormDataResponse();
-                response.setInnovation(innovationMapper.toInnovationResponse(innovation));
+                InnovationResponse innovationResponse = innovationMapper.toInnovationResponse(innovation);
+                Long lateSubmissionDays = calculateLateSubmissionDays(innovation);
+                innovationResponse.setLateSubmissionDays(lateSubmissionDays);
+                response.setInnovation(innovationResponse);
                 response.setFormDataList(formDataResponses);
                 response.setDocumentHash(null);
+                response.setLateSubmissionDays(lateSubmissionDays);
 
                 logger.info("===== END GET INNOVATION WITH FORM DATA =====");
                 return response;
@@ -1171,6 +1260,41 @@ public class InnovationService {
                 } catch (Exception e) {
                         throw new IdInvalidException(
                                         "Lỗi khi xử lý item đồng sáng kiến: " + e.getMessage());
+                }
+        }
+
+        private Long calculateLateSubmissionDays(Innovation innovation) {
+                if (innovation == null || innovation.getDepartment() == null
+                                || innovation.getInnovationRound() == null
+                                || innovation.getCreatedAt() == null) {
+                        return null;
+                }
+
+                try {
+                        Optional<DepartmentPhase> departmentPhaseOpt = departmentPhaseRepository
+                                        .findByDepartmentIdAndInnovationRoundIdAndPhaseType(
+                                                        innovation.getDepartment().getId(),
+                                                        innovation.getInnovationRound().getId(),
+                                                        InnovationPhaseTypeEnum.SUBMISSION);
+
+                        if (departmentPhaseOpt.isEmpty()) {
+                                return null;
+                        }
+
+                        DepartmentPhase departmentPhase = departmentPhaseOpt.get();
+                        LocalDate submissionDate = innovation.getCreatedAt().toLocalDate();
+                        LocalDate phaseEndDate = departmentPhase.getPhaseEndDate();
+
+                        if (submissionDate.isAfter(phaseEndDate)
+                                        && Boolean.TRUE.equals(departmentPhase.getAllowLateSubmission())) {
+                                return ChronoUnit.DAYS.between(phaseEndDate, submissionDate);
+                        }
+
+                        return null;
+                } catch (Exception e) {
+                        logger.warn("Lỗi khi tính toán số ngày trễ cho innovation {}: {}", innovation.getId(),
+                                        e.getMessage());
+                        return null;
                 }
         }
 
