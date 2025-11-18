@@ -121,4 +121,42 @@ public class DepartmentPhaseStatusSchedulerService {
                 notificationCount);
     }
 
+    /**
+     * Chạy mỗi ngày lúc 00:04 để kiểm tra và thông báo cho TRUONG_KHOA
+     * về việc cần thành lập hội đồng chấm điểm khi phase SUBMISSION sắp hết hạn
+     * Chạy sau task thông báo phase bắt đầu (00:03)
+     * Cron format: giây phút giờ ngày tháng thứ
+     */
+    @Scheduled(cron = "0 4 0 * * ?")
+    @Transactional
+    public void notifyDepartmentManagersToEstablishScoringCommittee() {
+        log.info("Bắt đầu kiểm tra và thông báo cho TRUONG_KHOA về việc thành lập hội đồng chấm điểm...");
+
+        LocalDate today = LocalDate.now();
+        LocalDate startDate = today.plusDays(3);
+        LocalDate endDate = today.plusDays(7);
+
+        List<DepartmentPhase> submissionPhases = departmentPhaseRepository
+                .findActiveSubmissionPhasesExpiringSoon(startDate, endDate);
+
+        if (submissionPhases.isEmpty()) {
+            log.info("Không có phase SUBMISSION nào sắp hết hạn trong khoảng 3-7 ngày tới");
+            return;
+        }
+
+        int notificationCount = 0;
+        for (DepartmentPhase submissionPhase : submissionPhases) {
+            try {
+                notificationService.notifyDepartmentManagersToEstablishScoringCommittee(submissionPhase);
+                notificationCount++;
+            } catch (Exception e) {
+                log.error("Lỗi khi gửi thông báo thành lập hội đồng chấm điểm cho phase '{}' (ID: {}): {}",
+                        submissionPhase.getName(), submissionPhase.getId(), e.getMessage(), e);
+            }
+        }
+
+        log.info("Hoàn thành thông báo. Đã gửi thông báo cho {} phase SUBMISSION sắp hết hạn",
+                notificationCount);
+    }
+
 }
