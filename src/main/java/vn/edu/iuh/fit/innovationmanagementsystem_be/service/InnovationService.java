@@ -175,14 +175,9 @@ public class InnovationService {
                                                                                 .max()
                                                                                 .orElse(0))));
 
-                int startIndex = pageable.getPageNumber() * pageable.getPageSize();
-                final int[] index = { 0 };
                 Page<MyInnovationResponse> responses = innovations.map(innovation -> {
                         int authorCount = authorCountMap.getOrDefault(innovation.getId(), 0);
-                        MyInnovationResponse response = toMyInnovationResponse(innovation,
-                                        startIndex + index[0] + 1, authorCount);
-                        index[0]++;
-                        return response;
+                        return toMyInnovationResponse(innovation, authorCount);
                 });
                 return Utils.toResultPaginationDTO(responses, pageable);
         }
@@ -1680,16 +1675,15 @@ public class InnovationService {
          * Map Innovation entity sang MyInnovationResponse
          * 
          * @param innovation  Innovation entity
-         * @param stt         Số thứ tự
          * @param authorCount Số lượng tác giả từ danh_sach_tac_gia
          * @return MyInnovationResponse
          */
-        private MyInnovationResponse toMyInnovationResponse(Innovation innovation, int stt, int authorCount) {
+        private MyInnovationResponse toMyInnovationResponse(Innovation innovation, int authorCount) {
                 MyInnovationResponse response = new MyInnovationResponse();
-                response.setStt(stt);
                 response.setInnovationName(innovation.getInnovationName());
                 response.setStatus(innovation.getStatus());
                 response.setSubmissionTimeRemainingSeconds(getSubmissionTimeRemainingSeconds(innovation));
+                response.setIsScore(innovation.getIsScore());
 
                 if (innovation.getInnovationRound() != null) {
                         response.setAcademicYear(innovation.getInnovationRound().getAcademicYear());
@@ -1697,6 +1691,11 @@ public class InnovationService {
                 }
 
                 response.setIsCoAuthor(authorCount >= 2);
+
+                response.setCreatedAt(innovation.getCreatedAt());
+                response.setUpdatedAt(innovation.getUpdatedAt());
+                response.setCreatedBy(innovation.getCreatedBy());
+                response.setUpdatedBy(innovation.getUpdatedBy());
 
                 return response;
         }
