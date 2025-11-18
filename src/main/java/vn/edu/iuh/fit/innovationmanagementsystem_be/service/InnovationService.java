@@ -982,6 +982,76 @@ public class InnovationService {
                 return response;
         }
 
+        // 8. Lấy tất cả sáng kiến của phòng ban với filter cho QUAN_TRI_VIEN_KHOA và
+        // TRUONG_KHOA
+        public ResultPaginationDTO getAllDepartmentInnovationsWithFilter(Specification<Innovation> specification,
+                        Pageable pageable) {
+                if (pageable.getSort().isUnsorted()) {
+                        pageable = PageRequest.of(
+                                        pageable.getPageNumber(),
+                                        pageable.getPageSize(),
+                                        Sort.by("createdAt").descending());
+                }
+
+                User currentUser = userService.getCurrentUser();
+
+                boolean hasQuanTriVienKhoaRole = currentUser.getUserRoles().stream()
+                                .anyMatch(userRole -> userRole.getRole()
+                                                .getRoleName() == UserRoleEnum.QUAN_TRI_VIEN_KHOA);
+
+                boolean hasTruongKhoaRole = currentUser.getUserRoles().stream()
+                                .anyMatch(userRole -> userRole.getRole().getRoleName() == UserRoleEnum.TRUONG_KHOA);
+
+                if (!hasQuanTriVienKhoaRole && !hasTruongKhoaRole) {
+                        logger.error("User {} không có quyền QUAN_TRI_VIEN_KHOA hoặc TRUONG_KHOA", currentUser.getId());
+                        throw new IdInvalidException(
+                                        "Chỉ QUAN_TRI_VIEN_KHOA hoặc TRUONG_KHOA mới có quyền xem sáng kiến của phòng ban");
+                }
+
+                if (currentUser.getDepartment() == null) {
+                        logger.error("User {} không có phòng ban", currentUser.getId());
+                        throw new IdInvalidException("Không thể xác định phòng ban của người dùng");
+                }
+
+                String departmentId = currentUser.getDepartment().getId();
+
+                Specification<Innovation> departmentSpec = (root, query, criteriaBuilder) -> criteriaBuilder
+                                .equal(root.get("department").get("id"), departmentId);
+
+                Specification<Innovation> notDraftSpec = (root, query, criteriaBuilder) -> criteriaBuilder
+                                .notEqual(root.get("status"), InnovationStatusEnum.DRAFT);
+
+                Specification<Innovation> combinedSpec = departmentSpec.and(notDraftSpec).and(specification);
+
+                Page<Innovation> innovations = innovationRepository.findAll(combinedSpec, pageable);
+
+                List<String> innovationIds = innovations.getContent().stream()
+                                .map(Innovation::getId)
+                                .collect(Collectors.toList());
+
+                List<FormData> allFormData = innovationIds.isEmpty()
+                                ? new ArrayList<>()
+                                : formDataRepository.findByInnovationIdsWithRelations(innovationIds);
+
+                Map<String, Integer> authorCountMap = allFormData.stream()
+                                .filter(fd -> fd.getFormField() != null
+                                                && "danh_sach_tac_gia".equals(fd.getFormField().getFieldKey()))
+                                .collect(Collectors.groupingBy(
+                                                fd -> fd.getInnovation().getId(),
+                                                Collectors.collectingAndThen(
+                                                                Collectors.toList(),
+                                                                list -> list.stream()
+                                                                                .mapToInt(this::countAuthorsFromFormData)
+                                                                                .max()
+                                                                                .orElse(0))));
+
+                Page<MyInnovationResponse> responses = innovations.map(innovation -> {
+                        int authorCount = authorCountMap.getOrDefault(innovation.getId(), 0);
+                        return toMyInnovationResponse(innovation, authorCount);
+                });
+                return Utils.toResultPaginationDTO(responses, pageable);
+        }
+
         // // 4. Cập nhật FormData sáng kiến (Cập nhật FormData cho sáng kiến đã tồn
         // tại)
         // public InnovationFormDataResponse updateInnovationFormData(String
@@ -1854,6 +1924,10 @@ public class InnovationService {
                 response.setStatus(innovation.getStatus());
                 response.setSubmissionTimeRemainingSeconds(getSubmissionTimeRemainingSeconds(innovation));
                 response.setIsScore(innovation.getIsScore());
+
+                if (innovation.getUser() != null) {
+                        response.setAuthorName(innovation.getUser().getFullName());
+                }
 
                 if (innovation.getInnovationRound() != null) {
                         response.setAcademicYear(innovation.getInnovationRound().getAcademicYear());

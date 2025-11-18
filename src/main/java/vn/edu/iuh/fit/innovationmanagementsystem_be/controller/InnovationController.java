@@ -134,6 +134,24 @@ public class InnovationController {
                 return ResponseEntity.ok(innovationService.getDepartmentInnovationWithFormDataById(id));
         }
 
+        // 7. Lấy tất cả sáng kiến của phòng ban với filter cho QUAN_TRI_VIEN_KHOA và
+        // TRUONG_KHOA
+        @GetMapping("/department-innovations")
+        @PreAuthorize("hasAnyRole('QUAN_TRI_VIEN_KHOA', 'TRUONG_KHOA')")
+        @ApiMessage("Lấy danh sách sáng kiến của phòng ban thành công")
+        @Operation(summary = "Get All Department Innovations with Filter", description = "Get paginated list of all innovations for department with filtering support (only for QUAN_TRI_VIEN_KHOA and TRUONG_KHOA)")
+        @ApiResponses(value = {
+                        @ApiResponse(responseCode = "200", description = "Department innovations retrieved successfully", content = @Content(schema = @Schema(implementation = ResultPaginationDTO.class))),
+                        @ApiResponse(responseCode = "403", description = "Forbidden - Only QUAN_TRI_VIEN_KHOA and TRUONG_KHOA can access"),
+                        @ApiResponse(responseCode = "401", description = "Unauthorized")
+        })
+        public ResponseEntity<ResultPaginationDTO> getAllDepartmentInnovations(
+                        @Parameter(description = "Filter specification for innovations") @Filter Specification<Innovation> specification,
+                        @Parameter(description = "Pagination parameters") Pageable pageable) {
+                return ResponseEntity.ok(
+                                innovationService.getAllDepartmentInnovationsWithFilter(specification, pageable));
+        }
+
         // 1. Lấy danh sách sáng kiến
         // @GetMapping("/innovations")
         // @ApiMessage("Lấy danh sách sáng kiến thành công")

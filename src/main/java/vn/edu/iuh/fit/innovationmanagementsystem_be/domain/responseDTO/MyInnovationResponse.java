@@ -14,6 +14,7 @@ public class MyInnovationResponse {
 
     private String innovationId;
     private String innovationName;
+    private String authorName;
     private String academicYear;
     private String innovationRoundName;
     private InnovationStatusEnum status;
