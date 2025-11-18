@@ -16,7 +16,7 @@ import java.util.Base64;
 @Service
 public class HSMEncryptionService {
 
-    @Value("${hsm.master.key:default-master-key-change-in-production}")
+    @Value("${hsm.master.key}")
     private String masterKey;
 
     private static final String ALGORITHM = "AES";
@@ -30,10 +30,7 @@ public class HSMEncryptionService {
      */
     public String encryptPrivateKey(String privateKey) {
         try {
-            // Tạo secret key từ master key
-            SecretKey secretKey = new SecretKeySpec(
-                    masterKey.getBytes(StandardCharsets.UTF_8),
-                    ALGORITHM);
+            SecretKey secretKey = getSecretKey();
 
             // Tạo IV ngẫu nhiên
             byte[] iv = new byte[GCM_IV_LENGTH];
@@ -63,10 +60,7 @@ public class HSMEncryptionService {
      */
     public String decryptPrivateKey(String encryptedPrivateKey) {
         try {
-            // Tạo secret key từ master key
-            SecretKey secretKey = new SecretKeySpec(
-                    masterKey.getBytes(StandardCharsets.UTF_8),
-                    ALGORITHM);
+            SecretKey secretKey = getSecretKey();
 
             // Decode base64
             byte[] combined = Base64.getDecoder().decode(encryptedPrivateKey);
@@ -114,6 +108,20 @@ public class HSMEncryptionService {
             return Base64.getEncoder().encodeToString(hash);
         } catch (Exception e) {
             throw new IdInvalidException("Không thể hash master key: " + e.getMessage());
+        }
+    }
+
+    private SecretKey getSecretKey() {
+        try {
+            byte[] keyBytes = Base64.getDecoder().decode(masterKey);
+            int length = keyBytes.length;
+            if (length != 16 && length != 24 && length != 32) {
+                throw new IdInvalidException(
+                        "Master key phải có độ dài 128/192/256-bit sau khi decode, hiện tại: " + (length * 8) + " bit");
+            }
+            return new SecretKeySpec(keyBytes, ALGORITHM);
+        } catch (IllegalArgumentException e) {
+            throw new IdInvalidException("Master key không hợp lệ (không thể decode Base64)");
         }
     }
 }

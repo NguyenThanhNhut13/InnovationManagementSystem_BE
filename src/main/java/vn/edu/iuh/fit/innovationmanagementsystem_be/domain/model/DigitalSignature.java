@@ -35,7 +35,7 @@ public class DigitalSignature extends Auditable {
     @Column(name = "sign_at")
     private LocalDateTime signAt;
 
-    @Column(name = "signature_hash", nullable = false, unique = true)
+    @Column(name = "signature_hash", nullable = false, unique = true, columnDefinition = "TEXT")
     private String signatureHash; // Hash duy nhất của chữ ký
 
     @Column(name = "document_hash", nullable = false)
