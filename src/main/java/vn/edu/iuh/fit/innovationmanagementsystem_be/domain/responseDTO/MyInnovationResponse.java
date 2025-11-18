@@ -12,6 +12,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class MyInnovationResponse {
 
+    private String innovationId;
     private String innovationName;
     private String academicYear;
     private String innovationRoundName;
@@ -22,6 +23,4 @@ public class MyInnovationResponse {
 
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
-    private String createdBy;
-    private String updatedBy;
 }

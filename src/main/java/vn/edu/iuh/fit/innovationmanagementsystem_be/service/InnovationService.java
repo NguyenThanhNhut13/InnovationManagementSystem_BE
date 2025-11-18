@@ -1680,6 +1680,7 @@ public class InnovationService {
          */
         private MyInnovationResponse toMyInnovationResponse(Innovation innovation, int authorCount) {
                 MyInnovationResponse response = new MyInnovationResponse();
+                response.setInnovationId(innovation.getId());
                 response.setInnovationName(innovation.getInnovationName());
                 response.setStatus(innovation.getStatus());
                 response.setSubmissionTimeRemainingSeconds(getSubmissionTimeRemainingSeconds(innovation));
@@ -1694,8 +1695,6 @@ public class InnovationService {
 
                 response.setCreatedAt(innovation.getCreatedAt());
                 response.setUpdatedAt(innovation.getUpdatedAt());
-                response.setCreatedBy(innovation.getCreatedBy());
-                response.setUpdatedBy(innovation.getUpdatedBy());
 
                 return response;
         }
