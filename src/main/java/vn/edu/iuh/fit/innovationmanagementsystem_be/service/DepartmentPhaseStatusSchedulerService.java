@@ -159,4 +159,45 @@ public class DepartmentPhaseStatusSchedulerService {
                 notificationCount);
     }
 
+    /**
+     * Chạy mỗi ngày lúc 00:05 để kiểm tra và thông báo cho TV_HOI_DONG_KHOA
+     * về việc chuẩn bị chấm điểm khi phase SCORING sắp bắt đầu
+     * Logic: Thông báo vào ngày hôm nay cho các phase SCORING bắt đầu vào ngày mai
+     * (tức là thông báo TRƯỚC 1 ngày so với ngày bắt đầu phase)
+     * Chạy sau task thông báo thành lập hội đồng (00:04)
+     * Cron format: giây phút giờ ngày tháng thứ
+     */
+    @Scheduled(cron = "0 5 0 * * ?")
+    @Transactional
+    public void notifyScoringCommitteeMembersToPrepare() {
+        log.info("Bắt đầu kiểm tra và thông báo cho TV_HOI_DONG_KHOA về việc chuẩn bị chấm điểm...");
+
+        LocalDate today = LocalDate.now();
+        // Tìm phase SCORING bắt đầu vào ngày mai (thông báo trước 1 ngày)
+        LocalDate scoringStartDate = today.plusDays(1);
+
+        List<DepartmentPhase> scoringPhases = departmentPhaseRepository
+                .findScoringPhasesStartingTomorrow(scoringStartDate);
+
+        if (scoringPhases.isEmpty()) {
+            log.info("Không có phase SCORING nào bắt đầu vào ngày {} (thông báo trước 1 ngày)", scoringStartDate);
+            return;
+        }
+
+        int notificationCount = 0;
+        for (DepartmentPhase scoringPhase : scoringPhases) {
+            try {
+                notificationService.notifyScoringCommitteeMembersToPrepare(scoringPhase);
+                notificationCount++;
+            } catch (Exception e) {
+                log.error("Lỗi khi gửi thông báo chuẩn bị chấm điểm cho phase '{}' (ID: {}): {}",
+                        scoringPhase.getName(), scoringPhase.getId(), e.getMessage(), e);
+            }
+        }
+
+        log.info(
+                "Hoàn thành thông báo. Đã gửi thông báo cho {} phase SCORING bắt đầu vào ngày {} (thông báo trước 1 ngày)",
+                notificationCount, scoringStartDate);
+    }
+
 }

@@ -79,4 +79,21 @@ public interface DepartmentPhaseRepository
         List<DepartmentPhase> findActiveSubmissionPhasesExpiringSoon(
                         @org.springframework.data.repository.query.Param("startDate") java.time.LocalDate startDate,
                         @org.springframework.data.repository.query.Param("endDate") java.time.LocalDate endDate);
+
+        /**
+         * Tìm các department phase SCORING có phaseStartDate = targetDate
+         * (để thông báo cho TV_HOI_DONG_KHOA chuẩn bị chấm điểm trước 1 ngày)
+         * Fetch join department và innovationRound để tránh LazyInitializationException
+         * 
+         * @param targetDate Ngày bắt đầu phase SCORING (thường là ngày mai, để thông
+         *                   báo trước 1 ngày)
+         */
+        @org.springframework.data.jpa.repository.Query("SELECT dp FROM DepartmentPhase dp " +
+                        "LEFT JOIN FETCH dp.department " +
+                        "LEFT JOIN FETCH dp.innovationRound " +
+                        "WHERE dp.phaseType = 'SCORING' " +
+                        "AND dp.phaseStatus IN ('SCHEDULED', 'ACTIVE') " +
+                        "AND dp.phaseStartDate = :targetDate")
+        List<DepartmentPhase> findScoringPhasesStartingTomorrow(
+                        @org.springframework.data.repository.query.Param("targetDate") java.time.LocalDate targetDate);
 }

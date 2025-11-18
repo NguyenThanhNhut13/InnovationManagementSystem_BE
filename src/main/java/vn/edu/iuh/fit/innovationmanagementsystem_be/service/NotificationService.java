@@ -970,6 +970,62 @@ public class NotificationService {
                                 department.getDepartmentName());
         }
 
+        public void notifyScoringCommitteeMembersToPrepare(DepartmentPhase scoringPhase) {
+                Department department = scoringPhase.getDepartment();
+                if (department == null) {
+                        log.warn("DepartmentPhase '{}' không có khoa, bỏ qua thông báo", scoringPhase.getName());
+                        return;
+                }
+
+                LocalDate scoringStartDate = scoringPhase.getPhaseStartDate();
+                if (scoringStartDate == null) {
+                        log.warn("DepartmentPhase '{}' không có ngày bắt đầu, bỏ qua thông báo",
+                                        scoringPhase.getName());
+                        return;
+                }
+
+                String roundName = scoringPhase.getInnovationRound() != null
+                                ? scoringPhase.getInnovationRound().getName()
+                                : "đợt sáng kiến";
+
+                String title = "Chuẩn bị thực hiện chấm điểm sáng kiến";
+                String message = String.format(
+                                "Giai đoạn chấm điểm \"%s\" của đợt \"%s\" sẽ diễn ra vào ngày %s. "
+                                                + "Bạn cần phải chuẩn bị thực hiện chấm điểm.",
+                                scoringPhase.getName(),
+                                roundName,
+                                scoringStartDate.toString());
+
+                Map<String, Object> data = new HashMap<>();
+                data.put("departmentId", department.getId());
+                data.put("departmentName", department.getDepartmentName());
+                data.put("phaseId", scoringPhase.getId());
+                data.put("phaseName", scoringPhase.getName());
+                data.put("phaseType", InnovationPhaseTypeEnum.SCORING.name());
+                data.put("phaseStartDate", scoringStartDate.toString());
+                data.put("phaseEndDate",
+                                scoringPhase.getPhaseEndDate() != null ? scoringPhase.getPhaseEndDate().toString()
+                                                : null);
+                data.put("roundId", scoringPhase.getInnovationRound() != null
+                                ? scoringPhase.getInnovationRound().getId()
+                                : null);
+                data.put("roundName", roundName);
+                data.put("action", "prepare_scoring");
+                data.put("url", "/department-phases?departmentId=" + department.getId());
+                data.put("audience", "SCORING_COMMITTEE_MEMBERS");
+
+                notifyUsersByDepartmentAndRoles(
+                                department.getId(),
+                                List.of(UserRoleEnum.TV_HOI_DONG_KHOA),
+                                title,
+                                message,
+                                NotificationTypeEnum.SYSTEM_ANNOUNCEMENT,
+                                data);
+
+                log.info("Đã gửi thông báo chuẩn bị chấm điểm cho TV_HOI_DONG_KHOA của khoa {}",
+                                department.getDepartmentName());
+        }
+
         private enum DepartmentPhaseAction {
                 PUBLISH,
                 CLOSE

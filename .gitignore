@@ -41,3 +41,4 @@ src/main/resources/keys/*
 .cursor/
 .kiro-rules.yml
 md/
+postman/
