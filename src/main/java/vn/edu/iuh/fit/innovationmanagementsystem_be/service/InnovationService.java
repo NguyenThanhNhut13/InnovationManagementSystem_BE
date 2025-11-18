@@ -434,6 +434,36 @@ public class InnovationService {
 
                 User currentUser = userService.getCurrentUser();
 
+                // Xử lý trường hợp update DRAFT sang SUBMITTED
+                Innovation existingInnovation = null;
+                if (request.getInnovationId() != null && !request.getInnovationId().isEmpty()
+                                && request.getStatus() == InnovationStatusEnum.SUBMITTED) {
+                        existingInnovation = innovationRepository.findById(request.getInnovationId())
+                                        .orElseThrow(() -> new IdInvalidException(
+                                                        "Không tìm thấy sáng kiến với ID: "
+                                                                        + request.getInnovationId()));
+
+                        // Kiểm tra quyền sở hữu
+                        if (!existingInnovation.getUser().getId().equals(currentUser.getId())) {
+                                throw new IdInvalidException("Bạn không có quyền chỉnh sửa sáng kiến này");
+                        }
+
+                        // Kiểm tra status phải là DRAFT
+                        if (existingInnovation.getStatus() != InnovationStatusEnum.DRAFT) {
+                                throw new IdInvalidException(
+                                                "Chỉ có thể nộp sáng kiến ở trạng thái DRAFT. Sáng kiến hiện tại đang ở trạng thái: "
+                                                                + existingInnovation.getStatus());
+                        }
+
+                        // Kiểm tra phase phải khớp
+                        if (existingInnovation.getInnovationPhase().getId() != null
+                                        && !existingInnovation.getInnovationPhase().getId()
+                                                        .equals(innovationPhase.getId())) {
+                                throw new IdInvalidException(
+                                                "Không thể nộp sáng kiến vì giai đoạn không khớp. Vui lòng kiểm tra lại.");
+                        }
+                }
+
                 // Kiểm tra allow_late_submission của department phase (chỉ khi nộp sáng kiến,
                 // không kiểm tra khi tạo DRAFT)
                 Long lateSubmissionDays = null;
@@ -502,26 +532,52 @@ public class InnovationService {
                         }
                 }
 
-                // Tạo Innovation
-                Innovation innovation = new Innovation();
-                innovation.setInnovationName(request.getInnovationName());
-                innovation.setUser(currentUser);
-                innovation.setDepartment(currentUser.getDepartment());
-                innovation.setInnovationPhase(innovationPhase);
-                innovation.setInnovationRound(innovationPhase.getInnovationRound());
-                innovation.setIsScore(request.getIsScore() != null ? request.getIsScore() : false);
-                innovation.setStatus(request.getStatus());
-                innovation.setBasisText(request.getBasisText());
+                // Tạo hoặc update Innovation
+                Innovation savedInnovation;
+                if (existingInnovation != null) {
+                        // Update existing DRAFT innovation
+                        existingInnovation.setInnovationName(request.getInnovationName());
+                        existingInnovation.setStatus(request.getStatus());
+                        existingInnovation.setIsScore(request.getIsScore() != null ? request.getIsScore() : false);
+                        existingInnovation.setBasisText(request.getBasisText());
+                        savedInnovation = innovationRepository.save(existingInnovation);
 
-                Innovation savedInnovation = innovationRepository.save(innovation);
+                        // Xóa FormData cũ và CoInnovation cũ
+                        formDataRepository.deleteByInnovationId(savedInnovation.getId());
+                        coInnovationRepository.deleteByInnovationId(savedInnovation.getId());
 
-                // Tạo activity log
-                activityLogService.createActivityLog(
-                                currentUser.getId(),
-                                savedInnovation.getId(),
-                                savedInnovation.getInnovationName(),
-                                request.getStatus(),
-                                "Bạn đã tạo sáng kiến mới '" + savedInnovation.getInnovationName() + "'");
+                        // Tạo activity log
+                        activityLogService.createActivityLog(
+                                        currentUser.getId(),
+                                        savedInnovation.getId(),
+                                        savedInnovation.getInnovationName(),
+                                        request.getStatus(),
+                                        "Bạn đã nộp sáng kiến '" + savedInnovation.getInnovationName() + "'");
+                } else {
+                        // Tạo Innovation mới
+                        Innovation innovation = new Innovation();
+                        innovation.setInnovationName(request.getInnovationName());
+                        innovation.setUser(currentUser);
+                        innovation.setDepartment(currentUser.getDepartment());
+                        innovation.setInnovationPhase(innovationPhase);
+                        innovation.setInnovationRound(innovationPhase.getInnovationRound());
+                        innovation.setIsScore(request.getIsScore() != null ? request.getIsScore() : false);
+                        innovation.setStatus(request.getStatus());
+                        innovation.setBasisText(request.getBasisText());
+
+                        savedInnovation = innovationRepository.save(innovation);
+
+                        // Tạo activity log
+                        String activityMessage = request.getStatus() == InnovationStatusEnum.DRAFT
+                                        ? "Bạn đã tạo bản nháp sáng kiến '" + savedInnovation.getInnovationName() + "'"
+                                        : "Bạn đã tạo sáng kiến mới '" + savedInnovation.getInnovationName() + "'";
+                        activityLogService.createActivityLog(
+                                        currentUser.getId(),
+                                        savedInnovation.getId(),
+                                        savedInnovation.getInnovationName(),
+                                        request.getStatus(),
+                                        activityMessage);
+                }
 
                 // Lưu FormData cho tất cả các template
                 List<FormDataResponse> formDataResponses = new ArrayList<>();

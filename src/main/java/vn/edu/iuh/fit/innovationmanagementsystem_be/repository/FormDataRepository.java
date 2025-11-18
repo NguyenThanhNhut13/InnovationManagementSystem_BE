@@ -1,6 +1,7 @@
 package vn.edu.iuh.fit.innovationmanagementsystem_be.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -33,5 +34,9 @@ public interface FormDataRepository extends JpaRepository<FormData, String> {
                         "WHERE fd.innovation.id = :innovationId AND ff.formTemplate.id = :templateId")
         List<FormData> findByInnovationIdAndTemplateIdWithRelations(@Param("innovationId") String innovationId,
                         @Param("templateId") String templateId);
+
+        @Modifying
+        @Query("DELETE FROM FormData fd WHERE fd.innovation.id = :innovationId")
+        void deleteByInnovationId(@Param("innovationId") String innovationId);
 
 }

@@ -28,6 +28,9 @@ public class CreateInnovationWithTemplatesRequest {
 
     private String basisText;
 
+    // Innovation ID để update DRAFT sang SUBMITTED (optional)
+    private String innovationId;
+
     @NotEmpty(message = "Danh sách template không được để trống")
     @Valid
     private List<TemplateDataRequest> templates;
