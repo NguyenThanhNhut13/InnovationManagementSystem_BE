@@ -64,6 +64,8 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.Arrays;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 
@@ -153,7 +155,7 @@ public class InnovationService {
                 Page<Innovation> innovations = innovationRepository.findAll(combinedSpec, pageable);
                 Page<InnovationResponse> responses = innovations.map(innovation -> {
                         InnovationResponse response = innovationMapper.toInnovationResponse(innovation);
-                        response.setLateSubmissionDays(calculateLateSubmissionDays(innovation));
+                        response.setSubmissionTimeRemainingSeconds(getSubmissionTimeRemainingSeconds(innovation));
                         return response;
                 });
                 return Utils.toResultPaginationDTO(responses, pageable);
@@ -172,7 +174,7 @@ public class InnovationService {
                 Page<Innovation> innovations = innovationRepository.findAll(specification, pageable);
                 Page<InnovationResponse> responses = innovations.map(innovation -> {
                         InnovationResponse response = innovationMapper.toInnovationResponse(innovation);
-                        response.setLateSubmissionDays(calculateLateSubmissionDays(innovation));
+                        response.setSubmissionTimeRemainingSeconds(getSubmissionTimeRemainingSeconds(innovation));
                         return response;
                 });
                 return Utils.toResultPaginationDTO(responses, pageable);
@@ -468,7 +470,7 @@ public class InnovationService {
 
                 // Kiểm tra allow_late_submission của department phase (chỉ khi nộp sáng kiến,
                 // không kiểm tra khi tạo DRAFT)
-                Long lateSubmissionDays = null;
+                LocalDate submissionDeadlineDate = null;
                 if (request.getStatus() == InnovationStatusEnum.SUBMITTED
                                 && currentUser.getDepartment() != null
                                 && innovationPhase.getInnovationRound() != null) {
@@ -482,6 +484,7 @@ public class InnovationService {
                                 DepartmentPhase departmentPhase = departmentPhaseOpt.get();
                                 LocalDate currentDate = LocalDate.now();
                                 LocalDate phaseEndDate = departmentPhase.getPhaseEndDate();
+                                submissionDeadlineDate = phaseEndDate;
 
                                 // Kiểm tra xem có vượt quá deadline không
                                 if (currentDate.isAfter(phaseEndDate)) {
@@ -525,10 +528,10 @@ public class InnovationService {
                                                                                         + " đang trong thời gian hoạt động. Vui lòng liên hệ quản trị viên để biết thêm chi tiết.");
                                                 }
 
-                                                // Cho phép nộp trễ, tính số ngày trễ
-                                                lateSubmissionDays = ChronoUnit.DAYS.between(phaseEndDate, currentDate);
+                                                // Cho phép nộp trễ, lưu deadline date để FE tự tính toán
+                                                Long lateDays = ChronoUnit.DAYS.between(phaseEndDate, currentDate);
                                                 logger.info("Người dùng nộp sáng kiến trễ {} ngày. Hạn nộp: {}, Ngày nộp: {}",
-                                                                lateSubmissionDays, phaseEndDate, currentDate);
+                                                                lateDays, phaseEndDate, currentDate);
                                         }
                                 }
                         }
@@ -679,11 +682,19 @@ public class InnovationService {
 
                 InnovationFormDataResponse response = new InnovationFormDataResponse();
                 InnovationResponse innovationResponse = innovationMapper.toInnovationResponse(savedInnovation);
-                innovationResponse.setLateSubmissionDays(lateSubmissionDays);
+
+                // Tính số giây còn lại/trễ từ deadline
+                Long timeRemainingSeconds = null;
+                if (submissionDeadlineDate != null) {
+                        timeRemainingSeconds = calculateTimeRemainingSeconds(submissionDeadlineDate);
+                } else {
+                        timeRemainingSeconds = getSubmissionTimeRemainingSeconds(savedInnovation);
+                }
+                innovationResponse.setSubmissionTimeRemainingSeconds(timeRemainingSeconds);
                 response.setInnovation(innovationResponse);
                 response.setFormDataList(formDataResponses);
                 response.setDocumentHash(null);
-                response.setLateSubmissionDays(lateSubmissionDays);
+                response.setSubmissionTimeRemainingSeconds(timeRemainingSeconds);
 
                 return response;
         }
@@ -770,12 +781,12 @@ public class InnovationService {
                 // Tạo response
                 InnovationFormDataResponse response = new InnovationFormDataResponse();
                 InnovationResponse innovationResponse = innovationMapper.toInnovationResponse(innovation);
-                Long lateSubmissionDays = calculateLateSubmissionDays(innovation);
-                innovationResponse.setLateSubmissionDays(lateSubmissionDays);
+                Long timeRemainingSeconds = getSubmissionTimeRemainingSeconds(innovation);
+                innovationResponse.setSubmissionTimeRemainingSeconds(timeRemainingSeconds);
                 response.setInnovation(innovationResponse);
                 response.setFormDataList(formDataResponses);
                 response.setDocumentHash(null);
-                response.setLateSubmissionDays(lateSubmissionDays);
+                response.setSubmissionTimeRemainingSeconds(timeRemainingSeconds);
 
                 logger.info("===== END GET INNOVATION WITH FORM DATA =====");
                 return response;
@@ -1546,10 +1557,44 @@ public class InnovationService {
                 }
         }
 
-        private Long calculateLateSubmissionDays(Innovation innovation) {
+        /**
+         * Tính số giây trễ từ deadline date đến hiện tại
+         * 
+         * @param deadlineDate Deadline date (LocalDate)
+         * @return Số giây đã trễ (dương nếu đã quá deadline, 0 nếu chưa quá deadline,
+         *         null nếu deadlineDate null)
+         */
+        private Long calculateTimeRemainingSeconds(LocalDate deadlineDate) {
+                if (deadlineDate == null) {
+                        return null;
+                }
+
+                // Chuyển deadline date thành LocalDateTime (cuối ngày - 23:59:59)
+                LocalDateTime deadlineDateTime = deadlineDate.atTime(LocalTime.MAX);
+                LocalDateTime now = LocalDateTime.now();
+
+                // Tính số giây từ hiện tại đến deadline
+                long secondsBetween = ChronoUnit.SECONDS.between(now, deadlineDateTime);
+
+                // Nếu còn thời gian (dương): trả về 0
+                // Nếu đã quá deadline (âm): trả về số giây dương (số giây đã trễ)
+                if (secondsBetween >= 0) {
+                        return 0L;
+                } else {
+                        return Math.abs(secondsBetween);
+                }
+        }
+
+        /**
+         * Lấy số giây trễ từ deadline của submission phase
+         * 
+         * @param innovation Innovation entity
+         * @return Số giây đã trễ (dương nếu đã quá deadline, 0 nếu chưa quá deadline,
+         *         null nếu không có deadline)
+         */
+        private Long getSubmissionTimeRemainingSeconds(Innovation innovation) {
                 if (innovation == null || innovation.getDepartment() == null
-                                || innovation.getInnovationRound() == null
-                                || innovation.getCreatedAt() == null) {
+                                || innovation.getInnovationRound() == null) {
                         return null;
                 }
 
@@ -1565,17 +1610,10 @@ public class InnovationService {
                         }
 
                         DepartmentPhase departmentPhase = departmentPhaseOpt.get();
-                        LocalDate submissionDate = innovation.getCreatedAt().toLocalDate();
-                        LocalDate phaseEndDate = departmentPhase.getPhaseEndDate();
-
-                        if (submissionDate.isAfter(phaseEndDate)
-                                        && Boolean.TRUE.equals(departmentPhase.getAllowLateSubmission())) {
-                                return ChronoUnit.DAYS.between(phaseEndDate, submissionDate);
-                        }
-
-                        return null;
+                        LocalDate deadlineDate = departmentPhase.getPhaseEndDate();
+                        return calculateTimeRemainingSeconds(deadlineDate);
                 } catch (Exception e) {
-                        logger.warn("Lỗi khi tính toán số ngày trễ cho innovation {}: {}", innovation.getId(),
+                        logger.warn("Lỗi khi tính số giây deadline cho innovation {}: {}", innovation.getId(),
                                         e.getMessage());
                         return null;
                 }

@@ -19,12 +19,10 @@ public class InnovationResponse {
     private String basisText;
 
     // User info
-    private String userId;
     private String userFullName;
     private String userEmail;
 
     // Department info
-    private String departmentId;
     private String departmentName;
     private String departmentCode;
 
@@ -42,6 +40,7 @@ public class InnovationResponse {
     private String createdBy;
     private String updatedBy;
 
-    // Số ngày trễ khi nộp sáng kiến (null nếu không trễ)
-    private Long lateSubmissionDays;
+    // Số giây đã trễ từ deadline (dương nếu đã quá deadline, 0 nếu chưa quá
+    // deadline, null nếu không có deadline)
+    private Long submissionTimeRemainingSeconds;
 }
