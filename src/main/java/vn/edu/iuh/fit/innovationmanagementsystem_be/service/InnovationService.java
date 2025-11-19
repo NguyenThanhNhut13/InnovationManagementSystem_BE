@@ -1953,15 +1953,15 @@ public class InnovationService {
                 LocalDateTime deadlineDateTime = deadlineDate.atTime(LocalTime.MAX);
                 LocalDateTime now = LocalDateTime.now();
 
-                // Tính số giây từ hiện tại đến deadline
-                long secondsBetween = ChronoUnit.SECONDS.between(now, deadlineDateTime);
+                // Tính số giây từ deadline đến hiện tại (số giây đã trễ)
+                // Nếu chưa quá deadline: trả về 0
+                // Nếu đã quá deadline: trả về số giây dương (số giây đã trễ từ deadline)
+                long secondsBetween = ChronoUnit.SECONDS.between(deadlineDateTime, now);
 
-                // Nếu còn thời gian (dương): trả về 0
-                // Nếu đã quá deadline (âm): trả về số giây dương (số giây đã trễ)
-                if (secondsBetween >= 0) {
+                if (secondsBetween <= 0) {
                         return 0L;
                 } else {
-                        return Math.abs(secondsBetween);
+                        return secondsBetween;
                 }
         }
 
