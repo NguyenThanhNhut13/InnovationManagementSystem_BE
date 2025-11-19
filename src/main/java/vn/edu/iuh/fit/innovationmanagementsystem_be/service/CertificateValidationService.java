@@ -203,9 +203,10 @@ public class CertificateValidationService {
                     new ByteArrayInputStream(certBytes));
 
             CertificateInfo info = new CertificateInfo();
-            info.setSubject(certificate.getSubjectX500Principal().toString());
-            info.setIssuer(certificate.getIssuerX500Principal().toString());
+            info.setVersion(certificate.getVersion());
             info.setSerialNumber(certificate.getSerialNumber().toString());
+            info.setIssuer(certificate.getIssuerX500Principal().toString());
+            info.setSubject(certificate.getSubjectX500Principal().toString());
             info.setNotBefore(certificate.getNotBefore());
             info.setNotAfter(certificate.getNotAfter());
             info.setPublicKey(certificate.getPublicKey());
@@ -348,20 +349,28 @@ public class CertificateValidationService {
     }
 
     public static class CertificateInfo {
-        private String subject;
-        private String issuer;
+        private Integer version;
         private String serialNumber;
+        private String issuer;
+        private String subject;
         private Date notBefore;
         private Date notAfter;
         private java.security.PublicKey publicKey;
 
-        // Getters and setters
-        public String getSubject() {
-            return subject;
+        public Integer getVersion() {
+            return version;
         }
 
-        public void setSubject(String subject) {
-            this.subject = subject;
+        public void setVersion(Integer version) {
+            this.version = version;
+        }
+
+        public String getSerialNumber() {
+            return serialNumber;
+        }
+
+        public void setSerialNumber(String serialNumber) {
+            this.serialNumber = serialNumber;
         }
 
         public String getIssuer() {
@@ -372,12 +381,12 @@ public class CertificateValidationService {
             this.issuer = issuer;
         }
 
-        public String getSerialNumber() {
-            return serialNumber;
+        public String getSubject() {
+            return subject;
         }
 
-        public void setSerialNumber(String serialNumber) {
-            this.serialNumber = serialNumber;
+        public void setSubject(String subject) {
+            this.subject = subject;
         }
 
         public Date getNotBefore() {

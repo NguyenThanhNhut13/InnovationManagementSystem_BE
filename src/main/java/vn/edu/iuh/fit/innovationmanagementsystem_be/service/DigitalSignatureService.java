@@ -42,7 +42,7 @@ public class DigitalSignatureService {
     private final KeyManagementService keyManagementService;
     private final DigitalSignatureResponseMapper digitalSignatureResponseMapper;
     private final CertificateValidationService certificateValidationService;
-    private final CertificateManagementService certificateManagementService;
+    private final CertificateAuthorityService certificateAuthorityService;
     private final HSMEncryptionService hsmEncryptionService;
     private final AttachmentRepository attachmentRepository;
     private final FileService fileService;
@@ -54,7 +54,7 @@ public class DigitalSignatureService {
             KeyManagementService keyManagementService,
             DigitalSignatureResponseMapper digitalSignatureResponseMapper,
             CertificateValidationService certificateValidationService,
-            CertificateManagementService certificateManagementService,
+            CertificateAuthorityService certificateAuthorityService,
             HSMEncryptionService hsmEncryptionService,
             AttachmentRepository attachmentRepository,
             FileService fileService) {
@@ -65,7 +65,7 @@ public class DigitalSignatureService {
         this.keyManagementService = keyManagementService;
         this.digitalSignatureResponseMapper = digitalSignatureResponseMapper;
         this.certificateValidationService = certificateValidationService;
-        this.certificateManagementService = certificateManagementService;
+        this.certificateAuthorityService = certificateAuthorityService;
         this.hsmEncryptionService = hsmEncryptionService;
         this.attachmentRepository = attachmentRepository;
         this.fileService = fileService;
@@ -104,6 +104,9 @@ public class DigitalSignatureService {
             if (expirationResult.isExpired()) {
                 throw new IdInvalidException("Certificate đã hết hạn");
             }
+
+            // 1.1. Kiểm tra CA nội bộ
+            validateInternalCA(signatureProfile);
 
             validateAndSetupCertificateIfNeeded(signatureProfile, currentUser);
         }
@@ -366,6 +369,48 @@ public class DigitalSignatureService {
         }
     }
 
+    private void validateInternalCA(UserSignatureProfile signatureProfile) {
+        // Kiểm tra CA từ relationship trước
+        if (signatureProfile.getCertificateAuthority() != null) {
+            String caId = signatureProfile.getCertificateAuthority().getId();
+            boolean canUse = certificateAuthorityService.canUseCAForSigning(caId);
+            if (!canUse) {
+                throw new IdInvalidException(
+                        "CA nội bộ không thể sử dụng để ký số. CA chưa được xác minh hoặc đã hết hạn");
+            }
+            return;
+        }
+
+        // Nếu không có relationship, tìm CA từ certificate issuer
+        if (signatureProfile.getCertificateIssuer() != null) {
+            // Extract certificate serial từ certificate data để tìm CA
+            try {
+                CertificateValidationService.CertificateInfo certInfo = certificateValidationService
+                        .extractCertificateInfo(signatureProfile.getCertificateData());
+
+                vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.CertificateAuthority ca = certificateAuthorityService
+                        .findCAByCertificateSerial(certInfo.getSerialNumber());
+
+                if (ca != null) {
+                    // Tìm thấy CA, kiểm tra có thể dùng không
+                    boolean canUse = certificateAuthorityService.canUseCAForSigning(ca.getId());
+                    if (!canUse) {
+                        throw new IdInvalidException(
+                                "CA nội bộ không thể sử dụng để ký số. CA chưa được xác minh hoặc đã hết hạn");
+                    }
+                    // Link CA với signature profile để lần sau không cần tìm lại
+                    signatureProfile.setCertificateAuthority(ca);
+                    userSignatureProfileRepository.save(signatureProfile);
+                }
+                // Nếu không tìm thấy CA, có thể là certificate từ bên ngoài, cho phép ký
+            } catch (Exception e) {
+                // Nếu có lỗi khi extract hoặc tìm CA, vẫn cho phép ký (có thể là certificate từ
+                // bên ngoài)
+                // Log warning nhưng không throw exception
+            }
+        }
+    }
+
     private void validateAndSetupCertificateIfNeeded(UserSignatureProfile signatureProfile, User currentUser) {
         try {
             CertificateValidationService.CertificateValidationResult chainValidation = certificateValidationService
@@ -373,14 +418,6 @@ public class DigitalSignatureService {
             if (!chainValidation.isValid()) {
                 throw new IdInvalidException("Certificate chain không hợp lệ: " +
                         String.join(", ", chainValidation.getErrors()));
-            }
-
-            if (signatureProfile.getCertificateChain() == null) {
-                certificateManagementService.setupUserCertificate(
-                        currentUser.getId(),
-                        signatureProfile.getCertificateData(),
-                        hsmEncryptionService.decryptPrivateKey(signatureProfile.getEncryptedPrivateKey()),
-                        signatureProfile.getCertificateData());
             }
         } catch (Exception e) {
             throw new IdInvalidException("Certificate chain không hợp lệ: " + e.getMessage());

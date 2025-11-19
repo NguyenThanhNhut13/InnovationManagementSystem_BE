@@ -5,6 +5,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.UserSignatureProfile;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.CAStatusEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.UserSignatureProfileRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.exception.IdInvalidException;
 
@@ -29,7 +30,7 @@ public class CertificateManagementService {
      * Setup certificate cho user signature profile
      */
     public UserSignatureProfile setupUserCertificate(String userId, String certificateData,
-            String privateKey, String certificateChain) {
+            String privateKey) {
 
         try {
             // 1. Validate certificate
@@ -60,12 +61,15 @@ public class CertificateManagementService {
             profile.getUser().setId(userId);
             profile.setEncryptedPrivateKey(encryptedPrivateKey);
             profile.setCertificateData(certificateData);
-            profile.setCertificateChain(certificateChain);
+            profile.setCertificateVersion(certInfo.getVersion());
             profile.setCertificateSerial(certInfo.getSerialNumber());
             profile.setCertificateIssuer(certInfo.getIssuer());
-            profile.setCertificateExpiryDate(expirationResult.getCertificate().getNotAfter()
+            profile.setCertificateSubject(certInfo.getSubject());
+            profile.setCertificateValidFrom(certInfo.getNotBefore()
                     .toInstant().atZone(java.time.ZoneId.systemDefault()).toLocalDateTime());
-            profile.setCertificateStatus(expirationResult.isExpired() ? "EXPIRED" : "VALID");
+            profile.setCertificateExpiryDate(certInfo.getNotAfter()
+                    .toInstant().atZone(java.time.ZoneId.systemDefault()).toLocalDateTime());
+            profile.setCertificateStatus(expirationResult.isExpired() ? CAStatusEnum.EXPIRED : CAStatusEnum.VERIFIED);
             profile.setLastCertificateValidation(LocalDateTime.now());
 
             return userSignatureProfileRepository.save(profile);
@@ -97,13 +101,11 @@ public class CertificateManagementService {
 
             // Update status
             if (!validationResult.isValid()) {
-                profile.setCertificateStatus("INVALID");
+                profile.setCertificateStatus(CAStatusEnum.REVOKED);
             } else if (expirationResult.isExpired()) {
-                profile.setCertificateStatus("EXPIRED");
-            } else if (expirationResult.isExpiringSoon()) {
-                profile.setCertificateStatus("EXPIRING_SOON");
+                profile.setCertificateStatus(CAStatusEnum.EXPIRED);
             } else {
-                profile.setCertificateStatus("VALID");
+                profile.setCertificateStatus(CAStatusEnum.VERIFIED);
             }
 
             profile.setLastCertificateValidation(LocalDateTime.now());
@@ -128,7 +130,7 @@ public class CertificateManagementService {
             }
 
             // Validate certificate trước khi decrypt
-            if (!"VALID".equals(profile.getCertificateStatus())) {
+            if (profile.getCertificateStatus() != CAStatusEnum.VERIFIED) {
                 throw new IdInvalidException("Certificate không hợp lệ hoặc đã hết hạn");
             }
 
@@ -177,12 +179,13 @@ public class CertificateManagementService {
                     .checkCertificateExpiration(profile.getCertificateData());
 
             CertificateInfoResponse response = new CertificateInfoResponse();
-            response.setSubject(certInfo.getSubject());
-            response.setIssuer(certInfo.getIssuer());
+            response.setVersion(certInfo.getVersion());
             response.setSerialNumber(certInfo.getSerialNumber());
+            response.setIssuer(certInfo.getIssuer());
+            response.setSubject(certInfo.getSubject());
             response.setNotBefore(certInfo.getNotBefore());
             response.setNotAfter(certInfo.getNotAfter());
-            response.setStatus(profile.getCertificateStatus());
+            response.setStatus(profile.getCertificateStatus() != null ? profile.getCertificateStatus().name() : null);
             response.setDaysUntilExpiry(expirationResult.getDaysUntilExpiry());
             response.setExpired(expirationResult.isExpired());
             response.setExpiringSoon(expirationResult.isExpiringSoon());
@@ -238,9 +241,10 @@ public class CertificateManagementService {
 
     // Response classes
     public static class CertificateInfoResponse {
-        private String subject;
-        private String issuer;
+        private Integer version;
         private String serialNumber;
+        private String issuer;
+        private String subject;
         private java.util.Date notBefore;
         private java.util.Date notAfter;
         private String status;
@@ -249,13 +253,20 @@ public class CertificateManagementService {
         private boolean expiringSoon;
         private LocalDateTime lastValidation;
 
-        // Getters and setters
-        public String getSubject() {
-            return subject;
+        public Integer getVersion() {
+            return version;
         }
 
-        public void setSubject(String subject) {
-            this.subject = subject;
+        public void setVersion(Integer version) {
+            this.version = version;
+        }
+
+        public String getSerialNumber() {
+            return serialNumber;
+        }
+
+        public void setSerialNumber(String serialNumber) {
+            this.serialNumber = serialNumber;
         }
 
         public String getIssuer() {
@@ -266,12 +277,12 @@ public class CertificateManagementService {
             this.issuer = issuer;
         }
 
-        public String getSerialNumber() {
-            return serialNumber;
+        public String getSubject() {
+            return subject;
         }
 
-        public void setSerialNumber(String serialNumber) {
-            this.serialNumber = serialNumber;
+        public void setSubject(String subject) {
+            this.subject = subject;
         }
 
         public java.util.Date getNotBefore() {
