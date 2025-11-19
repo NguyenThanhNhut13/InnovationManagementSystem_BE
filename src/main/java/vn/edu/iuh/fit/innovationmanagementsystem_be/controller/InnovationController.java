@@ -152,6 +152,23 @@ public class InnovationController {
                                 innovationService.getAllDepartmentInnovationsWithFilter(specification, pageable));
         }
 
+        // 8. Xóa sáng kiến trạng thái DRAFT của user hiện tại
+        @DeleteMapping("/my-innovations/{id}")
+        @PreAuthorize("hasAnyRole('GIANG_VIEN')")
+        @ApiMessage("Xóa sáng kiến của tôi thành công")
+        @Operation(summary = "Delete My Draft Innovation", description = "Xóa sáng kiến đang ở trạng thái DRAFT của user hiện tại và xóa tệp MinIO liên quan")
+        @ApiResponses(value = {
+                        @ApiResponse(responseCode = "200", description = "Innovation deleted successfully"),
+                        @ApiResponse(responseCode = "401", description = "Unauthorized"),
+                        @ApiResponse(responseCode = "403", description = "Forbidden - You can only delete your own innovations"),
+                        @ApiResponse(responseCode = "404", description = "Innovation not found")
+        })
+        public ResponseEntity<Void> deleteMyDraftInnovation(
+                        @Parameter(description = "Innovation ID", required = true) @PathVariable String id) {
+                innovationService.deleteMyDraftInnovation(id);
+                return ResponseEntity.ok().build();
+        }
+
         // 1. Lấy danh sách sáng kiến
         // @GetMapping("/innovations")
         // @ApiMessage("Lấy danh sách sáng kiến thành công")

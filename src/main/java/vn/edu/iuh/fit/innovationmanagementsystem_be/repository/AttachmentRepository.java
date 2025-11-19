@@ -13,8 +13,9 @@ public interface AttachmentRepository extends JpaRepository<Attachment, String> 
 
     List<Attachment> findByInnovationIdAndType(String innovationId, AttachmentTypeEnum type);
 
+    List<Attachment> findByInnovationId(String innovationId);
+
     Optional<Attachment> findByInnovationIdAndTemplateId(String innovationId, String templateId);
 
     void deleteByInnovationIdAndTemplateId(String innovationId, String templateId);
 }
-
