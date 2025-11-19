@@ -5,11 +5,13 @@ import org.springframework.transaction.annotation.Transactional;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.Attachment;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.CertificateAuthority;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.DigitalSignature;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.FormTemplate;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.Innovation;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.User;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.UserSignatureProfile;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.DocumentTypeEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.SignatureStatusEnum;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.TemplateTypeEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.UserRoleEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.DigitalSignatureRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.DigitalSignatureResponse;
@@ -22,6 +24,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.exception.IdInvalidException
 import vn.edu.iuh.fit.innovationmanagementsystem_be.mapper.DigitalSignatureResponseMapper;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.AttachmentRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.DigitalSignatureRepository;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.FormTemplateRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.InnovationRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.UserSignatureProfileRepository;
 
@@ -50,6 +53,7 @@ public class DigitalSignatureService {
     private final HSMEncryptionService hsmEncryptionService;
     private final AttachmentRepository attachmentRepository;
     private final FileService fileService;
+    private final FormTemplateRepository formTemplateRepository;
 
     public DigitalSignatureService(DigitalSignatureRepository digitalSignatureRepository,
             InnovationRepository innovationRepository,
@@ -61,7 +65,8 @@ public class DigitalSignatureService {
             CertificateAuthorityService certificateAuthorityService,
             HSMEncryptionService hsmEncryptionService,
             AttachmentRepository attachmentRepository,
-            FileService fileService) {
+            FileService fileService,
+            FormTemplateRepository formTemplateRepository) {
         this.digitalSignatureRepository = digitalSignatureRepository;
         this.innovationRepository = innovationRepository;
         this.userSignatureProfileRepository = userSignatureProfileRepository;
@@ -73,6 +78,7 @@ public class DigitalSignatureService {
         this.hsmEncryptionService = hsmEncryptionService;
         this.attachmentRepository = attachmentRepository;
         this.fileService = fileService;
+        this.formTemplateRepository = formTemplateRepository;
     }
 
     // 1. Tạo digital signature
@@ -608,20 +614,26 @@ public class DigitalSignatureService {
                 .orElseThrow(() -> new IdInvalidException("Không tìm thấy file PDF cho template đã yêu cầu"));
 
         String pdfUrl = fileService.getPresignedUrl(attachment.getPathUrl(), 3600);
+        Optional<FormTemplate> formTemplateOpt = formTemplateRepository.findById(templateId);
+        DocumentTypeEnum documentType = formTemplateOpt
+                .map(FormTemplate::getTemplateType)
+                .map(this::mapTemplateTypeToDocumentType)
+                .orElse(null);
 
         TemplatePdfResponse response = new TemplatePdfResponse();
         response.setInnovationId(innovationId);
         response.setTemplateId(templateId);
-        response.setDocumentType(attachment.getDocumentType());
+        response.setDocumentType(documentType);
+        response.setOriginalFileName(resolveAttachmentOriginalFileName(attachment, formTemplateOpt.orElse(null)));
         response.setPdfUrl(pdfUrl);
 
         // Kiểm tra CA hợp lệ của user hiện tại
         boolean isCAValid = checkCAValidForCurrentUser();
         response.setIsCAValid(isCAValid);
 
-        if (attachment.getDocumentType() != null) {
+        if (documentType != null) {
             List<DigitalSignature> signatures = digitalSignatureRepository
-                    .findByInnovationIdAndDocumentTypeWithRelations(innovationId, attachment.getDocumentType());
+                    .findByInnovationIdAndDocumentTypeWithRelations(innovationId, documentType);
 
             List<TemplatePdfSignerResponse> signerResponses = signatures.stream()
                     .filter(sig -> sig.getStatus() == SignatureStatusEnum.SIGNED)
@@ -683,6 +695,39 @@ public class DigitalSignatureService {
         } catch (Exception e) {
             return false;
         }
+    }
+
+    private DocumentTypeEnum mapTemplateTypeToDocumentType(TemplateTypeEnum templateType) {
+        if (templateType == null) {
+            return null;
+        }
+
+        switch (templateType) {
+            case DON_DE_NGHI:
+                return DocumentTypeEnum.FORM_1;
+            case BAO_CAO_MO_TA:
+                return DocumentTypeEnum.FORM_2;
+            case BIEN_BAN_HOP:
+                return DocumentTypeEnum.REPORT_MAU_3;
+            case TONG_HOP_DE_NGHI:
+                return DocumentTypeEnum.REPORT_MAU_4;
+            case TONG_HOP_CHAM_DIEM:
+                return DocumentTypeEnum.REPORT_MAU_5;
+            case PHIEU_DANH_GIA:
+                return DocumentTypeEnum.REPORT_MAU_7;
+            default:
+                return null;
+        }
+    }
+
+    private String resolveAttachmentOriginalFileName(Attachment attachment, FormTemplate formTemplate) {
+        if (attachment.getOriginalFileName() != null && !attachment.getOriginalFileName().isBlank()) {
+            return attachment.getOriginalFileName();
+        }
+        if (formTemplate != null && formTemplate.getTemplateType() != null) {
+            return formTemplate.getTemplateType().getValue() + ".pdf";
+        }
+        return attachment.getFileName();
     }
 
     /*

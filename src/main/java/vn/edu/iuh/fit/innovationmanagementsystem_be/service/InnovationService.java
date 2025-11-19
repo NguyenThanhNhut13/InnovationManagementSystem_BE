@@ -2084,7 +2084,7 @@ public class InnovationService {
                                                                 + " đang trống.");
                         }
 
-                        generateAndStoreTemplatePdf(innovation, formTemplate, documentType, htmlContent);
+                        generateAndStoreTemplatePdf(innovation, formTemplate, htmlContent);
 
                         if (templateType != TemplateTypeEnum.DON_DE_NGHI
                                         && templateType != TemplateTypeEnum.BAO_CAO_MO_TA) {
@@ -2126,7 +2126,6 @@ public class InnovationService {
         private void generateAndStoreTemplatePdf(
                         Innovation innovation,
                         FormTemplate formTemplate,
-                        DocumentTypeEnum documentType,
                         String htmlContent) {
 
                 try {
@@ -2141,9 +2140,8 @@ public class InnovationService {
                         Attachment attachment = new Attachment();
                         attachment.setInnovation(innovation);
                         attachment.setTemplateId(formTemplate.getId());
-                        attachment.setDocumentType(documentType);
-                        // attachment.setType(AttachmentTypeEnum.PDF);
                         attachment.setFileName(fileName);
+                        attachment.setOriginalFileName(resolveTemplateOriginalFileName(formTemplate));
                         attachment.setFileSize((long) pdfBytes.length);
                         attachment.setPathUrl(objectName);
 
@@ -2168,6 +2166,13 @@ public class InnovationService {
 
         private String buildTemplatePdfFileName(String innovationId, String templateId) {
                 return innovationId + "_" + templateId + ".pdf";
+        }
+
+        private String resolveTemplateOriginalFileName(FormTemplate formTemplate) {
+                if (formTemplate != null && formTemplate.getTemplateType() != null) {
+                        return formTemplate.getTemplateType().getValue() + ".pdf";
+                }
+                return "template.pdf";
         }
 
         private DocumentTypeEnum mapTemplateTypeToDocumentType(TemplateTypeEnum templateType) {
@@ -2502,7 +2507,11 @@ public class InnovationService {
                         if (pathUrl == null || pathUrl.isBlank()) {
                                 continue;
                         }
-                        deleteFileSafely(pathUrl, innovationId, attachment.getFileName(), deletedFileNames);
+                        String displayName = attachment.getOriginalFileName();
+                        if (displayName == null || displayName.isBlank()) {
+                                displayName = attachment.getFileName();
+                        }
+                        deleteFileSafely(pathUrl, innovationId, displayName, deletedFileNames);
                         fileNamesFromFormData.remove(pathUrl);
                 }
 

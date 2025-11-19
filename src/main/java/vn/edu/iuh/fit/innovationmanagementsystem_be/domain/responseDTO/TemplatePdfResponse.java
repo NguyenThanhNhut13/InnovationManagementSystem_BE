@@ -15,6 +15,7 @@ public class TemplatePdfResponse {
 
     private String innovationId;
     private String templateId;
+    private String originalFileName;
     private DocumentTypeEnum documentType;
     private String pdfUrl;
     private List<TemplatePdfSignerResponse> signers = new ArrayList<>();
