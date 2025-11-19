@@ -401,13 +401,29 @@ public class DigitalSignatureService {
                     // Link CA với signature profile để lần sau không cần tìm lại
                     signatureProfile.setCertificateAuthority(ca);
                     userSignatureProfileRepository.save(signatureProfile);
+                    return;
                 }
-                // Nếu không tìm thấy CA, có thể là certificate từ bên ngoài, cho phép ký
+
+                // Nếu không tìm thấy CA trong hệ thống, từ chối ký số
+                // Yêu cầu admin thêm CA vào hệ thống và xác minh trước
+                throw new IdInvalidException(
+                        "Certificate không thuộc CA nội bộ đã được xác minh. " +
+                                "Vui lòng liên hệ admin để thêm CA vào hệ thống và xác minh trước khi sử dụng. " +
+                                "Certificate issuer: " + certInfo.getIssuer());
+            } catch (IdInvalidException e) {
+                // Re-throw IdInvalidException để giữ nguyên thông báo lỗi
+                throw e;
             } catch (Exception e) {
-                // Nếu có lỗi khi extract hoặc tìm CA, vẫn cho phép ký (có thể là certificate từ
-                // bên ngoài)
-                // Log warning nhưng không throw exception
+                // Nếu có lỗi khi extract certificate info, từ chối ký số
+                throw new IdInvalidException(
+                        "Không thể xác minh CA của certificate. Certificate có thể không hợp lệ hoặc không thuộc CA nội bộ: "
+                                +
+                                e.getMessage());
             }
+        } else {
+            // Nếu không có certificate issuer, từ chối ký số
+            throw new IdInvalidException(
+                    "Certificate không có thông tin issuer. Chỉ chấp nhận certificate từ CA nội bộ đã được xác minh.");
         }
     }
 
