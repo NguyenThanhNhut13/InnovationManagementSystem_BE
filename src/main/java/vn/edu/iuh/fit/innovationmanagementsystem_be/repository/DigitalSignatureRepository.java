@@ -1,6 +1,7 @@
 package vn.edu.iuh.fit.innovationmanagementsystem_be.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -43,4 +44,8 @@ public interface DigitalSignatureRepository extends JpaRepository<DigitalSignatu
                         SignatureStatusEnum status);
 
         Optional<DigitalSignature> findBySignatureHash(String signatureHash);
+
+        @Modifying
+        @Query("DELETE FROM DigitalSignature ds WHERE ds.innovation.id = :innovationId")
+        void deleteByInnovationId(@Param("innovationId") String innovationId);
 }

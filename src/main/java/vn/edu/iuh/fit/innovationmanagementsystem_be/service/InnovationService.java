@@ -58,6 +58,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.CoInnovationRepos
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.UserRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.DepartmentPhaseRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.UserSignatureProfileRepository;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.DigitalSignatureRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.CoInnovation;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.DepartmentPhase;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.UserSignatureProfile;
@@ -112,6 +113,7 @@ public class InnovationService {
         private final PdfGeneratorService pdfGeneratorService;
         private final UserSignatureProfileRepository userSignatureProfileRepository;
         private final CertificateAuthorityService certificateAuthorityService;
+        private final DigitalSignatureRepository digitalSignatureRepository;
 
         public InnovationService(InnovationRepository innovationRepository,
                         InnovationPhaseRepository innovationPhaseRepository,
@@ -135,7 +137,8 @@ public class InnovationService {
                         FileService fileService,
                         PdfGeneratorService pdfGeneratorService,
                         UserSignatureProfileRepository userSignatureProfileRepository,
-                        CertificateAuthorityService certificateAuthorityService) {
+                        CertificateAuthorityService certificateAuthorityService,
+                        DigitalSignatureRepository digitalSignatureRepository) {
                 this.innovationRepository = innovationRepository;
                 this.innovationPhaseRepository = innovationPhaseRepository;
                 this.formDataService = formDataService;
@@ -159,6 +162,7 @@ public class InnovationService {
                 this.pdfGeneratorService = pdfGeneratorService;
                 this.userSignatureProfileRepository = userSignatureProfileRepository;
                 this.certificateAuthorityService = certificateAuthorityService;
+                this.digitalSignatureRepository = digitalSignatureRepository;
         }
 
         // 1. Lấy tất cả sáng kiến của user hiện tại với filter
@@ -507,9 +511,8 @@ public class InnovationService {
                         }
                 }
 
-                // Xử lý trường hợp update DRAFT sang SUBMITTED
-                if (request.getInnovationId() != null && !request.getInnovationId().isEmpty()
-                                && request.getStatus() == InnovationStatusEnum.SUBMITTED) {
+                // Xử lý trường hợp update DRAFT (cả khi status là DRAFT hoặc SUBMITTED)
+                if (request.getInnovationId() != null && !request.getInnovationId().isEmpty()) {
                         existingInnovation = innovationRepository.findById(request.getInnovationId())
                                         .orElseThrow(() -> new IdInvalidException(
                                                         "Không tìm thấy sáng kiến với ID: "
@@ -520,19 +523,31 @@ public class InnovationService {
                                 throw new IdInvalidException("Bạn không có quyền chỉnh sửa sáng kiến này");
                         }
 
-                        // Kiểm tra status phải là DRAFT
-                        if (existingInnovation.getStatus() != InnovationStatusEnum.DRAFT) {
-                                throw new IdInvalidException(
-                                                "Chỉ có thể nộp sáng kiến ở trạng thái DRAFT. Sáng kiến hiện tại đang ở trạng thái: "
-                                                                + existingInnovation.getStatus());
+                        // Nếu status là SUBMITTED, kiểm tra innovation hiện tại phải là DRAFT
+                        if (request.getStatus() == InnovationStatusEnum.SUBMITTED) {
+                                if (existingInnovation.getStatus() != InnovationStatusEnum.DRAFT) {
+                                        throw new IdInvalidException(
+                                                        "Chỉ có thể nộp sáng kiến ở trạng thái DRAFT. Sáng kiến hiện tại đang ở trạng thái: "
+                                                                        + existingInnovation.getStatus());
+                                }
+
+                                // Kiểm tra phase phải khớp khi nộp
+                                if (existingInnovation.getInnovationPhase().getId() != null
+                                                && !existingInnovation.getInnovationPhase().getId()
+                                                                .equals(innovationPhase.getId())) {
+                                        throw new IdInvalidException(
+                                                        "Không thể nộp sáng kiến vì giai đoạn không khớp. Vui lòng kiểm tra lại.");
+                                }
                         }
 
-                        // Kiểm tra phase phải khớp
-                        if (existingInnovation.getInnovationPhase().getId() != null
-                                        && !existingInnovation.getInnovationPhase().getId()
-                                                        .equals(innovationPhase.getId())) {
-                                throw new IdInvalidException(
-                                                "Không thể nộp sáng kiến vì giai đoạn không khớp. Vui lòng kiểm tra lại.");
+                        // Nếu status là DRAFT, chỉ cho phép update nếu innovation hiện tại cũng là
+                        // DRAFT
+                        if (request.getStatus() == InnovationStatusEnum.DRAFT) {
+                                if (existingInnovation.getStatus() != InnovationStatusEnum.DRAFT) {
+                                        throw new IdInvalidException(
+                                                        "Chỉ có thể cập nhật sáng kiến ở trạng thái DRAFT. Sáng kiến hiện tại đang ở trạng thái: "
+                                                                        + existingInnovation.getStatus());
+                                }
                         }
                 }
 
@@ -620,17 +635,22 @@ public class InnovationService {
                         existingInnovation.setBasisText(request.getBasisText());
                         savedInnovation = innovationRepository.save(existingInnovation);
 
-                        // Xóa FormData cũ và CoInnovation cũ
+                        // Xóa FormData cũ, CoInnovation cũ và Attachment cũ
                         formDataRepository.deleteByInnovationId(savedInnovation.getId());
                         coInnovationRepository.deleteByInnovationId(savedInnovation.getId());
+                        attachmentRepository.deleteByInnovationId(savedInnovation.getId());
 
                         // Tạo activity log
+                        String activityMessage = request.getStatus() == InnovationStatusEnum.DRAFT
+                                        ? "Bạn đã cập nhật bản nháp sáng kiến '" + savedInnovation.getInnovationName()
+                                                        + "'"
+                                        : "Bạn đã nộp sáng kiến '" + savedInnovation.getInnovationName() + "'";
                         activityLogService.createActivityLog(
                                         currentUser.getId(),
                                         savedInnovation.getId(),
                                         savedInnovation.getInnovationName(),
                                         request.getStatus(),
-                                        "Bạn đã nộp sáng kiến '" + savedInnovation.getInnovationName() + "'");
+                                        activityMessage);
                 } else {
                         // Tạo Innovation mới
                         Innovation innovation = new Innovation();
@@ -733,6 +753,9 @@ public class InnovationService {
                                 }
                         }
                 }
+
+                // Tạo Attachment từ formData (tạo liên kết giữa Innovation và Attachment)
+                createAttachmentsFromFormData(savedInnovation.getId());
 
                 // Xử lý đồng sáng kiến từ formData
                 processCoInnovations(savedInnovation, request.getTemplates());
@@ -2496,11 +2519,9 @@ public class InnovationService {
                         throw new IdInvalidException("Chỉ có thể xóa sáng kiến ở trạng thái DRAFT");
                 }
 
-                List<FormData> formDataList = formDataRepository.findByInnovationIdWithRelations(innovationId);
-                Set<String> fileNamesFromFormData = collectFileNamesFromFormData(formDataList);
-                Set<String> deletedFileNames = new HashSet<>();
-
+                // Xóa file từ Attachment (giờ đã có quan hệ thực sự)
                 List<Attachment> attachments = attachmentRepository.findByInnovationId(innovationId);
+                Set<String> deletedFileNames = new HashSet<>();
 
                 for (Attachment attachment : attachments) {
                         String pathUrl = attachment.getPathUrl();
@@ -2512,19 +2533,188 @@ public class InnovationService {
                                 displayName = attachment.getFileName();
                         }
                         deleteFileSafely(pathUrl, innovationId, displayName, deletedFileNames);
-                        fileNamesFromFormData.remove(pathUrl);
                 }
 
-                for (String fileName : fileNamesFromFormData) {
-                        deleteFileSafely(fileName, innovationId, null, deletedFileNames);
-                }
-
-                attachmentRepository.deleteByInnovationId(innovationId);
                 formDataRepository.deleteByInnovationId(innovationId);
                 coInnovationRepository.deleteByInnovationId(innovationId);
+                digitalSignatureRepository.deleteByInnovationId(innovationId);
                 innovationRepository.delete(innovation);
 
                 logger.info("===== DELETE MY DRAFT INNOVATION SUCCESS =====");
+        }
+
+        // 9. Tạo Attachment từ formData để tạo liên kết giữa Innovation và Attachment
+        private void createAttachmentsFromFormData(String innovationId) {
+                logger.info("===== CREATE ATTACHMENTS FROM FORMDATA =====");
+                logger.info("Innovation ID: {}", innovationId);
+
+                List<FormData> formDataList = formDataRepository.findByInnovationIdWithRelations(innovationId);
+                if (formDataList == null || formDataList.isEmpty()) {
+                        logger.info("Không có formData nào để tạo Attachment");
+                        return;
+                }
+
+                Innovation innovation = innovationRepository.findById(innovationId)
+                                .orElseThrow(() -> new IdInvalidException(
+                                                "Không tìm thấy Innovation với ID: " + innovationId));
+
+                Set<String> processedFiles = new HashSet<>();
+
+                for (FormData formData : formDataList) {
+                        if (formData == null || formData.getFormField() == null) {
+                                continue;
+                        }
+
+                        FormField formField = formData.getFormField();
+                        JsonNode fieldValue = formData.getFieldValue();
+
+                        if (fieldValue == null || fieldValue.isNull()) {
+                                continue;
+                        }
+
+                        FieldTypeEnum fieldType = formField.getFieldType();
+                        String templateId = null;
+                        if (formField.getFormTemplate() != null) {
+                                templateId = formField.getFormTemplate().getId();
+                        }
+
+                        if (fieldType == FieldTypeEnum.FILE) {
+                                createAttachmentsFromValueNode(innovation, templateId, fieldValue, processedFiles);
+                                continue;
+                        }
+
+                        if (fieldValue.isObject() && fieldValue.has("fieldKey") && fieldValue.has("value")) {
+                                String nestedFieldKey = fieldValue.get("fieldKey").asText();
+                                FieldTypeEnum nestedType = resolveNestedFieldType(formField, nestedFieldKey);
+                                if (nestedType == FieldTypeEnum.FILE) {
+                                        createAttachmentsFromValueNode(innovation, templateId, fieldValue.get("value"),
+                                                        processedFiles);
+                                }
+                                continue;
+                        }
+
+                        if (fieldValue.isArray()) {
+                                createAttachmentsFromNestedNode(innovation, templateId, formField, fieldValue,
+                                                processedFiles);
+                        }
+                }
+
+                logger.info("===== CREATE ATTACHMENTS FROM FORMDATA SUCCESS =====");
+        }
+
+        private void createAttachmentsFromValueNode(Innovation innovation, String templateId, JsonNode valueNode,
+                        Set<String> processedFiles) {
+                if (valueNode == null || valueNode.isNull()) {
+                        return;
+                }
+
+                if (valueNode.isTextual()) {
+                        String fileName = valueNode.asText().trim();
+                        if (!fileName.isEmpty() && !processedFiles.contains(fileName)) {
+                                createAttachment(innovation, templateId, fileName, null, null);
+                                processedFiles.add(fileName);
+                        }
+                        return;
+                }
+
+                if (valueNode.isArray()) {
+                        for (JsonNode item : valueNode) {
+                                createAttachmentsFromValueNode(innovation, templateId, item, processedFiles);
+                        }
+                        return;
+                }
+
+                if (valueNode.isObject()) {
+                        String pathUrl = null;
+                        String originalFileName = null;
+
+                        if (valueNode.hasNonNull("pathUrl")) {
+                                pathUrl = valueNode.get("pathUrl").asText().trim();
+                        } else if (valueNode.hasNonNull("fileName")) {
+                                pathUrl = valueNode.get("fileName").asText().trim();
+                        }
+
+                        if (valueNode.hasNonNull("originalFileName")) {
+                                originalFileName = valueNode.get("originalFileName").asText().trim();
+                        }
+
+                        if (pathUrl != null && !pathUrl.isEmpty() && !processedFiles.contains(pathUrl)) {
+                                createAttachment(innovation, templateId, pathUrl, originalFileName, null);
+                                processedFiles.add(pathUrl);
+                        } else if (valueNode.has("value")) {
+                                createAttachmentsFromValueNode(innovation, templateId, valueNode.get("value"),
+                                                processedFiles);
+                        }
+                }
+        }
+
+        private void createAttachmentsFromNestedNode(Innovation innovation, String templateId, FormField parentField,
+                        JsonNode node, Set<String> processedFiles) {
+                if (node == null || node.isNull()) {
+                        return;
+                }
+
+                if (node.isObject()) {
+                        if (node.has("fieldKey") && node.has("value")) {
+                                String nestedFieldKey = node.get("fieldKey").asText();
+                                FieldTypeEnum nestedType = resolveNestedFieldType(parentField, nestedFieldKey);
+                                if (nestedType == FieldTypeEnum.FILE) {
+                                        createAttachmentsFromValueNode(innovation, templateId, node.get("value"),
+                                                        processedFiles);
+                                }
+                        } else if (parentField != null && parentField.getFieldType() == FieldTypeEnum.TABLE) {
+                                Set<String> fileColumns = getFileColumnKeys(parentField);
+                                for (String columnKey : fileColumns) {
+                                        JsonNode cellNode = node.get(columnKey);
+                                        if (cellNode != null) {
+                                                createAttachmentsFromValueNode(innovation, templateId, cellNode,
+                                                                processedFiles);
+                                        }
+                                }
+                        }
+                } else if (node.isArray()) {
+                        for (JsonNode child : node) {
+                                createAttachmentsFromNestedNode(innovation, templateId, parentField, child,
+                                                processedFiles);
+                        }
+                }
+        }
+
+        private void createAttachment(Innovation innovation, String templateId, String pathUrl,
+                        String originalFileName, Long fileSize) {
+                if (pathUrl == null || pathUrl.isBlank()) {
+                        return;
+                }
+
+                // Kiểm tra xem Attachment đã tồn tại chưa (dựa trên innovationId và pathUrl)
+                List<Attachment> existingAttachments = attachmentRepository.findByInnovationId(innovation.getId());
+                boolean alreadyExists = existingAttachments.stream()
+                                .anyMatch(att -> pathUrl.equals(att.getPathUrl()));
+                if (alreadyExists) {
+                        logger.debug("Attachment đã tồn tại cho innovation {} và pathUrl {}", innovation.getId(),
+                                        pathUrl);
+                        return;
+                }
+
+                Attachment attachment = new Attachment();
+                attachment.setInnovation(innovation);
+                attachment.setTemplateId(templateId);
+                attachment.setPathUrl(pathUrl);
+                attachment.setFileName(pathUrl);
+
+                if (originalFileName != null && !originalFileName.isBlank()) {
+                        attachment.setOriginalFileName(originalFileName);
+                } else {
+                        attachment.setOriginalFileName(pathUrl);
+                }
+
+                if (fileSize != null) {
+                        attachment.setFileSize(fileSize);
+                }
+
+                attachmentRepository.save(attachment);
+                logger.debug("Đã tạo Attachment: innovationId={}, templateId={}, pathUrl={}", innovation.getId(),
+                                templateId, pathUrl);
         }
 
         private record SignatureProcessingResult(
