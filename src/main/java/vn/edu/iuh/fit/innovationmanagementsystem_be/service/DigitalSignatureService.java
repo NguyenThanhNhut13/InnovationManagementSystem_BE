@@ -575,6 +575,10 @@ public class DigitalSignatureService {
         response.setDocumentType(attachment.getDocumentType());
         response.setPdfUrl(pdfUrl);
 
+        // Kiểm tra CA hợp lệ của user hiện tại
+        boolean isCAValid = checkCAValidForCurrentUser();
+        response.setIsCAValid(isCAValid);
+
         if (attachment.getDocumentType() != null) {
             List<DigitalSignature> signatures = digitalSignatureRepository
                     .findByInnovationIdAndDocumentTypeWithRelations(innovationId, attachment.getDocumentType());
@@ -591,6 +595,52 @@ public class DigitalSignatureService {
         }
 
         return response;
+    }
+
+    /*
+     * Method để kiểm tra CA hợp lệ của user hiện tại
+     */
+    private boolean checkCAValidForCurrentUser() {
+        try {
+            User currentUser = userService.getCurrentUser();
+            Optional<UserSignatureProfile> signatureProfileOpt = userSignatureProfileRepository
+                    .findByUserId(currentUser.getId());
+
+            if (signatureProfileOpt.isEmpty()) {
+                return false;
+            }
+
+            UserSignatureProfile signatureProfile = signatureProfileOpt.get();
+
+            // Kiểm tra CA từ relationship trước
+            if (signatureProfile.getCertificateAuthority() != null) {
+                String caId = signatureProfile.getCertificateAuthority().getId();
+                return certificateAuthorityService.canUseCAForSigning(caId);
+            }
+
+            // Nếu không có relationship, tìm CA từ certificate issuer
+            if (signatureProfile.getCertificateIssuer() != null && signatureProfile.getCertificateData() != null) {
+                try {
+                    CertificateValidationService.CertificateInfo certInfo = certificateValidationService
+                            .extractCertificateInfo(signatureProfile.getCertificateData());
+
+                    vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.CertificateAuthority ca = certificateAuthorityService
+                            .findCAByCertificateSerial(certInfo.getSerialNumber());
+
+                    if (ca != null) {
+                        return certificateAuthorityService.canUseCAForSigning(ca.getId());
+                    }
+
+                    return false;
+                } catch (Exception e) {
+                    return false;
+                }
+            }
+
+            return false;
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     /*

@@ -13,12 +13,16 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.UserSigna
 import vn.edu.iuh.fit.innovationmanagementsystem_be.exception.IdInvalidException;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.mapper.UserSignatureProfileResponseMapper;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.UserSignatureProfileRepository;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.constants.SignatureConstants;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.UserRepository;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.constants.CAConstans;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.CAStatusEnum;
 
 import java.security.KeyPair;
+import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Base64;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -27,6 +31,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 public class UserSignatureProfileService {
 
     private final UserSignatureProfileRepository userSignatureProfileRepository;
+    private final UserRepository userRepository;
     private final KeyManagementService keyManagementService;
     private final HSMEncryptionService hsmEncryptionService;
     private final UserService userService;
@@ -39,6 +44,7 @@ public class UserSignatureProfileService {
             "image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp", "image/bmp");
 
     public UserSignatureProfileService(UserSignatureProfileRepository userSignatureProfileRepository,
+            UserRepository userRepository,
             KeyManagementService keyManagementService,
             HSMEncryptionService hsmEncryptionService,
             @Lazy UserService userService,
@@ -47,6 +53,7 @@ public class UserSignatureProfileService {
             ObjectMapper objectMapper,
             CertificateAuthorityService certificateAuthorityService) {
         this.userSignatureProfileRepository = userSignatureProfileRepository;
+        this.userRepository = userRepository;
         this.keyManagementService = keyManagementService;
         this.hsmEncryptionService = hsmEncryptionService;
         this.userService = userService;
@@ -64,25 +71,7 @@ public class UserSignatureProfileService {
                 throw new IdInvalidException("User đã có hồ sơ chữ ký số");
             }
 
-            // Tạo cặp khóa mới cho user
-            KeyPair keyPair = keyManagementService.generateKeyPair();
-
-            User user = new User();
-            user.setId(request.getUserId());
-
-            // Tạo UserSignatureProfile
-            UserSignatureProfile signatureProfile = new UserSignatureProfile();
-            signatureProfile.setUser(user);
-            signatureProfile.setPathUrl(request.getPathUrl());
-            // Encrypt private key trước khi lưu
-            String privateKeyString = keyManagementService.privateKeyToString(keyPair.getPrivate());
-            String encryptedPrivateKey = hsmEncryptionService.encryptPrivateKey(privateKeyString);
-            signatureProfile.setEncryptedPrivateKey(encryptedPrivateKey);
-            signatureProfile.setPublicKey(keyManagementService.publicKeyToString(keyPair.getPublic()));
-            signatureProfile.setCertificateSerial(keyManagementService.generateCertificateSerial());
-            signatureProfile.setCertificateIssuer(SignatureConstants.CERTIFICATE_ISSUER);
-
-            // Tự động set CA đang hoạt động
+            // Lấy CA đang hoạt động trước để lấy thông tin issuer
             CertificateAuthority ca = null;
             if (request.getCertificateAuthorityId() != null && !request.getCertificateAuthorityId().isEmpty()) {
                 ca = certificateAuthorityService.findCAById(request.getCertificateAuthorityId());
@@ -92,9 +81,78 @@ public class UserSignatureProfileService {
                 ca = certificateAuthorityService.getActiveCA();
             }
 
+            // Lấy thông tin user đầy đủ
+            User user = userRepository.findById(request.getUserId())
+                    .orElseThrow(() -> new IdInvalidException("Không tìm thấy user với ID: " + request.getUserId()));
+
+            // Tạo cặp khóa mới cho user
+            KeyPair keyPair = keyManagementService.generateKeyPair();
+            String publicKeyBase64 = keyManagementService.publicKeyToString(keyPair.getPublic());
+
+            // Tạo UserSignatureProfile
+            UserSignatureProfile signatureProfile = new UserSignatureProfile();
+            signatureProfile.setUser(user);
+            signatureProfile.setPathUrl(request.getPathUrl());
+            // Encrypt private key trước khi lưu
+            String privateKeyString = keyManagementService.privateKeyToString(keyPair.getPrivate());
+            String encryptedPrivateKey = hsmEncryptionService.encryptPrivateKey(privateKeyString);
+            signatureProfile.setEncryptedPrivateKey(encryptedPrivateKey);
+            signatureProfile.setPublicKey(publicKeyBase64);
+
+            // Thiết lập thời gian hiệu lực certificate
+            LocalDateTime now = LocalDateTime.now();
+            LocalDateTime validFrom = now;
+            LocalDateTime validTo = now.plusYears(1);
+
+            // Lấy thông tin certificate từ CA nếu có, nếu không thì dùng constants
+            String certificateIssuer;
+            String certificateSerial;
             if (ca != null) {
+                certificateIssuer = ca.getCertificateIssuer();
                 signatureProfile.setCertificateAuthority(ca);
+                // Tạo serial dựa trên CA serial để đảm bảo liên kết
+                String caSerial = ca.getCertificateSerial();
+                if (caSerial != null && !caSerial.isEmpty()) {
+                    // Lấy prefix từ CA serial (ví dụ: "CA-ADMIN-QUINTON-1763521463" ->
+                    // "CA-ADMIN-QUINTON")
+                    // Tìm vị trí số cuối cùng (timestamp) và lấy phần trước đó
+                    String prefix = caSerial;
+                    int lastDashIndex = caSerial.lastIndexOf('-');
+                    if (lastDashIndex > 0) {
+                        // Kiểm tra phần sau dấu "-" cuối cùng có phải là số không
+                        String lastPart = caSerial.substring(lastDashIndex + 1);
+                        if (lastPart.matches("\\d+")) {
+                            // Nếu là số (timestamp), lấy phần trước dấu "-" cuối cùng
+                            prefix = caSerial.substring(0, lastDashIndex);
+                        }
+                    }
+                    certificateSerial = prefix + "-USER-" + System.currentTimeMillis() + "-"
+                            + (int) (Math.random() * 10000);
+                } else {
+                    certificateSerial = keyManagementService.generateCertificateSerial();
+                }
+            } else {
+                // Fallback về constants nếu không có CA
+                certificateIssuer = CAConstans.certificateIssuer;
+                certificateSerial = keyManagementService.generateCertificateSerial();
             }
+
+            // Tạo certificate subject từ thông tin user
+            String certificateSubject = String.format("CN=%s, O=IUH, C=VN", user.getFullName());
+
+            // Tạo certificate data (tương tự như CASeeder)
+            String certificateData = createCertificateData(publicKeyBase64, certificateSerial, certificateIssuer,
+                    certificateSubject, validFrom, validTo);
+
+            // Set các trường certificate
+            signatureProfile.setCertificateVersion(3); // X.509 v3
+            signatureProfile.setCertificateSerial(certificateSerial);
+            signatureProfile.setCertificateIssuer(certificateIssuer);
+            signatureProfile.setCertificateSubject(certificateSubject);
+            signatureProfile.setCertificateValidFrom(validFrom);
+            signatureProfile.setCertificateExpiryDate(validTo);
+            signatureProfile.setCertificateData(certificateData);
+            signatureProfile.setCertificateStatus(CAStatusEnum.VERIFIED);
 
             return userSignatureProfileRepository.save(signatureProfile);
         } catch (Exception e) {
@@ -235,5 +293,19 @@ public class UserSignatureProfileService {
         List<String> pathUrls = parsePathUrlsFromString(signatureProfile.getPathUrl());
         response.setPathUrls(pathUrls);
         return response;
+    }
+
+    // Helper method: Tạo certificate data (tương tự như CASeeder)
+    private String createCertificateData(String publicKeyBase64, String serial, String issuer, String subject,
+            LocalDateTime validFrom, LocalDateTime validTo) {
+        try {
+            String certInfo = String.format(
+                    "Certificate Data for User\nSerial: %s\nIssuer: %s\nSubject: %s\nValid From: %s\nValid To: %s\nPublic Key: %s",
+                    serial, issuer, subject, validFrom, validTo, publicKeyBase64);
+
+            return Base64.getEncoder().encodeToString(certInfo.getBytes());
+        } catch (Exception e) {
+            throw new IdInvalidException("Không thể tạo certificate data: " + e.getMessage());
+        }
     }
 }
