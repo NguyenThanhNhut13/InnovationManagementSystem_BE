@@ -54,7 +54,8 @@ public class UserSignatureProfile extends Auditable {
     @Column(name = "certificate_data", columnDefinition = "TEXT")
     private String certificateData; // X.509 Certificate data (Base64)
 
-    @Column(name = "certificate_status")
+    @Enumerated(EnumType.STRING)
+    @Column(name = "certificate_status", nullable = false)
     private CAStatusEnum certificateStatus; // Status: VALID, EXPIRED, REVOKED, etc.
 
     // Relationships
