@@ -460,9 +460,9 @@ public class InnovationService {
                 InnovationPhase innovationPhase;
                 if (request.getInnovationPhaseId() != null && !request.getInnovationPhaseId().isEmpty()) {
                         innovationPhase = innovationPhaseRepository.findById(request.getInnovationPhaseId())
-                                        .orElseThrow(() -> new IdInvalidException(
-                                                        "Không tìm thấy giai đoạn sáng kiến với ID: "
-                                                                        + request.getInnovationPhaseId()));
+                                .orElseThrow(() -> new IdInvalidException(
+                                                "Không tìm thấy giai đoạn sáng kiến với ID: "
+                                                                + request.getInnovationPhaseId()));
                 } else {
                         innovationPhase = innovationPhaseRepository
                                         .findSubmissionPhaseByOpenRound(InnovationPhaseTypeEnum.SUBMISSION)
@@ -618,13 +618,13 @@ public class InnovationService {
                                         "Bạn đã nộp sáng kiến '" + savedInnovation.getInnovationName() + "'");
                 } else {
                         // Tạo Innovation mới
-                        Innovation innovation = new Innovation();
-                        innovation.setInnovationName(request.getInnovationName());
-                        innovation.setUser(currentUser);
-                        innovation.setDepartment(currentUser.getDepartment());
-                        innovation.setInnovationPhase(innovationPhase);
+                Innovation innovation = new Innovation();
+                innovation.setInnovationName(request.getInnovationName());
+                innovation.setUser(currentUser);
+                innovation.setDepartment(currentUser.getDepartment());
+                innovation.setInnovationPhase(innovationPhase);
                         innovation.setInnovationRound(innovationPhase.getInnovationRound());
-                        innovation.setIsScore(request.getIsScore() != null ? request.getIsScore() : false);
+                innovation.setIsScore(request.getIsScore() != null ? request.getIsScore() : false);
                         innovation.setStatus(request.getStatus());
                         innovation.setBasisText(request.getBasisText());
 
@@ -689,7 +689,7 @@ public class InnovationService {
                                                 FormDataResponse formDataResponse = formDataService
                                                                 .createFormData(formDataRequest);
                                                 formDataResponses.add(formDataResponse);
-                                        } else {
+                } else {
                                                 // Field ở level root, lưu bình thường
                                                 FormDataRequest formDataRequest = new FormDataRequest();
 
@@ -729,9 +729,9 @@ public class InnovationService {
                 // Gửi thông báo cho user khi tạo sáng kiến thành công
                 try {
                         notificationService.notifyUserOnInnovationCreated(
-                                        currentUser.getId(),
-                                        savedInnovation.getId(),
-                                        savedInnovation.getInnovationName(),
+                                currentUser.getId(),
+                                savedInnovation.getId(),
+                                savedInnovation.getInnovationName(),
                                         savedInnovation.getStatus());
                 } catch (Exception e) {
                         logger.error("Lỗi khi gửi thông báo tạo sáng kiến: {}", e.getMessage(), e);
@@ -785,7 +785,7 @@ public class InnovationService {
                         List<FormData> allFormDataForInnovation = formDataRepository.findAll().stream()
                                         .filter(fd -> fd.getInnovation() != null &&
                                                         innovationId.equals(fd.getInnovation().getId()))
-                                        .collect(Collectors.toList());
+                                .collect(Collectors.toList());
                         logger.info("FormData found with direct query (no relations): {}",
                                         allFormDataForInnovation.size());
                 }
