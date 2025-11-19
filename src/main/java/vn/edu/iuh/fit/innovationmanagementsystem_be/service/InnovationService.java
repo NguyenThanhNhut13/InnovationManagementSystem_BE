@@ -20,7 +20,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.InnovationPhase
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.User;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.FormField;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.FormData;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.AttachmentTypeEnum;
+// import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.AttachmentTypeEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationStatusEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationPhaseTypeEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.FieldTypeEnum;
@@ -73,6 +73,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.Utils;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.HashSet;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.Arrays;
@@ -2141,7 +2142,7 @@ public class InnovationService {
                         attachment.setInnovation(innovation);
                         attachment.setTemplateId(formTemplate.getId());
                         attachment.setDocumentType(documentType);
-                        attachment.setType(AttachmentTypeEnum.PDF);
+                        // attachment.setType(AttachmentTypeEnum.PDF);
                         attachment.setFileName(fileName);
                         attachment.setFileSize((long) pdfBytes.length);
                         attachment.setPathUrl(objectName);
@@ -2262,6 +2263,212 @@ public class InnovationService {
                 return fieldValue;
         }
 
+        private void deleteFileSafely(String fileName, String innovationId, String displayName,
+                        Set<String> deletedFileNames) {
+                if (fileName == null || fileName.isBlank()) {
+                        return;
+                }
+
+                if (deletedFileNames.contains(fileName)) {
+                        return;
+                }
+
+                try {
+                        fileService.deleteFile(fileName);
+                        deletedFileNames.add(fileName);
+                } catch (Exception e) {
+                        logger.error("Không thể xóa file {} của innovation {}: {}", fileName, innovationId,
+                                        e.getMessage());
+                        String finalDisplayName = (displayName != null && !displayName.isBlank()) ? displayName
+                                        : fileName;
+                        throw new IdInvalidException("Không thể xóa tệp đính kèm: " + finalDisplayName);
+                }
+        }
+
+        private Set<String> collectFileNamesFromFormData(List<FormData> formDataList) {
+                Set<String> fileNames = new HashSet<>();
+                if (formDataList == null || formDataList.isEmpty()) {
+                        return fileNames;
+                }
+
+                for (FormData formData : formDataList) {
+                        if (formData == null || formData.getFormField() == null) {
+                                continue;
+                        }
+
+                        FormField formField = formData.getFormField();
+                        JsonNode fieldValue = formData.getFieldValue();
+
+                        if (fieldValue == null || fieldValue.isNull()) {
+                                continue;
+                        }
+
+                        FieldTypeEnum fieldType = formField.getFieldType();
+
+                        if (fieldType == FieldTypeEnum.FILE) {
+                                fileNames.addAll(extractFileNamesFromValueNode(fieldValue));
+                                continue;
+                        }
+
+                        if (fieldValue.isObject() && fieldValue.has("fieldKey") && fieldValue.has("value")) {
+                                String nestedFieldKey = fieldValue.get("fieldKey").asText();
+                                FieldTypeEnum nestedType = resolveNestedFieldType(formField, nestedFieldKey);
+                                if (nestedType == FieldTypeEnum.FILE) {
+                                        fileNames.addAll(extractFileNamesFromValueNode(fieldValue.get("value")));
+                                }
+                                continue;
+                        }
+
+                        if (fieldValue.isArray()) {
+                                fileNames.addAll(extractFileNamesFromNestedNode(formField, fieldValue));
+                        }
+                }
+
+                return fileNames;
+        }
+
+        private Set<String> extractFileNamesFromValueNode(JsonNode valueNode) {
+                Set<String> fileNames = new HashSet<>();
+                if (valueNode == null || valueNode.isNull()) {
+                        return fileNames;
+                }
+
+                if (valueNode.isTextual()) {
+                        String fileName = valueNode.asText().trim();
+                        if (!fileName.isEmpty()) {
+                                fileNames.add(fileName);
+                        }
+                        return fileNames;
+                }
+
+                if (valueNode.isArray()) {
+                        for (JsonNode item : valueNode) {
+                                fileNames.addAll(extractFileNamesFromValueNode(item));
+                        }
+                        return fileNames;
+                }
+
+                if (valueNode.isObject()) {
+                        if (valueNode.hasNonNull("pathUrl")) {
+                                String fileName = valueNode.get("pathUrl").asText().trim();
+                                if (!fileName.isEmpty()) {
+                                        fileNames.add(fileName);
+                                }
+                        } else if (valueNode.hasNonNull("fileName")) {
+                                String fileName = valueNode.get("fileName").asText().trim();
+                                if (!fileName.isEmpty()) {
+                                        fileNames.add(fileName);
+                                }
+                        } else if (valueNode.has("value")) {
+                                fileNames.addAll(extractFileNamesFromValueNode(valueNode.get("value")));
+                        }
+                }
+
+                return fileNames;
+        }
+
+        private Set<String> extractFileNamesFromNestedNode(FormField parentField, JsonNode node) {
+                Set<String> fileNames = new HashSet<>();
+                if (node == null || node.isNull()) {
+                        return fileNames;
+                }
+
+                if (node.isObject()) {
+                        if (node.has("fieldKey") && node.has("value")) {
+                                String nestedFieldKey = node.get("fieldKey").asText();
+                                FieldTypeEnum nestedType = resolveNestedFieldType(parentField, nestedFieldKey);
+                                if (nestedType == FieldTypeEnum.FILE) {
+                                        fileNames.addAll(extractFileNamesFromValueNode(node.get("value")));
+                                }
+                        } else if (parentField != null && parentField.getFieldType() == FieldTypeEnum.TABLE) {
+                                Set<String> fileColumns = getFileColumnKeys(parentField);
+                                for (String columnKey : fileColumns) {
+                                        JsonNode cellNode = node.get(columnKey);
+                                        if (cellNode != null) {
+                                                fileNames.addAll(extractFileNamesFromValueNode(cellNode));
+                                        }
+                                }
+                        }
+                } else if (node.isArray()) {
+                        for (JsonNode child : node) {
+                                fileNames.addAll(extractFileNamesFromNestedNode(parentField, child));
+                        }
+                }
+
+                return fileNames;
+        }
+
+        private FieldTypeEnum resolveNestedFieldType(FormField parentField, String childFieldKey) {
+                if (parentField == null || childFieldKey == null || childFieldKey.isBlank()) {
+                        return null;
+                }
+
+                FormField parentWithTemplate = parentField;
+                if (parentField.getFormTemplate() == null) {
+                        parentWithTemplate = formFieldRepository.findByIdWithTemplate(parentField.getId())
+                                        .orElse(parentField);
+                        if (parentField.getFormTemplate() == null) {
+                                parentField.setFormTemplate(parentWithTemplate.getFormTemplate());
+                        }
+                }
+
+                String templateId = parentWithTemplate.getFormTemplate() != null
+                                ? parentWithTemplate.getFormTemplate().getId()
+                                : null;
+
+                if (parentWithTemplate.getChildren() != null && parentWithTemplate.getChildren().isArray()) {
+                        FormField childField = findFormFieldInChildren(parentWithTemplate.getChildren(), childFieldKey,
+                                        templateId);
+                        if (childField != null && childField.getFieldType() != null) {
+                                return childField.getFieldType();
+                        }
+                }
+
+                if (parentWithTemplate.getFieldType() == FieldTypeEnum.TABLE
+                                && parentWithTemplate.getTableConfig() != null) {
+                        FormField childField = findFormFieldInTableColumns(parentWithTemplate.getTableConfig(),
+                                        childFieldKey, templateId);
+                        if (childField != null && childField.getFieldType() != null) {
+                                return childField.getFieldType();
+                        }
+                }
+
+                return null;
+        }
+
+        private Set<String> getFileColumnKeys(FormField tableField) {
+                Set<String> fileColumns = new HashSet<>();
+                if (tableField == null || tableField.getTableConfig() == null) {
+                        return fileColumns;
+                }
+
+                JsonNode tableConfig = tableField.getTableConfig();
+                JsonNode columnsNode = tableConfig.get("columns");
+                if (columnsNode == null || !columnsNode.isArray()) {
+                        return fileColumns;
+                }
+
+                for (JsonNode columnNode : columnsNode) {
+                        JsonNode keyNode = columnNode.get("key");
+                        JsonNode typeNode = columnNode.get("type");
+                        if (keyNode == null || typeNode == null) {
+                                continue;
+                        }
+
+                        try {
+                                FieldTypeEnum columnType = FieldTypeEnum.valueOf(typeNode.asText());
+                                if (columnType == FieldTypeEnum.FILE) {
+                                        fileColumns.add(keyNode.asText());
+                                }
+                        } catch (IllegalArgumentException e) {
+                                logger.warn("Không thể xác định type cho column {} trong bảng {}", keyNode.asText(),
+                                                tableField.getFieldKey());
+                        }
+                }
+
+                return fileColumns;
+        }
+
         // 8. Xóa sáng kiến trạng thái DRAFT của user hiện tại
         public void deleteMyDraftInnovation(String innovationId) {
                 logger.info("===== DELETE MY DRAFT INNOVATION =====");
@@ -2284,6 +2491,10 @@ public class InnovationService {
                         throw new IdInvalidException("Chỉ có thể xóa sáng kiến ở trạng thái DRAFT");
                 }
 
+                List<FormData> formDataList = formDataRepository.findByInnovationIdWithRelations(innovationId);
+                Set<String> fileNamesFromFormData = collectFileNamesFromFormData(formDataList);
+                Set<String> deletedFileNames = new HashSet<>();
+
                 List<Attachment> attachments = attachmentRepository.findByInnovationId(innovationId);
 
                 for (Attachment attachment : attachments) {
@@ -2291,18 +2502,15 @@ public class InnovationService {
                         if (pathUrl == null || pathUrl.isBlank()) {
                                 continue;
                         }
-                        try {
-                                fileService.deleteFile(pathUrl);
-                        } catch (Exception e) {
-                                logger.error("Không thể xóa file {} của innovation {}: {}", pathUrl, innovationId,
-                                                e.getMessage());
-                                throw new IdInvalidException("Không thể xóa tệp đính kèm: "
-                                                + (attachment.getFileName() != null
-                                                                ? attachment.getFileName()
-                                                                : pathUrl));
-                        }
+                        deleteFileSafely(pathUrl, innovationId, attachment.getFileName(), deletedFileNames);
+                        fileNamesFromFormData.remove(pathUrl);
                 }
 
+                for (String fileName : fileNamesFromFormData) {
+                        deleteFileSafely(fileName, innovationId, null, deletedFileNames);
+                }
+
+                attachmentRepository.deleteByInnovationId(innovationId);
                 formDataRepository.deleteByInnovationId(innovationId);
                 coInnovationRepository.deleteByInnovationId(innovationId);
                 innovationRepository.delete(innovation);

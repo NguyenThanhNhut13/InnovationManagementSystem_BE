@@ -5,7 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.AttachmentTypeEnum;
+// import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.AttachmentTypeEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.DocumentTypeEnum;
 
 @Entity
@@ -24,9 +24,9 @@ public class Attachment extends Auditable {
     @Column(name = "path_url", columnDefinition = "TEXT")
     private String pathUrl;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "type", columnDefinition = "VARCHAR(50)")
-    private AttachmentTypeEnum type;
+    // @Enumerated(EnumType.STRING)
+    // @Column(name = "type", columnDefinition = "VARCHAR(50)")
+    // private AttachmentTypeEnum type;
 
     @Column(name = "file_name", columnDefinition = "VARCHAR(255)")
     private String fileName;
