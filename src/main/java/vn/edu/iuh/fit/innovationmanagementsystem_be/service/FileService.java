@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -82,7 +83,42 @@ public class FileService {
         }
     }
 
-    // 3. Download file from MinIO
+    // 3. Upload raw bytes (ví dụ PDF tạo từ server) lên MinIO
+    public String uploadBytes(byte[] data, String originalFilename, String contentType) {
+        try {
+            ensureBucketExists();
+
+            if (data == null || data.length == 0) {
+                throw new IdInvalidException("File content rỗng");
+            }
+
+            if (data.length > 10 * 1024 * 1024) {
+                throw new IdInvalidException("File size exceeds 10MB limit");
+            }
+
+            String fileExtension = getFileExtension(originalFilename);
+            if (fileExtension == null || fileExtension.isBlank()) {
+                fileExtension = ".pdf";
+            }
+            String uniqueFileName = generateUniqueFileName(fileExtension);
+
+            ByteArrayInputStream inputStream = new ByteArrayInputStream(data);
+
+            minioClient.putObject(
+                    PutObjectArgs.builder()
+                            .bucket(bucketName)
+                            .object(uniqueFileName)
+                            .stream(inputStream, data.length, -1)
+                            .contentType(contentType)
+                            .build());
+
+            return uniqueFileName;
+        } catch (Exception e) {
+            throw new IdInvalidException("Failed to upload file: " + e.getMessage());
+        }
+    }
+
+    // 4. Download file from MinIO
     public InputStream downloadFile(String fileName) throws Exception {
         try {
             return minioClient.getObject(
@@ -95,7 +131,7 @@ public class FileService {
         }
     }
 
-    // 4. Xóa file trong MinIO
+    // 5. Xóa file trong MinIO
     public void deleteFile(String fileName) throws Exception {
         try {
             minioClient.removeObject(
@@ -108,7 +144,7 @@ public class FileService {
         }
     }
 
-    // 5. Kiểm tra nếu file tồn tại trong MinIO
+    // 6. Kiểm tra nếu file tồn tại trong MinIO
     public boolean fileExists(String fileName) {
         try {
             minioClient.statObject(
@@ -122,7 +158,7 @@ public class FileService {
         }
     }
 
-    // 6. Lấy thông tin file từ MinIO
+    // 7. Lấy thông tin file từ MinIO
     public StatObjectResponse getFileInfo(String fileName) throws Exception {
         try {
             return minioClient.statObject(

@@ -14,11 +14,13 @@ import org.springframework.transaction.annotation.Transactional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.Attachment;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.Innovation;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.InnovationPhase;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.User;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.FormField;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.FormData;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.AttachmentTypeEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationStatusEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationPhaseTypeEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.FieldTypeEnum;
@@ -45,6 +47,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.exception.IdInvalidException
 import vn.edu.iuh.fit.innovationmanagementsystem_be.mapper.InnovationMapper;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.mapper.FormFieldMapper;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.mapper.FormDataMapper;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.AttachmentRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.InnovationRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.FormDataRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.InnovationPhaseRepository;
@@ -68,7 +71,6 @@ import java.util.Set;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.Arrays;
-import java.util.Base64;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -99,6 +101,9 @@ public class InnovationService {
         private final UserRepository userRepository;
         private final NotificationService notificationService;
         private final DepartmentPhaseRepository departmentPhaseRepository;
+        private final AttachmentRepository attachmentRepository;
+        private final FileService fileService;
+        private final PdfGeneratorService pdfGeneratorService;
 
         public InnovationService(InnovationRepository innovationRepository,
                         InnovationPhaseRepository innovationPhaseRepository,
@@ -117,7 +122,10 @@ public class InnovationService {
                         CoInnovationRepository coInnovationRepository,
                         UserRepository userRepository,
                         NotificationService notificationService,
-                        DepartmentPhaseRepository departmentPhaseRepository) {
+                        DepartmentPhaseRepository departmentPhaseRepository,
+                        AttachmentRepository attachmentRepository,
+                        FileService fileService,
+                        PdfGeneratorService pdfGeneratorService) {
                 this.innovationRepository = innovationRepository;
                 this.innovationPhaseRepository = innovationPhaseRepository;
                 this.formDataService = formDataService;
@@ -136,6 +144,9 @@ public class InnovationService {
                 this.userRepository = userRepository;
                 this.notificationService = notificationService;
                 this.departmentPhaseRepository = departmentPhaseRepository;
+                this.attachmentRepository = attachmentRepository;
+                this.fileService = fileService;
+                this.pdfGeneratorService = pdfGeneratorService;
         }
 
         // 1. Lấy tất cả sáng kiến của user hiện tại với filter
@@ -1984,44 +1995,47 @@ public class InnovationService {
                                                                         + templateRequest.getTemplateId()));
 
                         TemplateTypeEnum templateType = formTemplate.getTemplateType();
-                        if (templateType != TemplateTypeEnum.DON_DE_NGHI
-                                        && templateType != TemplateTypeEnum.BAO_CAO_MO_TA) {
-                                continue;
-                        }
-
                         DocumentTypeEnum documentType = mapTemplateTypeToDocumentType(templateType);
 
-                        if (documentType == null) {
-                                continue;
-                        }
-
                         String encodedHtml = templateRequest.getHtmlContentBase64();
-                        if (encodedHtml == null || encodedHtml.isBlank()) {
+
+                        // Chỉ yêu cầu htmlContentBase64 bắt buộc cho DON_DE_NGHI và BAO_CAO_MO_TA
+                        boolean isRequiredTemplate = templateType == TemplateTypeEnum.DON_DE_NGHI
+                                        || templateType == TemplateTypeEnum.BAO_CAO_MO_TA;
+
+                        if (isRequiredTemplate && (encodedHtml == null || encodedHtml.isBlank())) {
                                 throw new IdInvalidException(
                                                 "htmlContentBase64 của template "
                                                                 + formTemplate.getTemplateType().getValue()
                                                                 + " không được để trống khi nộp sáng kiến.");
                         }
 
-                        byte[] decodedHtml;
-                        try {
-                                decodedHtml = Base64.getDecoder().decode(encodedHtml);
-                        } catch (IllegalArgumentException e) {
-                                throw new IdInvalidException(
-                                                "htmlContentBase64 của template "
-                                                                + formTemplate.getTemplateType().getValue()
-                                                                + " không hợp lệ: " + e.getMessage());
+                        // Nếu template không bắt buộc và htmlContentBase64 trống thì skip
+                        if (!isRequiredTemplate && (encodedHtml == null || encodedHtml.isBlank())) {
+                                continue;
                         }
 
-                        String htmlContent = new String(decodedHtml, StandardCharsets.UTF_8);
-                        if (htmlContent.isBlank()) {
+                        String htmlContent = Utils.decode(encodedHtml);
+                        if (htmlContent == null || htmlContent.isBlank()) {
                                 throw new IdInvalidException(
                                                 "Nội dung HTML sau khi giải mã của template "
                                                                 + formTemplate.getTemplateType().getValue()
                                                                 + " đang trống.");
                         }
 
-                        String documentHash = digitalSignatureService.generateDocumentHash(decodedHtml);
+                        generateAndStoreTemplatePdf(innovation, formTemplate, documentType, htmlContent);
+
+                        if (templateType != TemplateTypeEnum.DON_DE_NGHI
+                                        && templateType != TemplateTypeEnum.BAO_CAO_MO_TA) {
+                                continue;
+                        }
+
+                        if (documentType == null) {
+                                continue;
+                        }
+
+                        String documentHash = digitalSignatureService
+                                        .generateDocumentHash(htmlContent.getBytes(StandardCharsets.UTF_8));
                         String signatureHash = digitalSignatureService.generateSignatureForDocument(documentHash);
 
                         DigitalSignatureRequest signatureRequest = new DigitalSignatureRequest();
@@ -2046,6 +2060,53 @@ public class InnovationService {
                 }
 
                 return signatureResults;
+        }
+
+        private void generateAndStoreTemplatePdf(
+                        Innovation innovation,
+                        FormTemplate formTemplate,
+                        DocumentTypeEnum documentType,
+                        String htmlContent) {
+
+                try {
+                        byte[] pdfBytes = pdfGeneratorService.convertHtmlToPdf(htmlContent);
+                        String fileName = buildTemplatePdfFileName(innovation.getId(), formTemplate.getId());
+                        String objectName = fileService.uploadBytes(pdfBytes, fileName, "application/pdf");
+
+                        attachmentRepository.deleteByInnovationIdAndTemplateId(
+                                        innovation.getId(),
+                                        formTemplate.getId());
+
+                        Attachment attachment = new Attachment();
+                        attachment.setInnovation(innovation);
+                        attachment.setTemplateId(formTemplate.getId());
+                        attachment.setDocumentType(documentType);
+                        attachment.setType(AttachmentTypeEnum.PDF);
+                        attachment.setFileName(fileName);
+                        attachment.setFileSize((long) pdfBytes.length);
+                        attachment.setPathUrl(objectName);
+
+                        attachmentRepository.save(attachment);
+                } catch (IdInvalidException e) {
+                        throw e;
+                } catch (Exception e) {
+                        String errorMessage = e.getMessage();
+                        if (errorMessage == null || errorMessage.isBlank()) {
+                                errorMessage = e.getClass().getSimpleName();
+                                if (e.getCause() != null && e.getCause().getMessage() != null) {
+                                        errorMessage += ": " + e.getCause().getMessage();
+                                }
+                        }
+                        throw new IdInvalidException(
+                                        "Không thể lưu PDF cho template "
+                                                        + formTemplate.getTemplateType().getValue()
+                                                        + ": "
+                                                        + errorMessage);
+                }
+        }
+
+        private String buildTemplatePdfFileName(String innovationId, String templateId) {
+                return innovationId + "_" + templateId + ".pdf";
         }
 
         private DocumentTypeEnum mapTemplateTypeToDocumentType(TemplateTypeEnum templateType) {

@@ -2,6 +2,7 @@ package vn.edu.iuh.fit.innovationmanagementsystem_be.service;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.Attachment;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.DigitalSignature;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.Innovation;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.User;
@@ -12,10 +13,13 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.UserRoleE
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.DigitalSignatureRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.DigitalSignatureResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.SignatureStatusResponse;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.TemplatePdfResponse;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.TemplatePdfSignerResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.UserDocumentSignatureStatusResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.VerifyDigitalSignatureResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.exception.IdInvalidException;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.mapper.DigitalSignatureResponseMapper;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.AttachmentRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.DigitalSignatureRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.InnovationRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.UserSignatureProfileRepository;
@@ -40,6 +44,8 @@ public class DigitalSignatureService {
     private final CertificateValidationService certificateValidationService;
     private final CertificateManagementService certificateManagementService;
     private final HSMEncryptionService hsmEncryptionService;
+    private final AttachmentRepository attachmentRepository;
+    private final FileService fileService;
 
     public DigitalSignatureService(DigitalSignatureRepository digitalSignatureRepository,
             InnovationRepository innovationRepository,
@@ -49,7 +55,9 @@ public class DigitalSignatureService {
             DigitalSignatureResponseMapper digitalSignatureResponseMapper,
             CertificateValidationService certificateValidationService,
             CertificateManagementService certificateManagementService,
-            HSMEncryptionService hsmEncryptionService) {
+            HSMEncryptionService hsmEncryptionService,
+            AttachmentRepository attachmentRepository,
+            FileService fileService) {
         this.digitalSignatureRepository = digitalSignatureRepository;
         this.innovationRepository = innovationRepository;
         this.userSignatureProfileRepository = userSignatureProfileRepository;
@@ -59,6 +67,8 @@ public class DigitalSignatureService {
         this.certificateValidationService = certificateValidationService;
         this.certificateManagementService = certificateManagementService;
         this.hsmEncryptionService = hsmEncryptionService;
+        this.attachmentRepository = attachmentRepository;
+        this.fileService = fileService;
     }
 
     // 1. Tạo digital signature
@@ -417,6 +427,32 @@ public class DigitalSignatureService {
                         && user.getDepartment().getId().equals(departmentId));
     }
 
+    private TemplatePdfSignerResponse toTemplatePdfSignerResponse(DigitalSignature signature) {
+        TemplatePdfSignerResponse signerResponse = new TemplatePdfSignerResponse();
+
+        User signer = signature.getUser();
+        if (signer != null) {
+            signerResponse.setSignerId(signer.getId());
+            signerResponse.setSignerFullName(signer.getFullName());
+            signerResponse.setSignerPersonnelId(signer.getPersonnelId());
+        }
+
+        signerResponse.setSignedAsRole(signature.getSignedAsRole());
+        signerResponse.setSignAt(signature.getSignAt());
+
+        boolean verified = false;
+        UserSignatureProfile profile = signature.getUserSignatureProfile();
+        if (profile != null && profile.getPublicKey() != null) {
+            verified = keyManagementService.verifySignature(
+                    signature.getDocumentHash(),
+                    signature.getSignatureHash(),
+                    profile.getPublicKey());
+        }
+
+        signerResponse.setVerified(verified);
+        return signerResponse;
+    }
+
     /*
      * Method để tạo chữ ký từ document hash bằng private key của user hiện tại
      */
@@ -464,6 +500,41 @@ public class DigitalSignatureService {
                 response.setInnovationId(innovation.getId());
                 response.setInnovationName(innovation.getInnovationName());
             }
+        }
+
+        return response;
+    }
+
+    // 3. Lấy PDF của template kèm thông tin ký
+    public TemplatePdfResponse getTemplatePdf(String innovationId, String templateId) {
+        if (innovationId == null || innovationId.isBlank() || templateId == null || templateId.isBlank()) {
+            throw new IdInvalidException("innovationId và templateId không được để trống");
+        }
+
+        Attachment attachment = attachmentRepository.findByInnovationIdAndTemplateId(innovationId, templateId)
+                .orElseThrow(() -> new IdInvalidException("Không tìm thấy file PDF cho template đã yêu cầu"));
+
+        String pdfUrl = fileService.getPresignedUrl(attachment.getPathUrl(), 3600);
+
+        TemplatePdfResponse response = new TemplatePdfResponse();
+        response.setInnovationId(innovationId);
+        response.setTemplateId(templateId);
+        response.setDocumentType(attachment.getDocumentType());
+        response.setPdfUrl(pdfUrl);
+
+        if (attachment.getDocumentType() != null) {
+            List<DigitalSignature> signatures = digitalSignatureRepository
+                    .findByInnovationIdAndDocumentTypeWithRelations(innovationId, attachment.getDocumentType());
+
+            List<TemplatePdfSignerResponse> signerResponses = signatures.stream()
+                    .filter(sig -> sig.getStatus() == SignatureStatusEnum.SIGNED)
+                    .sorted(Comparator.comparing(DigitalSignature::getSignAt))
+                    .map(this::toTemplatePdfSignerResponse)
+                    .collect(Collectors.toList());
+
+            response.setSigners(signerResponses);
+        } else {
+            response.setSigners(new ArrayList<>());
         }
 
         return response;
