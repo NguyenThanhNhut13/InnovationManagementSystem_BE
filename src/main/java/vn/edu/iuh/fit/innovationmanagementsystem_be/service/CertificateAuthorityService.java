@@ -3,6 +3,7 @@ package vn.edu.iuh.fit.innovationmanagementsystem_be.service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.CertificateAuthority;
@@ -30,6 +31,7 @@ public class CertificateAuthorityService {
     private CertificateValidationService certificateValidationService;
 
     @Autowired
+    @Lazy
     private UserService userService;
 
     // 1. Tạo CA mới

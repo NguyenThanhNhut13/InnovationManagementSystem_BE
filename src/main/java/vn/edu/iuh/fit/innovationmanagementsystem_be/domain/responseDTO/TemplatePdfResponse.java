@@ -18,5 +18,5 @@ public class TemplatePdfResponse {
     private DocumentTypeEnum documentType;
     private String pdfUrl;
     private List<TemplatePdfSignerResponse> signers = new ArrayList<>();
+    private Boolean isCAValid;
 }
-

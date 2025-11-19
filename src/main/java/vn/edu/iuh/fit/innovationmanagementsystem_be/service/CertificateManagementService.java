@@ -70,7 +70,6 @@ public class CertificateManagementService {
             profile.setCertificateExpiryDate(certInfo.getNotAfter()
                     .toInstant().atZone(java.time.ZoneId.systemDefault()).toLocalDateTime());
             profile.setCertificateStatus(expirationResult.isExpired() ? CAStatusEnum.EXPIRED : CAStatusEnum.VERIFIED);
-            profile.setLastCertificateValidation(LocalDateTime.now());
 
             return userSignatureProfileRepository.save(profile);
 
@@ -107,8 +106,6 @@ public class CertificateManagementService {
             } else {
                 profile.setCertificateStatus(CAStatusEnum.VERIFIED);
             }
-
-            profile.setLastCertificateValidation(LocalDateTime.now());
 
             return userSignatureProfileRepository.save(profile);
 
@@ -189,7 +186,6 @@ public class CertificateManagementService {
             response.setDaysUntilExpiry(expirationResult.getDaysUntilExpiry());
             response.setExpired(expirationResult.isExpired());
             response.setExpiringSoon(expirationResult.isExpiringSoon());
-            response.setLastValidation(profile.getLastCertificateValidation());
 
             return response;
 
