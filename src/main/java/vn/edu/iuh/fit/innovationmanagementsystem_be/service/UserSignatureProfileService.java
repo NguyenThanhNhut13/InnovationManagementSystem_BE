@@ -5,13 +5,17 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.CertificateAuthority;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.FormData;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.User;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.UserSignatureProfile;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.FieldTypeEnum;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationStatusEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.UpdateUserSignatureProfilePathUrlRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.UserSignatureProfileRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.UserSignatureProfileResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.exception.IdInvalidException;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.mapper.UserSignatureProfileResponseMapper;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.FormDataRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.UserSignatureProfileRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.UserRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.constants.CAConstans;
@@ -36,6 +40,7 @@ import org.bouncycastle.cert.jcajce.JcaX509v3CertificateBuilder;
 import org.bouncycastle.operator.ContentSigner;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Service
@@ -51,6 +56,7 @@ public class UserSignatureProfileService {
     private final UserSignatureProfileResponseMapper userSignatureProfileResponseMapper;
     private final ObjectMapper objectMapper;
     private final CertificateAuthorityService certificateAuthorityService;
+    private final FormDataRepository formDataRepository;
 
     private static final List<String> ALLOWED_IMAGE_TYPES = Arrays.asList(
             "image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp", "image/bmp");
@@ -63,7 +69,8 @@ public class UserSignatureProfileService {
             FileService fileService,
             UserSignatureProfileResponseMapper userSignatureProfileResponseMapper,
             ObjectMapper objectMapper,
-            CertificateAuthorityService certificateAuthorityService) {
+            CertificateAuthorityService certificateAuthorityService,
+            FormDataRepository formDataRepository) {
         this.userSignatureProfileRepository = userSignatureProfileRepository;
         this.userRepository = userRepository;
         this.keyManagementService = keyManagementService;
@@ -73,6 +80,7 @@ public class UserSignatureProfileService {
         this.userSignatureProfileResponseMapper = userSignatureProfileResponseMapper;
         this.objectMapper = objectMapper;
         this.certificateAuthorityService = certificateAuthorityService;
+        this.formDataRepository = formDataRepository;
     }
 
     // 1. Tạo UserSignatureProfile cho user
@@ -257,6 +265,14 @@ public class UserSignatureProfileService {
             }
 
             String pathUrlToDelete = pathUrls.get(index);
+
+            // Kiểm tra xem chữ ký có đang được sử dụng trong các innovation có status
+            // SUBMITTED không
+            if (isSignatureInUse(pathUrlToDelete)) {
+                throw new IdInvalidException(
+                        "Không thể xóa chữ ký này vì đang được sử dụng trong các sáng kiến đã nộp (status SUBMITTED)");
+            }
+
             pathUrls.remove(index);
 
             try {
@@ -276,6 +292,54 @@ public class UserSignatureProfileService {
         } catch (Exception e) {
             throw new IdInvalidException("Không thể xóa ảnh chữ ký: " + e.getMessage());
         }
+    }
+
+    // Helper method: Kiểm tra xem chữ ký có đang được sử dụng trong các innovation
+    // có status SUBMITTED không
+    private boolean isSignatureInUse(String pathUrl) {
+        List<FormData> signatureFormDataList = formDataRepository
+                .findSignatureFormDataWithSubmittedInnovations(FieldTypeEnum.SIGNATURE,
+                        InnovationStatusEnum.SUBMITTED);
+
+        for (FormData formData : signatureFormDataList) {
+            JsonNode fieldValue = formData.getFieldValue();
+            if (fieldValue == null) {
+                continue;
+            }
+
+            // Kiểm tra nếu fieldValue là string và bằng pathUrl
+            if (fieldValue.isTextual() && pathUrl.equals(fieldValue.asText())) {
+                return true;
+            }
+
+            // Kiểm tra nếu fieldValue là object có chứa "value" và value là string bằng
+            // pathUrl
+            if (fieldValue.isObject() && fieldValue.has("value")) {
+                JsonNode valueNode = fieldValue.get("value");
+                if (valueNode != null && valueNode.isTextual() && pathUrl.equals(valueNode.asText())) {
+                    return true;
+                }
+            }
+
+            // Kiểm tra nếu fieldValue là array chứa pathUrl
+            if (fieldValue.isArray()) {
+                for (JsonNode arrayItem : fieldValue) {
+                    if (arrayItem.isTextual() && pathUrl.equals(arrayItem.asText())) {
+                        return true;
+                    }
+                    // Kiểm tra nested object trong array
+                    if (arrayItem.isObject() && arrayItem.has("value")) {
+                        JsonNode nestedValue = arrayItem.get("value");
+                        if (nestedValue != null && nestedValue.isTextual()
+                                && pathUrl.equals(nestedValue.asText())) {
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+
+        return false;
     }
 
     // Helper method: Parse pathUrl từ JSON string thành List<String>

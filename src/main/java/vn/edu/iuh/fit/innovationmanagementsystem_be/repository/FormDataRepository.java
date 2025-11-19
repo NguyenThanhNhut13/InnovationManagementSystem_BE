@@ -6,6 +6,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.FormData;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.FieldTypeEnum;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationStatusEnum;
 
 import java.util.List;
 import java.util.Optional;
@@ -45,5 +47,13 @@ public interface FormDataRepository extends JpaRepository<FormData, String> {
         @Modifying
         @Query("DELETE FROM FormData fd WHERE fd.innovation.id = :innovationId")
         void deleteByInnovationId(@Param("innovationId") String innovationId);
+
+        @Query("SELECT fd FROM FormData fd " +
+                        "LEFT JOIN FETCH fd.formField ff " +
+                        "LEFT JOIN FETCH fd.innovation i " +
+                        "WHERE ff.fieldType = :fieldType AND i.status = :status")
+        List<FormData> findSignatureFormDataWithSubmittedInnovations(
+                        @Param("fieldType") FieldTypeEnum fieldType,
+                        @Param("status") InnovationStatusEnum status);
 
 }
