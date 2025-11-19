@@ -18,9 +18,24 @@ public class CertificateValidationService {
      * Kiểm tra tính hợp lệ của certificate
      */
     public CertificateValidationResult validateX509Certificate(String certificateData) {
+        if (certificateData == null || certificateData.trim().isEmpty()) {
+            throw new IdInvalidException("Certificate data không được để trống");
+        }
+
         try {
             // Decode certificate từ Base64
             byte[] certBytes = Base64.getDecoder().decode(certificateData);
+
+            // Kiểm tra xem có phải là text description không (không phải X.509 certificate
+            // thực sự)
+            String decodedText = new String(certBytes);
+            if (decodedText.startsWith("Certificate Data for")) {
+                throw new IdInvalidException(
+                        "Certificate data không hợp lệ. Đây là text description, không phải X.509 certificate thực sự. "
+                                +
+                                "Vui lòng sử dụng X.509 certificate được tạo bởi Certificate Authority.");
+            }
+
             CertificateFactory certFactory = CertificateFactory.getInstance("X.509");
             X509Certificate certificate = (X509Certificate) certFactory.generateCertificate(
                     new ByteArrayInputStream(certBytes));
@@ -78,6 +93,8 @@ public class CertificateValidationService {
 
             return result;
 
+        } catch (IdInvalidException e) {
+            throw e;
         } catch (Exception e) {
             throw new IdInvalidException("Không thể validate certificate: " + e.getMessage());
         }
@@ -93,13 +110,20 @@ public class CertificateValidationService {
             String rootCert) {
 
         try {
+            // Kiểm tra end entity certificate
+            byte[] certBytes = Base64.getDecoder().decode(certificateData);
+            String decodedText = new String(certBytes);
+            if (decodedText.startsWith("Certificate Data for")) {
+                throw new IdInvalidException(
+                        "Certificate data không hợp lệ. Đây là text description, không phải X.509 certificate thực sự.");
+            }
+
             CertificateFactory certFactory = CertificateFactory.getInstance("X.509");
 
             // Tạo certificate chain
             List<X509Certificate> chain = new ArrayList<>();
 
             // Add end entity certificate
-            byte[] certBytes = Base64.getDecoder().decode(certificateData);
             X509Certificate endCert = (X509Certificate) certFactory.generateCertificate(
                     new ByteArrayInputStream(certBytes));
             chain.add(endCert);
@@ -160,8 +184,22 @@ public class CertificateValidationService {
      * Kiểm tra thời gian hết hạn của certificate
      */
     public CertificateExpirationResult checkCertificateExpiration(String certificateData) {
+        if (certificateData == null || certificateData.trim().isEmpty()) {
+            throw new IdInvalidException("Certificate data không được để trống");
+        }
+
         try {
             byte[] certBytes = Base64.getDecoder().decode(certificateData);
+
+            // Kiểm tra xem có phải là text description không
+            String decodedText = new String(certBytes);
+            if (decodedText.startsWith("Certificate Data for")) {
+                throw new IdInvalidException(
+                        "Certificate data không hợp lệ. Đây là text description, không phải X.509 certificate thực sự. "
+                                +
+                                "Vui lòng sử dụng X.509 certificate được tạo bởi Certificate Authority.");
+            }
+
             CertificateFactory certFactory = CertificateFactory.getInstance("X.509");
             X509Certificate certificate = (X509Certificate) certFactory.generateCertificate(
                     new ByteArrayInputStream(certBytes));
@@ -196,8 +234,22 @@ public class CertificateValidationService {
      * Extract certificate information
      */
     public CertificateInfo extractCertificateInfo(String certificateData) {
+        if (certificateData == null || certificateData.trim().isEmpty()) {
+            throw new IdInvalidException("Certificate data không được để trống");
+        }
+
         try {
             byte[] certBytes = Base64.getDecoder().decode(certificateData);
+
+            // Kiểm tra xem có phải là text description không
+            String decodedText = new String(certBytes);
+            if (decodedText.startsWith("Certificate Data for")) {
+                throw new IdInvalidException(
+                        "Certificate data không hợp lệ. Đây là text description, không phải X.509 certificate thực sự. "
+                                +
+                                "Vui lòng sử dụng X.509 certificate được tạo bởi Certificate Authority.");
+            }
+
             CertificateFactory certFactory = CertificateFactory.getInstance("X.509");
             X509Certificate certificate = (X509Certificate) certFactory.generateCertificate(
                     new ByteArrayInputStream(certBytes));

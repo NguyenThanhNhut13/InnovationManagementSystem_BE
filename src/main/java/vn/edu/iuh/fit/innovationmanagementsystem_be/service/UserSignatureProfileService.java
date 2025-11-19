@@ -18,11 +18,23 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.constants.CAConstans;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.CAStatusEnum;
 
 import java.security.KeyPair;
+import java.security.PrivateKey;
+import java.security.PublicKey;
+import java.security.cert.X509Certificate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Arrays;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Base64;
+import java.util.Date;
+import java.math.BigInteger;
+import org.bouncycastle.asn1.x500.X500Name;
+import org.bouncycastle.cert.X509v3CertificateBuilder;
+import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
+import org.bouncycastle.cert.jcajce.JcaX509v3CertificateBuilder;
+import org.bouncycastle.operator.ContentSigner;
+import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -102,7 +114,7 @@ public class UserSignatureProfileService {
             // Thiết lập thời gian hiệu lực certificate
             LocalDateTime now = LocalDateTime.now();
             LocalDateTime validFrom = now;
-            LocalDateTime validTo = now.plusYears(1);
+            LocalDateTime validTo = now.plusMonths(1);
 
             // Lấy thông tin certificate từ CA nếu có, nếu không thì dùng constants
             String certificateIssuer;
@@ -140,9 +152,9 @@ public class UserSignatureProfileService {
             // Tạo certificate subject từ thông tin user
             String certificateSubject = String.format("CN=%s, O=IUH, C=VN", user.getFullName());
 
-            // Tạo certificate data (tương tự như CASeeder)
-            String certificateData = createCertificateData(publicKeyBase64, certificateSerial, certificateIssuer,
-                    certificateSubject, validFrom, validTo);
+            // Tạo certificate data (X.509 certificate thực sự)
+            String certificateData = createCertificateData(keyPair.getPublic(), keyPair.getPrivate(), certificateSerial,
+                    certificateIssuer, certificateSubject, validFrom, validTo);
 
             // Set các trường certificate
             signatureProfile.setCertificateVersion(3); // X.509 v3
@@ -296,16 +308,43 @@ public class UserSignatureProfileService {
     }
 
     // Helper method: Tạo certificate data (tương tự như CASeeder)
-    private String createCertificateData(String publicKeyBase64, String serial, String issuer, String subject,
-            LocalDateTime validFrom, LocalDateTime validTo) {
+    private String createCertificateData(PublicKey publicKey, PrivateKey privateKey, String serial, String issuer,
+            String subject, LocalDateTime validFrom, LocalDateTime validTo) {
         try {
-            String certInfo = String.format(
-                    "Certificate Data for User\nSerial: %s\nIssuer: %s\nSubject: %s\nValid From: %s\nValid To: %s\nPublic Key: %s",
-                    serial, issuer, subject, validFrom, validTo, publicKeyBase64);
+            // Chuyển đổi LocalDateTime sang Date
+            Date notBefore = Date.from(validFrom.atZone(ZoneId.systemDefault()).toInstant());
+            Date notAfter = Date.from(validTo.atZone(ZoneId.systemDefault()).toInstant());
 
-            return Base64.getEncoder().encodeToString(certInfo.getBytes());
+            // Tạo X500Name cho issuer và subject
+            X500Name issuerName = new X500Name(issuer);
+            X500Name subjectName = new X500Name(subject);
+
+            // Tạo serial number từ string
+            BigInteger serialNumber = new BigInteger(serial.getBytes());
+
+            // Tạo X.509 v3 certificate builder
+            X509v3CertificateBuilder certBuilder = new JcaX509v3CertificateBuilder(
+                    issuerName,
+                    serialNumber,
+                    notBefore,
+                    notAfter,
+                    subjectName,
+                    publicKey);
+
+            // Tạo content signer với SHA256withRSA
+            ContentSigner contentSigner = new JcaContentSignerBuilder("SHA256withRSA")
+                    .build(privateKey);
+
+            // Build và sign certificate
+            X509Certificate certificate = new JcaX509CertificateConverter()
+                    .getCertificate(certBuilder.build(contentSigner));
+
+            // Encode certificate sang Base64
+            byte[] certBytes = certificate.getEncoded();
+            return Base64.getEncoder().encodeToString(certBytes);
+
         } catch (Exception e) {
-            throw new IdInvalidException("Không thể tạo certificate data: " + e.getMessage());
+            throw new IdInvalidException("Không thể tạo X.509 certificate: " + e.getMessage());
         }
     }
 }

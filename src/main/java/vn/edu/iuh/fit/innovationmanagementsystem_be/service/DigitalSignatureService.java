@@ -3,6 +3,7 @@ package vn.edu.iuh.fit.innovationmanagementsystem_be.service;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.Attachment;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.CertificateAuthority;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.DigitalSignature;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.Innovation;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.User;
@@ -27,7 +28,10 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.UserSignatureProf
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -276,7 +280,7 @@ public class DigitalSignatureService {
         UserSignatureProfile signatureProfile = this.userSignatureProfileRepository.findByUserId(currentUser.getId())
                 .orElseThrow(() -> new IdInvalidException("Người dùng chưa có hồ sơ chữ ký số"));
 
-        if (signatureProfile.getCertificateData() != null) {
+        if (signatureProfile.getCertificateData() != null && !signatureProfile.getCertificateData().trim().isEmpty()) {
             CertificateValidationService.CertificateValidationResult certValidation = certificateValidationService
                     .validateX509Certificate(signatureProfile.getCertificateData());
 
@@ -372,17 +376,47 @@ public class DigitalSignatureService {
     private void validateInternalCA(UserSignatureProfile signatureProfile) {
         // Kiểm tra CA từ relationship trước
         if (signatureProfile.getCertificateAuthority() != null) {
-            String caId = signatureProfile.getCertificateAuthority().getId();
+            CertificateAuthority ca = signatureProfile.getCertificateAuthority();
+            String caId = ca.getId();
             boolean canUse = certificateAuthorityService.canUseCAForSigning(caId);
             if (!canUse) {
                 throw new IdInvalidException(
                         "CA nội bộ không thể sử dụng để ký số. CA chưa được xác minh hoặc đã hết hạn");
+            }
+
+            // Kiểm tra certificate của user có khớp với CA không
+            if (signatureProfile.getCertificateData() != null
+                    && !signatureProfile.getCertificateData().trim().isEmpty()) {
+                try {
+                    CertificateValidationService.CertificateInfo certInfo = certificateValidationService
+                            .extractCertificateInfo(signatureProfile.getCertificateData());
+
+                    // Kiểm tra issuer phải khớp với CA issuer (so sánh theo field, không phải
+                    // chuỗi)
+                    if (!compareDistinguishedNames(certInfo.getIssuer(), ca.getCertificateIssuer())) {
+                        throw new IdInvalidException(
+                                "Certificate của bạn không khớp với CA nội bộ. Certificate issuer: "
+                                        + certInfo.getIssuer() + ", CA issuer: " + ca.getCertificateIssuer());
+                    }
+                } catch (IdInvalidException e) {
+                    throw e;
+                } catch (Exception e) {
+                    throw new IdInvalidException(
+                            "Không thể xác minh certificate có khớp với CA không: " + e.getMessage());
+                }
             }
             return;
         }
 
         // Nếu không có relationship, tìm CA từ certificate issuer
         if (signatureProfile.getCertificateIssuer() != null) {
+            // Kiểm tra certificate data có tồn tại không
+            if (signatureProfile.getCertificateData() == null
+                    || signatureProfile.getCertificateData().trim().isEmpty()) {
+                throw new IdInvalidException(
+                        "Certificate data không tồn tại. Vui lòng cập nhật certificate trước khi ký số.");
+            }
+
             // Extract certificate serial từ certificate data để tìm CA
             try {
                 CertificateValidationService.CertificateInfo certInfo = certificateValidationService
@@ -428,6 +462,12 @@ public class DigitalSignatureService {
     }
 
     private void validateAndSetupCertificateIfNeeded(UserSignatureProfile signatureProfile, User currentUser) {
+        // Kiểm tra certificate data có tồn tại không
+        if (signatureProfile.getCertificateData() == null || signatureProfile.getCertificateData().trim().isEmpty()) {
+            throw new IdInvalidException(
+                    "Certificate data không tồn tại. Vui lòng cập nhật certificate trước khi ký số.");
+        }
+
         try {
             CertificateValidationService.CertificateValidationResult chainValidation = certificateValidationService
                     .validateX509Certificate(signatureProfile.getCertificateData());
@@ -619,7 +659,9 @@ public class DigitalSignatureService {
             }
 
             // Nếu không có relationship, tìm CA từ certificate issuer
-            if (signatureProfile.getCertificateIssuer() != null && signatureProfile.getCertificateData() != null) {
+            if (signatureProfile.getCertificateIssuer() != null
+                    && signatureProfile.getCertificateData() != null
+                    && !signatureProfile.getCertificateData().trim().isEmpty()) {
                 try {
                     CertificateValidationService.CertificateInfo certInfo = certificateValidationService
                             .extractCertificateInfo(signatureProfile.getCertificateData());
@@ -670,7 +712,7 @@ public class DigitalSignatureService {
                     .orElseThrow(() -> new IdInvalidException("Không tìm thấy digital signature"));
 
             UserSignatureProfile profile = signature.getUserSignatureProfile();
-            if (profile.getCertificateData() == null) {
+            if (profile.getCertificateData() == null || profile.getCertificateData().trim().isEmpty()) {
                 CertificateRevalidationResult result = new CertificateRevalidationResult();
                 result.setValid(false);
                 result.addError("Digital signature không có certificate data");
@@ -805,5 +847,53 @@ public class DigitalSignatureService {
         public void addWarning(String warning) {
             this.warnings.add(warning);
         }
+    }
+
+    /**
+     * So sánh hai Distinguished Name (DN) strings bằng cách parse các field riêng
+     * lẻ
+     * Xử lý trường hợp thứ tự field khác nhau (ví dụ: C=VN, O=IUH, CN=... vs
+     * CN=..., O=IUH, C=VN)
+     */
+    private boolean compareDistinguishedNames(String dn1, String dn2) {
+        if (dn1 == null && dn2 == null) {
+            return true;
+        }
+        if (dn1 == null || dn2 == null) {
+            return false;
+        }
+
+        // Parse các field từ DN string
+        Map<String, String> fields1 = parseDNFields(dn1);
+        Map<String, String> fields2 = parseDNFields(dn2);
+
+        // So sánh các field quan trọng: CN, O, C
+        return Objects.equals(fields1.get("CN"), fields2.get("CN"))
+                && Objects.equals(fields1.get("O"), fields2.get("O"))
+                && Objects.equals(fields1.get("C"), fields2.get("C"));
+    }
+
+    /**
+     * Parse Distinguished Name string thành Map các field
+     * Ví dụ: "C=VN, O=IUH, CN=Test" -> {C=VN, O=IUH, CN=Test}
+     */
+    private Map<String, String> parseDNFields(String dn) {
+        Map<String, String> fields = new HashMap<>();
+        if (dn == null || dn.trim().isEmpty()) {
+            return fields;
+        }
+
+        // Split theo dấu phẩy, nhưng cần xử lý trường hợp có dấu phẩy trong giá trị
+        String[] parts = dn.split(",\\s*");
+        for (String part : parts) {
+            part = part.trim();
+            int equalsIndex = part.indexOf('=');
+            if (equalsIndex > 0) {
+                String key = part.substring(0, equalsIndex).trim();
+                String value = part.substring(equalsIndex + 1).trim();
+                fields.put(key, value);
+            }
+        }
+        return fields;
     }
 }

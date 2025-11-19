@@ -14,7 +14,9 @@ public class InnovationFormDataResponse {
 
     private InnovationResponse innovation;
 
-    private List<FormDataResponse> formDataList;
+    // private List<FormDataResponse> formDataList;
+
+    private List<TemplateFormDataResponse> templates = new ArrayList<>();
 
     private List<TemplateSignatureResponse> templateSignatures = new ArrayList<>();
 

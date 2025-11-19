@@ -18,5 +18,4 @@ public class InnovationManagementSystemBeApplication {
 		SpringApplication.run(InnovationManagementSystemBeApplication.class, args);
 	}
 
-	// TEST CICD
 }

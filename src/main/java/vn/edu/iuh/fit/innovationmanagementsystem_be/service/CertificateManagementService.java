@@ -110,7 +110,7 @@ public class CertificateManagementService {
             return userSignatureProfileRepository.save(profile);
 
         } catch (Exception e) {
-            throw new IdInvalidException("Không thể validate certificate: " + e.getMessage());
+            throw new IdInvalidException("Không thể validate certificate - LOI 1: " + e.getMessage());
         }
     }
 
@@ -231,7 +231,7 @@ public class CertificateManagementService {
                     .toList();
 
         } catch (Exception e) {
-            throw new IdInvalidException("Không thể validate certificates: " + e.getMessage());
+            throw new IdInvalidException("Không thể validate certificates - LOI 2: " + e.getMessage());
         }
     }
 
