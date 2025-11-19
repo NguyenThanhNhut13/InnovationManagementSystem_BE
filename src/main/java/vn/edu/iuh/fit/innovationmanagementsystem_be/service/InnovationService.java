@@ -33,6 +33,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.FormDataRe
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.CreateInnovationWithTemplatesRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.TemplateDataRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.DigitalSignatureRequest;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.FilterMyInnovationRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.FormDataResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.FormFieldResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationFormDataResponse;
@@ -180,7 +181,9 @@ public class InnovationService {
                 Specification<Innovation> userSpec = (root, query, criteriaBuilder) -> criteriaBuilder
                                 .equal(root.get("user").get("id"), currentUserId);
 
-                Specification<Innovation> combinedSpec = userSpec.and(specification);
+                Specification<Innovation> combinedSpec = specification != null
+                                ? userSpec.and(specification)
+                                : userSpec;
 
                 Page<Innovation> innovations = innovationRepository.findAll(combinedSpec, pageable);
 
@@ -211,7 +214,100 @@ public class InnovationService {
                 return Utils.toResultPaginationDTO(responses, pageable);
         }
 
-        // 2. Lấy tất cả sáng kiến
+        // 2. Lấy tất cả sáng kiến của user hiện tại với filter chi tiết
+        public ResultPaginationDTO getAllInnovationsByCurrentUserWithDetailedFilter(
+                        FilterMyInnovationRequest filterRequest, Pageable pageable) {
+                if (pageable.getSort().isUnsorted()) {
+                        pageable = PageRequest.of(
+                                        pageable.getPageNumber(),
+                                        pageable.getPageSize(),
+                                        Sort.by("createdAt").descending());
+                }
+
+                String currentUserId = userService.getCurrentUserId();
+
+                Specification<Innovation> userSpec = (root, query, criteriaBuilder) -> criteriaBuilder
+                                .equal(root.get("user").get("id"), currentUserId);
+
+                Specification<Innovation> filterSpec = buildFilterSpecification(filterRequest);
+
+                Specification<Innovation> combinedSpec = filterSpec != null
+                                ? userSpec.and(filterSpec)
+                                : userSpec;
+
+                Page<Innovation> innovations = innovationRepository.findAll(combinedSpec, pageable);
+
+                List<String> innovationIds = innovations.getContent().stream()
+                                .map(Innovation::getId)
+                                .collect(Collectors.toList());
+
+                List<FormData> allFormData = innovationIds.isEmpty()
+                                ? new ArrayList<>()
+                                : formDataRepository.findByInnovationIdsWithRelations(innovationIds);
+
+                Map<String, Integer> authorCountMap = allFormData.stream()
+                                .filter(fd -> fd.getFormField() != null
+                                                && "danh_sach_tac_gia".equals(fd.getFormField().getFieldKey()))
+                                .collect(Collectors.groupingBy(
+                                                fd -> fd.getInnovation().getId(),
+                                                Collectors.collectingAndThen(
+                                                                Collectors.toList(),
+                                                                list -> list.stream()
+                                                                                .mapToInt(this::countAuthorsFromFormData)
+                                                                                .max()
+                                                                                .orElse(0))));
+
+                Page<MyInnovationResponse> responses = innovations.map(innovation -> {
+                        int authorCount = authorCountMap.getOrDefault(innovation.getId(), 0);
+                        return toMyInnovationResponse(innovation, authorCount);
+                });
+                return Utils.toResultPaginationDTO(responses, pageable);
+        }
+
+        private Specification<Innovation> buildFilterSpecification(FilterMyInnovationRequest filterRequest) {
+                if (filterRequest == null) {
+                        return null;
+                }
+
+                Specification<Innovation> spec = null;
+
+                if (filterRequest.getSearchText() != null && !filterRequest.getSearchText().trim().isEmpty()) {
+                        String searchText = "%" + filterRequest.getSearchText().trim().toLowerCase() + "%";
+                        Specification<Innovation> searchSpec = (root, query, criteriaBuilder) -> {
+                                jakarta.persistence.criteria.Predicate innovationNamePredicate = criteriaBuilder
+                                                .like(criteriaBuilder.lower(root.get("innovationName")), searchText);
+                                jakarta.persistence.criteria.Predicate authorNamePredicate = criteriaBuilder
+                                                .like(criteriaBuilder.lower(root.get("user").get("fullName")),
+                                                                searchText);
+                                return criteriaBuilder.or(innovationNamePredicate, authorNamePredicate);
+                        };
+                        spec = spec == null ? searchSpec : spec.and(searchSpec);
+                }
+
+                if (filterRequest.getStatus() != null) {
+                        Specification<Innovation> statusSpec = (root, query, criteriaBuilder) -> criteriaBuilder
+                                        .equal(root.get("status"), filterRequest.getStatus());
+                        spec = spec == null ? statusSpec : spec.and(statusSpec);
+                }
+
+                if (filterRequest.getInnovationRoundId() != null
+                                && !filterRequest.getInnovationRoundId().trim().isEmpty()) {
+                        Specification<Innovation> roundSpec = (root, query, criteriaBuilder) -> criteriaBuilder
+                                        .equal(root.get("innovationRound").get("id"),
+                                                        filterRequest.getInnovationRoundId());
+                        spec = spec == null ? roundSpec : spec.and(roundSpec);
+                }
+
+                if (filterRequest.getIsScore() != null) {
+                        Specification<Innovation> isScoreSpec = (root, query, criteriaBuilder) -> criteriaBuilder
+                                        .equal(root.get("isScore"), filterRequest.getIsScore());
+                        spec = spec == null ? isScoreSpec : spec.and(isScoreSpec);
+                }
+
+                return spec;
+        }
+
+        // 3. Lấy tất cả sáng kiến
         public ResultPaginationDTO getAllInnovations(Specification<Innovation> specification, Pageable pageable) {
 
                 if (pageable.getSort().isUnsorted()) {
@@ -612,9 +708,6 @@ public class InnovationService {
                                                 }
 
                                                 // Cho phép nộp trễ, lưu deadline date để FE tự tính toán
-                                                Long lateDays = ChronoUnit.DAYS.between(phaseEndDate, currentDate);
-                                                logger.info("Người dùng nộp sáng kiến trễ {} ngày. Hạn nộp: {}, Ngày nộp: {}",
-                                                                lateDays, phaseEndDate, currentDate);
                                         }
                                 }
                         }
@@ -797,10 +890,6 @@ public class InnovationService {
 
         // 5. Lấy Innovation & FormData theo ID (bao gồm FormField đầy đủ)
         public InnovationFormDataResponse getInnovationWithFormDataById(String innovationId) {
-                logger.info("===== GET INNOVATION WITH FORM DATA BY ID =====");
-                logger.info("Innovation ID: {}", innovationId);
-
-                // Lấy Innovation
                 Innovation innovation = innovationRepository.findById(innovationId)
                                 .orElseThrow(() -> {
                                         logger.error("Không tìm thấy sáng kiến với ID: {}", innovationId);
@@ -808,63 +897,20 @@ public class InnovationService {
                                                         "Không tìm thấy sáng kiến với ID: " + innovationId);
                                 });
 
-                logger.info("Innovation found: {} - {}", innovation.getId(), innovation.getInnovationName());
-
-                // Lấy tất cả FormData của innovation (đã có FormField được load với relations)
                 List<FormData> formDataList = formDataRepository.findByInnovationIdWithRelations(innovationId);
-                logger.info("FormData count found: {}", formDataList.size());
 
-                if (formDataList.isEmpty()) {
-                        logger.warn("Không tìm thấy FormData nào cho Innovation ID: {}", innovationId);
-                        // Kiểm tra xem có FormData nào trong database không (không có relations)
-                        long totalFormData = formDataRepository.count();
-                        logger.info("Total FormData records in database: {}", totalFormData);
-
-                        // Kiểm tra bằng cách query trực tiếp
-                        List<FormData> allFormDataForInnovation = formDataRepository.findAll().stream()
-                                        .filter(fd -> fd.getInnovation() != null &&
-                                                        innovationId.equals(fd.getInnovation().getId()))
-                                        .collect(Collectors.toList());
-                        logger.info("FormData found with direct query (no relations): {}",
-                                        allFormDataForInnovation.size());
-                }
-
-                // Map FormData sang FormDataResponse và thêm FormFieldResponse đầy đủ
                 List<FormDataResponse> formDataResponses = new ArrayList<>();
 
                 for (FormData formData : formDataList) {
-                        logger.debug("Processing FormData ID: {}", formData.getId());
-                        logger.debug("FormData fieldValue: {}", formData.getFieldValue());
-
                         FormDataResponse formDataResponse = formDataMapper.toFormDataResponse(formData);
-                        logger.debug("Mapped FormDataResponse ID: {}, formFieldKey: {}",
-                                        formDataResponse.getId(), formDataResponse.getFormFieldKey());
 
-                        // Đảm bảo FormField được load đầy đủ với formTemplate
                         if (formData.getFormField() != null) {
                                 FormField formField = formData.getFormField();
-                                logger.debug("FormField found: ID={}, fieldKey={}, label={}",
-                                                formField.getId(), formField.getFieldKey(), formField.getLabel());
 
-                                // Nếu formTemplate chưa được load hoặc cần refresh, load lại
                                 if (formField.getFormTemplate() == null) {
-                                        logger.warn("FormTemplate is null for FormField ID: {}, loading again...",
-                                                        formField.getId());
                                         formField = formFieldRepository.findByIdWithTemplate(formField.getId())
                                                         .orElse(formField);
                                 }
-
-                                if (formField.getFormTemplate() != null) {
-                                        logger.debug("FormTemplate loaded: ID={}",
-                                                        formField.getFormTemplate().getId());
-                                }
-
-                                // Map FormField đầy đủ sang FormFieldResponse
-                                FormFieldResponse formFieldResponse = formFieldMapper
-                                                .toFormFieldResponse(formField);
-                                // formDataResponse.setFormField(formFieldResponse);
-                                logger.debug("FormFieldResponse mapped with formTemplateId: {}",
-                                                formFieldResponse.getFormTemplateId());
                         } else {
                                 logger.warn("FormField is null for FormData ID: {}", formData.getId());
                         }
@@ -872,29 +918,21 @@ public class InnovationService {
                         formDataResponses.add(formDataResponse);
                 }
 
-                logger.info("Total FormDataResponse created: {}", formDataResponses.size());
-
-                // Tạo response
                 InnovationFormDataResponse response = new InnovationFormDataResponse();
                 InnovationResponse innovationResponse = innovationMapper.toInnovationResponse(innovation);
                 Long timeRemainingSeconds = getSubmissionTimeRemainingSeconds(innovation);
                 innovationResponse.setSubmissionTimeRemainingSeconds(timeRemainingSeconds);
                 response.setInnovation(innovationResponse);
-                // response.setFormDataList(formDataResponses);
                 response.setTemplates(buildTemplateFormDataResponses(formDataResponses));
                 response.setTemplateSignatures(Collections.emptyList());
                 response.setSubmissionTimeRemainingSeconds(timeRemainingSeconds);
 
-                logger.info("===== END GET INNOVATION WITH FORM DATA =====");
                 return response;
         }
 
         // 6. Lấy Innovation & FormData theo ID của user hiện tại (chỉ cho phép xem sáng
         // kiến của chính mình)
         public InnovationFormDataResponse getMyInnovationWithFormDataById(String innovationId) {
-                logger.info("===== GET MY INNOVATION WITH FORM DATA BY ID =====");
-                logger.info("Innovation ID: {}", innovationId);
-
                 String currentUserId = userService.getCurrentUserId();
 
                 Innovation innovation = innovationRepository.findById(innovationId)
@@ -909,37 +947,20 @@ public class InnovationService {
                         throw new IdInvalidException("Bạn không có quyền xem sáng kiến này");
                 }
 
-                logger.info("Innovation found: {} - {}", innovation.getId(), innovation.getInnovationName());
-
                 List<FormData> formDataList = formDataRepository.findByInnovationIdWithRelations(innovationId);
-                logger.info("FormData count found: {}", formDataList.size());
 
                 List<FormDataResponse> formDataResponses = new ArrayList<>();
 
                 for (FormData formData : formDataList) {
-                        logger.debug("Processing FormData ID: {}", formData.getId());
-
                         FormDataResponse formDataResponse = formDataMapper.toFormDataResponse(formData);
 
                         if (formData.getFormField() != null) {
                                 FormField formField = formData.getFormField();
 
                                 if (formField.getFormTemplate() == null) {
-                                        logger.warn("FormTemplate is null for FormField ID: {}, loading again...",
-                                                        formField.getId());
                                         formField = formFieldRepository.findByIdWithTemplate(formField.getId())
                                                         .orElse(formField);
                                 }
-
-                                if (formField.getFormTemplate() != null) {
-                                        logger.debug("FormTemplate loaded: ID={}",
-                                                        formField.getFormTemplate().getId());
-                                }
-
-                                FormFieldResponse formFieldResponse = formFieldMapper
-                                                .toFormFieldResponse(formField);
-                                logger.debug("FormFieldResponse mapped with formTemplateId: {}",
-                                                formFieldResponse.getFormTemplateId());
                         } else {
                                 logger.warn("FormField is null for FormData ID: {}", formData.getId());
                         }
@@ -947,28 +968,21 @@ public class InnovationService {
                         formDataResponses.add(formDataResponse);
                 }
 
-                logger.info("Total FormDataResponse created: {}", formDataResponses.size());
-
                 InnovationFormDataResponse response = new InnovationFormDataResponse();
                 InnovationResponse innovationResponse = innovationMapper.toInnovationResponse(innovation);
                 Long timeRemainingSeconds = getSubmissionTimeRemainingSeconds(innovation);
                 innovationResponse.setSubmissionTimeRemainingSeconds(timeRemainingSeconds);
                 response.setInnovation(innovationResponse);
-                // response.setFormDataList(formDataResponses);
                 response.setTemplates(buildTemplateFormDataResponses(formDataResponses));
                 response.setTemplateSignatures(Collections.emptyList());
                 response.setSubmissionTimeRemainingSeconds(timeRemainingSeconds);
 
-                logger.info("===== END GET MY INNOVATION WITH FORM DATA =====");
                 return response;
         }
 
         // 7. Lấy Innovation & FormData theo ID cho QUAN_TRI_VIEN_KHOA và TRUONG_KHOA
         // (chỉ cho phép xem sáng kiến của phòng ban mình)
         public InnovationFormDataResponse getDepartmentInnovationWithFormDataById(String innovationId) {
-                logger.info("===== GET DEPARTMENT INNOVATION WITH FORM DATA BY ID =====");
-                logger.info("Innovation ID: {}", innovationId);
-
                 User currentUser = userService.getCurrentUser();
 
                 boolean hasQuanTriVienKhoaRole = currentUser.getUserRoles().stream()
@@ -1006,37 +1020,20 @@ public class InnovationService {
                                                         + currentUser.getDepartment().getDepartmentName());
                 }
 
-                logger.info("Innovation found: {} - {}", innovation.getId(), innovation.getInnovationName());
-
                 List<FormData> formDataList = formDataRepository.findByInnovationIdWithRelations(innovationId);
-                logger.info("FormData count found: {}", formDataList.size());
 
                 List<FormDataResponse> formDataResponses = new ArrayList<>();
 
                 for (FormData formData : formDataList) {
-                        logger.debug("Processing FormData ID: {}", formData.getId());
-
                         FormDataResponse formDataResponse = formDataMapper.toFormDataResponse(formData);
 
                         if (formData.getFormField() != null) {
                                 FormField formField = formData.getFormField();
 
                                 if (formField.getFormTemplate() == null) {
-                                        logger.warn("FormTemplate is null for FormField ID: {}, loading again...",
-                                                        formField.getId());
                                         formField = formFieldRepository.findByIdWithTemplate(formField.getId())
                                                         .orElse(formField);
                                 }
-
-                                if (formField.getFormTemplate() != null) {
-                                        logger.debug("FormTemplate loaded: ID={}",
-                                                        formField.getFormTemplate().getId());
-                                }
-
-                                FormFieldResponse formFieldResponse = formFieldMapper
-                                                .toFormFieldResponse(formField);
-                                logger.debug("FormFieldResponse mapped with formTemplateId: {}",
-                                                formFieldResponse.getFormTemplateId());
                         } else {
                                 logger.warn("FormField is null for FormData ID: {}", formData.getId());
                         }
@@ -1044,19 +1041,15 @@ public class InnovationService {
                         formDataResponses.add(formDataResponse);
                 }
 
-                logger.info("Total FormDataResponse created: {}", formDataResponses.size());
-
                 InnovationFormDataResponse response = new InnovationFormDataResponse();
                 InnovationResponse innovationResponse = innovationMapper.toInnovationResponse(innovation);
                 Long timeRemainingSeconds = getSubmissionTimeRemainingSeconds(innovation);
                 innovationResponse.setSubmissionTimeRemainingSeconds(timeRemainingSeconds);
                 response.setInnovation(innovationResponse);
-                // response.setFormDataList(formDataResponses);
                 response.setTemplates(buildTemplateFormDataResponses(formDataResponses));
                 response.setTemplateSignatures(Collections.emptyList());
                 response.setSubmissionTimeRemainingSeconds(timeRemainingSeconds);
 
-                logger.info("===== END GET DEPARTMENT INNOVATION WITH FORM DATA =====");
                 return response;
         }
 
@@ -1099,7 +1092,9 @@ public class InnovationService {
                 Specification<Innovation> notDraftSpec = (root, query, criteriaBuilder) -> criteriaBuilder
                                 .notEqual(root.get("status"), InnovationStatusEnum.DRAFT);
 
-                Specification<Innovation> combinedSpec = departmentSpec.and(notDraftSpec).and(specification);
+                Specification<Innovation> combinedSpec = specification != null
+                                ? departmentSpec.and(notDraftSpec).and(specification)
+                                : departmentSpec.and(notDraftSpec);
 
                 Page<Innovation> innovations = innovationRepository.findAll(combinedSpec, pageable);
 
@@ -2499,9 +2494,6 @@ public class InnovationService {
 
         // 8. Xóa sáng kiến trạng thái DRAFT của user hiện tại
         public void deleteMyDraftInnovation(String innovationId) {
-                logger.info("===== DELETE MY DRAFT INNOVATION =====");
-                logger.info("Innovation ID: {}", innovationId);
-
                 String currentUserId = userService.getCurrentUserId();
 
                 Innovation innovation = innovationRepository.findById(innovationId)
@@ -2539,18 +2531,12 @@ public class InnovationService {
                 coInnovationRepository.deleteByInnovationId(innovationId);
                 digitalSignatureRepository.deleteByInnovationId(innovationId);
                 innovationRepository.delete(innovation);
-
-                logger.info("===== DELETE MY DRAFT INNOVATION SUCCESS =====");
         }
 
         // 9. Tạo Attachment từ formData để tạo liên kết giữa Innovation và Attachment
         private void createAttachmentsFromFormData(String innovationId) {
-                logger.info("===== CREATE ATTACHMENTS FROM FORMDATA =====");
-                logger.info("Innovation ID: {}", innovationId);
-
                 List<FormData> formDataList = formDataRepository.findByInnovationIdWithRelations(innovationId);
                 if (formDataList == null || formDataList.isEmpty()) {
-                        logger.info("Không có formData nào để tạo Attachment");
                         return;
                 }
 
@@ -2599,7 +2585,6 @@ public class InnovationService {
                         }
                 }
 
-                logger.info("===== CREATE ATTACHMENTS FROM FORMDATA SUCCESS =====");
         }
 
         private void createAttachmentsFromValueNode(Innovation innovation, String templateId, JsonNode valueNode,
@@ -2691,8 +2676,6 @@ public class InnovationService {
                 boolean alreadyExists = existingAttachments.stream()
                                 .anyMatch(att -> pathUrl.equals(att.getPathUrl()));
                 if (alreadyExists) {
-                        logger.debug("Attachment đã tồn tại cho innovation {} và pathUrl {}", innovation.getId(),
-                                        pathUrl);
                         return;
                 }
 
@@ -2713,8 +2696,6 @@ public class InnovationService {
                 }
 
                 attachmentRepository.save(attachment);
-                logger.debug("Đã tạo Attachment: innovationId={}, templateId={}, pathUrl={}", innovation.getId(),
-                                templateId, pathUrl);
         }
 
         private record SignatureProcessingResult(

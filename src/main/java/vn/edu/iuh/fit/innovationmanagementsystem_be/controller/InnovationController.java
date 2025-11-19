@@ -15,9 +15,13 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 import jakarta.validation.Valid;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.Innovation;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationStatusEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.CreateInnovationWithTemplatesRequest;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.FilterMyInnovationRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationFormDataResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationStatisticsDTO;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationAcademicYearStatisticsDTO;
@@ -48,13 +52,42 @@ public class InnovationController {
 
         public ResponseEntity<ResultPaginationDTO> getMyInnovations(
                         @Parameter(description = "Filter specification for innovations") @Filter Specification<Innovation> specification,
-                        @Parameter(description = "Pagination parameters") Pageable pageable) {
+                        @Parameter(description = "Pagination parameters") Pageable pageable,
+                        HttpServletRequest request) {
+                String filterString = request.getParameter("filter");
+
+                Specification<Innovation> finalSpecification = (filterString != null && !filterString.trim().isEmpty())
+                                ? specification
+                                : null;
+
                 return ResponseEntity.ok(
-                                innovationService.getAllInnovationsByCurrentUserWithFilter(specification,
+                                innovationService.getAllInnovationsByCurrentUserWithFilter(finalSpecification,
                                                 pageable));
         }
 
-        // 2. Lấy thống kê sáng kiến của Current User - OK
+        // 2. Lấy tất cả sáng kiến của user hiện tại với filter chi tiết
+        @GetMapping("/innovations/my-innovations/filter")
+        @ApiMessage("Lấy danh sách sáng kiến của tôi với filter chi tiết thành công")
+        @Operation(summary = "Get My Innovations with Detailed Filter", description = "Get paginated list of all innovations for current user with detailed filtering: search by name/author, status, round, and score")
+        @ApiResponses(value = {
+                        @ApiResponse(responseCode = "200", description = "User innovations retrieved successfully", content = @Content(schema = @Schema(implementation = ResultPaginationDTO.class))),
+                        @ApiResponse(responseCode = "401", description = "Unauthorized")
+        })
+        public ResponseEntity<ResultPaginationDTO> getMyInnovationsWithDetailedFilter(
+                        @Parameter(description = "Search text for innovation name or author name") @RequestParam(required = false) String searchText,
+                        @Parameter(description = "Innovation status") @RequestParam(required = false) InnovationStatusEnum status,
+                        @Parameter(description = "Innovation round ID") @RequestParam(required = false) String innovationRoundId,
+                        @Parameter(description = "Is scored or not") @RequestParam(required = false) Boolean isScore,
+                        @Parameter(description = "Pagination parameters") Pageable pageable) {
+                FilterMyInnovationRequest filterRequest = new FilterMyInnovationRequest(
+                                searchText, status, innovationRoundId, isScore);
+
+                return ResponseEntity.ok(
+                                innovationService.getAllInnovationsByCurrentUserWithDetailedFilter(filterRequest,
+                                                pageable));
+        }
+
+        // 3. Lấy thống kê sáng kiến của Current User - OK
         @GetMapping("/innovations/statistics")
         @ApiMessage("Lấy thống kê sáng kiến thành công")
         @Operation(summary = "Get Innovation Statistics", description = "Get innovation statistics for current user (GIANG_VIEN role)")
@@ -69,7 +102,7 @@ public class InnovationController {
                 return ResponseEntity.ok(statistics);
         }
 
-        // 3. Lấy thống kê sáng kiến theo năm học - OK
+        // 4. Lấy thống kê sáng kiến theo năm học - OK
         @GetMapping("/innovations/statistics/academic-year")
         @ApiMessage("Lấy thống kê sáng kiến theo năm học thành công")
         @Operation(summary = "Get Innovation Statistics by Academic Year", description = "Get innovation statistics grouped by academic year for currentuser")
@@ -85,7 +118,7 @@ public class InnovationController {
                 return ResponseEntity.ok(statistics);
         }
 
-        // 4. Tạo Innovation & Submit FormData nhiều Template
+        // 5. Tạo Innovation & Submit FormData nhiều Template
         @PostMapping("/innovations/templates")
         @ApiMessage("Tạo sáng kiến với nhiều template thành công")
         @Operation(summary = "Create Innovation with Multiple Templates", description = "Create a new innovation and submit form data for multiple templates")
@@ -100,7 +133,7 @@ public class InnovationController {
                 return ResponseEntity.ok(response);
         }
 
-        // 5. Lấy sáng kiến by Id của user hiện tại (chỉ cho phép xem sáng kiến của
+        // 6. Lấy sáng kiến by Id của user hiện tại (chỉ cho phép xem sáng kiến của
         // chính mình)
         @GetMapping("/my-innovations/{id}")
         @PreAuthorize("hasAnyRole('GIANG_VIEN')")
@@ -117,7 +150,7 @@ public class InnovationController {
                 return ResponseEntity.ok(innovationService.getMyInnovationWithFormDataById(id));
         }
 
-        // 6. Lấy sáng kiến by Id cho QUAN_TRI_VIEN_KHOA và TRUONG_KHOA (chỉ cho phép
+        // 7. Lấy sáng kiến by Id cho QUAN_TRI_VIEN_KHOA và TRUONG_KHOA (chỉ cho phép
         // xem sáng kiến của phòng ban mình)
         @GetMapping("/department-innovations/{id}")
         @PreAuthorize("hasAnyRole('QUAN_TRI_VIEN_KHOA', 'TRUONG_KHOA')")
@@ -134,7 +167,7 @@ public class InnovationController {
                 return ResponseEntity.ok(innovationService.getDepartmentInnovationWithFormDataById(id));
         }
 
-        // 7. Lấy tất cả sáng kiến của phòng ban với filter cho QUAN_TRI_VIEN_KHOA và
+        // 8. Lấy tất cả sáng kiến của phòng ban với filter cho QUAN_TRI_VIEN_KHOA và
         // TRUONG_KHOA
         @GetMapping("/department-innovations")
         @PreAuthorize("hasAnyRole('QUAN_TRI_VIEN_KHOA', 'TRUONG_KHOA')")
@@ -152,7 +185,7 @@ public class InnovationController {
                                 innovationService.getAllDepartmentInnovationsWithFilter(specification, pageable));
         }
 
-        // 8. Xóa sáng kiến trạng thái DRAFT của user hiện tại
+        // 9. Xóa sáng kiến trạng thái DRAFT của user hiện tại
         @DeleteMapping("/my-innovations/{id}")
         @PreAuthorize("hasAnyRole('GIANG_VIEN')")
         @ApiMessage("Xóa sáng kiến của tôi thành công")
