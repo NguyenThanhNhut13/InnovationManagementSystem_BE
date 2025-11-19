@@ -166,7 +166,7 @@ public class CertificateAuthorityService {
         }
     }
 
-    // 6. Lấy CA theo ID
+    // 6. Lấy CA theo ID (Response)
     public CertificateAuthorityResponse getCAById(String caId) {
         try {
             CertificateAuthority ca = certificateAuthorityRepository.findById(caId)
@@ -179,6 +179,12 @@ public class CertificateAuthorityService {
         } catch (Exception e) {
             throw new IdInvalidException("Không thể lấy CA: " + e.getMessage());
         }
+    }
+
+    // 6.1. Lấy CA entity theo ID
+    public CertificateAuthority findCAById(String caId) {
+        return certificateAuthorityRepository.findById(caId)
+                .orElse(null);
     }
 
     // 7. Lấy CA đã được xác minh
@@ -228,6 +234,39 @@ public class CertificateAuthorityService {
     public CertificateAuthority findCAByCertificateSerial(String certificateSerial) {
         return certificateAuthorityRepository.findByCertificateSerial(certificateSerial)
                 .orElse(null);
+    }
+
+    // 10. Lấy CA đang hoạt động (VERIFIED và chưa hết hạn)
+    public CertificateAuthority getActiveCA() {
+        LocalDateTime now = LocalDateTime.now();
+        List<CertificateAuthority> activeCAs = certificateAuthorityRepository
+                .findActiveCAs(CAStatusEnum.VERIFIED, now);
+
+        if (activeCAs.isEmpty()) {
+            return null;
+        }
+
+        return activeCAs.get(0);
+    }
+
+    // 11. Tạo CA trực tiếp (dùng cho seeder)
+    public CertificateAuthority createCADirectly(String name, String certificateData,
+            String certificateSerial, String certificateIssuer, String certificateSubject,
+            LocalDateTime validFrom, LocalDateTime validTo, String description) {
+        CertificateAuthority ca = new CertificateAuthority();
+        ca.setName(name);
+        ca.setCertificateData(certificateData);
+        ca.setCertificateSerial(certificateSerial);
+        ca.setCertificateIssuer(certificateIssuer);
+        ca.setCertificateSubject(certificateSubject);
+        ca.setValidFrom(validFrom);
+        ca.setValidTo(validTo);
+        ca.setStatus(CAStatusEnum.VERIFIED);
+        ca.setVerifiedAt(LocalDateTime.now());
+        ca.setVerifiedBy("SYSTEM");
+        ca.setDescription(description);
+
+        return certificateAuthorityRepository.save(ca);
     }
 
     // Helper method: Cập nhật trạng thái CA nếu hết hạn

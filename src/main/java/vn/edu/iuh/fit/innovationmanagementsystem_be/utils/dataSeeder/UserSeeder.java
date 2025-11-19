@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.CertificateAuthority;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.Department;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.Role;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.User;
@@ -14,6 +15,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.exception.IdInvalidException
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.DepartmentRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.RoleRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.UserRepository;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.service.CertificateAuthorityService;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.service.UserSignatureProfileService;
 
 import java.time.LocalDate;
@@ -30,6 +32,7 @@ public class UserSeeder implements DatabaseSeeder {
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
     private final UserSignatureProfileService userSignatureProfileService;
+    private final CertificateAuthorityService certificateAuthorityService;
 
     @Override
     public void seed() {
@@ -128,7 +131,13 @@ public class UserSeeder implements DatabaseSeeder {
         try {
             UserSignatureProfileRequest request = new UserSignatureProfileRequest();
             request.setUserId(user.getId());
-            request.setPathUrl(null); // Để null cho user seeder
+            request.setPathUrl(null);
+
+            CertificateAuthority activeCA = certificateAuthorityService.getActiveCA();
+            if (activeCA != null) {
+                request.setCertificateAuthorityId(activeCA.getId());
+            }
+
             userSignatureProfileService.createUserSignatureProfile(request);
         } catch (Exception e) {
             throw new IdInvalidException(

@@ -14,4 +14,6 @@ public class UserSignatureProfileRequest {
     private String userId;
 
     private String pathUrl;
+
+    private String certificateAuthorityId;
 }

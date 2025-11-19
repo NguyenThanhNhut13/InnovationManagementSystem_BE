@@ -4,6 +4,7 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.CertificateAuthority;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.User;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.UserSignatureProfile;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.UpdateUserSignatureProfilePathUrlRequest;
@@ -32,6 +33,7 @@ public class UserSignatureProfileService {
     private final FileService fileService;
     private final UserSignatureProfileResponseMapper userSignatureProfileResponseMapper;
     private final ObjectMapper objectMapper;
+    private final CertificateAuthorityService certificateAuthorityService;
 
     private static final List<String> ALLOWED_IMAGE_TYPES = Arrays.asList(
             "image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp", "image/bmp");
@@ -42,7 +44,8 @@ public class UserSignatureProfileService {
             @Lazy UserService userService,
             FileService fileService,
             UserSignatureProfileResponseMapper userSignatureProfileResponseMapper,
-            ObjectMapper objectMapper) {
+            ObjectMapper objectMapper,
+            CertificateAuthorityService certificateAuthorityService) {
         this.userSignatureProfileRepository = userSignatureProfileRepository;
         this.keyManagementService = keyManagementService;
         this.hsmEncryptionService = hsmEncryptionService;
@@ -50,6 +53,7 @@ public class UserSignatureProfileService {
         this.fileService = fileService;
         this.userSignatureProfileResponseMapper = userSignatureProfileResponseMapper;
         this.objectMapper = objectMapper;
+        this.certificateAuthorityService = certificateAuthorityService;
     }
 
     // 1. Tạo UserSignatureProfile cho user
@@ -77,6 +81,20 @@ public class UserSignatureProfileService {
             signatureProfile.setPublicKey(keyManagementService.publicKeyToString(keyPair.getPublic()));
             signatureProfile.setCertificateSerial(keyManagementService.generateCertificateSerial());
             signatureProfile.setCertificateIssuer(SignatureConstants.CERTIFICATE_ISSUER);
+
+            // Tự động set CA đang hoạt động
+            CertificateAuthority ca = null;
+            if (request.getCertificateAuthorityId() != null && !request.getCertificateAuthorityId().isEmpty()) {
+                ca = certificateAuthorityService.findCAById(request.getCertificateAuthorityId());
+            }
+
+            if (ca == null) {
+                ca = certificateAuthorityService.getActiveCA();
+            }
+
+            if (ca != null) {
+                signatureProfile.setCertificateAuthority(ca);
+            }
 
             return userSignatureProfileRepository.save(signatureProfile);
         } catch (Exception e) {
