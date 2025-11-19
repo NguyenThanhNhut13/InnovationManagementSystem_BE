@@ -15,8 +15,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.DocumentTypeEnum;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.UserRoleEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.VerifyDigitalSignatureRequest;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.UserDocumentSignatureStatusRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.UserDocumentSignatureStatusResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.TemplatePdfResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.VerifyDigitalSignatureResponse;
@@ -36,9 +37,9 @@ public class DigitalSignatureController {
         }
 
         // 1. Kiểm tra trạng thái chữ ký của user hiện tại đối với một tài liệu
-        @PostMapping("/digital-signatures/check")
+        @GetMapping("/digital-signatures/check")
         @ApiMessage("Kiểm tra trạng thái chữ ký của người dùng hiện tại thành công")
-        @Operation(summary = "Check current user signature status for a document", description = "Nhận JSON request, validate quyền ký, validate certificate (nếu có) và verify chữ ký bằng public key của user hiện tại")
+        @Operation(summary = "Check current user signature status for a document", description = "Nhận query parameters, validate quyền ký, validate certificate (nếu có) và verify chữ ký bằng public key của user hiện tại")
         @ApiResponses(value = {
                         @ApiResponse(responseCode = "200", description = "Trả về trạng thái ký và thời gian ký (nếu có)", content = @Content(schema = @Schema(implementation = UserDocumentSignatureStatusResponse.class))),
                         @ApiResponse(responseCode = "400", description = "Yêu cầu không hợp lệ"),
@@ -46,13 +47,18 @@ public class DigitalSignatureController {
                         @ApiResponse(responseCode = "404", description = "Không tìm thấy dữ liệu liên quan")
         })
         public ResponseEntity<UserDocumentSignatureStatusResponse> checkCurrentUserSignatureStatus(
-                        @RequestBody UserDocumentSignatureStatusRequest request) {
+                        @RequestParam String innovationId,
+                        @RequestParam String documentType,
+                        @RequestParam String signedAsRole) {
+
+                DocumentTypeEnum documentTypeEnum = DocumentTypeEnum.valueOf(documentType);
+                UserRoleEnum signedAsRoleEnum = UserRoleEnum.valueOf(signedAsRole);
 
                 UserDocumentSignatureStatusResponse result = digitalSignatureService
                                 .getCurrentUserDocumentSignatureStatus(
-                                                request.getInnovationId(),
-                                                request.getDocumentType(),
-                                                request.getSignedAsRole());
+                                                innovationId,
+                                                documentTypeEnum,
+                                                signedAsRoleEnum);
                 return ResponseEntity.ok(result);
         }
 
