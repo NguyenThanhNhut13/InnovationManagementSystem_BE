@@ -2262,6 +2262,54 @@ public class InnovationService {
                 return fieldValue;
         }
 
+        // 8. Xóa sáng kiến trạng thái DRAFT của user hiện tại
+        public void deleteMyDraftInnovation(String innovationId) {
+                logger.info("===== DELETE MY DRAFT INNOVATION =====");
+                logger.info("Innovation ID: {}", innovationId);
+
+                String currentUserId = userService.getCurrentUserId();
+
+                Innovation innovation = innovationRepository.findById(innovationId)
+                                .orElseThrow(() -> new IdInvalidException(
+                                                "Không tìm thấy sáng kiến với ID: " + innovationId));
+
+                if (innovation.getUser() == null || !innovation.getUser().getId().equals(currentUserId)) {
+                        logger.error("User {} không có quyền xóa sáng kiến {}", currentUserId, innovationId);
+                        throw new IdInvalidException("Bạn chỉ có thể xóa sáng kiến của chính mình");
+                }
+
+                if (innovation.getStatus() != InnovationStatusEnum.DRAFT) {
+                        logger.error("Innovation {} không ở trạng thái DRAFT. Trạng thái hiện tại: {}", innovationId,
+                                        innovation.getStatus());
+                        throw new IdInvalidException("Chỉ có thể xóa sáng kiến ở trạng thái DRAFT");
+                }
+
+                List<Attachment> attachments = attachmentRepository.findByInnovationId(innovationId);
+
+                for (Attachment attachment : attachments) {
+                        String pathUrl = attachment.getPathUrl();
+                        if (pathUrl == null || pathUrl.isBlank()) {
+                                continue;
+                        }
+                        try {
+                                fileService.deleteFile(pathUrl);
+                        } catch (Exception e) {
+                                logger.error("Không thể xóa file {} của innovation {}: {}", pathUrl, innovationId,
+                                                e.getMessage());
+                                throw new IdInvalidException("Không thể xóa tệp đính kèm: "
+                                                + (attachment.getFileName() != null
+                                                                ? attachment.getFileName()
+                                                                : pathUrl));
+                        }
+                }
+
+                formDataRepository.deleteByInnovationId(innovationId);
+                coInnovationRepository.deleteByInnovationId(innovationId);
+                innovationRepository.delete(innovation);
+
+                logger.info("===== DELETE MY DRAFT INNOVATION SUCCESS =====");
+        }
+
         private record SignatureProcessingResult(
                         String templateId,
                         TemplateTypeEnum templateType,
