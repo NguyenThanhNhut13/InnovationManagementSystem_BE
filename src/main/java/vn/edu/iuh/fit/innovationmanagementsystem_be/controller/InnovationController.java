@@ -202,6 +202,24 @@ public class InnovationController {
                 return ResponseEntity.ok().build();
         }
 
+        // 10. Lấy tất cả sáng kiến với filter cho QUAN_TRI_VIEN_QLKH_HTQT,
+        // TV_HOI_DONG_TRUONG, CHU_TICH_HD_TRUONG, QUAN_TRI_VIEN_HE_THONG
+        @GetMapping("/innovations")
+        @PreAuthorize("hasAnyRole('QUAN_TRI_VIEN_QLKH_HTQT', 'TV_HOI_DONG_TRUONG', 'CHU_TICH_HD_TRUONG', 'QUAN_TRI_VIEN_HE_THONG')")
+        @ApiMessage("Lấy danh sách tất cả sáng kiến thành công")
+        @Operation(summary = "Get All Innovations with Filter", description = "Get paginated list of all innovations with filtering support (only for QUAN_TRI_VIEN_QLKH_HTQT, TV_HOI_DONG_TRUONG, CHU_TICH_HD_TRUONG, QUAN_TRI_VIEN_HE_THONG)")
+        @ApiResponses(value = {
+                        @ApiResponse(responseCode = "200", description = "All innovations retrieved successfully", content = @Content(schema = @Schema(implementation = ResultPaginationDTO.class))),
+                        @ApiResponse(responseCode = "403", description = "Forbidden - Only QUAN_TRI_VIEN_QLKH_HTQT, TV_HOI_DONG_TRUONG, CHU_TICH_HD_TRUONG, QUAN_TRI_VIEN_HE_THONG can access"),
+                        @ApiResponse(responseCode = "401", description = "Unauthorized")
+        })
+        public ResponseEntity<ResultPaginationDTO> getAllInnovationsForAdminRoles(
+                        @Parameter(description = "Filter specification for innovations") @Filter Specification<Innovation> specification,
+                        @Parameter(description = "Pagination parameters") Pageable pageable) {
+                return ResponseEntity.ok(
+                                innovationService.getAllInnovationsForAdminRolesWithFilter(specification, pageable));
+        }
+
         // 1. Lấy danh sách sáng kiến
         // @GetMapping("/innovations")
         // @ApiMessage("Lấy danh sách sáng kiến thành công")

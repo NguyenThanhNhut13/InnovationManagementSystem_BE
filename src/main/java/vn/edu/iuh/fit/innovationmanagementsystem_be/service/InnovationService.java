@@ -1125,6 +1125,79 @@ public class InnovationService {
                 return Utils.toResultPaginationDTO(responses, pageable);
         }
 
+        // 9. Lấy tất cả sáng kiến với filter cho QUAN_TRI_VIEN_QLKH_HTQT,
+        // TV_HOI_DONG_TRUONG, CHU_TICH_HD_TRUONG, QUAN_TRI_VIEN_HE_THONG
+        public ResultPaginationDTO getAllInnovationsForAdminRolesWithFilter(Specification<Innovation> specification,
+                        Pageable pageable) {
+                if (pageable.getSort().isUnsorted()) {
+                        pageable = PageRequest.of(
+                                        pageable.getPageNumber(),
+                                        pageable.getPageSize(),
+                                        Sort.by("createdAt").descending());
+                }
+
+                User currentUser = userService.getCurrentUser();
+
+                boolean hasQuanTriVienQlkhHtqtRole = currentUser.getUserRoles().stream()
+                                .anyMatch(userRole -> userRole.getRole()
+                                                .getRoleName() == UserRoleEnum.QUAN_TRI_VIEN_QLKH_HTQT);
+
+                boolean hasTvHoiDongTruongRole = currentUser.getUserRoles().stream()
+                                .anyMatch(userRole -> userRole.getRole()
+                                                .getRoleName() == UserRoleEnum.TV_HOI_DONG_TRUONG);
+
+                boolean hasChuTichHdTruongRole = currentUser.getUserRoles().stream()
+                                .anyMatch(userRole -> userRole.getRole()
+                                                .getRoleName() == UserRoleEnum.CHU_TICH_HD_TRUONG);
+
+                boolean hasQuanTriVienHeThongRole = currentUser.getUserRoles().stream()
+                                .anyMatch(userRole -> userRole.getRole()
+                                                .getRoleName() == UserRoleEnum.QUAN_TRI_VIEN_HE_THONG);
+
+                if (!hasQuanTriVienQlkhHtqtRole && !hasTvHoiDongTruongRole && !hasChuTichHdTruongRole
+                                && !hasQuanTriVienHeThongRole) {
+                        logger.error("User {} không có quyền QUAN_TRI_VIEN_QLKH_HTQT, TV_HOI_DONG_TRUONG, CHU_TICH_HD_TRUONG hoặc QUAN_TRI_VIEN_HE_THONG",
+                                        currentUser.getId());
+                        throw new IdInvalidException(
+                                        "Chỉ QUAN_TRI_VIEN_QLKH_HTQT, TV_HOI_DONG_TRUONG, CHU_TICH_HD_TRUONG hoặc QUAN_TRI_VIEN_HE_THONG mới có quyền xem tất cả sáng kiến");
+                }
+
+                Specification<Innovation> notDraftSpec = (root, query, criteriaBuilder) -> criteriaBuilder
+                                .notEqual(root.get("status"), InnovationStatusEnum.DRAFT);
+
+                Specification<Innovation> combinedSpec = specification != null
+                                ? notDraftSpec.and(specification)
+                                : notDraftSpec;
+
+                Page<Innovation> innovations = innovationRepository.findAll(combinedSpec, pageable);
+
+                List<String> innovationIds = innovations.getContent().stream()
+                                .map(Innovation::getId)
+                                .collect(Collectors.toList());
+
+                List<FormData> allFormData = innovationIds.isEmpty()
+                                ? new ArrayList<>()
+                                : formDataRepository.findByInnovationIdsWithRelations(innovationIds);
+
+                Map<String, Integer> authorCountMap = allFormData.stream()
+                                .filter(fd -> fd.getFormField() != null
+                                                && "danh_sach_tac_gia".equals(fd.getFormField().getFieldKey()))
+                                .collect(Collectors.groupingBy(
+                                                fd -> fd.getInnovation().getId(),
+                                                Collectors.collectingAndThen(
+                                                                Collectors.toList(),
+                                                                list -> list.stream()
+                                                                                .mapToInt(this::countAuthorsFromFormData)
+                                                                                .max()
+                                                                                .orElse(0))));
+
+                Page<MyInnovationResponse> responses = innovations.map(innovation -> {
+                        int authorCount = authorCountMap.getOrDefault(innovation.getId(), 0);
+                        return toMyInnovationResponse(innovation, authorCount);
+                });
+                return Utils.toResultPaginationDTO(responses, pageable);
+        }
+
         // // 4. Cập nhật FormData sáng kiến (Cập nhật FormData cho sáng kiến đã tồn
         // tại)
         // public InnovationFormDataResponse updateInnovationFormData(String
