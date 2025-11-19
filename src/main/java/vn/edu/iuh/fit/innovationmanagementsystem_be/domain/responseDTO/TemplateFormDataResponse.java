@@ -15,4 +15,3 @@ public class TemplateFormDataResponse {
     private Map<String, JsonNode> formData;
 
 }
-
