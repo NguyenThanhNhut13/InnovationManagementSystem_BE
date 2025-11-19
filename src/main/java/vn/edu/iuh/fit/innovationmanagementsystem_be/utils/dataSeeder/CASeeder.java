@@ -7,6 +7,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.CertificateAuth
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.CertificateAuthorityRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.service.CertificateAuthorityService;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.service.KeyManagementService;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.constants.CAConstans;
 
 import java.security.KeyPair;
 import java.time.LocalDateTime;
@@ -59,15 +60,15 @@ public class CASeeder implements DatabaseSeeder {
         KeyPair keyPair = keyManagementService.generateKeyPair();
         String publicKeyBase64 = keyManagementService.publicKeyToString(keyPair.getPublic());
 
-        String certificateSerial = "CA-ADMIN-" + System.currentTimeMillis();
-        String certificateIssuer = "CN=Innovation Management System CA, O=IUH, C=VN";
-        String certificateSubject = "CN=Innovation Management System Admin CA, O=IUH, C=VN";
+        String certificateSerial = CAConstans.certificateSerial + System.currentTimeMillis();
+        String certificateIssuer = CAConstans.certificateIssuer;
+        String certificateSubject = CAConstans.certificateSubject;
 
         String certificateData = createSimpleCertificateData(publicKeyBase64, certificateSerial,
                 certificateIssuer, certificateSubject, validFrom, validTo);
 
         return certificateAuthorityService.createCADirectly(
-                "CA Admin - Innovation Management System",
+                CAConstans.certificateName,
                 certificateData,
                 certificateSerial,
                 certificateIssuer,

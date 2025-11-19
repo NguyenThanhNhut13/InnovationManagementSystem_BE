@@ -57,11 +57,6 @@ public class UserSignatureProfile extends Auditable {
     @Column(name = "certificate_status")
     private CAStatusEnum certificateStatus; // Status: VALID, EXPIRED, REVOKED, etc.
 
-    @Column(name = "last_certificate_validation")
-    private LocalDateTime lastCertificateValidation; // Lần cuối validate certificate
-
-    // TSA fields removed for academic project
-
     // Relationships
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "user_id", nullable = false)
