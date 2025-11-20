@@ -976,7 +976,27 @@ public class InnovationRoundService {
                     "Chỉ có thể xóa Round có trạng thái DRAFT. Trạng thái hiện tại: " + round.getStatus().getValue());
         }
 
-        // Xóa round (cascade sẽ tự động xóa các entities liên quan)
+        // Lưu lại InnovationDecision để kiểm tra sau khi xóa round
+        InnovationDecision decision = round.getInnovationDecision();
+        String decisionId = decision != null ? decision.getId() : null;
+
+        // Xóa round (cascade sẽ tự động xóa các entities liên quan: phases, form
+        // templates, innovations)
         innovationRoundRepository.delete(round);
+        innovationRoundRepository.flush(); // Đảm bảo xóa được commit ngay
+
+        // Kiểm tra và xóa InnovationDecision nếu không có round nào khác sử dụng
+        if (decisionId != null) {
+            // Đếm số lượng rounds còn lại sử dụng decision này
+            long remainingRoundsCount = innovationRoundRepository.count(
+                    (root, query, criteriaBuilder) -> criteriaBuilder.equal(root.get("innovationDecision").get("id"),
+                            decisionId));
+
+            // Nếu không còn round nào sử dụng decision này, xóa luôn decision
+            if (remainingRoundsCount == 0) {
+                innovationDecisionRepository.deleteById(decisionId);
+            }
+        }
     }
+
 }
