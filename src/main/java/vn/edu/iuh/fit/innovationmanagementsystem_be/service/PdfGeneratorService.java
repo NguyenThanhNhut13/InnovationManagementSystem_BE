@@ -337,32 +337,6 @@ public class PdfGeneratorService {
             metaCharset.attr("charset", "UTF-8");
         }
 
-        // Thêm hoặc cập nhật style để hỗ trợ font tiếng Việt và loại bỏ trang trắng
-        Element style = head.selectFirst("style");
-        String fontCss = "@page { margin: 15mm; size: A4; } " +
-                "html, body { margin: 0; padding: 0; font-family: 'Times New Roman', 'Arial', 'DejaVu Sans', sans-serif !important; } "
-                +
-                "* { font-family: 'Times New Roman', 'Arial', 'DejaVu Sans', sans-serif !important; } " +
-                "body > *:first-child { page-break-before: avoid !important; margin-top: 0 !important; padding-top: 0 !important; } "
-                +
-                "body { page-break-before: avoid !important; }";
-
-        if (style == null) {
-            head.appendElement("style").attr("type", "text/css").text(fontCss);
-        } else {
-            String existingStyle = style.html();
-            if (!existingStyle.contains("font-family")) {
-                style.append(" " + fontCss);
-            } else {
-                // Thêm font CSS vào đầu style nếu chưa có
-                if (!existingStyle.contains("@page")) {
-                    style.text(fontCss + " " + existingStyle);
-                } else {
-                    style.text(existingStyle + " " + fontCss);
-                }
-            }
-        }
-
         // Cấu hình output settings
         document.outputSettings()
                 .syntax(Document.OutputSettings.Syntax.xml)
