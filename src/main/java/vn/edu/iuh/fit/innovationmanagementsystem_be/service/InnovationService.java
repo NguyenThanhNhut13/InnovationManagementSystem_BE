@@ -847,15 +847,16 @@ public class InnovationService {
                         }
                 }
 
-                // Tạo Attachment từ formData (tạo liên kết giữa Innovation và Attachment)
-                createAttachmentsFromFormData(savedInnovation.getId());
-
                 // Xử lý đồng sáng kiến từ formData
                 processCoInnovations(savedInnovation, request.getTemplates());
 
                 if (request.getStatus() == InnovationStatusEnum.SUBMITTED) {
                         signatureResults = signInnovationDocuments(savedInnovation, request);
                 }
+
+                // Tạo Attachment từ formData (tạo liên kết giữa Innovation và Attachment)
+                // Gọi sau khi tạo PDF để tránh file đính kèm bị xóa khi generate PDF
+                createAttachmentsFromFormData(savedInnovation.getId());
 
                 // Gửi thông báo cho user khi tạo sáng kiến thành công
                 try {
@@ -2752,6 +2753,17 @@ public class InnovationService {
                         return;
                 }
 
+                // Lấy file size từ MinIO nếu chưa có
+                if (fileSize == null) {
+                        try {
+                                if (fileService.fileExists(pathUrl)) {
+                                        fileSize = fileService.getFileInfo(pathUrl).size();
+                                }
+                        } catch (Exception e) {
+                                logger.warn("Không thể lấy thông tin file từ MinIO: {}", e.getMessage());
+                        }
+                }
+
                 Attachment attachment = new Attachment();
                 attachment.setInnovation(innovation);
                 attachment.setTemplateId(templateId);
@@ -2764,9 +2776,7 @@ public class InnovationService {
                         attachment.setOriginalFileName(pathUrl);
                 }
 
-                if (fileSize != null) {
-                        attachment.setFileSize(fileSize);
-                }
+                attachment.setFileSize(fileSize);
 
                 attachmentRepository.save(attachment);
         }
