@@ -168,55 +168,7 @@ public class InnovationService {
                 this.digitalSignatureRepository = digitalSignatureRepository;
         }
 
-        // 1. Lấy tất cả sáng kiến của user hiện tại với filter
-        public ResultPaginationDTO getAllInnovationsByCurrentUserWithFilter(Specification<Innovation> specification,
-                        Pageable pageable) {
-                if (pageable.getSort().isUnsorted()) {
-                        pageable = PageRequest.of(
-                                        pageable.getPageNumber(),
-                                        pageable.getPageSize(),
-                                        Sort.by("createdAt").descending());
-                }
-
-                String currentUserId = userService.getCurrentUserId();
-
-                Specification<Innovation> userSpec = (root, query, criteriaBuilder) -> criteriaBuilder
-                                .equal(root.get("user").get("id"), currentUserId);
-
-                Specification<Innovation> combinedSpec = specification != null
-                                ? userSpec.and(specification)
-                                : userSpec;
-
-                Page<Innovation> innovations = innovationRepository.findAll(combinedSpec, pageable);
-
-                List<String> innovationIds = innovations.getContent().stream()
-                                .map(Innovation::getId)
-                                .collect(Collectors.toList());
-
-                List<FormData> allFormData = innovationIds.isEmpty()
-                                ? new ArrayList<>()
-                                : formDataRepository.findByInnovationIdsWithRelations(innovationIds);
-
-                Map<String, Integer> authorCountMap = allFormData.stream()
-                                .filter(fd -> fd.getFormField() != null
-                                                && "danh_sach_tac_gia".equals(fd.getFormField().getFieldKey()))
-                                .collect(Collectors.groupingBy(
-                                                fd -> fd.getInnovation().getId(),
-                                                Collectors.collectingAndThen(
-                                                                Collectors.toList(),
-                                                                list -> list.stream()
-                                                                                .mapToInt(this::countAuthorsFromFormData)
-                                                                                .max()
-                                                                                .orElse(0))));
-
-                Page<MyInnovationResponse> responses = innovations.map(innovation -> {
-                        int authorCount = authorCountMap.getOrDefault(innovation.getId(), 0);
-                        return toMyInnovationResponse(innovation, authorCount);
-                });
-                return Utils.toResultPaginationDTO(responses, pageable);
-        }
-
-        // 2. Lấy tất cả sáng kiến của user hiện tại với filter chi tiết
+        // 1. Lấy tất cả sáng kiến của user hiện tại với filter chi tiết
         public ResultPaginationDTO getAllInnovationsByCurrentUserWithDetailedFilter(
                         FilterMyInnovationRequest filterRequest, Pageable pageable) {
                 if (pageable.getSort().isUnsorted()) {
