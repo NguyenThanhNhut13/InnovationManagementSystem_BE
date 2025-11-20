@@ -812,15 +812,18 @@ public class InnovationService {
                 // Gọi sau khi tạo PDF để tránh file đính kèm bị xóa khi generate PDF
                 createAttachmentsFromFormData(savedInnovation.getId());
 
-                // Gửi thông báo cho user khi tạo sáng kiến thành công
-                try {
-                        notificationService.notifyUserOnInnovationCreated(
-                                        currentUser.getId(),
-                                        savedInnovation.getId(),
-                                        savedInnovation.getInnovationName(),
-                                        savedInnovation.getStatus());
-                } catch (Exception e) {
-                        logger.error("Lỗi khi gửi thông báo tạo sáng kiến: {}", e.getMessage(), e);
+                // Gửi thông báo cho user khi nộp sáng kiến thành công (chỉ khi status là
+                // SUBMITTED)
+                if (request.getStatus() == InnovationStatusEnum.SUBMITTED) {
+                        try {
+                                notificationService.notifyUserOnInnovationCreated(
+                                                currentUser.getId(),
+                                                savedInnovation.getId(),
+                                                savedInnovation.getInnovationName(),
+                                                savedInnovation.getStatus());
+                        } catch (Exception e) {
+                                logger.error("Lỗi khi gửi thông báo tạo sáng kiến: {}", e.getMessage(), e);
+                        }
                 }
 
                 InnovationFormDataResponse response = new InnovationFormDataResponse();
