@@ -1037,9 +1037,9 @@ public class NotificationService {
 
                         String statusDisplayName = getStatusDisplayName(status);
 
-                        String title = "Chúc mừng! Bạn đã tạo sáng kiến thành công";
+                        String title = "Bạn đã tạo sáng kiến thành công";
                         String message = String.format(
-                                        "Chúc mừng bạn vừa tạo sáng kiến \"%s\" thành công. Sáng kiến đang ở trạng thái: %s",
+                                        "Bạn vừa tạo sáng kiến \"%s\" thành công. Sáng kiến đang ở trạng thái: %s",
                                         innovationName, statusDisplayName);
 
                         Map<String, Object> data = new HashMap<>();

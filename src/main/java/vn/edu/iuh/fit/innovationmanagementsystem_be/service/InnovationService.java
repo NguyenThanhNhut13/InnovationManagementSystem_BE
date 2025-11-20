@@ -45,6 +45,8 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.UpcomingD
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.UpcomingDeadlinesResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.TemplateSignatureResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.TemplateFormDataResponse;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationDetailResponse;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.CoAuthorResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.exception.IdInvalidException;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.mapper.InnovationMapper;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.mapper.FormFieldMapper;
@@ -1052,6 +1054,64 @@ public class InnovationService {
                 response.setSubmissionTimeRemainingSeconds(timeRemainingSeconds);
 
                 return response;
+        }
+
+        // 10. Lấy chi tiết sáng kiến của user hiện tại bằng ID
+        public InnovationDetailResponse getInnovationDetailById(String innovationId) {
+                String currentUserId = userService.getCurrentUserId();
+
+                Innovation innovation = innovationRepository.findById(innovationId)
+                                .orElseThrow(() -> {
+                                        logger.error("Không tìm thấy sáng kiến với ID: {}", innovationId);
+                                        return new IdInvalidException(
+                                                        "Không tìm thấy sáng kiến với ID: " + innovationId);
+                                });
+
+                if (innovation.getUser() == null || !innovation.getUser().getId().equals(currentUserId)) {
+                        logger.error("User {} không có quyền xem sáng kiến {}", currentUserId, innovationId);
+                        throw new IdInvalidException("Bạn không có quyền xem sáng kiến này");
+                }
+
+                User author = innovation.getUser();
+                String authorName = author != null ? author.getFullName() : null;
+                String authorEmail = author != null ? author.getEmail() : null;
+                String departmentName = author != null && author.getDepartment() != null
+                                ? author.getDepartment().getDepartmentName()
+                                : null;
+                String academicYear = innovation.getInnovationRound() != null
+                                ? innovation.getInnovationRound().getAcademicYear()
+                                : null;
+
+                List<CoInnovation> coInnovations = coInnovationRepository.findByInnovationId(innovationId);
+                List<CoAuthorResponse> coAuthors = coInnovations.stream()
+                                .map(co -> {
+                                        User coUser = co.getUser();
+                                        String coEmail = coUser != null ? coUser.getEmail() : null;
+                                        String coDepartmentName = coUser != null && coUser.getDepartment() != null
+                                                        ? coUser.getDepartment().getDepartmentName()
+                                                        : co.getCoInnovatorDepartmentName();
+                                        String coFullName = coUser != null ? coUser.getFullName()
+                                                        : co.getCoInnovatorFullName();
+
+                                        return new CoAuthorResponse(coFullName, coDepartmentName, coEmail);
+                                })
+                                .collect(Collectors.toList());
+
+                List<Attachment> attachments = attachmentRepository.findByInnovationId(innovationId);
+                Integer attachmentCount = attachments != null ? attachments.size() : 0;
+
+                return InnovationDetailResponse.builder()
+                                .innovationId(innovation.getId())
+                                .innovationName(innovation.getInnovationName())
+                                .authorName(authorName)
+                                .academicYear(academicYear)
+                                .departmentName(departmentName)
+                                .isScore(innovation.getIsScore())
+                                .status(innovation.getStatus())
+                                .authorEmail(authorEmail)
+                                .coAuthors(coAuthors)
+                                .attachmentCount(attachmentCount)
+                                .build();
         }
 
         // 8. Lấy tất cả sáng kiến của phòng ban với filter cho QUAN_TRI_VIEN_KHOA và

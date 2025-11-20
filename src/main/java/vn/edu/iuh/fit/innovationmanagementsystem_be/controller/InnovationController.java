@@ -25,6 +25,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.FilterMyIn
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationFormDataResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationStatisticsDTO;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationAcademicYearStatisticsDTO;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationDetailResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.service.InnovationService;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.ResultPaginationDTO;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.annotation.ApiMessage;
@@ -218,6 +219,22 @@ public class InnovationController {
                         @Parameter(description = "Pagination parameters") Pageable pageable) {
                 return ResponseEntity.ok(
                                 innovationService.getAllInnovationsForAdminRolesWithFilter(specification, pageable));
+        }
+
+        // 11. Lấy chi tiết sáng kiến của user hiện tại bằng ID
+        @GetMapping("/my-innovations/{id}/detail")
+        @PreAuthorize("hasAnyRole('GIANG_VIEN')")
+        @ApiMessage("Lấy chi tiết sáng kiến của tôi bằng id thành công")
+        @Operation(summary = "Get My Innovation Detail by ID", description = "Get innovation detail information including overview, co-authors, and attachment count by innovation ID (only for current user's innovations)")
+        @ApiResponses(value = {
+                        @ApiResponse(responseCode = "200", description = "Innovation detail retrieved successfully", content = @Content(schema = @Schema(implementation = InnovationDetailResponse.class))),
+                        @ApiResponse(responseCode = "404", description = "Innovation not found"),
+                        @ApiResponse(responseCode = "403", description = "Forbidden - You can only view your own innovations"),
+                        @ApiResponse(responseCode = "401", description = "Unauthorized")
+        })
+        public ResponseEntity<InnovationDetailResponse> getMyInnovationDetailById(
+                        @Parameter(description = "Innovation ID", required = true) @PathVariable String id) {
+                return ResponseEntity.ok(innovationService.getInnovationDetailById(id));
         }
 
         // 1. Lấy danh sách sáng kiến
