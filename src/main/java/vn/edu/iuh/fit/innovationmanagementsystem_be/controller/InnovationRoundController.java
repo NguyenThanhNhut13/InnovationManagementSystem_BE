@@ -162,4 +162,20 @@ public class InnovationRoundController {
                 return ResponseEntity.ok(round);
         }
 
+        // 9. Delete Round (Only DRAFT status)
+        @DeleteMapping("/innovation-rounds/{roundId}")
+        @PreAuthorize("hasAnyRole('QUAN_TRI_VIEN_QLKH_HTQT', 'QUAN_TRI_VIEN_HE_THONG')")
+        @ApiMessage("Xóa đợt sáng kiến thành công")
+        @Operation(summary = "Delete Innovation Round", description = "Delete innovation round (only allowed for rounds with DRAFT status)")
+        @ApiResponses(value = {
+                        @ApiResponse(responseCode = "200", description = "Round deleted successfully"),
+                        @ApiResponse(responseCode = "400", description = "Invalid request - round cannot be deleted (not in DRAFT status)"),
+                        @ApiResponse(responseCode = "404", description = "Round not found")
+        })
+        public ResponseEntity<Void> deleteRound(
+                        @Parameter(description = "Round ID", required = true) @PathVariable String roundId) {
+                innovationRoundService.deleteRound(roundId);
+                return ResponseEntity.ok().build();
+        }
+
 }

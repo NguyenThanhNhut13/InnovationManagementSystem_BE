@@ -963,4 +963,20 @@ public class InnovationRoundService {
         setStatistics(response, round);
         return response;
     }
+
+    // 14. Delete Round (Only DRAFT status)
+    @Transactional
+    public void deleteRound(String roundId) {
+        InnovationRound round = innovationRoundRepository.findById(roundId)
+                .orElseThrow(() -> new IdInvalidException("Không tìm thấy InnovationRound với ID: " + roundId));
+
+        // Kiểm tra status phải là DRAFT
+        if (round.getStatus() != InnovationRoundStatusEnum.DRAFT) {
+            throw new IllegalArgumentException(
+                    "Chỉ có thể xóa Round có trạng thái DRAFT. Trạng thái hiện tại: " + round.getStatus().getValue());
+        }
+
+        // Xóa round (cascade sẽ tự động xóa các entities liên quan)
+        innovationRoundRepository.delete(round);
+    }
 }
