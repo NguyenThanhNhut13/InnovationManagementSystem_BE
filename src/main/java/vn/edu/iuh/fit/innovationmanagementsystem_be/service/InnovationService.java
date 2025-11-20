@@ -682,7 +682,56 @@ public class InnovationService {
                         existingInnovation.setBasisText(request.getBasisText());
                         savedInnovation = innovationRepository.save(existingInnovation);
 
-                        // Xóa FormData cũ, CoInnovation cũ và Attachment cũ
+                        // Lấy danh sách file đính kèm cũ TRƯỚC KHI xóa Attachment (để còn metadata)
+                        List<Attachment> oldAttachments = attachmentRepository
+                                        .findByInnovationId(savedInnovation.getId());
+                        Set<String> oldUserFileNames = new HashSet<>();
+                        for (Attachment attachment : oldAttachments) {
+                                String fileName = attachment.getFileName();
+                                // Chỉ lấy file đính kèm user (có templateId và KHÔNG phải PDF template)
+                                if (attachment.getTemplateId() != null && fileName != null) {
+                                        // PDF template có pattern: {innovationId}_{templateId}.pdf
+                                        String templatePdfPattern = savedInnovation.getId() + "_"
+                                                        + attachment.getTemplateId() + ".pdf";
+                                        if (!fileName.equals(templatePdfPattern)) {
+                                                oldUserFileNames.add(fileName);
+                                        }
+                                }
+                        }
+
+                        // Lấy danh sách file mới từ request
+                        Set<String> newFileNames = new HashSet<>();
+                        for (TemplateDataRequest templateRequest : request.getTemplates()) {
+                                if (templateRequest.getFormData() != null && !templateRequest.getFormData().isEmpty()) {
+                                        for (Map.Entry<String, Object> entry : templateRequest.getFormData()
+                                                        .entrySet()) {
+                                                Object fieldValue = entry.getValue();
+                                                if (fieldValue != null) {
+                                                        JsonNode valueNode = objectMapper.valueToTree(fieldValue);
+                                                        newFileNames.addAll(extractFileNamesFromValueNode(valueNode));
+                                                }
+                                        }
+                                }
+                        }
+
+                        // Xóa file cũ trong MinIO TRƯỚC (chỉ xóa file user không còn dùng)
+                        if (!oldUserFileNames.isEmpty()) {
+                                for (String fileName : oldUserFileNames) {
+                                        if (!newFileNames.contains(fileName)) {
+                                                try {
+                                                        if (fileService.fileExists(fileName)) {
+                                                                fileService.deleteFile(fileName);
+                                                                logger.info("Đã xóa file đính kèm cũ: {}", fileName);
+                                                        }
+                                                } catch (Exception e) {
+                                                        logger.error("Lỗi khi xóa file {}: {}", fileName,
+                                                                        e.getMessage());
+                                                }
+                                        }
+                                }
+                        }
+
+                        // SAU ĐÓ mới xóa FormData cũ, CoInnovation cũ và Attachment cũ
                         formDataRepository.deleteByInnovationId(savedInnovation.getId());
                         coInnovationRepository.deleteByInnovationId(savedInnovation.getId());
                         attachmentRepository.deleteByInnovationId(savedInnovation.getId());
