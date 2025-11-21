@@ -83,6 +83,9 @@ services:
     container_name: innovation-backend
     ports:
       - "8081:8081"
+    # ***  ĐỌC FILE .env ***
+    env_file:
+      - .env
     environment:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/innovation_management
       - SPRING_DATASOURCE_USERNAME=${SPRING_DATASOURCE_USERNAME}
@@ -94,6 +97,11 @@ services:
       - MINIO_ACCESS_KEY=${MINIO_ACCESS_KEY}
       - MINIO_SECRET_KEY=${MINIO_SECRET_KEY}
       - PORT=8081
+      # *** ĐÃ THÊM CÁC BIẾN MAIL BỊ THIẾU ***
+      - SPRING_MAIL_HOST=${SPRING_MAIL_HOST}
+      - SPRING_MAIL_PORT=${SPRING_MAIL_PORT}
+      - SPRING_MAIL_USERNAME=${SPRING_MAIL_USERNAME}
+      - SPRING_MAIL_PASSWORD=${SPRING_MAIL_PASSWORD}
     depends_on:
       postgres:
         condition: service_healthy
