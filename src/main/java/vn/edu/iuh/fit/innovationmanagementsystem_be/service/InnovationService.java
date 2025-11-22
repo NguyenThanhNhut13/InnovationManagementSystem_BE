@@ -1089,6 +1089,69 @@ public class InnovationService {
                                 .build();
         }
 
+        // 12. Lấy danh sách sáng kiến của khoa với filter chi tiết
+        public ResultPaginationDTO getAllDepartmentInnovationsWithDetailedFilter(
+                        FilterMyInnovationRequest filterRequest, Pageable pageable) {
+                User currentUser = userService.getCurrentUser();
+
+                // Kiểm tra quyền
+                boolean hasQuanTriVienKhoaRole = currentUser.getUserRoles().stream()
+                                .anyMatch(userRole -> userRole.getRole()
+                                                .getRoleName() == UserRoleEnum.QUAN_TRI_VIEN_KHOA);
+                boolean hasTruongKhoaRole = currentUser.getUserRoles().stream()
+                                .anyMatch(userRole -> userRole.getRole().getRoleName() == UserRoleEnum.TRUONG_KHOA);
+
+                if (!hasQuanTriVienKhoaRole && !hasTruongKhoaRole) {
+                        throw new IdInvalidException("Chỉ QUAN_TRI_VIEN_KHOA hoặc TRUONG_KHOA mới có quyền truy cập");
+                }
+
+                if (currentUser.getDepartment() == null) {
+                        throw new IdInvalidException("Người dùng không thuộc phòng ban nào");
+                }
+
+                Specification<Innovation> spec = buildFilterSpecification(filterRequest);
+
+                // Thêm điều kiện lọc theo phòng ban
+                Specification<Innovation> departmentSpec = (root, query, criteriaBuilder) -> criteriaBuilder
+                                .equal(root.get("department").get("id"), currentUser.getDepartment().getId());
+
+                if (spec != null) {
+                        spec = spec.and(departmentSpec);
+                } else {
+                        spec = departmentSpec;
+                }
+
+                Page<Innovation> innovations = innovationRepository.findAll(spec, pageable);
+
+                // Tính toán số lượng tác giả cho mỗi sáng kiến (để xác định đồng tác giả)
+                List<String> innovationIds = innovations.getContent().stream()
+                                .map(Innovation::getId)
+                                .collect(Collectors.toList());
+
+                List<FormData> allFormData = innovationIds.isEmpty()
+                                ? new ArrayList<>()
+                                : formDataRepository.findByInnovationIdsWithRelations(innovationIds);
+
+                Map<String, Integer> authorCountMap = allFormData.stream()
+                                .filter(fd -> fd.getFormField() != null
+                                                && "danh_sach_tac_gia".equals(fd.getFormField().getFieldKey()))
+                                .collect(Collectors.groupingBy(
+                                                fd -> fd.getInnovation().getId(),
+                                                Collectors.collectingAndThen(
+                                                                Collectors.toList(),
+                                                                list -> list.stream()
+                                                                                .mapToInt(this::countAuthorsFromFormData)
+                                                                                .max()
+                                                                                .orElse(0))));
+
+                Page<MyInnovationResponse> responses = innovations.map(innovation -> {
+                        int authorCount = authorCountMap.getOrDefault(innovation.getId(), 0);
+                        return toMyInnovationResponse(innovation, authorCount);
+                });
+
+                return Utils.toResultPaginationDTO(responses, pageable);
+        }
+
         // 7. Lấy Innovation & FormData theo ID cho QUAN_TRI_VIEN_KHOA và TRUONG_KHOA
         // (chỉ cho phép xem sáng kiến của phòng ban mình)
         public InnovationFormDataResponse getDepartmentInnovationWithFormDataById(String innovationId) {
