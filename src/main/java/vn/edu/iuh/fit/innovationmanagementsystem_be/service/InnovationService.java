@@ -228,12 +228,34 @@ public class InnovationService {
                 if (filterRequest.getSearchText() != null && !filterRequest.getSearchText().trim().isEmpty()) {
                         String searchText = "%" + filterRequest.getSearchText().trim().toLowerCase() + "%";
                         Specification<Innovation> searchSpec = (root, query, criteriaBuilder) -> {
+                                // Tìm theo tên sáng kiến
                                 jakarta.persistence.criteria.Predicate innovationNamePredicate = criteriaBuilder
                                                 .like(criteriaBuilder.lower(root.get("innovationName")), searchText);
+
+                                // Tìm theo tên tác giả chính
                                 jakarta.persistence.criteria.Predicate authorNamePredicate = criteriaBuilder
                                                 .like(criteriaBuilder.lower(root.get("user").get("fullName")),
                                                                 searchText);
-                                return criteriaBuilder.or(innovationNamePredicate, authorNamePredicate);
+
+                                // Tìm theo tên đồng tác giả trong bảng co_innovation
+                                jakarta.persistence.criteria.Subquery<String> coAuthorSubquery = query
+                                                .subquery(String.class);
+                                jakarta.persistence.criteria.Root<CoInnovation> coInnovationRoot = coAuthorSubquery
+                                                .from(CoInnovation.class);
+                                coAuthorSubquery.select(coInnovationRoot.get("innovation").get("id"))
+                                                .where(criteriaBuilder.and(
+                                                                criteriaBuilder.equal(coInnovationRoot.get("innovation")
+                                                                                .get("id"), root.get("id")),
+                                                                criteriaBuilder.like(
+                                                                                criteriaBuilder.lower(coInnovationRoot
+                                                                                                .get("coInnovatorFullName")),
+                                                                                searchText)));
+
+                                jakarta.persistence.criteria.Predicate coAuthorPredicate = criteriaBuilder
+                                                .exists(coAuthorSubquery);
+
+                                return criteriaBuilder.or(innovationNamePredicate, authorNamePredicate,
+                                                coAuthorPredicate);
                         };
                         spec = spec == null ? searchSpec : spec.and(searchSpec);
                 }
