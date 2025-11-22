@@ -226,11 +226,17 @@ public class FileService {
 
     public String getPresignedUrl(String fileName, int expirySeconds) {
         try {
+            // Loại bỏ bucket name prefix nếu có (ví dụ: "innovation-management/20251122_xxx.pdf" -> "20251122_xxx.pdf")
+            String objectName = fileName;
+            if (fileName != null && fileName.startsWith(bucketName + "/")) {
+                objectName = fileName.substring(bucketName.length() + 1);
+            }
+            
             String presignedUrl = minioClient.getPresignedObjectUrl(
                     GetPresignedObjectUrlArgs.builder()
                             .method(Method.GET)
                             .bucket(bucketName)
-                            .object(fileName)
+                            .object(objectName)
                             .expiry(expirySeconds)
                             .build());
             
