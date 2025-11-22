@@ -10,6 +10,7 @@ import lombok.NoArgsConstructor;
 public class AttachmentResponse {
     private String id;
     private String fileName;
+    private String pathUrl; // Tên file trên MinIO (để tải xuống)
     // private String fileUrl; // URL tải xuống (presigned URL) - Đã bỏ theo yêu cầu
     private Long fileSize;
     private String createdBy; // Người upload (nếu cần)

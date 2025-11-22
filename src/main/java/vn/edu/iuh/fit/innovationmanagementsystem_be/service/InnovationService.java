@@ -1068,6 +1068,7 @@ public class InnovationService {
                                         return new AttachmentResponse(
                                                         att.getId(),
                                                         att.getFileName(),
+                                                        att.getPathUrl(),
                                                         // fileUrl,
                                                         att.getFileSize(),
                                                         att.getCreatedBy());
@@ -2961,11 +2962,12 @@ public class InnovationService {
                 attachment.setInnovation(innovation);
                 attachment.setTemplateId(templateId);
                 attachment.setPathUrl(pathUrl);
-                attachment.setFileName(pathUrl);
 
                 if (originalFileName != null && !originalFileName.isBlank()) {
+                        attachment.setFileName(originalFileName);
                         attachment.setOriginalFileName(originalFileName);
                 } else {
+                        attachment.setFileName(pathUrl);
                         attachment.setOriginalFileName(pathUrl);
                 }
 

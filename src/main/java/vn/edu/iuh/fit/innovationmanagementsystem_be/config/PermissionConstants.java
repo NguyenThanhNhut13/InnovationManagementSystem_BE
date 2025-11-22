@@ -15,6 +15,7 @@ public class PermissionConstants {
                         "/swagger-resources/**",
                         "/webjars/**",
                         "/api/v1/users", // Method POST
-                        "/ws/**"
+                        "/ws/**",
+                        "https://minio9000.silenthero.xyz/innovation-management/**"
         };
 }
