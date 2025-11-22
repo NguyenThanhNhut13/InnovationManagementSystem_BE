@@ -18,6 +18,8 @@ public class CorsConfig {
         // cho phép các URL nào có thể kết nối tới backend
         configuration.setAllowedOrigins(
                 Arrays.asList(
+                        "http://192.168.0.120:3000",
+                        "https://192.168.0.120:3000",
                         "http://localhost:3000",
                         "https://localhost:3000",
                         "http://localhost:9000",
