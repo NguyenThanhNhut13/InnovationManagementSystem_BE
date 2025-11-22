@@ -26,6 +26,9 @@ public class FileService {
     @Value("${minio.bucket-name}")
     private String bucketName;
 
+    @Value("${minio.public-endpoint:http://minio:9000}")
+    private String publicEndpoint;
+
     // 1. Upload multiple files to MinIO
     public List<String> uploadMultipleFiles(List<MultipartFile> files) throws Exception {
         List<String> uploadedFileNames = new ArrayList<>();
@@ -217,13 +220,20 @@ public class FileService {
 
     public String getPresignedUrl(String fileName, int expirySeconds) {
         try {
-            return minioClient.getPresignedObjectUrl(
+            String presignedUrl = minioClient.getPresignedObjectUrl(
                     GetPresignedObjectUrlArgs.builder()
                             .method(Method.GET)
                             .bucket(bucketName)
                             .object(fileName)
                             .expiry(expirySeconds)
                             .build());
+            
+            // Thay thế internal hostname bằng public endpoint
+            if (presignedUrl.contains("http://minio:9000")) {
+                presignedUrl = presignedUrl.replace("http://minio:9000", publicEndpoint);
+            }
+            
+            return presignedUrl;
         } catch (Exception e) {
             throw new IdInvalidException("Fail to view file: " + e.getMessage());
         }
