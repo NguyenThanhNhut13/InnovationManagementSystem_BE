@@ -46,7 +46,10 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.UpcomingD
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.TemplateSignatureResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.TemplateFormDataResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationDetailResponse;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.DepartmentInnovationDetailResponse;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.AttachmentResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.CoAuthorResponse;
+import java.util.stream.Collectors;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.exception.IdInvalidException;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.mapper.InnovationMapper;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.mapper.FormFieldMapper;
@@ -1007,6 +1010,146 @@ public class InnovationService {
                 response.setSubmissionTimeRemainingSeconds(timeRemainingSeconds);
 
                 return response;
+        }
+
+        // 8. Lấy chi tiết sáng kiến cho TRUONG_KHOA và QUAN_TRI_VIEN_KHOA
+        public DepartmentInnovationDetailResponse getDepartmentInnovationDetailById(String innovationId) {
+                User currentUser = userService.getCurrentUser();
+
+                // Kiểm tra quyền
+                boolean hasQuanTriVienKhoaRole = currentUser.getUserRoles().stream()
+                                .anyMatch(userRole -> userRole.getRole()
+                                                .getRoleName() == UserRoleEnum.QUAN_TRI_VIEN_KHOA);
+                boolean hasTruongKhoaRole = currentUser.getUserRoles().stream()
+                                .anyMatch(userRole -> userRole.getRole().getRoleName() == UserRoleEnum.TRUONG_KHOA);
+
+                if (!hasQuanTriVienKhoaRole && !hasTruongKhoaRole) {
+                        throw new IdInvalidException("Chỉ QUAN_TRI_VIEN_KHOA hoặc TRUONG_KHOA mới có quyền xem");
+                }
+
+                // Lấy innovation
+                Innovation innovation = innovationRepository.findById(innovationId)
+                                .orElseThrow(() -> new IdInvalidException("Không tìm thấy sáng kiến"));
+
+                if (innovation.getDepartment() == null || currentUser.getDepartment() == null) {
+                        throw new IdInvalidException("Không thể xác định phòng ban của sáng kiến hoặc người dùng");
+                }
+
+                // Kiểm tra department matching
+                if (!innovation.getDepartment().getId().equals(currentUser.getDepartment().getId())) {
+                        throw new IdInvalidException("Bạn chỉ có thể xem sáng kiến của khoa mình");
+                }
+
+                // Lấy thông tin cơ bản
+                User author = innovation.getUser();
+                String academicYear = innovation.getInnovationRound() != null
+                                ? innovation.getInnovationRound().getAcademicYear()
+                                : null;
+
+                // Lấy danh sách đồng tác giả
+                List<CoInnovation> coInnovations = coInnovationRepository.findByInnovationId(innovationId);
+                List<CoAuthorResponse> coAuthors = coInnovations.stream()
+                                .map(co -> new CoAuthorResponse(
+                                                co.getCoInnovatorFullName(),
+                                                co.getCoInnovatorDepartmentName(),
+                                                co.getUser() != null ? co.getUser().getEmail() : null))
+                                .collect(Collectors.toList());
+
+                // Lấy form data
+                List<FormData> formDataList = formDataRepository.findByInnovationIdWithRelations(innovationId);
+                List<FormDataResponse> formDataResponses = formDataList.stream()
+                                .map(formDataMapper::toFormDataResponse)
+                                .collect(Collectors.toList());
+
+                // Lấy danh sách tài liệu đính kèm
+                List<Attachment> attachments = attachmentRepository.findByInnovationId(innovationId);
+                List<AttachmentResponse> attachmentResponses = attachments.stream()
+                                .map(att -> {
+                                        return new AttachmentResponse(
+                                                        att.getId(),
+                                                        att.getPathUrl(),
+                                                        att.getFileSize(),
+                                                        att.getCreatedBy());
+                                })
+                                .collect(Collectors.toList());
+
+                return DepartmentInnovationDetailResponse.builder()
+                                .innovationId(innovation.getId())
+                                .innovationName(innovation.getInnovationName())
+                                .authorName(author.getFullName())
+                                .authorEmail(author.getEmail())
+                                .departmentName(innovation.getDepartment().getDepartmentName())
+                                .academicYear(academicYear)
+                                .isScore(innovation.getIsScore())
+                                .status(innovation.getStatus())
+                                .submittedAt(innovation.getCreatedAt()) // Ngày nộp
+                                .coAuthors(coAuthors)
+                                .templates(buildTemplateFormDataResponses(formDataResponses))
+                                .attachments(attachmentResponses)
+                                .build();
+        }
+
+        // 12. Lấy danh sách sáng kiến của khoa với filter chi tiết
+        public ResultPaginationDTO getAllDepartmentInnovationsWithDetailedFilter(
+                        FilterMyInnovationRequest filterRequest, Pageable pageable) {
+                User currentUser = userService.getCurrentUser();
+
+                // Kiểm tra quyền
+                boolean hasQuanTriVienKhoaRole = currentUser.getUserRoles().stream()
+                                .anyMatch(userRole -> userRole.getRole()
+                                                .getRoleName() == UserRoleEnum.QUAN_TRI_VIEN_KHOA);
+                boolean hasTruongKhoaRole = currentUser.getUserRoles().stream()
+                                .anyMatch(userRole -> userRole.getRole().getRoleName() == UserRoleEnum.TRUONG_KHOA);
+
+                if (!hasQuanTriVienKhoaRole && !hasTruongKhoaRole) {
+                        throw new IdInvalidException("Chỉ QUAN_TRI_VIEN_KHOA hoặc TRUONG_KHOA mới có quyền truy cập");
+                }
+
+                if (currentUser.getDepartment() == null) {
+                        throw new IdInvalidException("Người dùng không thuộc phòng ban nào");
+                }
+
+                Specification<Innovation> spec = buildFilterSpecification(filterRequest);
+
+                // Thêm điều kiện lọc theo phòng ban
+                Specification<Innovation> departmentSpec = (root, query, criteriaBuilder) -> criteriaBuilder
+                                .equal(root.get("department").get("id"), currentUser.getDepartment().getId());
+
+                if (spec != null) {
+                        spec = spec.and(departmentSpec);
+                } else {
+                        spec = departmentSpec;
+                }
+
+                Page<Innovation> innovations = innovationRepository.findAll(spec, pageable);
+
+                // Tính toán số lượng tác giả cho mỗi sáng kiến (để xác định đồng tác giả)
+                List<String> innovationIds = innovations.getContent().stream()
+                                .map(Innovation::getId)
+                                .collect(Collectors.toList());
+
+                List<FormData> allFormData = innovationIds.isEmpty()
+                                ? new ArrayList<>()
+                                : formDataRepository.findByInnovationIdsWithRelations(innovationIds);
+
+                Map<String, Integer> authorCountMap = allFormData.stream()
+                                .filter(fd -> fd.getFormField() != null
+                                                && "danh_sach_tac_gia".equals(fd.getFormField().getFieldKey()))
+                                .collect(Collectors.groupingBy(
+                                                fd -> fd.getInnovation().getId(),
+                                                Collectors.collectingAndThen(
+                                                                Collectors.toList(),
+                                                                list -> list.stream()
+                                                                                .mapToInt(this::countAuthorsFromFormData)
+                                                                                .max()
+                                                                                .orElse(0))));
+
+                Page<MyInnovationResponse> responses = innovations.map(innovation -> {
+                        int authorCount = authorCountMap.getOrDefault(innovation.getId(), 0);
+                        return toMyInnovationResponse(innovation, authorCount);
+                });
+
+                return Utils.toResultPaginationDTO(responses, pageable);
         }
 
         // 7. Lấy Innovation & FormData theo ID cho QUAN_TRI_VIEN_KHOA và TRUONG_KHOA
@@ -2880,11 +3023,12 @@ public class InnovationService {
                 attachment.setInnovation(innovation);
                 attachment.setTemplateId(templateId);
                 attachment.setPathUrl(pathUrl);
-                attachment.setFileName(pathUrl);
 
                 if (originalFileName != null && !originalFileName.isBlank()) {
+                        attachment.setFileName(originalFileName);
                         attachment.setOriginalFileName(originalFileName);
                 } else {
+                        attachment.setFileName(pathUrl);
                         attachment.setOriginalFileName(pathUrl);
                 }
 
