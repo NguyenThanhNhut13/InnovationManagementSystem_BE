@@ -1,6 +1,5 @@
 package vn.edu.iuh.fit.innovationmanagementsystem_be.controller;
 
-import com.turkraft.springfilter.boot.Filter;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -10,16 +9,15 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.Innovation;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationStatusEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.CreateInnovationWithTemplatesRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.FilterMyInnovationRequest;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.FilterAdminInnovationRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationFormDataResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.DepartmentInnovationDetailResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationStatisticsDTO;
@@ -205,17 +203,22 @@ public class InnovationController {
         @GetMapping("/innovations")
         @PreAuthorize("hasAnyRole('QUAN_TRI_VIEN_QLKH_HTQT', 'TV_HOI_DONG_TRUONG', 'CHU_TICH_HD_TRUONG', 'QUAN_TRI_VIEN_HE_THONG')")
         @ApiMessage("Lấy danh sách tất cả sáng kiến thành công")
-        @Operation(summary = "Get All Innovations with Filter", description = "Get paginated list of all innovations with filtering support (only for QUAN_TRI_VIEN_QLKH_HTQT, TV_HOI_DONG_TRUONG, CHU_TICH_HD_TRUONG, QUAN_TRI_VIEN_HE_THONG)")
+        @Operation(summary = "Get All Innovations with Filter", description = "Get paginated list of all innovations with filtering support (only for QUAN_TRI_VIEN_QLKH_HTQT, TV_HOI_DONG_TRUONG, CHU_TICH_HD_TRUONG, QUAN_TRI_VIEN_HE_THONG). Supports detailed filtering: search by name/author, status, round, and department")
         @ApiResponses(value = {
                         @ApiResponse(responseCode = "200", description = "All innovations retrieved successfully", content = @Content(schema = @Schema(implementation = ResultPaginationDTO.class))),
                         @ApiResponse(responseCode = "403", description = "Forbidden - Only QUAN_TRI_VIEN_QLKH_HTQT, TV_HOI_DONG_TRUONG, CHU_TICH_HD_TRUONG, QUAN_TRI_VIEN_HE_THONG can access"),
                         @ApiResponse(responseCode = "401", description = "Unauthorized")
         })
         public ResponseEntity<ResultPaginationDTO> getAllInnovationsForAdminRoles(
-                        @Parameter(description = "Filter specification for innovations") @Filter Specification<Innovation> specification,
+                        @Parameter(description = "Search text for innovation name or author name") @RequestParam(required = false) String searchText,
+                        @Parameter(description = "Innovation status") @RequestParam(required = false) InnovationStatusEnum status,
+                        @Parameter(description = "Innovation round ID") @RequestParam(required = false) String innovationRoundId,
+                        @Parameter(description = "Department ID") @RequestParam(required = false) String departmentId,
                         @Parameter(description = "Pagination parameters") Pageable pageable) {
+                FilterAdminInnovationRequest filterRequest = new FilterAdminInnovationRequest(
+                                searchText, status, innovationRoundId, departmentId);
                 return ResponseEntity.ok(
-                                innovationService.getAllInnovationsForAdminRolesWithFilter(specification, pageable));
+                                innovationService.getAllInnovationsForAdminRolesWithFilter(filterRequest, pageable));
         }
 
         // 11. Lấy chi tiết sáng kiến của user hiện tại bằng ID

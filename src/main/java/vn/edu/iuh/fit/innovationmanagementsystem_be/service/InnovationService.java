@@ -34,6 +34,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.CreateInno
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.TemplateDataRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.DigitalSignatureRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.FilterMyInnovationRequest;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.FilterAdminInnovationRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.FormDataResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.FormFieldResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationFormDataResponse;
@@ -281,6 +282,70 @@ public class InnovationService {
                         Specification<Innovation> isScoreSpec = (root, query, criteriaBuilder) -> criteriaBuilder
                                         .equal(root.get("isScore"), filterRequest.getIsScore());
                         spec = spec == null ? isScoreSpec : spec.and(isScoreSpec);
+                }
+
+                return spec;
+        }
+
+        private Specification<Innovation> buildFilterSpecificationForAdmin(FilterAdminInnovationRequest filterRequest) {
+                if (filterRequest == null) {
+                        return null;
+                }
+
+                Specification<Innovation> spec = null;
+
+                if (filterRequest.getSearchText() != null && !filterRequest.getSearchText().trim().isEmpty()) {
+                        String searchText = "%" + filterRequest.getSearchText().trim().toLowerCase() + "%";
+                        Specification<Innovation> searchSpec = (root, query, criteriaBuilder) -> {
+                                jakarta.persistence.criteria.Predicate innovationNamePredicate = criteriaBuilder
+                                                .like(criteriaBuilder.lower(root.get("innovationName")), searchText);
+
+                                jakarta.persistence.criteria.Predicate authorNamePredicate = criteriaBuilder
+                                                .like(criteriaBuilder.lower(root.get("user").get("fullName")),
+                                                                searchText);
+
+                                jakarta.persistence.criteria.Subquery<String> coAuthorSubquery = query
+                                                .subquery(String.class);
+                                jakarta.persistence.criteria.Root<CoInnovation> coInnovationRoot = coAuthorSubquery
+                                                .from(CoInnovation.class);
+                                coAuthorSubquery.select(coInnovationRoot.get("innovation").get("id"))
+                                                .where(criteriaBuilder.and(
+                                                                criteriaBuilder.equal(coInnovationRoot.get("innovation")
+                                                                                .get("id"), root.get("id")),
+                                                                criteriaBuilder.like(
+                                                                                criteriaBuilder.lower(coInnovationRoot
+                                                                                                .get("coInnovatorFullName")),
+                                                                                searchText)));
+
+                                jakarta.persistence.criteria.Predicate coAuthorPredicate = criteriaBuilder
+                                                .exists(coAuthorSubquery);
+
+                                return criteriaBuilder.or(innovationNamePredicate, authorNamePredicate,
+                                                coAuthorPredicate);
+                        };
+                        spec = spec == null ? searchSpec : spec.and(searchSpec);
+                }
+
+                if (filterRequest.getStatus() != null) {
+                        Specification<Innovation> statusSpec = (root, query, criteriaBuilder) -> criteriaBuilder
+                                        .equal(root.get("status"), filterRequest.getStatus());
+                        spec = spec == null ? statusSpec : spec.and(statusSpec);
+                }
+
+                if (filterRequest.getInnovationRoundId() != null
+                                && !filterRequest.getInnovationRoundId().trim().isEmpty()) {
+                        Specification<Innovation> roundSpec = (root, query, criteriaBuilder) -> criteriaBuilder
+                                        .equal(root.get("innovationRound").get("id"),
+                                                        filterRequest.getInnovationRoundId());
+                        spec = spec == null ? roundSpec : spec.and(roundSpec);
+                }
+
+                if (filterRequest.getDepartmentId() != null
+                                && !filterRequest.getDepartmentId().trim().isEmpty()) {
+                        Specification<Innovation> departmentSpec = (root, query, criteriaBuilder) -> criteriaBuilder
+                                        .equal(root.get("department").get("id"),
+                                                        filterRequest.getDepartmentId());
+                        spec = spec == null ? departmentSpec : spec.and(departmentSpec);
                 }
 
                 return spec;
@@ -1357,7 +1422,7 @@ public class InnovationService {
 
         // 9. Lấy tất cả sáng kiến với filter cho QUAN_TRI_VIEN_QLKH_HTQT,
         // TV_HOI_DONG_TRUONG, CHU_TICH_HD_TRUONG, QUAN_TRI_VIEN_HE_THONG
-        public ResultPaginationDTO getAllInnovationsForAdminRolesWithFilter(Specification<Innovation> specification,
+        public ResultPaginationDTO getAllInnovationsForAdminRolesWithFilter(FilterAdminInnovationRequest filterRequest,
                         Pageable pageable) {
                 if (pageable.getSort().isUnsorted()) {
                         pageable = PageRequest.of(
@@ -1392,11 +1457,13 @@ public class InnovationService {
                                         "Chỉ QUAN_TRI_VIEN_QLKH_HTQT, TV_HOI_DONG_TRUONG, CHU_TICH_HD_TRUONG hoặc QUAN_TRI_VIEN_HE_THONG mới có quyền xem tất cả sáng kiến");
                 }
 
+                Specification<Innovation> filterSpec = buildFilterSpecificationForAdmin(filterRequest);
+
                 Specification<Innovation> notDraftSpec = (root, query, criteriaBuilder) -> criteriaBuilder
                                 .notEqual(root.get("status"), InnovationStatusEnum.DRAFT);
 
-                Specification<Innovation> combinedSpec = specification != null
-                                ? notDraftSpec.and(specification)
+                Specification<Innovation> combinedSpec = filterSpec != null
+                                ? notDraftSpec.and(filterSpec)
                                 : notDraftSpec;
 
                 Page<Innovation> innovations = innovationRepository.findAll(combinedSpec, pageable);
