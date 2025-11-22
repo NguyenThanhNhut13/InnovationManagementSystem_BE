@@ -226,14 +226,7 @@ public class FileService {
 
     public String getPresignedUrl(String fileName, int expirySeconds) {
         try {
-            // Tạo client với public endpoint để presigned URL có signature đúng
-            MinioClient publicClient = MinioClient.builder()
-                    .endpoint(publicEndpoint)
-                    .credentials(accessKey, secretKey)
-                    .build();
-            
-            // Tạo presigned URL với public endpoint ngay từ đầu
-            String presignedUrl = publicClient.getPresignedObjectUrl(
+            String presignedUrl = minioClient.getPresignedObjectUrl(
                     GetPresignedObjectUrlArgs.builder()
                             .method(Method.GET)
                             .bucket(bucketName)
