@@ -29,6 +29,12 @@ public class FileService {
     @Value("${minio.public-endpoint:http://minio:9000}")
     private String publicEndpoint;
 
+    @Value("${minio.access-key}")
+    private String accessKey;
+
+    @Value("${minio.secret-key}")
+    private String secretKey;
+
     // 1. Upload multiple files to MinIO
     public List<String> uploadMultipleFiles(List<MultipartFile> files) throws Exception {
         List<String> uploadedFileNames = new ArrayList<>();
@@ -227,11 +233,6 @@ public class FileService {
                             .object(fileName)
                             .expiry(expirySeconds)
                             .build());
-            
-            // Thay thế internal hostname bằng public endpoint
-            if (presignedUrl.contains("http://minio:9000")) {
-                presignedUrl = presignedUrl.replace("http://minio:9000", publicEndpoint);
-            }
             
             return presignedUrl;
         } catch (Exception e) {
