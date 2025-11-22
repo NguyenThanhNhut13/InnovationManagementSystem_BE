@@ -27,7 +27,8 @@ public class CorsConfig {
                         "http://localhost:9001",
                         "https://localhost:9001",
                         "http://innovation-management-system-fe.vercel.app",
-                        "https://innovation-management-system-fe.vercel.app"));
+                        "https://innovation-management-system-fe.vercel.app",
+                        "https://api.silenthero.xyz"));
 
         // các method nào đc kết nối
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
