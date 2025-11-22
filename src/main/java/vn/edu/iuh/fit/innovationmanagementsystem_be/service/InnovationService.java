@@ -1067,9 +1067,7 @@ public class InnovationService {
                                 .map(att -> {
                                         return new AttachmentResponse(
                                                         att.getId(),
-                                                        att.getFileName(),
                                                         att.getPathUrl(),
-                                                        // fileUrl,
                                                         att.getFileSize(),
                                                         att.getCreatedBy());
                                 })
