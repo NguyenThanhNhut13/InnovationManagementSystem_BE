@@ -46,7 +46,10 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.UpcomingD
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.TemplateSignatureResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.TemplateFormDataResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationDetailResponse;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.DepartmentInnovationDetailResponse;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.AttachmentResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.CoAuthorResponse;
+import java.util.stream.Collectors;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.exception.IdInvalidException;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.mapper.InnovationMapper;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.mapper.FormFieldMapper;
@@ -1007,6 +1010,84 @@ public class InnovationService {
                 response.setSubmissionTimeRemainingSeconds(timeRemainingSeconds);
 
                 return response;
+        }
+
+        // 8. Lấy chi tiết sáng kiến cho TRUONG_KHOA và QUAN_TRI_VIEN_KHOA
+        public DepartmentInnovationDetailResponse getDepartmentInnovationDetailById(String innovationId) {
+                User currentUser = userService.getCurrentUser();
+
+                // Kiểm tra quyền
+                boolean hasQuanTriVienKhoaRole = currentUser.getUserRoles().stream()
+                                .anyMatch(userRole -> userRole.getRole()
+                                                .getRoleName() == UserRoleEnum.QUAN_TRI_VIEN_KHOA);
+                boolean hasTruongKhoaRole = currentUser.getUserRoles().stream()
+                                .anyMatch(userRole -> userRole.getRole().getRoleName() == UserRoleEnum.TRUONG_KHOA);
+
+                if (!hasQuanTriVienKhoaRole && !hasTruongKhoaRole) {
+                        throw new IdInvalidException("Chỉ QUAN_TRI_VIEN_KHOA hoặc TRUONG_KHOA mới có quyền xem");
+                }
+
+                // Lấy innovation
+                Innovation innovation = innovationRepository.findById(innovationId)
+                                .orElseThrow(() -> new IdInvalidException("Không tìm thấy sáng kiến"));
+
+                if (innovation.getDepartment() == null || currentUser.getDepartment() == null) {
+                        throw new IdInvalidException("Không thể xác định phòng ban của sáng kiến hoặc người dùng");
+                }
+
+                // Kiểm tra department matching
+                if (!innovation.getDepartment().getId().equals(currentUser.getDepartment().getId())) {
+                        throw new IdInvalidException("Bạn chỉ có thể xem sáng kiến của khoa mình");
+                }
+
+                // Lấy thông tin cơ bản
+                User author = innovation.getUser();
+                String academicYear = innovation.getInnovationRound() != null
+                                ? innovation.getInnovationRound().getAcademicYear()
+                                : null;
+
+                // Lấy danh sách đồng tác giả
+                List<CoInnovation> coInnovations = coInnovationRepository.findByInnovationId(innovationId);
+                List<CoAuthorResponse> coAuthors = coInnovations.stream()
+                                .map(co -> new CoAuthorResponse(
+                                                co.getCoInnovatorFullName(),
+                                                co.getCoInnovatorDepartmentName(),
+                                                co.getUser() != null ? co.getUser().getEmail() : null))
+                                .collect(Collectors.toList());
+
+                // Lấy form data
+                List<FormData> formDataList = formDataRepository.findByInnovationIdWithRelations(innovationId);
+                List<FormDataResponse> formDataResponses = formDataList.stream()
+                                .map(formDataMapper::toFormDataResponse)
+                                .collect(Collectors.toList());
+
+                // Lấy danh sách tài liệu đính kèm
+                List<Attachment> attachments = attachmentRepository.findByInnovationId(innovationId);
+                List<AttachmentResponse> attachmentResponses = attachments.stream()
+                                .map(att -> {
+                                        return new AttachmentResponse(
+                                                        att.getId(),
+                                                        att.getFileName(),
+                                                        // fileUrl,
+                                                        att.getFileSize(),
+                                                        att.getCreatedBy());
+                                })
+                                .collect(Collectors.toList());
+
+                return DepartmentInnovationDetailResponse.builder()
+                                .innovationId(innovation.getId())
+                                .innovationName(innovation.getInnovationName())
+                                .authorName(author.getFullName())
+                                .authorEmail(author.getEmail())
+                                .departmentName(innovation.getDepartment().getDepartmentName())
+                                .academicYear(academicYear)
+                                .isScore(innovation.getIsScore())
+                                .status(innovation.getStatus())
+                                .submittedAt(innovation.getCreatedAt()) // Ngày nộp
+                                .coAuthors(coAuthors)
+                                .templates(buildTemplateFormDataResponses(formDataResponses))
+                                .attachments(attachmentResponses)
+                                .build();
         }
 
         // 7. Lấy Innovation & FormData theo ID cho QUAN_TRI_VIEN_KHOA và TRUONG_KHOA
