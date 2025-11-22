@@ -39,7 +39,7 @@ services:
       retries: 5
 
   # MinIO Object Storage
-  minio:
+minio:
     image: minio/minio:latest
     container_name: minio
     ports:
@@ -48,7 +48,8 @@ services:
     environment:
       MINIO_ROOT_USER: ${MINIO_ACCESS_KEY}
       MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY}
-      MINIO_API_CORS_ALLOW_ORIGIN: "*"
+      MINIO_SERVER_URL: ${MINIO_PUBLIC_ENDPOINT} 
+      MINIO_BROWSER_REDIRECT_URL: ${MINIO_BROWSER_REDIRECT_URL}
     volumes:
       - minio_data:/data
     command: server /data --console-address ":9001"
