@@ -9,11 +9,11 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.net.URL;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -239,13 +239,13 @@ public class FileService {
             int port = url.getPort() == -1 ? (url.getProtocol().equals("https") ? 443 : 80) : url.getPort();
             boolean secure = url.getProtocol().equals("https");
             
-            // Tạo client với public endpoint để signature đúng
+            // Tạo client với public endpoint để signature đúng ngay từ đầu
             MinioClient publicClient = MinioClient.builder()
                     .endpoint(host, port, secure)
                     .credentials(accessKey, secretKey)
                     .build();
             
-            // Tạo presigned URL với public endpoint ngay từ đầu
+            // Tạo presigned URL với public endpoint
             String presignedUrl = publicClient.getPresignedObjectUrl(
                     GetPresignedObjectUrlArgs.builder()
                             .method(Method.GET)
