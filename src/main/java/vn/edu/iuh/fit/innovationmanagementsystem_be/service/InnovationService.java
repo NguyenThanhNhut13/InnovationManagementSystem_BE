@@ -1441,15 +1441,15 @@ public class InnovationService {
                                 .anyMatch(userRole -> userRole.getRole()
                                                 .getRoleName() == UserRoleEnum.TV_HOI_DONG_TRUONG);
 
-                boolean hasChuTichHdTruongRole = currentUser.getUserRoles().stream()
-                                .anyMatch(userRole -> userRole.getRole()
-                                                .getRoleName() == UserRoleEnum.CHU_TICH_HD_TRUONG);
+                // boolean hasChuTichHdTruongRole = currentUser.getUserRoles().stream()
+                // .anyMatch(userRole -> userRole.getRole()
+                // .getRoleName() == UserRoleEnum.CHU_TICH_HD_TRUONG);
 
                 boolean hasQuanTriVienHeThongRole = currentUser.getUserRoles().stream()
                                 .anyMatch(userRole -> userRole.getRole()
                                                 .getRoleName() == UserRoleEnum.QUAN_TRI_VIEN_HE_THONG);
 
-                if (!hasQuanTriVienQlkhHtqtRole && !hasTvHoiDongTruongRole && !hasChuTichHdTruongRole
+                if (!hasQuanTriVienQlkhHtqtRole && !hasTvHoiDongTruongRole
                                 && !hasQuanTriVienHeThongRole) {
                         logger.error("User {} không có quyền QUAN_TRI_VIEN_QLKH_HTQT, TV_HOI_DONG_TRUONG, CHU_TICH_HD_TRUONG hoặc QUAN_TRI_VIEN_HE_THONG",
                                         currentUser.getId());

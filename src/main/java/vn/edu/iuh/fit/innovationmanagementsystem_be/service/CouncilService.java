@@ -1,0 +1,210 @@
+package vn.edu.iuh.fit.innovationmanagementsystem_be.service;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.Council;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.CouncilMember;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.Innovation;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.User;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.CouncilMemberRoleEnum;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationStatusEnum;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.ReviewLevelEnum;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.UserRoleEnum;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.CouncilMemberRequest;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.CreateCouncilRequest;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.CouncilResponse;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.exception.IdInvalidException;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.mapper.CouncilMapper;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.CouncilRepository;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.CouncilMemberRepository;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.InnovationRepository;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.UserRepository;
+
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+@Service
+@Transactional
+public class CouncilService {
+
+    private final CouncilRepository councilRepository;
+    private final CouncilMemberRepository councilMemberRepository;
+    private final UserRepository userRepository;
+    private final InnovationRepository innovationRepository;
+    private final CouncilMapper councilMapper;
+    private final UserService userService;
+
+    public CouncilService(CouncilRepository councilRepository,
+            CouncilMemberRepository councilMemberRepository,
+            UserRepository userRepository,
+            InnovationRepository innovationRepository,
+            CouncilMapper councilMapper,
+            UserService userService) {
+        this.councilRepository = councilRepository;
+        this.councilMemberRepository = councilMemberRepository;
+        this.userRepository = userRepository;
+        this.innovationRepository = innovationRepository;
+        this.councilMapper = councilMapper;
+        this.userService = userService;
+    }
+
+    // 1. Tạo Hội đồng mới
+    @Transactional
+    public CouncilResponse createCouncil(CreateCouncilRequest request) {
+        // Validate quyền tạo Hội đồng theo cấp độ
+        validateCouncilLevelPermission(request.getReviewCouncilLevel());
+
+        // Validate tên Hội đồng không trùng
+        validateCouncilName(request.getName());
+
+        // Validate danh sách thành viên
+        validateMembers(request.getMembers());
+
+        // Tạo Council entity
+        Council council = new Council();
+        council.setName(request.getName());
+        council.setReviewCouncilLevel(request.getReviewCouncilLevel());
+
+        // Lưu Council trước để có ID
+        council = councilRepository.save(council);
+
+        // Tạo danh sách CouncilMember
+        List<CouncilMember> councilMembers = createCouncilMembers(council, request.getMembers());
+        council.setCouncilMembers(councilMembers);
+
+        // Gán danh sách Innovation nếu có
+        if (request.getInnovationIds() != null && !request.getInnovationIds().isEmpty()) {
+            List<Innovation> innovations = validateAndGetInnovations(request.getInnovationIds(),
+                    council.getReviewCouncilLevel());
+            council.setInnovations(innovations);
+        }
+
+        // Lưu lại Council với đầy đủ thông tin
+        Council savedCouncil = councilRepository.save(council);
+
+        // Trả về response
+        return councilMapper.toCouncilResponse(savedCouncil);
+    }
+
+    // Helper method: Validate quyền tạo Hội đồng theo cấp độ
+    private void validateCouncilLevelPermission(ReviewLevelEnum councilLevel) {
+        User currentUser = userService.getCurrentUser();
+
+        // Lấy danh sách roles của user
+        Set<UserRoleEnum> userRoles = currentUser.getUserRoles().stream()
+                .map(userRole -> userRole.getRole().getRoleName())
+                .collect(Collectors.toSet());
+
+        // TRUONG_KHOA và QUAN_TRI_VIEN_KHOA chỉ được tạo Hội đồng cấp KHOA
+        if (userRoles.contains(UserRoleEnum.TRUONG_KHOA) || userRoles.contains(UserRoleEnum.QUAN_TRI_VIEN_KHOA)) {
+            if (councilLevel != ReviewLevelEnum.KHOA) {
+                throw new IllegalArgumentException(
+                        "Bạn chỉ có quyền tạo Hội đồng cấp Khoa. Vui lòng chọn cấp độ 'KHOA'");
+            }
+        }
+
+        // QUAN_TRI_VIEN_HE_THONG và QUAN_TRI_VIEN_QLKH_HTQT chỉ được tạo Hội đồng cấp
+        // TRUONG
+        if (userRoles.contains(UserRoleEnum.QUAN_TRI_VIEN_HE_THONG)
+                || userRoles.contains(UserRoleEnum.QUAN_TRI_VIEN_QLKH_HTQT)) {
+            if (councilLevel != ReviewLevelEnum.TRUONG) {
+                throw new IllegalArgumentException(
+                        "Bạn chỉ có quyền tạo Hội đồng cấp Trường. Vui lòng chọn cấp độ 'TRUONG'");
+            }
+        }
+    }
+
+    // Helper method: Validate tên Hội đồng không trùng
+    private void validateCouncilName(String name) {
+        councilRepository.findByNameIgnoreCase(name).ifPresent(existingCouncil -> {
+            throw new IllegalArgumentException("Tên Hội đồng '" + name + "' đã tồn tại trong hệ thống");
+        });
+    }
+
+    // Helper method: Validate danh sách thành viên
+    private void validateMembers(List<CouncilMemberRequest> members) {
+        if (members == null || members.isEmpty()) {
+            throw new IllegalArgumentException("Danh sách thành viên không được để trống");
+        }
+
+        if (members.size() < 3) {
+            throw new IllegalArgumentException("Hội đồng phải có ít nhất 3 thành viên");
+        }
+
+        // Đếm số lượng Chủ tịch và Thư ký
+        long chairmanCount = members.stream()
+                .filter(m -> m.getRole() == CouncilMemberRoleEnum.CHU_TICH)
+                .count();
+
+        long secretaryCount = members.stream()
+                .filter(m -> m.getRole() == CouncilMemberRoleEnum.THU_KY)
+                .count();
+
+        if (chairmanCount != 1) {
+            throw new IllegalArgumentException("Hội đồng phải có đúng 1 Chủ tịch");
+        }
+
+        if (secretaryCount != 1) {
+            throw new IllegalArgumentException("Hội đồng phải có đúng 1 Thư ký");
+        }
+
+        // Kiểm tra không trùng userId
+        Set<String> userIds = new HashSet<>();
+        for (CouncilMemberRequest member : members) {
+            if (!userIds.add(member.getUserId())) {
+                throw new IllegalArgumentException("Không được trùng lặp thành viên trong Hội đồng");
+            }
+        }
+
+        // Kiểm tra tất cả userId phải tồn tại
+        for (String userId : userIds) {
+            if (!userRepository.existsById(userId)) {
+                throw new IdInvalidException("Không tìm thấy user với ID: " + userId);
+            }
+        }
+    }
+
+    // Helper method: Tạo danh sách CouncilMember
+    private List<CouncilMember> createCouncilMembers(Council council, List<CouncilMemberRequest> memberRequests) {
+        List<CouncilMember> councilMembers = new ArrayList<>();
+
+        for (CouncilMemberRequest memberRequest : memberRequests) {
+            User user = userRepository.findById(memberRequest.getUserId())
+                    .orElseThrow(
+                            () -> new IdInvalidException("Không tìm thấy user với ID: " + memberRequest.getUserId()));
+
+            CouncilMember councilMember = new CouncilMember();
+            councilMember.setCouncil(council);
+            councilMember.setUser(user);
+            councilMember.setRole(memberRequest.getRole());
+
+            councilMembers.add(councilMemberRepository.save(councilMember));
+        }
+
+        return councilMembers;
+    }
+
+    // Helper method: Validate và lấy danh sách Innovation
+    private List<Innovation> validateAndGetInnovations(List<String> innovationIds, ReviewLevelEnum councilLevel) {
+        List<Innovation> innovations = new ArrayList<>();
+
+        for (String innovationId : innovationIds) {
+            Innovation innovation = innovationRepository.findById(innovationId)
+                    .orElseThrow(() -> new IdInvalidException("Không tìm thấy sáng kiến với ID: " + innovationId));
+
+            // Kiểm tra status phải là SUBMITTED
+            if (innovation.getStatus() != InnovationStatusEnum.SUBMITTED) {
+                throw new IllegalArgumentException(
+                        "Sáng kiến '" + innovation.getInnovationName() +
+                                "' không ở trạng thái 'Chờ xét duyệt'. Chỉ có thể gán sáng kiến đã nộp cho Hội đồng");
+            }
+
+            innovations.add(innovation);
+        }
+
+        return innovations;
+    }
+}
