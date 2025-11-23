@@ -20,7 +20,7 @@ public class CreateCouncilRequest {
     @Size(max = 255, message = "Tên Hội đồng không được vượt quá 255 ký tự")
     private String name;
 
-    @NotNull(message = "Cấp độ Hội đồng không được để trống")
+    // Optional - Nếu không truyền, hệ thống sẽ tự động gắn dựa trên role của user
     private ReviewLevelEnum reviewCouncilLevel;
 
     @NotNull(message = "Danh sách thành viên không được để trống")

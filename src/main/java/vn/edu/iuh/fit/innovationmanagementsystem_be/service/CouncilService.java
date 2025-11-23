@@ -54,8 +54,16 @@ public class CouncilService {
     // 1. Tạo Hội đồng mới
     @Transactional
     public CouncilResponse createCouncil(CreateCouncilRequest request) {
-        // Validate quyền tạo Hội đồng theo cấp độ
-        validateCouncilLevelPermission(request.getReviewCouncilLevel());
+        // Xác định reviewCouncilLevel
+        ReviewLevelEnum councilLevel;
+        if (request.getReviewCouncilLevel() != null) {
+            // Nếu FE truyền level, validate quyền
+            councilLevel = request.getReviewCouncilLevel();
+            validateCouncilLevelPermission(councilLevel);
+        } else {
+            // Nếu FE không truyền, tự động gắn dựa trên role
+            councilLevel = determineCouncilLevelFromUserRole();
+        }
 
         // Validate tên Hội đồng không trùng
         validateCouncilName(request.getName());
@@ -66,7 +74,7 @@ public class CouncilService {
         // Tạo Council entity
         Council council = new Council();
         council.setName(request.getName());
-        council.setReviewCouncilLevel(request.getReviewCouncilLevel());
+        council.setReviewCouncilLevel(councilLevel);
 
         // Lưu Council trước để có ID
         council = councilRepository.save(council);
@@ -87,6 +95,31 @@ public class CouncilService {
 
         // Trả về response
         return councilMapper.toCouncilResponse(savedCouncil);
+    }
+
+    // Helper method: Tự động xác định cấp độ Hội đồng dựa trên role của user
+    private ReviewLevelEnum determineCouncilLevelFromUserRole() {
+        User currentUser = userService.getCurrentUser();
+
+        // Lấy danh sách roles của user
+        Set<UserRoleEnum> userRoles = currentUser.getUserRoles().stream()
+                .map(userRole -> userRole.getRole().getRoleName())
+                .collect(Collectors.toSet());
+
+        // TRUONG_KHOA và QUAN_TRI_VIEN_KHOA → KHOA
+        if (userRoles.contains(UserRoleEnum.TRUONG_KHOA) || userRoles.contains(UserRoleEnum.QUAN_TRI_VIEN_KHOA)) {
+            return ReviewLevelEnum.KHOA;
+        }
+
+        // QUAN_TRI_VIEN_HE_THONG và QUAN_TRI_VIEN_QLKH_HTQT → TRUONG
+        if (userRoles.contains(UserRoleEnum.QUAN_TRI_VIEN_HE_THONG)
+                || userRoles.contains(UserRoleEnum.QUAN_TRI_VIEN_QLKH_HTQT)) {
+            return ReviewLevelEnum.TRUONG;
+        }
+
+        // Nếu không có role phù hợp, throw exception
+        throw new IllegalArgumentException(
+                "Bạn không có quyền tạo Hội đồng. Chỉ TRUONG_KHOA, QUAN_TRI_VIEN_KHOA, QUAN_TRI_VIEN_HE_THONG, QUAN_TRI_VIEN_QLKH_HTQT mới có quyền tạo Hội đồng");
     }
 
     // Helper method: Validate quyền tạo Hội đồng theo cấp độ
