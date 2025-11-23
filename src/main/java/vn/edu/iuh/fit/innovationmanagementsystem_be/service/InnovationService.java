@@ -48,6 +48,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.TemplateS
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.TemplateFormDataResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationDetailResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.DepartmentInnovationDetailResponse;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationScoringDetailResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.AttachmentResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.CoAuthorResponse;
 import java.util.stream.Collectors;
@@ -1152,6 +1153,54 @@ public class InnovationService {
                                 .templates(buildTemplateFormDataResponses(formDataResponses))
                                 .attachments(attachmentResponses)
                                 .build();
+        }
+
+        // 9. Lấy chi tiết sáng kiến kèm bảng điểm để chấm điểm
+        public InnovationScoringDetailResponse getInnovationScoringDetailById(String innovationId) {
+                // Lấy innovation detail (reuse existing logic)
+                DepartmentInnovationDetailResponse baseDetail = getDepartmentInnovationDetailById(innovationId);
+
+                // Lấy Innovation entity
+                Innovation innovation = innovationRepository.findById(innovationId)
+                                .orElseThrow(() -> new IdInvalidException("Không tìm thấy sáng kiến"));
+
+                // Kiểm tra InnovationRound
+                if (innovation.getInnovationRound() == null) {
+                        throw new IdInvalidException(
+                                        "Sáng kiến chưa được gán vào đợt sáng kiến nào. Không thể lấy bảng điểm");
+                }
+
+                // Lấy InnovationDecision từ InnovationRound
+                if (innovation.getInnovationRound().getInnovationDecision() == null) {
+                        throw new IdInvalidException(
+                                        "Đợt sáng kiến chưa có quyết định đánh giá. Không thể lấy bảng điểm");
+                }
+
+                JsonNode scoringCriteria = innovation.getInnovationRound().getInnovationDecision()
+                                .getScoringCriteria();
+
+                // Build response
+                InnovationScoringDetailResponse response = new InnovationScoringDetailResponse();
+
+                // Copy all fields from baseDetail
+                response.setInnovationId(baseDetail.getInnovationId());
+                response.setInnovationName(baseDetail.getInnovationName());
+                response.setAuthorName(baseDetail.getAuthorName());
+                response.setAuthorEmail(baseDetail.getAuthorEmail());
+                response.setDepartmentName(baseDetail.getDepartmentName());
+                response.setAcademicYear(baseDetail.getAcademicYear());
+                response.setIsScore(baseDetail.getIsScore());
+                response.setStatus(baseDetail.getStatus());
+                response.setSubmittedAt(baseDetail.getSubmittedAt());
+                response.setCoAuthors(baseDetail.getCoAuthors());
+                response.setTemplates(baseDetail.getTemplates());
+                response.setAttachments(baseDetail.getAttachments());
+
+                // Add scoring criteria
+                response.setScoringCriteria(scoringCriteria);
+                response.setMaxTotalScore(100); // Tổng điểm tối đa
+
+                return response;
         }
 
         // 12. Lấy danh sách sáng kiến của khoa với filter chi tiết
