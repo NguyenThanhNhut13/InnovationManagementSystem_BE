@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.net.URL;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.time.LocalDateTime;
@@ -232,7 +233,20 @@ public class FileService {
                 objectName = fileName.substring(bucketName.length() + 1);
             }
             
-            String presignedUrl = minioClient.getPresignedObjectUrl(
+            // Parse publicEndpoint để lấy hostname, port và secure flag
+            URL url = new URL(publicEndpoint);
+            String host = url.getHost();
+            int port = url.getPort() == -1 ? (url.getProtocol().equals("https") ? 443 : 80) : url.getPort();
+            boolean secure = url.getProtocol().equals("https");
+            
+            // Tạo client với public endpoint để signature đúng ngay từ đầu
+            MinioClient publicClient = MinioClient.builder()
+                    .endpoint(host, port, secure)
+                    .credentials(accessKey, secretKey)
+                    .build();
+            
+            // Tạo presigned URL với public endpoint
+            String presignedUrl = publicClient.getPresignedObjectUrl(
                     GetPresignedObjectUrlArgs.builder()
                             .method(Method.GET)
                             .bucket(bucketName)
