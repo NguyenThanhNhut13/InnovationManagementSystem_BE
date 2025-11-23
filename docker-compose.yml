@@ -12,6 +12,7 @@ services:
       POSTGRES_USER: ${SPRING_DATASOURCE_USERNAME}
       POSTGRES_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
       POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --locale=C"
+      TZ: Asia/Ho_Chi_Minh # (Tuỳ chọn) Đồng bộ giờ cho DB
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./init-scripts:/docker-entrypoint-initdb.d
@@ -43,12 +44,12 @@ services:
     image: minio/minio:latest
     container_name: minio
     ports:
-      - "9000:9000" 
+      - "9000:9000"
       - "9001:9001"
     environment:
       MINIO_ROOT_USER: ${MINIO_ACCESS_KEY}
       MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY}
-      MINIO_SERVER_URL: ${MINIO_PUBLIC_ENDPOINT} 
+      MINIO_SERVER_URL: ${MINIO_PUBLIC_ENDPOINT}
       MINIO_BROWSER_REDIRECT_URL: ${MINIO_BROWSER_REDIRECT_URL}
       MINIO_API_CORS_ALLOW_ORIGIN: "*"
     volumes:
@@ -72,6 +73,11 @@ services:
     ports:
       - "8080:8080"
       - "50000:50000"
+    # --- PHẦN ĐÃ THÊM ĐỂ FIX GIỜ ---
+    environment:
+      - JAVA_OPTS=-Duser.timezone=Asia/Ho_Chi_Minh
+      - TZ=Asia/Ho_Chi_Minh
+    # -------------------------------
     volumes:
       - jenkins_home:/var/jenkins_home
       - /var/run/docker.sock:/var/run/docker.sock
@@ -86,7 +92,6 @@ services:
     container_name: innovation-backend
     ports:
       - "8081:8081"
-    # ***  ĐỌC FILE .env ***
     env_file:
       - .env
     environment:
@@ -100,11 +105,11 @@ services:
       - MINIO_ACCESS_KEY=${MINIO_ACCESS_KEY}
       - MINIO_SECRET_KEY=${MINIO_SECRET_KEY}
       - PORT=8081
-      # *** ĐÃ THÊM CÁC BIẾN MAIL BỊ THIẾU ***
       - SPRING_MAIL_HOST=${SPRING_MAIL_HOST}
       - SPRING_MAIL_PORT=${SPRING_MAIL_PORT}
       - SPRING_MAIL_USERNAME=${SPRING_MAIL_USERNAME}
       - SPRING_MAIL_PASSWORD=${SPRING_MAIL_PASSWORD}
+      - TZ=Asia/Ho_Chi_Minh # (Tuỳ chọn) Đồng bộ giờ cho Backend App luôn
     depends_on:
       postgres:
         condition: service_healthy
