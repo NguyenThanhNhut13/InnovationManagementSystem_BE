@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.CouncilMemberRoleEnum;
+
 import java.util.List;
 import java.util.ArrayList;
 
@@ -18,6 +20,10 @@ public class CouncilMember {
     @GeneratedValue(strategy = GenerationType.UUID)
     @Column(name = "id")
     private String id;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "role", nullable = false, columnDefinition = "VARCHAR(50)")
+    private CouncilMemberRoleEnum role;
 
     // Relationships
     @ManyToOne(fetch = FetchType.LAZY, optional = false)

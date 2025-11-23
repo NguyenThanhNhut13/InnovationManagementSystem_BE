@@ -75,6 +75,9 @@ public class Innovation extends Auditable {
     @JoinColumn(name = "innovation_phase_id")
     private InnovationPhase innovationPhase;
 
+    @ManyToMany(mappedBy = "innovations", fetch = FetchType.LAZY)
+    private List<Council> councils = new ArrayList<>();
+
     @PrePersist
     protected void ensureDefaults() {
         if (status == null) {

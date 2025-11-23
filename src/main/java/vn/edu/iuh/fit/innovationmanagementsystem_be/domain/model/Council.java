@@ -34,4 +34,8 @@ public class Council extends Auditable {
     @OneToMany(mappedBy = "council", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<CouncilMember> councilMembers = new ArrayList<>();
 
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(name = "council_innovations", joinColumns = @JoinColumn(name = "council_id"), inverseJoinColumns = @JoinColumn(name = "innovation_id"))
+    private List<Innovation> innovations = new ArrayList<>();
+
 }
