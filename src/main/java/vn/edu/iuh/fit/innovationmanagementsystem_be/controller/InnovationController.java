@@ -23,7 +23,9 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.Departmen
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationStatisticsDTO;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationAcademicYearStatisticsDTO;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationDetailResponse;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationDetailForGiangVienResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.service.InnovationService;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.service.InnovationDetailService;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.service.ReviewScoreService;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.ResultPaginationDTO;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.annotation.ApiMessage;
@@ -35,10 +37,14 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.annotation.ApiMessage;
 public class InnovationController {
 
         private final InnovationService innovationService;
+        private final InnovationDetailService innovationDetailService;
         private final ReviewScoreService reviewScoreService;
 
-        public InnovationController(InnovationService innovationService, ReviewScoreService reviewScoreService) {
+        public InnovationController(InnovationService innovationService,
+                        InnovationDetailService innovationDetailService,
+                        ReviewScoreService reviewScoreService) {
                 this.innovationService = innovationService;
+                this.innovationDetailService = innovationDetailService;
                 this.reviewScoreService = reviewScoreService;
         }
 
@@ -271,6 +277,21 @@ public class InnovationController {
                         @Parameter(description = "Innovation ID", required = true) @PathVariable String id,
                         @Valid @RequestBody vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.SubmitInnovationScoreRequest request) {
                 return ResponseEntity.ok(reviewScoreService.submitInnovationScore(id, request));
+        }
+
+        // 14. Lấy chi tiết đầy đủ sáng kiến cho GIANG_VIEN (6 tabs)
+        @GetMapping("/innovations/my-innovations/{id}/full-detail")
+        @PreAuthorize("hasAnyRole('GIANG_VIEN')")
+        @ApiMessage("Lấy chi tiết đầy đủ sáng kiến của tôi thành công")
+        @Operation(summary = "Get My Innovation Full Detail", description = "Get full innovation detail with all 6 tabs for GIANG_VIEN: Overview, Form Content, Attachments, Reviews, Workflow, History")
+        @ApiResponses(value = {
+                        @ApiResponse(responseCode = "200", description = "Success", content = @Content(schema = @Schema(implementation = InnovationDetailForGiangVienResponse.class))),
+                        @ApiResponse(responseCode = "404", description = "Innovation not found"),
+                        @ApiResponse(responseCode = "403", description = "Forbidden - Not the owner of this innovation")
+        })
+        public ResponseEntity<InnovationDetailForGiangVienResponse> getMyInnovationFullDetail(
+                        @Parameter(description = "Innovation ID", required = true) @PathVariable String id) {
+                return ResponseEntity.ok(innovationDetailService.getMyInnovationDetailForGiangVien(id));
         }
 
 }
