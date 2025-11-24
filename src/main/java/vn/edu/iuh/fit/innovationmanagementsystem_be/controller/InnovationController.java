@@ -24,6 +24,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.Innovatio
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationAcademicYearStatisticsDTO;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationDetailResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.service.InnovationService;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.service.ReviewScoreService;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.ResultPaginationDTO;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.annotation.ApiMessage;
 
@@ -34,9 +35,11 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.annotation.ApiMessage;
 public class InnovationController {
 
         private final InnovationService innovationService;
+        private final ReviewScoreService reviewScoreService;
 
-        public InnovationController(InnovationService innovationService) {
+        public InnovationController(InnovationService innovationService, ReviewScoreService reviewScoreService) {
                 this.innovationService = innovationService;
+                this.reviewScoreService = reviewScoreService;
         }
 
         // 1. Lấy tất cả sáng kiến của user hiện tại với filter chi tiết
@@ -251,6 +254,23 @@ public class InnovationController {
         public ResponseEntity<vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationScoringDetailResponse> getInnovationScoringDetail(
                         @Parameter(description = "Innovation ID", required = true) @PathVariable String id) {
                 return ResponseEntity.ok(innovationService.getInnovationScoringDetailById(id));
+        }
+
+        // 13. Chấm điểm sáng kiến
+        @PostMapping("/innovations/{id}/score")
+        @PreAuthorize("hasAnyRole('TV_HOI_DONG_KHOA', 'TV_HOI_DONG_TRUONG', 'QUAN_TRI_VIEN_HE_THONG')")
+        @ApiMessage("Chấm điểm sáng kiến thành công")
+        @Operation(summary = "Submit Innovation Score", description = "Submit scoring for an innovation by council member")
+        @ApiResponses(value = {
+                        @ApiResponse(responseCode = "200", description = "Score submitted successfully", content = @Content(schema = @Schema(implementation = vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationScoreResponse.class))),
+                        @ApiResponse(responseCode = "400", description = "Invalid request or validation error"),
+                        @ApiResponse(responseCode = "403", description = "Forbidden"),
+                        @ApiResponse(responseCode = "404", description = "Innovation not found")
+        })
+        public ResponseEntity<vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationScoreResponse> submitInnovationScore(
+                        @Parameter(description = "Innovation ID", required = true) @PathVariable String id,
+                        @Valid @RequestBody vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.SubmitInnovationScoreRequest request) {
+                return ResponseEntity.ok(reviewScoreService.submitInnovationScore(id, request));
         }
 
 }

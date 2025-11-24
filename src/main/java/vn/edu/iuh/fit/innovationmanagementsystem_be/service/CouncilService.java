@@ -6,7 +6,10 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.Council;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.CouncilMember;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.Innovation;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.User;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.Role;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.UserRole;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.CouncilMemberRoleEnum;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.CouncilStatusEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationStatusEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.ReviewLevelEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.UserRoleEnum;
@@ -19,6 +22,8 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.CouncilRepository
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.CouncilMemberRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.InnovationRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.UserRepository;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.RoleRepository;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.UserRoleRepository;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -34,6 +39,8 @@ public class CouncilService {
     private final CouncilMemberRepository councilMemberRepository;
     private final UserRepository userRepository;
     private final InnovationRepository innovationRepository;
+    private final RoleRepository roleRepository;
+    private final UserRoleRepository userRoleRepository;
     private final CouncilMapper councilMapper;
     private final UserService userService;
 
@@ -41,12 +48,16 @@ public class CouncilService {
             CouncilMemberRepository councilMemberRepository,
             UserRepository userRepository,
             InnovationRepository innovationRepository,
+            RoleRepository roleRepository,
+            UserRoleRepository userRoleRepository,
             CouncilMapper councilMapper,
             UserService userService) {
         this.councilRepository = councilRepository;
         this.councilMemberRepository = councilMemberRepository;
         this.userRepository = userRepository;
         this.innovationRepository = innovationRepository;
+        this.roleRepository = roleRepository;
+        this.userRoleRepository = userRoleRepository;
         this.councilMapper = councilMapper;
         this.userService = userService;
     }
@@ -75,12 +86,14 @@ public class CouncilService {
         Council council = new Council();
         council.setName(request.getName());
         council.setReviewCouncilLevel(councilLevel);
+        council.setStatus(CouncilStatusEnum.CON_HIEU_LUC); // Mặc định còn hiệu lực
 
         // Lưu Council trước để có ID
         council = councilRepository.save(council);
 
-        // Tạo danh sách CouncilMember
-        List<CouncilMember> councilMembers = createCouncilMembers(council, request.getMembers());
+        // Tạo danh sách CouncilMember và gắn role TV_HOI_DONG
+        List<CouncilMember> councilMembers = createCouncilMembersAndAssignRoles(council, request.getMembers(),
+                councilLevel);
         council.setCouncilMembers(councilMembers);
 
         // Gán danh sách Innovation nếu có
@@ -200,7 +213,64 @@ public class CouncilService {
         }
     }
 
-    // Helper method: Tạo danh sách CouncilMember
+    // Helper method: Tạo CouncilMember và gắn role TV_HOI_DONG
+    private List<CouncilMember> createCouncilMembersAndAssignRoles(Council council,
+            List<CouncilMemberRequest> memberRequests,
+            ReviewLevelEnum councilLevel) {
+        List<CouncilMember> councilMembers = new ArrayList<>();
+
+        // Xác định role cần gắn dựa trên cấp độ Hội đồng
+        UserRoleEnum councilRoleToAssign = (councilLevel == ReviewLevelEnum.TRUONG)
+                ? UserRoleEnum.TV_HOI_DONG_TRUONG
+                : UserRoleEnum.TV_HOI_DONG_KHOA;
+
+        for (CouncilMemberRequest memberRequest : memberRequests) {
+            User user = userRepository.findById(memberRequest.getUserId())
+                    .orElseThrow(() -> new IdInvalidException(
+                            "Không tìm thấy user với ID: " + memberRequest.getUserId()));
+
+            CouncilMember councilMember = new CouncilMember();
+            councilMember.setCouncil(council);
+            councilMember.setUser(user);
+            councilMember.setRole(memberRequest.getRole());
+
+            councilMembers.add(councilMemberRepository.save(councilMember));
+
+            // Gắn role TV_HOI_DONG cho user nếu chưa có
+            assignCouncilRoleToUser(user, councilRoleToAssign);
+        }
+
+        return councilMembers;
+    }
+
+    // Helper method: Gắn role TV_HOI_DONG cho user
+    private void assignCouncilRoleToUser(User user, UserRoleEnum roleEnum) {
+        // Kiểm tra user đã có role này chưa
+        boolean hasRole = user.getUserRoles().stream()
+                .anyMatch(userRole -> userRole.getRole().getRoleName() == roleEnum);
+
+        if (!hasRole) {
+            // Tìm Role entity
+            Role role = roleRepository.findByRoleName(roleEnum)
+                    .orElseThrow(() -> new IdInvalidException(
+                            "Không tìm thấy role: " + roleEnum));
+
+            // Tạo UserRole mới
+            UserRole userRole = new UserRole();
+            userRole.setUser(user);
+            userRole.setRole(role);
+
+            // Lưu UserRole
+            userRoleRepository.save(userRole);
+
+            // Thêm vào user's roles (để tránh lazy loading issue)
+            user.getUserRoles().add(userRole);
+
+            System.out.println("Đã gắn role " + roleEnum + " cho user: " + user.getFullName());
+        }
+    }
+
+    // Helper method: Tạo danh sách CouncilMember (method cũ - deprecated)
     private List<CouncilMember> createCouncilMembers(Council council, List<CouncilMemberRequest> memberRequests) {
         List<CouncilMember> councilMembers = new ArrayList<>();
 
