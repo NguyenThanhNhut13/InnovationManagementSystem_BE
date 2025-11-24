@@ -236,7 +236,8 @@ public class FileService {
             // Parse publicEndpoint để lấy hostname, port và secure flag
             URL url = new URL(publicEndpoint);
             String host = url.getHost();
-            int port = url.getPort() == -1 ? (url.getProtocol().equals("https") ? 443 : 80) : url.getPort();
+            int originalPort = url.getPort();
+            int port = originalPort == -1 ? (url.getProtocol().equals("https") ? 443 : 80) : originalPort;
             boolean secure = url.getProtocol().equals("https");
             
             // Tạo client với public endpoint để signature đúng ngay từ đầu
@@ -253,6 +254,15 @@ public class FileService {
                             .object(objectName)
                             .expiry(expirySeconds)
                             .build());
+            
+            // Nếu publicEndpoint không có port, loại bỏ port mặc định trong presigned URL
+            if (originalPort == -1) {
+                String protocol = url.getProtocol();
+                String defaultPort = protocol.equals("https") ? ":443" : ":80";
+                if (presignedUrl.contains(defaultPort)) {
+                    presignedUrl = presignedUrl.replace(defaultPort, "");
+                }
+            }
             
             return presignedUrl;
         } catch (Exception e) {
