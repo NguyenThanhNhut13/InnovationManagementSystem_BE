@@ -462,7 +462,7 @@ public class InnovationService {
                                         // Tìm FormField theo fieldKey trong danh sách formFields (bao gồm cả children)
                                         InnovationFormService.FormFieldSearchResult searchResult = innovationFormService
                                                         .findFormFieldByKeyWithParent(formFields,
-                                                                        fieldKey, templateRequest.getTemplateId());
+                                                        fieldKey, templateRequest.getTemplateId());
 
                                         if (searchResult == null || searchResult.getFormField() == null) {
                                                 throw new IdInvalidException(
