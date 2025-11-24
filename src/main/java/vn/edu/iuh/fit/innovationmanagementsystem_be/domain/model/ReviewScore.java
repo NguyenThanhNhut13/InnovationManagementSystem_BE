@@ -1,37 +1,56 @@
 package vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
+import java.time.LocalDateTime;
+
 @Entity
 @Table(name = "review_scores")
+@Data
+@EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor
 @AllArgsConstructor
 public class ReviewScore extends Auditable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
-    @Column(name = "id")
+    @Column(name = "id", columnDefinition = "VARCHAR(36)")
     private String id;
 
+    // Scoring details - JSON array of {criteriaId, selectedSubCriteriaId, score,
+    // notes}
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "content", columnDefinition = "JSON")
-    private String content;
+    @Column(name = "scoring_details", columnDefinition = "JSON")
+    private JsonNode scoringDetails;
 
-    @Column(name = "score_level")
-    private String scoreLevel;
+    @Column(name = "total_score")
+    private Integer totalScore;
 
-    @Column(name = "actual_score")
-    private Integer actualScore;
+    // Decision
+    @Column(name = "is_approved")
+    private Boolean isApproved; // true = Thông qua, false = Không thông qua
+
+    @Column(name = "requires_supplementary_documents")
+    private Boolean requiresSupplementaryDocuments;
+
+    @Column(name = "detailed_comments", columnDefinition = "TEXT")
+    private String detailedComments;
+
+    @Column(name = "reviewed_at")
+    private LocalDateTime reviewedAt;
 
     // Relationships
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "council_members_id", nullable = false)
-    private CouncilMember councilMember;
+    @JoinColumn(name = "reviewer_id", nullable = false)
+    private User reviewer; // Người chấm điểm
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "innovation_id", nullable = false)

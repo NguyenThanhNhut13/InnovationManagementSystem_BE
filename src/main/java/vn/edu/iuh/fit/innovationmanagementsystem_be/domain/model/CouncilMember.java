@@ -6,9 +6,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.CouncilMemberRoleEnum;
 
-import java.util.List;
-import java.util.ArrayList;
-
 @Entity
 @Table(name = "council_members")
 @Data
@@ -33,11 +30,5 @@ public class CouncilMember {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
-
-    @OneToMany(mappedBy = "councilMember", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = false)
-    private List<ReviewScore> reviewScores = new ArrayList<>();
-
-    @OneToMany(mappedBy = "councilMember", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = false)
-    private List<ReviewComment> reviewComments = new ArrayList<>();
 
 }
