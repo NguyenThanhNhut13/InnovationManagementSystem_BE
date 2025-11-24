@@ -467,4 +467,28 @@ public class UtilsController {
                 .body(decoded);
     }
 
+    // 12. Test MinIO connection
+    @GetMapping("/utils/test-minio")
+    @ApiMessage("Kiểm tra kết nối MinIO thành công")
+    @Operation(summary = "Test MinIO Connection", description = "Kiểm tra kết nối MinIO và hiển thị thông tin bucket")
+    public ResponseEntity<RestResponse<String>> testMinioConnection() {
+        try {
+            fileService.testMinioConnection();
+            RestResponse<String> response = RestResponse.<String>builder()
+                    .statusCode(200)
+                    .message("Kết nối MinIO thành công. Xem log để biết chi tiết.")
+                    .data("MinIO connection OK")
+                    .build();
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            RestResponse<String> errorResponse = RestResponse.<String>builder()
+                    .statusCode(500)
+                    .message("Lỗi kết nối MinIO: " + e.getMessage())
+                    .data(null)
+                    .build();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(errorResponse);
+        }
+    }
+
 }

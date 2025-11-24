@@ -4,11 +4,16 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.*;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.ReviewLevelEnum;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.DocumentTypeEnum;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.SignatureStatusEnum;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.TemplateTypeEnum;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.UserRoleEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.*;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.exception.IdInvalidException;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.*;
 
+import java.time.LocalDateTime;
+import java.util.Optional;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -24,6 +29,8 @@ public class InnovationDetailService {
         private final CoInnovationRepository coInnovationRepository;
         private final AttachmentRepository attachmentRepository;
         private final ReviewCommentRepository reviewCommentRepository;
+        private final ReviewScoreRepository reviewScoreRepository;
+        private final FormTemplateRepository formTemplateRepository;
         private final DigitalSignatureRepository digitalSignatureRepository;
 
         // 1. Main method
@@ -87,56 +94,143 @@ public class InnovationDetailService {
 
         private StatisticsData buildStatistics(Innovation innovation) {
                 List<Attachment> attachments = attachmentRepository.findByInnovationId(innovation.getId());
-                List<ReviewComment> reviewComments = reviewCommentRepository.findByInnovationId(innovation.getId());
+                long reviewCommentCount = reviewScoreRepository.countByInnovationId(innovation.getId());
                 return StatisticsData.builder()
                                 .attachmentCount(attachments.size())
-                                .reviewCommentCount(reviewComments.size())
+                                .reviewCommentCount((int) reviewCommentCount)
                                 .build();
         }
 
         private List<AttachmentInfo> buildAttachmentsList(Innovation innovation) {
                 List<Attachment> attachments = attachmentRepository.findByInnovationId(innovation.getId());
-                List<DigitalSignature> signatures = digitalSignatureRepository
-                                .findByInnovationIdWithRelations(innovation.getId());
+                String innovationId = innovation.getId();
 
                 return attachments.stream()
                                 .map(attachment -> {
-                                        boolean hasSig = !signatures.isEmpty();
-                                        String signerName = hasSig && !signatures.isEmpty()
-                                                        && signatures.get(0).getUser() != null
-                                                                        ? signatures.get(0).getUser().getFullName()
-                                                                        : null;
+                                        boolean isDigitallySigned = false;
+                                        String signerName = null;
+
+                                        if (attachment.getTemplateId() != null
+                                                        && isGeneratedTemplateFile(attachment, innovationId)) {
+                                                Optional<FormTemplate> formTemplateOpt = formTemplateRepository
+                                                                .findById(attachment.getTemplateId());
+                                                if (formTemplateOpt.isPresent()) {
+                                                        FormTemplate formTemplate = formTemplateOpt.get();
+                                                        TemplateTypeEnum templateType = formTemplate.getTemplateType();
+
+                                                        if (templateType == TemplateTypeEnum.DON_DE_NGHI
+                                                                        || templateType == TemplateTypeEnum.BAO_CAO_MO_TA) {
+                                                                DocumentTypeEnum documentType = mapTemplateTypeToDocumentType(
+                                                                                templateType);
+
+                                                                if (documentType != null) {
+                                                                        List<DigitalSignature> signatures = digitalSignatureRepository
+                                                                                        .findByInnovationIdAndDocumentTypeWithRelations(
+                                                                                                        innovationId,
+                                                                                                        documentType);
+
+                                                                        Optional<DigitalSignature> signedSignature = signatures
+                                                                                        .stream()
+                                                                                        .filter(sig -> sig
+                                                                                                        .getStatus() == SignatureStatusEnum.SIGNED
+                                                                                                        || sig.getStatus() == SignatureStatusEnum.VERIFIED)
+                                                                                        .findFirst();
+
+                                                                        if (signedSignature.isPresent()) {
+                                                                                isDigitallySigned = true;
+                                                                                User signer = signedSignature.get()
+                                                                                                .getUser();
+                                                                                signerName = signer != null
+                                                                                                ? signer.getFullName()
+                                                                                                : null;
+                                                                        }
+                                                                }
+                                                        }
+                                                }
+                                        }
 
                                         return AttachmentInfo.builder()
-                                                        .fileName(attachment.getFileName())
+                                                        .fileName(attachment.getPathUrl())
                                                         .uploadedAt(attachment.getCreatedAt())
-                                                        .isDigitallySigned(hasSig)
+                                                        .isDigitallySigned(isDigitallySigned)
                                                         .signerName(signerName)
                                                         .build();
                                 })
                                 .collect(Collectors.toList());
         }
 
+        private boolean isGeneratedTemplateFile(Attachment attachment, String innovationId) {
+                if (attachment.getFileName() == null || attachment.getTemplateId() == null) {
+                        return false;
+                }
+                String expectedFileName = innovationId + "_" + attachment.getTemplateId() + ".pdf";
+                return attachment.getFileName().equals(expectedFileName);
+        }
+
+        private DocumentTypeEnum mapTemplateTypeToDocumentType(TemplateTypeEnum templateType) {
+                if (templateType == null) {
+                        return null;
+                }
+
+                switch (templateType) {
+                        case DON_DE_NGHI:
+                                return DocumentTypeEnum.FORM_1;
+                        case BAO_CAO_MO_TA:
+                                return DocumentTypeEnum.FORM_2;
+                        case BIEN_BAN_HOP:
+                                return DocumentTypeEnum.REPORT_MAU_3;
+                        case TONG_HOP_DE_NGHI:
+                                return DocumentTypeEnum.REPORT_MAU_4;
+                        case TONG_HOP_CHAM_DIEM:
+                                return DocumentTypeEnum.REPORT_MAU_5;
+                        case PHIEU_DANH_GIA:
+                                return DocumentTypeEnum.REPORT_MAU_7;
+                        default:
+                                return null;
+                }
+        }
+
         private List<ReviewCommentInfo> buildReviewCommentsList(Innovation innovation) {
-                List<ReviewComment> reviewComments = reviewCommentRepository.findByInnovationId(innovation.getId());
-                return reviewComments.stream()
-                                .map(comment -> {
-                                        User reviewer = comment.getCouncilMember() != null
-                                                        && comment.getCouncilMember().getUser() != null
-                                                                        ? comment.getCouncilMember().getUser()
-                                                                        : null;
+                List<ReviewScore> reviewScores = reviewScoreRepository.findByInnovationId(innovation.getId());
+                return reviewScores.stream()
+                                .map(reviewScore -> {
+                                        User reviewer = reviewScore.getReviewer();
+                                        String reviewerName = reviewer != null ? reviewer.getFullName() : "Unknown";
+                                        String level = determineReviewLevel(reviewer);
+                                        LocalDateTime createdAt = reviewScore.getReviewedAt() != null
+                                                        ? reviewScore.getReviewedAt()
+                                                        : reviewScore.getCreatedAt();
+                                        String content = reviewScore.getDetailedComments() != null
+                                                        ? reviewScore.getDetailedComments()
+                                                        : "";
+
                                         return ReviewCommentInfo.builder()
-                                                        .reviewerName(reviewer != null ? reviewer.getFullName()
-                                                                        : "Unknown")
+                                                        .reviewerName(reviewerName)
                                                         .reviewerRole("Thành viên hội đồng")
-                                                        .level(comment.getReviewsLevel() == ReviewLevelEnum.TRUONG
-                                                                        ? "Cấp Trường"
-                                                                        : "Cấp Khoa")
-                                                        .createdAt(comment.getCreatedAt())
-                                                        .content(comment.getComment())
+                                                        .level(level)
+                                                        .createdAt(createdAt)
+                                                        .content(content)
                                                         .build();
                                 })
                                 .collect(Collectors.toList());
+        }
+
+        private String determineReviewLevel(User reviewer) {
+                if (reviewer == null) {
+                        return "Cấp Khoa";
+                }
+
+                if (reviewer.getUserRoles() != null) {
+                        boolean hasTruongRole = reviewer.getUserRoles().stream()
+                                        .anyMatch(userRole -> userRole.getRole() != null
+                                                        && userRole.getRole()
+                                                                        .getRoleName() == UserRoleEnum.TV_HOI_DONG_TRUONG);
+                        if (hasTruongRole) {
+                                return "Cấp Trường";
+                        }
+                }
+
+                return "Cấp Khoa";
         }
 
         private List<WorkflowStepInfo> buildWorkflowSteps(Innovation innovation) {
