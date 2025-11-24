@@ -1,8 +1,6 @@
 package vn.edu.iuh.fit.innovationmanagementsystem_be.service;
 
 import lombok.RequiredArgsConstructor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.*;
@@ -19,8 +17,6 @@ import java.util.stream.Collectors;
 @Transactional
 @RequiredArgsConstructor
 public class InnovationDetailService {
-
-        private static final Logger logger = LoggerFactory.getLogger(InnovationDetailService.class);
 
         private final InnovationRepository innovationRepository;
         private final InnovationService innovationService;

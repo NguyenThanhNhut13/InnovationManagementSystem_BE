@@ -26,26 +26,18 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.Innovatio
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.FieldTypeEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.UserRoleEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.PhaseStatusEnum;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.TemplateTypeEnum;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.DocumentTypeEnum;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.FormTemplate;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.FormDataRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.CreateInnovationWithTemplatesRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.TemplateDataRequest;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.DigitalSignatureRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.FilterMyInnovationRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.FilterAdminInnovationRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.FormDataResponse;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.FormFieldResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationFormDataResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.MyInnovationResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationStatisticsDTO;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationAcademicYearStatisticsDTO;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.UpcomingDeadlineResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.UpcomingDeadlinesResponse;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.TemplateSignatureResponse;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.TemplateFormDataResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationDetailResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.DepartmentInnovationDetailResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationScoringDetailResponse;
@@ -54,7 +46,6 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.CoAuthorR
 import java.util.stream.Collectors;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.exception.IdInvalidException;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.mapper.InnovationMapper;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.mapper.FormFieldMapper;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.mapper.FormDataMapper;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.AttachmentRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.InnovationRepository;
@@ -63,7 +54,6 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.InnovationPhaseRe
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.FormFieldRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.FormTemplateRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.CoInnovationRepository;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.UserRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.DepartmentPhaseRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.UserSignatureProfileRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.DigitalSignatureRepository;
@@ -72,9 +62,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.DepartmentPhase
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.UserSignatureProfile;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.CAStatusEnum;
 
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.Collections;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.ResultPaginationDTO;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.Utils;
@@ -84,8 +72,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.HashSet;
 import java.util.Optional;
-import java.util.stream.Collectors;
-import java.util.Arrays;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -102,506 +88,102 @@ public class InnovationService {
         private final InnovationPhaseRepository innovationPhaseRepository;
         private final FormDataService formDataService;
         private final InnovationMapper innovationMapper;
-        private final FormFieldMapper formFieldMapper;
         private final FormDataMapper formDataMapper;
         private final FormDataRepository formDataRepository;
         private final UserService userService;
-        private final DigitalSignatureService digitalSignatureService;
-        private final InnovationRoundService innovationRoundService;
         private final ActivityLogService activityLogService;
         private final FormFieldRepository formFieldRepository;
         private final FormTemplateRepository formTemplateRepository;
         private final ObjectMapper objectMapper;
         private final CoInnovationRepository coInnovationRepository;
-        private final UserRepository userRepository;
         private final NotificationService notificationService;
         private final DepartmentPhaseRepository departmentPhaseRepository;
         private final AttachmentRepository attachmentRepository;
         private final FileService fileService;
-        private final PdfGeneratorService pdfGeneratorService;
         private final UserSignatureProfileRepository userSignatureProfileRepository;
         private final CertificateAuthorityService certificateAuthorityService;
         private final DigitalSignatureRepository digitalSignatureRepository;
+        private final InnovationQueryService innovationQueryService;
+        private final InnovationStatisticsService innovationStatisticsService;
+        private final InnovationFormService innovationFormService;
+        private final InnovationCoAuthorService innovationCoAuthorService;
+        private final InnovationSignatureService innovationSignatureService;
 
         public InnovationService(InnovationRepository innovationRepository,
                         InnovationPhaseRepository innovationPhaseRepository,
                         FormDataService formDataService,
                         InnovationMapper innovationMapper,
-                        FormFieldMapper formFieldMapper,
                         FormDataMapper formDataMapper,
                         FormDataRepository formDataRepository,
                         UserService userService,
-                        DigitalSignatureService digitalSignatureService,
-                        InnovationRoundService innovationRoundService,
                         ActivityLogService activityLogService,
                         FormFieldRepository formFieldRepository,
                         FormTemplateRepository formTemplateRepository,
                         ObjectMapper objectMapper,
                         CoInnovationRepository coInnovationRepository,
-                        UserRepository userRepository,
                         NotificationService notificationService,
                         DepartmentPhaseRepository departmentPhaseRepository,
                         AttachmentRepository attachmentRepository,
                         FileService fileService,
-                        PdfGeneratorService pdfGeneratorService,
                         UserSignatureProfileRepository userSignatureProfileRepository,
                         CertificateAuthorityService certificateAuthorityService,
-                        DigitalSignatureRepository digitalSignatureRepository) {
+                        DigitalSignatureRepository digitalSignatureRepository,
+                        InnovationQueryService innovationQueryService,
+                        InnovationStatisticsService innovationStatisticsService,
+                        InnovationFormService innovationFormService,
+                        InnovationCoAuthorService innovationCoAuthorService,
+                        InnovationSignatureService innovationSignatureService) {
                 this.innovationRepository = innovationRepository;
                 this.innovationPhaseRepository = innovationPhaseRepository;
                 this.formDataService = formDataService;
                 this.innovationMapper = innovationMapper;
-                this.formFieldMapper = formFieldMapper;
                 this.formDataMapper = formDataMapper;
                 this.formDataRepository = formDataRepository;
                 this.userService = userService;
-                this.digitalSignatureService = digitalSignatureService;
-                this.innovationRoundService = innovationRoundService;
                 this.activityLogService = activityLogService;
                 this.formFieldRepository = formFieldRepository;
                 this.formTemplateRepository = formTemplateRepository;
                 this.objectMapper = objectMapper;
                 this.coInnovationRepository = coInnovationRepository;
-                this.userRepository = userRepository;
                 this.notificationService = notificationService;
                 this.departmentPhaseRepository = departmentPhaseRepository;
                 this.attachmentRepository = attachmentRepository;
                 this.fileService = fileService;
-                this.pdfGeneratorService = pdfGeneratorService;
                 this.userSignatureProfileRepository = userSignatureProfileRepository;
                 this.certificateAuthorityService = certificateAuthorityService;
                 this.digitalSignatureRepository = digitalSignatureRepository;
+                this.innovationQueryService = innovationQueryService;
+                this.innovationStatisticsService = innovationStatisticsService;
+                this.innovationFormService = innovationFormService;
+                this.innovationCoAuthorService = innovationCoAuthorService;
+                this.innovationSignatureService = innovationSignatureService;
         }
 
         // 1. Lấy tất cả sáng kiến của user hiện tại với filter chi tiết
         public ResultPaginationDTO getAllInnovationsByCurrentUserWithDetailedFilter(
                         FilterMyInnovationRequest filterRequest, Pageable pageable) {
-                if (pageable.getSort().isUnsorted()) {
-                        pageable = PageRequest.of(
-                                        pageable.getPageNumber(),
-                                        pageable.getPageSize(),
-                                        Sort.by("createdAt").descending());
-                }
-
-                String currentUserId = userService.getCurrentUserId();
-
-                Specification<Innovation> userSpec = (root, query, criteriaBuilder) -> criteriaBuilder
-                                .equal(root.get("user").get("id"), currentUserId);
-
-                Specification<Innovation> filterSpec = buildFilterSpecification(filterRequest);
-
-                Specification<Innovation> combinedSpec = filterSpec != null
-                                ? userSpec.and(filterSpec)
-                                : userSpec;
-
-                Page<Innovation> innovations = innovationRepository.findAll(combinedSpec, pageable);
-
-                List<String> innovationIds = innovations.getContent().stream()
-                                .map(Innovation::getId)
-                                .collect(Collectors.toList());
-
-                List<FormData> allFormData = innovationIds.isEmpty()
-                                ? new ArrayList<>()
-                                : formDataRepository.findByInnovationIdsWithRelations(innovationIds);
-
-                Map<String, Integer> authorCountMap = allFormData.stream()
-                                .filter(fd -> fd.getFormField() != null
-                                                && "danh_sach_tac_gia".equals(fd.getFormField().getFieldKey()))
-                                .collect(Collectors.groupingBy(
-                                                fd -> fd.getInnovation().getId(),
-                                                Collectors.collectingAndThen(
-                                                                Collectors.toList(),
-                                                                list -> list.stream()
-                                                                                .mapToInt(this::countAuthorsFromFormData)
-                                                                                .max()
-                                                                                .orElse(0))));
-
-                Page<MyInnovationResponse> responses = innovations.map(innovation -> {
-                        int authorCount = authorCountMap.getOrDefault(innovation.getId(), 0);
-                        return toMyInnovationResponse(innovation, authorCount);
-                });
-                return Utils.toResultPaginationDTO(responses, pageable);
-        }
-
-        private Specification<Innovation> buildFilterSpecification(FilterMyInnovationRequest filterRequest) {
-                if (filterRequest == null) {
-                        return null;
-                }
-
-                Specification<Innovation> spec = null;
-
-                if (filterRequest.getSearchText() != null && !filterRequest.getSearchText().trim().isEmpty()) {
-                        String searchText = "%" + filterRequest.getSearchText().trim().toLowerCase() + "%";
-                        Specification<Innovation> searchSpec = (root, query, criteriaBuilder) -> {
-                                // Tìm theo tên sáng kiến
-                                jakarta.persistence.criteria.Predicate innovationNamePredicate = criteriaBuilder
-                                                .like(criteriaBuilder.lower(root.get("innovationName")), searchText);
-
-                                // Tìm theo tên tác giả chính
-                                jakarta.persistence.criteria.Predicate authorNamePredicate = criteriaBuilder
-                                                .like(criteriaBuilder.lower(root.get("user").get("fullName")),
-                                                                searchText);
-
-                                // Tìm theo tên đồng tác giả trong bảng co_innovation
-                                jakarta.persistence.criteria.Subquery<String> coAuthorSubquery = query
-                                                .subquery(String.class);
-                                jakarta.persistence.criteria.Root<CoInnovation> coInnovationRoot = coAuthorSubquery
-                                                .from(CoInnovation.class);
-                                coAuthorSubquery.select(coInnovationRoot.get("innovation").get("id"))
-                                                .where(criteriaBuilder.and(
-                                                                criteriaBuilder.equal(coInnovationRoot.get("innovation")
-                                                                                .get("id"), root.get("id")),
-                                                                criteriaBuilder.like(
-                                                                                criteriaBuilder.lower(coInnovationRoot
-                                                                                                .get("coInnovatorFullName")),
-                                                                                searchText)));
-
-                                jakarta.persistence.criteria.Predicate coAuthorPredicate = criteriaBuilder
-                                                .exists(coAuthorSubquery);
-
-                                return criteriaBuilder.or(innovationNamePredicate, authorNamePredicate,
-                                                coAuthorPredicate);
-                        };
-                        spec = spec == null ? searchSpec : spec.and(searchSpec);
-                }
-
-                if (filterRequest.getStatus() != null) {
-                        Specification<Innovation> statusSpec = (root, query, criteriaBuilder) -> criteriaBuilder
-                                        .equal(root.get("status"), filterRequest.getStatus());
-                        spec = spec == null ? statusSpec : spec.and(statusSpec);
-                }
-
-                if (filterRequest.getInnovationRoundId() != null
-                                && !filterRequest.getInnovationRoundId().trim().isEmpty()) {
-                        Specification<Innovation> roundSpec = (root, query, criteriaBuilder) -> criteriaBuilder
-                                        .equal(root.get("innovationRound").get("id"),
-                                                        filterRequest.getInnovationRoundId());
-                        spec = spec == null ? roundSpec : spec.and(roundSpec);
-                }
-
-                if (filterRequest.getIsScore() != null) {
-                        Specification<Innovation> isScoreSpec = (root, query, criteriaBuilder) -> criteriaBuilder
-                                        .equal(root.get("isScore"), filterRequest.getIsScore());
-                        spec = spec == null ? isScoreSpec : spec.and(isScoreSpec);
-                }
-
-                return spec;
-        }
-
-        private Specification<Innovation> buildFilterSpecificationForAdmin(FilterAdminInnovationRequest filterRequest) {
-                if (filterRequest == null) {
-                        return null;
-                }
-
-                Specification<Innovation> spec = null;
-
-                if (filterRequest.getSearchText() != null && !filterRequest.getSearchText().trim().isEmpty()) {
-                        String searchText = "%" + filterRequest.getSearchText().trim().toLowerCase() + "%";
-                        Specification<Innovation> searchSpec = (root, query, criteriaBuilder) -> {
-                                jakarta.persistence.criteria.Predicate innovationNamePredicate = criteriaBuilder
-                                                .like(criteriaBuilder.lower(root.get("innovationName")), searchText);
-
-                                jakarta.persistence.criteria.Predicate authorNamePredicate = criteriaBuilder
-                                                .like(criteriaBuilder.lower(root.get("user").get("fullName")),
-                                                                searchText);
-
-                                jakarta.persistence.criteria.Subquery<String> coAuthorSubquery = query
-                                                .subquery(String.class);
-                                jakarta.persistence.criteria.Root<CoInnovation> coInnovationRoot = coAuthorSubquery
-                                                .from(CoInnovation.class);
-                                coAuthorSubquery.select(coInnovationRoot.get("innovation").get("id"))
-                                                .where(criteriaBuilder.and(
-                                                                criteriaBuilder.equal(coInnovationRoot.get("innovation")
-                                                                                .get("id"), root.get("id")),
-                                                                criteriaBuilder.like(
-                                                                                criteriaBuilder.lower(coInnovationRoot
-                                                                                                .get("coInnovatorFullName")),
-                                                                                searchText)));
-
-                                jakarta.persistence.criteria.Predicate coAuthorPredicate = criteriaBuilder
-                                                .exists(coAuthorSubquery);
-
-                                return criteriaBuilder.or(innovationNamePredicate, authorNamePredicate,
-                                                coAuthorPredicate);
-                        };
-                        spec = spec == null ? searchSpec : spec.and(searchSpec);
-                }
-
-                if (filterRequest.getStatus() != null) {
-                        Specification<Innovation> statusSpec = (root, query, criteriaBuilder) -> criteriaBuilder
-                                        .equal(root.get("status"), filterRequest.getStatus());
-                        spec = spec == null ? statusSpec : spec.and(statusSpec);
-                }
-
-                if (filterRequest.getInnovationRoundId() != null
-                                && !filterRequest.getInnovationRoundId().trim().isEmpty()) {
-                        Specification<Innovation> roundSpec = (root, query, criteriaBuilder) -> criteriaBuilder
-                                        .equal(root.get("innovationRound").get("id"),
-                                                        filterRequest.getInnovationRoundId());
-                        spec = spec == null ? roundSpec : spec.and(roundSpec);
-                }
-
-                if (filterRequest.getDepartmentId() != null
-                                && !filterRequest.getDepartmentId().trim().isEmpty()) {
-                        Specification<Innovation> departmentSpec = (root, query, criteriaBuilder) -> criteriaBuilder
-                                        .equal(root.get("department").get("id"),
-                                                        filterRequest.getDepartmentId());
-                        spec = spec == null ? departmentSpec : spec.and(departmentSpec);
-                }
-
-                return spec;
+                return innovationQueryService.getAllInnovationsByCurrentUserWithDetailedFilter(filterRequest,
+                                pageable);
         }
 
         // 3. Lấy tất cả sáng kiến
         public ResultPaginationDTO getAllInnovations(Specification<Innovation> specification, Pageable pageable) {
-
-                if (pageable.getSort().isUnsorted()) {
-                        pageable = PageRequest.of(
-                                        pageable.getPageNumber(),
-                                        pageable.getPageSize(),
-                                        Sort.by("createdAt").descending());
-                }
-
-                Page<Innovation> innovations = innovationRepository.findAll(specification, pageable);
-                Page<InnovationResponse> responses = innovations.map(innovation -> {
-                        InnovationResponse response = innovationMapper.toInnovationResponse(innovation);
-                        response.setSubmissionTimeRemainingSeconds(getSubmissionTimeRemainingSeconds(innovation));
-                        return response;
-                });
-                return Utils.toResultPaginationDTO(responses, pageable);
+                return innovationQueryService.getAllInnovations(specification, pageable);
         }
 
-        // 3. Thống kê innovation cho giảng viên
+        // 2. Thống kê innovation cho giảng viên
         public InnovationStatisticsDTO getInnovationStatisticsForCurrentUser() {
-                User currentUser = userService.getCurrentUser();
-                String userId = currentUser.getId();
-
-                // Thống kê cơ bản
-                long totalInnovations = innovationRepository.countByUserId(userId);
-
-                List<InnovationStatusEnum> submittedStatuses = Arrays.asList(
-                                InnovationStatusEnum.DRAFT,
-                                InnovationStatusEnum.SUBMITTED,
-                                InnovationStatusEnum.PENDING_KHOA_REVIEW,
-                                InnovationStatusEnum.KHOA_REVIEWED,
-                                InnovationStatusEnum.KHOA_APPROVED,
-                                InnovationStatusEnum.PENDING_TRUONG_REVIEW,
-                                InnovationStatusEnum.TRUONG_REVIEWED);
-
-                List<InnovationStatusEnum> approvedStatuses = Arrays.asList(
-                                InnovationStatusEnum.TRUONG_APPROVED,
-                                InnovationStatusEnum.FINAL_APPROVED);
-
-                List<InnovationStatusEnum> rejectedStatuses = Arrays.asList(
-                                InnovationStatusEnum.TRUONG_REJECTED,
-                                InnovationStatusEnum.KHOA_REJECTED);
-
-                // Đếm số lượng
-                long submittedInnovations = innovationRepository.countByUserIdAndStatusIn(userId, submittedStatuses);
-                long approvedInnovations = innovationRepository.countByUserIdAndStatusIn(userId, approvedStatuses);
-                long rejectedInnovations = innovationRepository.countByUserIdAndStatusIn(userId, rejectedStatuses);
-
-                // Tính phần trăm
-                double achievedPercentage = totalInnovations > 0 ? (double) approvedInnovations / totalInnovations * 100
-                                : 0.0;
-                double notAchievedPercentage = totalInnovations > 0
-                                ? (double) rejectedInnovations / totalInnovations * 100
-                                : 0.0;
-                double pendingPercentage = totalInnovations > 0 ? (double) submittedInnovations / totalInnovations * 100
-                                : 0.0;
-
-                return InnovationStatisticsDTO.builder()
-                                .totalInnovations(totalInnovations)
-                                .submittedInnovations(submittedInnovations)
-                                .approvedInnovations(approvedInnovations)
-                                .rejectedInnovations(rejectedInnovations)
-                                .achievedPercentage(Math.round(achievedPercentage * 100.0) / 100.0)
-                                .notAchievedPercentage(Math.round(notAchievedPercentage * 100.0) / 100.0)
-                                .pendingPercentage(Math.round(pendingPercentage * 100.0) / 100.0)
-                                .build();
-
-                /**
-                 * pendingPercentage = DRAFT + SUBMITTED + PENDING_KHOA_REVIEW + KHOA_REVIEWED +
-                 * KHOA_APPROVED + PENDING_TRUONG_REVIEW + TRUONG_REVIEWED
-                 * achievedPercentage = FINAL_APPROVED + TRUONG_APPROVED
-                 * notAchievedPercentage = KHOA_REJECTED + TRUONG_REJECTED
-                 */
+                return innovationStatisticsService.getInnovationStatisticsForCurrentUser();
         }
 
-        // 3. Lấy thống kê sáng kiến theo năm học cho user hiện tại - OK
+        // 3. Lấy thống kê sáng kiến theo năm học cho user hiện tại
         public InnovationAcademicYearStatisticsDTO getInnovationStatisticsByAcademicYearForCurrentUser() {
-                User currentUser = userService.getCurrentUser();
-                String userId = currentUser.getId();
-                return getInnovationStatisticsByAcademicYear(userId);
+                return innovationStatisticsService.getInnovationStatisticsByAcademicYearForCurrentUser();
         }
 
-        /**
-         * Helper method: Lấy thống kê sáng kiến theo năm học cho user hiện tại
-         */
-        private InnovationAcademicYearStatisticsDTO getInnovationStatisticsByAcademicYear(String userId) {
-                // Lấy thống kê tổng số sáng kiến theo năm học
-                List<Object[]> totalInnovationsByYear = innovationRepository
-                                .countInnovationsByAcademicYearAndUserId(userId);
-                List<Object[]> submittedInnovationsByYear = innovationRepository
-                                .countSubmittedInnovationsByAcademicYearAndUserId(userId);
-                List<Object[]> approvedInnovationsByYear = innovationRepository
-                                .countApprovedInnovationsByAcademicYearAndUserId(userId);
-                List<Object[]> rejectedInnovationsByYear = innovationRepository
-                                .countRejectedInnovationsByAcademicYearAndUserId(userId);
-                List<Object[]> pendingInnovationsByYear = innovationRepository
-                                .countPendingInnovationsByAcademicYearAndUserId(userId);
-
-                Map<String, Long> totalMap = totalInnovationsByYear.stream()
-                                .collect(Collectors.toMap(
-                                                arr -> (String) arr[0],
-                                                arr -> (Long) arr[1]));
-
-                Map<String, Long> submittedMap = submittedInnovationsByYear.stream()
-                                .collect(Collectors.toMap(
-                                                arr -> (String) arr[0],
-                                                arr -> (Long) arr[1]));
-
-                Map<String, Long> approvedMap = approvedInnovationsByYear.stream()
-                                .collect(Collectors.toMap(
-                                                arr -> (String) arr[0],
-                                                arr -> (Long) arr[1]));
-
-                Map<String, Long> rejectedMap = rejectedInnovationsByYear.stream()
-                                .collect(Collectors.toMap(
-                                                arr -> (String) arr[0],
-                                                arr -> (Long) arr[1]));
-
-                Map<String, Long> pendingMap = pendingInnovationsByYear.stream()
-                                .collect(Collectors.toMap(
-                                                arr -> (String) arr[0],
-                                                arr -> (Long) arr[1]));
-
-                // Tạo danh sách tất cả năm học
-                Set<String> allAcademicYears = new java.util.HashSet<>();
-                allAcademicYears.addAll(totalMap.keySet());
-                allAcademicYears.addAll(submittedMap.keySet());
-                allAcademicYears.addAll(approvedMap.keySet());
-                allAcademicYears.addAll(rejectedMap.keySet());
-                allAcademicYears.addAll(pendingMap.keySet());
-
-                // Sắp xếp năm học
-                List<String> sortedAcademicYears = allAcademicYears.stream()
-                                .sorted()
-                                .collect(Collectors.toList());
-
-                // Tạo danh sách dữ liệu theo năm học
-                List<InnovationAcademicYearStatisticsDTO.AcademicYearData> academicYearDataList = sortedAcademicYears
-                                .stream()
-                                .map(academicYear -> {
-                                        long totalInnovations = totalMap.getOrDefault(academicYear, 0L);
-                                        long submittedInnovations = submittedMap.getOrDefault(academicYear, 0L);
-                                        long approvedInnovations = approvedMap.getOrDefault(academicYear, 0L);
-                                        long rejectedInnovations = rejectedMap.getOrDefault(academicYear, 0L);
-                                        long pendingInnovations = pendingMap.getOrDefault(academicYear, 0L);
-
-                                        // Tính phần trăm
-                                        double approvedPercentage = totalInnovations > 0
-                                                        ? Math.round((double) approvedInnovations / totalInnovations
-                                                                        * 100 * 100.0) / 100.0
-                                                        : 0.0;
-                                        double rejectedPercentage = totalInnovations > 0
-                                                        ? Math.round((double) rejectedInnovations / totalInnovations
-                                                                        * 100 * 100.0) / 100.0
-                                                        : 0.0;
-                                        double pendingPercentage = totalInnovations > 0
-                                                        ? Math.round((double) pendingInnovations / totalInnovations
-                                                                        * 100 * 100.0) / 100.0
-                                                        : 0.0;
-
-                                        return InnovationAcademicYearStatisticsDTO.AcademicYearData.builder()
-                                                        .academicYear(academicYear)
-                                                        .totalInnovations(totalInnovations)
-                                                        .submittedInnovations(submittedInnovations)
-                                                        .approvedInnovations(approvedInnovations)
-                                                        .rejectedInnovations(rejectedInnovations)
-                                                        .pendingInnovations(pendingInnovations)
-                                                        .approvedPercentage(approvedPercentage)
-                                                        .rejectedPercentage(rejectedPercentage)
-                                                        .pendingPercentage(pendingPercentage)
-                                                        .build();
-                                })
-                                .collect(Collectors.toList());
-
-                // Tính tổng số sáng kiến và số năm học
-                long totalInnovations = totalMap.values().stream().mapToLong(Long::longValue).sum();
-
-                return InnovationAcademicYearStatisticsDTO.builder()
-                                .academicYearData(academicYearDataList)
-                                .totalInnovations(totalInnovations)
-                                .totalAcademicYears(sortedAcademicYears.size())
-                                .build();
-        }
-
-        // 4. Lấy hạn chót sắp tới từ round hiện tại - OK
+        // 4. Lấy hạn chót sắp tới từ round hiện tại
         public UpcomingDeadlinesResponse getUpcomingDeadlines() {
-                // Lấy round hiện tại
-                var currentRound = innovationRoundService.getCurrentRound();
-                if (currentRound == null) {
-                        return UpcomingDeadlinesResponse.builder()
-                                        .upcomingDeadlines(List.of())
-                                        .totalDeadlines(0)
-                                        .currentRoundName("Không có đợt sáng kiến nào đang diễn ra")
-                                        .academicYear("")
-                                        .build();
-                }
-
-                List<InnovationPhase> phases = innovationPhaseRepository
-                                .findByInnovationRoundIdOrderByPhaseOrder(currentRound.getId());
-
-                LocalDate today = LocalDate.now();
-                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
-
-                List<UpcomingDeadlineResponse> upcomingDeadlines = phases.stream()
-                                .filter(phase -> phase.getPhaseEndDate().isAfter(today)
-                                                || phase.getPhaseEndDate().isEqual(today))
-                                .map(phase -> {
-                                        long daysRemaining = ChronoUnit.DAYS.between(today, phase.getPhaseEndDate());
-
-                                        return UpcomingDeadlineResponse.builder()
-                                                        .id(phase.getId())
-                                                        .title(generateDeadlineTitle(phase))
-                                                        .deadlineDate(phase.getPhaseEndDate())
-                                                        .formattedDate(phase.getPhaseEndDate().format(formatter))
-                                                        .daysRemaining(daysRemaining)
-                                                        .phaseType(phase.getPhaseType().getValue())
-                                                        .level(phase.getLevel() != null ? phase.getLevel().getValue()
-                                                                        : "")
-                                                        .description(phase.getDescription())
-                                                        .isDeadline(phase.getIsDeadline())
-                                                        .build();
-                                })
-                                .sorted((a, b) -> a.getDeadlineDate().compareTo(b.getDeadlineDate()))
-                                .collect(Collectors.toList());
-
-                return UpcomingDeadlinesResponse.builder()
-                                .upcomingDeadlines(upcomingDeadlines)
-                                .totalDeadlines(upcomingDeadlines.size())
-                                .currentRoundName(currentRound.getName())
-                                .academicYear(currentRound.getAcademicYear())
-                                .build();
-        }
-
-        /*
-         * Helper method: Tạo tiêu đề cho deadline dựa trên phase
-         */
-        private String generateDeadlineTitle(InnovationPhase phase) {
-                String baseTitle = phase.getName();
-
-                switch (phase.getPhaseType()) {
-                        case SUBMISSION:
-                                return "Hạn nộp " + baseTitle;
-                        case SCORING:
-                                return "Hạn chấm điểm " + baseTitle;
-                        case ANNOUNCEMENT:
-                                return "Hạn công bố " + baseTitle;
-                        default:
-                                return baseTitle;
-                }
+                return innovationStatisticsService.getUpcomingDeadlines();
         }
 
         // 4. Tạo Innovation & Submit FormData theo nhiều Template
@@ -694,7 +276,7 @@ public class InnovationService {
 
                 // Kiểm tra allow_late_submission của department phase (chỉ khi nộp sáng kiến)
                 LocalDate submissionDeadlineDate = null;
-                List<SignatureProcessingResult> signatureResults = Collections.emptyList();
+                List<InnovationSignatureService.SignatureProcessingResult> signatureResults = Collections.emptyList();
                 if (request.getStatus() == InnovationStatusEnum.SUBMITTED
                                 && currentUser.getDepartment() != null
                                 && innovationPhase.getInnovationRound() != null) {
@@ -760,7 +342,7 @@ public class InnovationService {
 
                 // Kiểm tra chữ ký trước khi nộp sáng kiến (chỉ khi status = SUBMITTED)
                 if (request.getStatus() == InnovationStatusEnum.SUBMITTED) {
-                        validateSignaturesBeforeSubmit(request);
+                        innovationSignatureService.validateSignaturesBeforeSubmit(request);
                 }
 
                 // Tạo hoặc update Innovation
@@ -878,8 +460,9 @@ public class InnovationService {
                                         Object fieldValue = entry.getValue();
 
                                         // Tìm FormField theo fieldKey trong danh sách formFields (bao gồm cả children)
-                                        FormFieldSearchResult searchResult = findFormFieldByKeyWithParent(formFields,
-                                                        fieldKey, templateRequest.getTemplateId());
+                                        InnovationFormService.FormFieldSearchResult searchResult = innovationFormService
+                                                        .findFormFieldByKeyWithParent(formFields,
+                                                                        fieldKey, templateRequest.getTemplateId());
 
                                         if (searchResult == null || searchResult.getFormField() == null) {
                                                 throw new IdInvalidException(
@@ -942,10 +525,10 @@ public class InnovationService {
                 }
 
                 // Xử lý đồng sáng kiến từ formData
-                processCoInnovations(savedInnovation, request.getTemplates());
+                innovationCoAuthorService.processCoInnovations(savedInnovation, request.getTemplates());
 
                 if (request.getStatus() == InnovationStatusEnum.SUBMITTED) {
-                        signatureResults = signInnovationDocuments(savedInnovation, request);
+                        signatureResults = innovationSignatureService.signInnovationDocuments(savedInnovation, request);
                 }
 
                 // Tạo Attachment từ formData (tạo liên kết giữa Innovation và Attachment)
@@ -979,8 +562,9 @@ public class InnovationService {
                 innovationResponse.setSubmissionTimeRemainingSeconds(timeRemainingSeconds);
                 response.setInnovation(innovationResponse);
                 // response.setFormDataList(formDataResponses);
-                response.setTemplates(buildTemplateFormDataResponses(formDataResponses));
-                response.setTemplateSignatures(buildTemplateSignatureResponses(signatureResults));
+                response.setTemplates(innovationSignatureService.buildTemplateFormDataResponses(formDataResponses));
+                response.setTemplateSignatures(
+                                innovationSignatureService.buildTemplateSignatureResponses(signatureResults));
                 response.setSubmissionTimeRemainingSeconds(timeRemainingSeconds);
 
                 return response;
@@ -1021,7 +605,7 @@ public class InnovationService {
                 Long timeRemainingSeconds = getSubmissionTimeRemainingSeconds(innovation);
                 innovationResponse.setSubmissionTimeRemainingSeconds(timeRemainingSeconds);
                 response.setInnovation(innovationResponse);
-                response.setTemplates(buildTemplateFormDataResponses(formDataResponses));
+                response.setTemplates(innovationSignatureService.buildTemplateFormDataResponses(formDataResponses));
                 response.setTemplateSignatures(Collections.emptyList());
                 response.setSubmissionTimeRemainingSeconds(timeRemainingSeconds);
 
@@ -1071,7 +655,7 @@ public class InnovationService {
                 Long timeRemainingSeconds = getSubmissionTimeRemainingSeconds(innovation);
                 innovationResponse.setSubmissionTimeRemainingSeconds(timeRemainingSeconds);
                 response.setInnovation(innovationResponse);
-                response.setTemplates(buildTemplateFormDataResponses(formDataResponses));
+                response.setTemplates(innovationSignatureService.buildTemplateFormDataResponses(formDataResponses));
                 response.setTemplateSignatures(Collections.emptyList());
                 response.setSubmissionTimeRemainingSeconds(timeRemainingSeconds);
 
@@ -1150,7 +734,7 @@ public class InnovationService {
                                 .status(innovation.getStatus())
                                 .submittedAt(innovation.getCreatedAt()) // Ngày nộp
                                 .coAuthors(coAuthors)
-                                .templates(buildTemplateFormDataResponses(formDataResponses))
+                                .templates(innovationSignatureService.buildTemplateFormDataResponses(formDataResponses))
                                 .attachments(attachmentResponses)
                                 .build();
         }
@@ -1203,67 +787,10 @@ public class InnovationService {
                 return response;
         }
 
-        // 12. Lấy danh sách sáng kiến của khoa với filter chi tiết
+        // 8. Lấy danh sách sáng kiến của khoa với filter chi tiết
         public ResultPaginationDTO getAllDepartmentInnovationsWithDetailedFilter(
                         FilterMyInnovationRequest filterRequest, Pageable pageable) {
-                User currentUser = userService.getCurrentUser();
-
-                // Kiểm tra quyền
-                boolean hasQuanTriVienKhoaRole = currentUser.getUserRoles().stream()
-                                .anyMatch(userRole -> userRole.getRole()
-                                                .getRoleName() == UserRoleEnum.QUAN_TRI_VIEN_KHOA);
-                boolean hasTruongKhoaRole = currentUser.getUserRoles().stream()
-                                .anyMatch(userRole -> userRole.getRole().getRoleName() == UserRoleEnum.TRUONG_KHOA);
-
-                if (!hasQuanTriVienKhoaRole && !hasTruongKhoaRole) {
-                        throw new IdInvalidException("Chỉ QUAN_TRI_VIEN_KHOA hoặc TRUONG_KHOA mới có quyền truy cập");
-                }
-
-                if (currentUser.getDepartment() == null) {
-                        throw new IdInvalidException("Người dùng không thuộc phòng ban nào");
-                }
-
-                Specification<Innovation> spec = buildFilterSpecification(filterRequest);
-
-                // Thêm điều kiện lọc theo phòng ban
-                Specification<Innovation> departmentSpec = (root, query, criteriaBuilder) -> criteriaBuilder
-                                .equal(root.get("department").get("id"), currentUser.getDepartment().getId());
-
-                if (spec != null) {
-                        spec = spec.and(departmentSpec);
-                } else {
-                        spec = departmentSpec;
-                }
-
-                Page<Innovation> innovations = innovationRepository.findAll(spec, pageable);
-
-                // Tính toán số lượng tác giả cho mỗi sáng kiến (để xác định đồng tác giả)
-                List<String> innovationIds = innovations.getContent().stream()
-                                .map(Innovation::getId)
-                                .collect(Collectors.toList());
-
-                List<FormData> allFormData = innovationIds.isEmpty()
-                                ? new ArrayList<>()
-                                : formDataRepository.findByInnovationIdsWithRelations(innovationIds);
-
-                Map<String, Integer> authorCountMap = allFormData.stream()
-                                .filter(fd -> fd.getFormField() != null
-                                                && "danh_sach_tac_gia".equals(fd.getFormField().getFieldKey()))
-                                .collect(Collectors.groupingBy(
-                                                fd -> fd.getInnovation().getId(),
-                                                Collectors.collectingAndThen(
-                                                                Collectors.toList(),
-                                                                list -> list.stream()
-                                                                                .mapToInt(this::countAuthorsFromFormData)
-                                                                                .max()
-                                                                                .orElse(0))));
-
-                Page<MyInnovationResponse> responses = innovations.map(innovation -> {
-                        int authorCount = authorCountMap.getOrDefault(innovation.getId(), 0);
-                        return toMyInnovationResponse(innovation, authorCount);
-                });
-
-                return Utils.toResultPaginationDTO(responses, pageable);
+                return innovationQueryService.getAllDepartmentInnovationsWithDetailedFilter(filterRequest, pageable);
         }
 
         // 7. Lấy Innovation & FormData theo ID cho QUAN_TRI_VIEN_KHOA và TRUONG_KHOA
@@ -1332,7 +859,7 @@ public class InnovationService {
                 Long timeRemainingSeconds = getSubmissionTimeRemainingSeconds(innovation);
                 innovationResponse.setSubmissionTimeRemainingSeconds(timeRemainingSeconds);
                 response.setInnovation(innovationResponse);
-                response.setTemplates(buildTemplateFormDataResponses(formDataResponses));
+                response.setTemplates(innovationSignatureService.buildTemplateFormDataResponses(formDataResponses));
                 response.setTemplateSignatures(Collections.emptyList());
                 response.setSubmissionTimeRemainingSeconds(timeRemainingSeconds);
 
@@ -1469,116 +996,11 @@ public class InnovationService {
                 return Utils.toResultPaginationDTO(responses, pageable);
         }
 
-        // 9. Lấy tất cả sáng kiến với filter cho QUAN_TRI_VIEN_QLKH_HTQT,
+        // 10. Lấy tất cả sáng kiến với filter cho QUAN_TRI_VIEN_QLKH_HTQT,
         // TV_HOI_DONG_TRUONG, CHU_TICH_HD_TRUONG, QUAN_TRI_VIEN_HE_THONG
         public ResultPaginationDTO getAllInnovationsForAdminRolesWithFilter(FilterAdminInnovationRequest filterRequest,
                         Pageable pageable) {
-                if (pageable.getSort().isUnsorted()) {
-                        pageable = PageRequest.of(
-                                        pageable.getPageNumber(),
-                                        pageable.getPageSize(),
-                                        Sort.by("createdAt").descending());
-                }
-
-                User currentUser = userService.getCurrentUser();
-
-                boolean hasQuanTriVienQlkhHtqtRole = currentUser.getUserRoles().stream()
-                                .anyMatch(userRole -> userRole.getRole()
-                                                .getRoleName() == UserRoleEnum.QUAN_TRI_VIEN_QLKH_HTQT);
-
-                boolean hasTvHoiDongTruongRole = currentUser.getUserRoles().stream()
-                                .anyMatch(userRole -> userRole.getRole()
-                                                .getRoleName() == UserRoleEnum.TV_HOI_DONG_TRUONG);
-
-                // boolean hasChuTichHdTruongRole = currentUser.getUserRoles().stream()
-                // .anyMatch(userRole -> userRole.getRole()
-                // .getRoleName() == UserRoleEnum.CHU_TICH_HD_TRUONG);
-
-                boolean hasQuanTriVienHeThongRole = currentUser.getUserRoles().stream()
-                                .anyMatch(userRole -> userRole.getRole()
-                                                .getRoleName() == UserRoleEnum.QUAN_TRI_VIEN_HE_THONG);
-
-                if (!hasQuanTriVienQlkhHtqtRole && !hasTvHoiDongTruongRole
-                                && !hasQuanTriVienHeThongRole) {
-                        logger.error("User {} không có quyền QUAN_TRI_VIEN_QLKH_HTQT, TV_HOI_DONG_TRUONG, CHU_TICH_HD_TRUONG hoặc QUAN_TRI_VIEN_HE_THONG",
-                                        currentUser.getId());
-                        throw new IdInvalidException(
-                                        "Chỉ QUAN_TRI_VIEN_QLKH_HTQT, TV_HOI_DONG_TRUONG, CHU_TICH_HD_TRUONG hoặc QUAN_TRI_VIEN_HE_THONG mới có quyền xem tất cả sáng kiến");
-                }
-
-                Specification<Innovation> filterSpec = buildFilterSpecificationForAdmin(filterRequest);
-
-                Specification<Innovation> notDraftSpec = (root, query, criteriaBuilder) -> criteriaBuilder
-                                .notEqual(root.get("status"), InnovationStatusEnum.DRAFT);
-
-                Specification<Innovation> combinedSpec = filterSpec != null
-                                ? notDraftSpec.and(filterSpec)
-                                : notDraftSpec;
-
-                Page<Innovation> innovations = innovationRepository.findAll(combinedSpec, pageable);
-
-                List<String> innovationIds = innovations.getContent().stream()
-                                .map(Innovation::getId)
-                                .collect(Collectors.toList());
-
-                List<FormData> allFormData = innovationIds.isEmpty()
-                                ? new ArrayList<>()
-                                : formDataRepository.findByInnovationIdsWithRelations(innovationIds);
-
-                Map<String, Integer> authorCountMap = allFormData.stream()
-                                .filter(fd -> fd.getFormField() != null
-                                                && "danh_sach_tac_gia".equals(fd.getFormField().getFieldKey()))
-                                .collect(Collectors.groupingBy(
-                                                fd -> fd.getInnovation().getId(),
-                                                Collectors.collectingAndThen(
-                                                                Collectors.toList(),
-                                                                list -> list.stream()
-                                                                                .mapToInt(this::countAuthorsFromFormData)
-                                                                                .max()
-                                                                                .orElse(0))));
-
-                Page<MyInnovationResponse> responses = innovations.map(innovation -> {
-                        int authorCount = authorCountMap.getOrDefault(innovation.getId(), 0);
-                        return toMyInnovationResponse(innovation, authorCount);
-                });
-                return Utils.toResultPaginationDTO(responses, pageable);
-        }
-
-        /**
-         * Tìm FormField theo fieldKey trong danh sách formFields và cả trong children
-         * Trả về result chứa FormField và parent field (nếu có)
-         */
-        private FormFieldSearchResult findFormFieldByKeyWithParent(List<FormField> formFields, String fieldKey,
-                        String templateId) {
-                // Tìm ở level đầu tiên
-                for (FormField field : formFields) {
-                        if (fieldKey.equals(field.getFieldKey())) {
-                                return new FormFieldSearchResult(field, null);
-                        }
-
-                        // Nếu field có children, tìm trong children
-                        if (field.getChildren() != null && field.getChildren().isArray()) {
-                                FormField foundField = findFormFieldInChildren(field.getChildren(), fieldKey,
-                                                templateId);
-                                if (foundField != null) {
-                                        // Trả về parent field
-                                        return new FormFieldSearchResult(foundField, field);
-                                }
-                        }
-
-                        // Nếu field có tableConfig (dùng cho TABLE field), tìm trong columns
-                        if (field.getFieldType() != null && field.getFieldType() == FieldTypeEnum.TABLE
-                                        && field.getTableConfig() != null) {
-                                FormField foundField = findFormFieldInTableColumns(field.getTableConfig(), fieldKey,
-                                                templateId);
-                                if (foundField != null) {
-                                        // Trả về parent field (TABLE field)
-                                        return new FormFieldSearchResult(foundField, field);
-                                }
-                        }
-                }
-
-                return null;
+                return innovationQueryService.getAllInnovationsForAdminRolesWithFilter(filterRequest, pageable);
         }
 
         /**
@@ -1620,251 +1042,6 @@ public class InnovationService {
                                                 "Không thể tạo/nộp sáng kiến vì CA nội bộ của bạn không thể sử dụng. "
                                                                 + "CA chưa được xác minh hoặc đã hết hạn. Vui lòng liên hệ quản trị viên.");
                         }
-                }
-        }
-
-        /**
-         * Kiểm tra chữ ký tác giả cho mẫu 1 (DON_DE_NGHI) và mẫu 2 (BAO_CAO_MO_TA)
-         * trước khi nộp sáng kiến
-         */
-        private void validateSignaturesBeforeSubmit(CreateInnovationWithTemplatesRequest request) {
-                List<String> missingSignatures = new ArrayList<>();
-
-                // Duyệt qua tất cả các template trong request
-                for (TemplateDataRequest templateRequest : request.getTemplates()) {
-                        // Lấy FormTemplate để kiểm tra templateType
-                        FormTemplate formTemplate = formTemplateRepository
-                                        .findById(templateRequest.getTemplateId())
-                                        .orElse(null);
-
-                        // Chỉ kiểm tra chữ ký cho mẫu 1 (DON_DE_NGHI) và mẫu 2 (BAO_CAO_MO_TA)
-                        if (formTemplate == null
-                                        || (formTemplate.getTemplateType() != TemplateTypeEnum.DON_DE_NGHI
-                                                        && formTemplate.getTemplateType() != TemplateTypeEnum.BAO_CAO_MO_TA)) {
-                                continue;
-                        }
-
-                        // Lấy tất cả FormField của template
-                        List<FormField> formFields = formFieldRepository
-                                        .findByTemplateId(templateRequest.getTemplateId());
-
-                        // Lấy tất cả FormField có fieldType = SIGNATURE và signingRole = GIANG_VIEN
-                        // (tác giả)
-                        // (bao gồm cả trong children và table columns)
-                        List<FormField> authorSignatureFields = getAuthorSignatureFields(formFields,
-                                        templateRequest.getTemplateId());
-
-                        // Lấy formData từ request (có thể null hoặc empty)
-                        Map<String, Object> formData = templateRequest.getFormData();
-                        if (formData == null) {
-                                formData = Map.of();
-                        }
-
-                        // Kiểm tra từng signature field của tác giả
-                        for (FormField signatureField : authorSignatureFields) {
-                                String fieldKey = signatureField.getFieldKey();
-                                String fieldLabel = signatureField.getLabel();
-
-                                // Kiểm tra xem fieldKey có trong formData không
-                                if (!formData.containsKey(fieldKey)) {
-                                        missingSignatures.add(fieldLabel + " (Template: "
-                                                        + formTemplate.getTemplateType().getValue() + ")");
-                                        continue;
-                                }
-
-                                // Kiểm tra fieldValue không null và không empty
-                                Object fieldValue = formData.get(fieldKey);
-                                if (fieldValue == null) {
-                                        missingSignatures.add(fieldLabel + " (Template: "
-                                                        + formTemplate.getTemplateType().getValue() + ")");
-                                        continue;
-                                }
-
-                                // Kiểm tra nếu là String thì không được empty
-                                if (fieldValue instanceof String && ((String) fieldValue).trim().isEmpty()) {
-                                        missingSignatures.add(fieldLabel + " (Template: "
-                                                        + formTemplate.getTemplateType().getValue() + ")");
-                                        continue;
-                                }
-
-                                // Kiểm tra nếu là JsonNode thì không được null hoặc empty
-                                if (fieldValue instanceof JsonNode) {
-                                        JsonNode jsonNode = (JsonNode) fieldValue;
-                                        if (jsonNode.isNull() || jsonNode.isMissingNode()
-                                                        || (jsonNode.isTextual()
-                                                                        && jsonNode.asText().trim().isEmpty())) {
-                                                missingSignatures.add(fieldLabel + " (Template: "
-                                                                + formTemplate.getTemplateType().getValue() + ")");
-                                        }
-                                }
-                        }
-                }
-
-                // Nếu có chữ ký bị thiếu, throw exception
-                if (!missingSignatures.isEmpty()) {
-                        String missingList = String.join(", ", missingSignatures);
-                        throw new IdInvalidException(
-                                        "Không thể nộp sáng kiến vì thiếu chữ ký. Các chữ ký còn thiếu: " + missingList
-                                                        + ". Vui lòng kiểm tra lại và ký đầy đủ trước khi nộp.");
-                }
-        }
-
-        /**
-         * Lấy tất cả FormField có fieldType = SIGNATURE và signingRole = GIANG_VIEN
-         * (tác giả)
-         * (bao gồm cả trong children và table columns)
-         */
-        private List<FormField> getAuthorSignatureFields(List<FormField> formFields, String templateId) {
-                List<FormField> signatureFields = new ArrayList<>();
-
-                for (FormField field : formFields) {
-                        // Kiểm tra field ở level root - chỉ lấy SIGNATURE của tác giả (GIANG_VIEN)
-                        if (field.getFieldType() == FieldTypeEnum.SIGNATURE
-                                        && field.getSigningRole() == UserRoleEnum.GIANG_VIEN) {
-                                signatureFields.add(field);
-                        }
-
-                        // Kiểm tra trong children
-                        if (field.getChildren() != null && field.getChildren().isArray()) {
-                                List<FormField> childSignatureFields = getAuthorSignatureFieldsFromChildren(
-                                                field.getChildren(),
-                                                templateId);
-                                signatureFields.addAll(childSignatureFields);
-                        }
-
-                        // Kiểm tra trong table columns
-                        if (field.getFieldType() == FieldTypeEnum.TABLE && field.getTableConfig() != null) {
-                                List<FormField> tableSignatureFields = getAuthorSignatureFieldsFromTableColumns(
-                                                field.getTableConfig(), templateId);
-                                signatureFields.addAll(tableSignatureFields);
-                        }
-                }
-
-                return signatureFields;
-        }
-
-        /**
-         * Lấy các FormField SIGNATURE của tác giả (GIANG_VIEN) từ children JSON node
-         */
-        private List<FormField> getAuthorSignatureFieldsFromChildren(JsonNode childrenNode, String templateId) {
-                List<FormField> signatureFields = new ArrayList<>();
-
-                try {
-                        for (JsonNode childNode : childrenNode) {
-                                JsonNode typeNode = childNode.get("type");
-                                if (typeNode != null) {
-                                        try {
-                                                FieldTypeEnum fieldType = FieldTypeEnum.valueOf(typeNode.asText());
-                                                if (fieldType == FieldTypeEnum.SIGNATURE) {
-                                                        // Kiểm tra signingRole = GIANG_VIEN
-                                                        JsonNode signingRoleNode = childNode.get("signingRole");
-                                                        if (signingRoleNode != null) {
-                                                                try {
-                                                                        UserRoleEnum signingRole = UserRoleEnum
-                                                                                        .valueOf(signingRoleNode
-                                                                                                        .asText());
-                                                                        if (signingRole == UserRoleEnum.GIANG_VIEN) {
-                                                                                FormField signatureField = createFormFieldFromJson(
-                                                                                                childNode,
-                                                                                                templateId);
-                                                                                signatureFields.add(signatureField);
-                                                                        }
-                                                                } catch (IllegalArgumentException e) {
-                                                                        // Ignore invalid enum values
-                                                                }
-                                                        }
-                                                }
-                                        } catch (IllegalArgumentException e) {
-                                                // Ignore invalid enum values
-                                        }
-                                }
-
-                                // Đệ quy tìm trong children của children
-                                JsonNode childChildrenNode = childNode.get("children");
-                                if (childChildrenNode != null && childChildrenNode.isArray()) {
-                                        signatureFields.addAll(
-                                                        getAuthorSignatureFieldsFromChildren(childChildrenNode,
-                                                                        templateId));
-                                }
-                        }
-                } catch (Exception e) {
-                        logger.error("Lỗi khi lấy signature fields từ children: {}", e.getMessage(), e);
-                }
-
-                return signatureFields;
-        }
-
-        /**
-         * Lấy các FormField SIGNATURE của tác giả (GIANG_VIEN) từ table columns
-         */
-        private List<FormField> getAuthorSignatureFieldsFromTableColumns(JsonNode tableConfig, String templateId) {
-                List<FormField> signatureFields = new ArrayList<>();
-
-                try {
-                        JsonNode columnsNode = tableConfig.get("columns");
-                        if (columnsNode != null && columnsNode.isArray()) {
-                                for (JsonNode columnNode : columnsNode) {
-                                        JsonNode typeNode = columnNode.get("type");
-                                        if (typeNode != null) {
-                                                try {
-                                                        FieldTypeEnum fieldType = FieldTypeEnum
-                                                                        .valueOf(typeNode.asText());
-                                                        if (fieldType == FieldTypeEnum.SIGNATURE) {
-                                                                // Kiểm tra signingRole = GIANG_VIEN
-                                                                JsonNode signingRoleNode = columnNode
-                                                                                .get("signingRole");
-                                                                if (signingRoleNode != null) {
-                                                                        try {
-                                                                                UserRoleEnum signingRole = UserRoleEnum
-                                                                                                .valueOf(signingRoleNode
-                                                                                                                .asText());
-                                                                                if (signingRole == UserRoleEnum.GIANG_VIEN) {
-                                                                                        FormField signatureField = createFormFieldFromJson(
-                                                                                                        columnNode,
-                                                                                                        templateId);
-                                                                                        signatureFields.add(
-                                                                                                        signatureField);
-                                                                                }
-                                                                        } catch (IllegalArgumentException e) {
-                                                                                // Ignore invalid enum values
-                                                                        }
-                                                                }
-                                                        }
-                                                } catch (IllegalArgumentException e) {
-                                                        // Ignore invalid enum values
-                                                }
-                                        }
-                                }
-                        }
-                } catch (Exception e) {
-                        logger.error("Lỗi khi lấy signature fields từ table columns: {}", e.getMessage(), e);
-                }
-
-                return signatureFields;
-        }
-
-        /**
-         * Inner class để lưu kết quả tìm kiếm FormField
-         */
-        private static class FormFieldSearchResult {
-                private FormField formField;
-                private FormField parentField;
-
-                public FormFieldSearchResult(FormField formField, FormField parentField) {
-                        this.formField = formField;
-                        this.parentField = parentField;
-                }
-
-                public FormField getFormField() {
-                        return formField;
-                }
-
-                public FormField getParentField() {
-                        return parentField;
-                }
-
-                public boolean hasParentField() {
-                        return parentField != null;
                 }
         }
 
@@ -2011,145 +1188,6 @@ public class InnovationService {
                 return null;
         }
 
-        // 5. Xử lý đồng sáng kiến từ formData
-        private void processCoInnovations(Innovation innovation, List<TemplateDataRequest> templates) {
-                // Duyệt qua tất cả templates để tìm field chứa thông tin đồng sáng kiến
-                for (TemplateDataRequest templateRequest : templates) {
-                        if (templateRequest.getFormData() == null || templateRequest.getFormData().isEmpty()) {
-                                continue;
-                        }
-
-                        for (Map.Entry<String, Object> entry : templateRequest.getFormData().entrySet()) {
-                                String fieldKey = entry.getKey();
-                                Object fieldValue = entry.getValue();
-
-                                // Kiểm tra cấu trúc dữ liệu thay vì tên field
-                                if (fieldValue != null) {
-                                        try {
-                                                // Chuyển đổi fieldValue sang JsonNode để xử lý
-                                                JsonNode valueNode = objectMapper.valueToTree(fieldValue);
-
-                                                // Kiểm tra xem có phải là mảng không
-                                                if (valueNode.isArray() && valueNode.size() > 0) {
-                                                        // Kiểm tra item đầu tiên có chứa ma_nhan_su không
-                                                        JsonNode firstItem = valueNode.get(0);
-                                                        if (firstItem.isObject() && firstItem.has("ma_nhan_su")) {
-                                                                // Đây là danh sách đồng tác giả, duyệt qua từng item
-                                                                for (JsonNode itemNode : valueNode) {
-                                                                        processCoInnovationItem(innovation, itemNode);
-                                                                }
-                                                        }
-                                                }
-                                        } catch (Exception e) {
-                                                logger.warn("Lỗi khi kiểm tra đồng sáng kiến cho field {}: {}",
-                                                                fieldKey, e.getMessage());
-                                        }
-                                }
-                        }
-                }
-        }
-
-        // 6. Xử lý một item đồng sáng kiến
-        private void processCoInnovationItem(Innovation innovation, JsonNode itemNode) {
-                try {
-                        // Extract thông tin từ itemNode
-                        JsonNode hoVaTenNode = itemNode.get("ho_va_ten");
-                        JsonNode maNhanSuNode = itemNode.get("ma_nhan_su");
-                        JsonNode noiCongTacNode = itemNode.get("noi_cong_tac_hoac_noi_thuong_tru");
-
-                        String hoVaTen = hoVaTenNode != null && !hoVaTenNode.isNull()
-                                        ? hoVaTenNode.asText().trim()
-                                        : "";
-                        String noiCongTac = noiCongTacNode != null && !noiCongTacNode.isNull()
-                                        ? noiCongTacNode.asText().trim()
-                                        : "";
-
-                        // Kiểm tra xem có mã nhân sự không
-                        boolean hasMaNhanSu = maNhanSuNode != null && !maNhanSuNode.isNull()
-                                        && !maNhanSuNode.asText().trim().isEmpty();
-
-                        User user = null;
-                        if (hasMaNhanSu) {
-                                // Trường hợp có mã nhân sự: tìm User trong hệ thống
-                                String maNhanSu = maNhanSuNode.asText().trim();
-                                Optional<User> userOpt = userRepository.findByPersonnelId(maNhanSu);
-
-                                if (userOpt.isEmpty()) {
-                                        logger.warn("Không tìm thấy User với mã nhân sự: {}. Sẽ lưu như đồng tác giả bên ngoài.",
-                                                        maNhanSu);
-                                } else {
-                                        user = userOpt.get();
-                                        final User finalUser = user;
-
-                                        // Kiểm tra xem đã có CoInnovation cho user này chưa
-                                        boolean exists = coInnovationRepository.findByInnovationId(innovation.getId())
-                                                        .stream()
-                                                        .anyMatch(co -> co.getUser() != null
-                                                                        && co.getUser().getId()
-                                                                                        .equals(finalUser.getId()));
-
-                                        if (exists) {
-                                                logger.info("Đồng tác giả với user_id {} đã tồn tại, bỏ qua",
-                                                                finalUser.getId());
-                                                return;
-                                        }
-                                }
-                        }
-
-                        // Kiểm tra xem có họ tên không (bắt buộc)
-                        if (hoVaTen.isEmpty()) {
-                                if (user != null) {
-                                        hoVaTen = user.getFullName();
-                                } else {
-                                        throw new IdInvalidException(
-                                                        "Đồng tác giả phải có họ tên (ho_va_ten) nếu không có mã nhân sự");
-                                }
-                        }
-
-                        // Tạo CoInnovation mới
-                        CoInnovation coInnovation = new CoInnovation();
-                        coInnovation.setInnovation(innovation);
-                        coInnovation.setUser(user); // Có thể null nếu là đồng tác giả bên ngoài
-
-                        // Set thông tin đồng tác giả
-                        coInnovation.setCoInnovatorFullName(hoVaTen);
-
-                        // Set department name
-                        if (!noiCongTac.isEmpty()) {
-                                coInnovation.setCoInnovatorDepartmentName(noiCongTac);
-                        } else if (user != null && user.getDepartment() != null) {
-                                coInnovation.setCoInnovatorDepartmentName(user.getDepartment().getDepartmentName());
-                        } else {
-                                coInnovation.setCoInnovatorDepartmentName("Bên ngoài");
-                        }
-
-                        // Tạo contactInfo
-                        StringBuilder contactInfo = new StringBuilder();
-                        if (user != null) {
-                                if (user.getEmail() != null && !user.getEmail().isEmpty()) {
-                                        contactInfo.append("Email: ").append(user.getEmail());
-                                }
-                                if (user.getPersonnelId() != null && !user.getPersonnelId().isEmpty()) {
-                                        if (contactInfo.length() > 0) {
-                                                contactInfo.append("; ");
-                                        }
-                                        contactInfo.append("Mã NV: ").append(user.getPersonnelId());
-                                }
-                        }
-                        coInnovation.setContactInfo(
-                                        contactInfo.length() > 0 ? contactInfo.toString()
-                                                        : "Chưa có thông tin liên hệ");
-
-                        coInnovationRepository.save(coInnovation);
-                        logger.info("Đã lưu đồng tác giả: {} (user_id: {})", hoVaTen,
-                                        user != null ? user.getId() : "null");
-                } catch (Exception e) {
-                        logger.error("Lỗi khi xử lý item đồng sáng kiến: {}", e.getMessage(), e);
-                        throw new IdInvalidException(
-                                        "Lỗi khi xử lý item đồng sáng kiến: " + e.getMessage());
-                }
-        }
-
         /**
          * Tính số giây trễ từ deadline date đến hiện tại
          * 
@@ -2275,235 +1313,6 @@ public class InnovationService {
                 return response;
         }
 
-        private List<SignatureProcessingResult> signInnovationDocuments(
-                        Innovation innovation,
-                        CreateInnovationWithTemplatesRequest request) {
-
-                if (request.getTemplates() == null || request.getTemplates().isEmpty()) {
-                        throw new IdInvalidException("Danh sách template không được để trống khi nộp sáng kiến.");
-                }
-
-                List<SignatureProcessingResult> signatureResults = new ArrayList<>();
-
-                for (TemplateDataRequest templateRequest : request.getTemplates()) {
-                        FormTemplate formTemplate = formTemplateRepository.findById(templateRequest.getTemplateId())
-                                        .orElseThrow(() -> new IdInvalidException(
-                                                        "Không tìm thấy template với ID: "
-                                                                        + templateRequest.getTemplateId()));
-
-                        TemplateTypeEnum templateType = formTemplate.getTemplateType();
-                        DocumentTypeEnum documentType = mapTemplateTypeToDocumentType(templateType);
-
-                        String encodedHtml = templateRequest.getHtmlContentBase64();
-
-                        // Chỉ yêu cầu htmlContentBase64 bắt buộc cho DON_DE_NGHI và BAO_CAO_MO_TA
-                        boolean isRequiredTemplate = templateType == TemplateTypeEnum.DON_DE_NGHI
-                                        || templateType == TemplateTypeEnum.BAO_CAO_MO_TA;
-
-                        if (isRequiredTemplate && (encodedHtml == null || encodedHtml.isBlank())) {
-                                throw new IdInvalidException(
-                                                "htmlContentBase64 của template "
-                                                                + formTemplate.getTemplateType().getValue()
-                                                                + " không được để trống khi nộp sáng kiến.");
-                        }
-
-                        // Nếu template không bắt buộc và htmlContentBase64 trống thì skip
-                        if (!isRequiredTemplate && (encodedHtml == null || encodedHtml.isBlank())) {
-                                continue;
-                        }
-
-                        String htmlContent = Utils.decode(encodedHtml);
-                        if (htmlContent == null || htmlContent.isBlank()) {
-                                throw new IdInvalidException(
-                                                "Nội dung HTML sau khi giải mã của template "
-                                                                + formTemplate.getTemplateType().getValue()
-                                                                + " đang trống.");
-                        }
-
-                        generateAndStoreTemplatePdf(innovation, formTemplate, htmlContent);
-
-                        if (templateType != TemplateTypeEnum.DON_DE_NGHI
-                                        && templateType != TemplateTypeEnum.BAO_CAO_MO_TA) {
-                                continue;
-                        }
-
-                        if (documentType == null) {
-                                continue;
-                        }
-
-                        String documentHash = digitalSignatureService
-                                        .generateDocumentHash(htmlContent.getBytes(StandardCharsets.UTF_8));
-                        String signatureHash = digitalSignatureService.generateSignatureForDocument(documentHash);
-
-                        DigitalSignatureRequest signatureRequest = new DigitalSignatureRequest();
-                        signatureRequest.setInnovationId(innovation.getId());
-                        signatureRequest.setDocumentType(documentType);
-                        signatureRequest.setSignedAsRole(UserRoleEnum.GIANG_VIEN);
-                        signatureRequest.setDocumentHash(documentHash);
-                        signatureRequest.setSignatureHash(signatureHash);
-
-                        digitalSignatureService.createDigitalSignature(signatureRequest);
-
-                        signatureResults.add(new SignatureProcessingResult(
-                                        templateRequest.getTemplateId(),
-                                        formTemplate.getTemplateType(),
-                                        documentType,
-                                        documentHash,
-                                        signatureHash));
-                }
-
-                if (signatureResults.isEmpty()) {
-                        throw new IdInvalidException("Không tìm thấy template hợp lệ để ký số.");
-                }
-
-                return signatureResults;
-        }
-
-        private void generateAndStoreTemplatePdf(
-                        Innovation innovation,
-                        FormTemplate formTemplate,
-                        String htmlContent) {
-
-                try {
-                        byte[] pdfBytes = pdfGeneratorService.convertHtmlToPdf(htmlContent);
-                        String fileName = buildTemplatePdfFileName(innovation.getId(), formTemplate.getId());
-                        String objectName = fileService.uploadBytes(pdfBytes, fileName, "application/pdf");
-
-                        attachmentRepository.deleteByInnovationIdAndTemplateId(
-                                        innovation.getId(),
-                                        formTemplate.getId());
-
-                        Attachment attachment = new Attachment();
-                        attachment.setInnovation(innovation);
-                        attachment.setTemplateId(formTemplate.getId());
-                        attachment.setFileName(fileName);
-                        attachment.setOriginalFileName(resolveTemplateOriginalFileName(formTemplate));
-                        attachment.setFileSize((long) pdfBytes.length);
-                        attachment.setPathUrl(objectName);
-
-                        attachmentRepository.save(attachment);
-                } catch (IdInvalidException e) {
-                        throw e;
-                } catch (Exception e) {
-                        String errorMessage = e.getMessage();
-                        if (errorMessage == null || errorMessage.isBlank()) {
-                                errorMessage = e.getClass().getSimpleName();
-                                if (e.getCause() != null && e.getCause().getMessage() != null) {
-                                        errorMessage += ": " + e.getCause().getMessage();
-                                }
-                        }
-                        throw new IdInvalidException(
-                                        "Không thể lưu PDF cho template "
-                                                        + formTemplate.getTemplateType().getValue()
-                                                        + ": "
-                                                        + errorMessage);
-                }
-        }
-
-        private String buildTemplatePdfFileName(String innovationId, String templateId) {
-                return innovationId + "_" + templateId + ".pdf";
-        }
-
-        private String resolveTemplateOriginalFileName(FormTemplate formTemplate) {
-                if (formTemplate != null && formTemplate.getTemplateType() != null) {
-                        return formTemplate.getTemplateType().getValue() + ".pdf";
-                }
-                return "template.pdf";
-        }
-
-        private DocumentTypeEnum mapTemplateTypeToDocumentType(TemplateTypeEnum templateType) {
-                if (templateType == null) {
-                        return null;
-                }
-
-                switch (templateType) {
-                        case DON_DE_NGHI:
-                                return DocumentTypeEnum.FORM_1;
-                        case BAO_CAO_MO_TA:
-                                return DocumentTypeEnum.FORM_2;
-                        case BIEN_BAN_HOP:
-                                return DocumentTypeEnum.REPORT_MAU_3;
-                        case TONG_HOP_DE_NGHI:
-                                return DocumentTypeEnum.REPORT_MAU_4;
-                        case TONG_HOP_CHAM_DIEM:
-                                return DocumentTypeEnum.REPORT_MAU_5;
-                        case PHIEU_DANH_GIA:
-                                return DocumentTypeEnum.REPORT_MAU_7;
-                        default:
-                                return null;
-                }
-        }
-
-        private List<TemplateSignatureResponse> buildTemplateSignatureResponses(
-                        List<SignatureProcessingResult> signatureResults) {
-                if (signatureResults == null || signatureResults.isEmpty()) {
-                        return new ArrayList<>();
-                }
-
-                return signatureResults.stream()
-                                .map(result -> new TemplateSignatureResponse(
-                                                result.templateId(),
-                                                result.templateType(),
-                                                result.documentType(),
-                                                result.documentHash(),
-                                                result.signatureHash()))
-                                .collect(Collectors.toList());
-        }
-
-        private List<TemplateFormDataResponse> buildTemplateFormDataResponses(
-                        List<FormDataResponse> formDataResponses) {
-                if (formDataResponses == null || formDataResponses.isEmpty()) {
-                        return new ArrayList<>();
-                }
-
-                Map<String, LinkedHashMap<String, JsonNode>> groupedByTemplate = new LinkedHashMap<>();
-
-                for (FormDataResponse formDataResponse : formDataResponses) {
-                        String templateId = formDataResponse.getTemplateId();
-                        if (templateId == null || templateId.isBlank()) {
-                                continue;
-                        }
-
-                        String fieldKey = extractEffectiveFieldKey(formDataResponse);
-                        if (fieldKey == null || fieldKey.isBlank()) {
-                                continue;
-                        }
-
-                        JsonNode valueNode = extractEffectiveFieldValue(formDataResponse);
-                        groupedByTemplate
-                                        .computeIfAbsent(templateId, id -> new LinkedHashMap<>())
-                                        .put(fieldKey, valueNode);
-                }
-
-                return groupedByTemplate.entrySet()
-                                .stream()
-                                .map(entry -> new TemplateFormDataResponse(entry.getKey(), entry.getValue()))
-                                .collect(Collectors.toList());
-        }
-
-        private String extractEffectiveFieldKey(FormDataResponse formDataResponse) {
-                JsonNode fieldValue = formDataResponse.getFieldValue();
-                if (fieldValue != null && fieldValue.has("fieldKey")) {
-                        JsonNode keyNode = fieldValue.get("fieldKey");
-                        if (keyNode != null && keyNode.isTextual()) {
-                                return keyNode.asText();
-                        }
-                }
-                return formDataResponse.getFormFieldKey();
-        }
-
-        private JsonNode extractEffectiveFieldValue(FormDataResponse formDataResponse) {
-                JsonNode fieldValue = formDataResponse.getFieldValue();
-                if (fieldValue == null) {
-                        return objectMapper.nullNode();
-                }
-                if (fieldValue.has("value")) {
-                        JsonNode valueNode = fieldValue.get("value");
-                        return valueNode != null ? valueNode : objectMapper.nullNode();
-                }
-                return fieldValue;
-        }
-
         private void deleteFileSafely(String fileName, String innovationId, String displayName,
                         Set<String> deletedFileNames) {
                 if (fileName == null || fileName.isBlank()) {
@@ -2524,48 +1333,6 @@ public class InnovationService {
                                         : fileName;
                         throw new IdInvalidException("Không thể xóa tệp đính kèm: " + finalDisplayName);
                 }
-        }
-
-        private Set<String> collectFileNamesFromFormData(List<FormData> formDataList) {
-                Set<String> fileNames = new HashSet<>();
-                if (formDataList == null || formDataList.isEmpty()) {
-                        return fileNames;
-                }
-
-                for (FormData formData : formDataList) {
-                        if (formData == null || formData.getFormField() == null) {
-                                continue;
-                        }
-
-                        FormField formField = formData.getFormField();
-                        JsonNode fieldValue = formData.getFieldValue();
-
-                        if (fieldValue == null || fieldValue.isNull()) {
-                                continue;
-                        }
-
-                        FieldTypeEnum fieldType = formField.getFieldType();
-
-                        if (fieldType == FieldTypeEnum.FILE) {
-                                fileNames.addAll(extractFileNamesFromValueNode(fieldValue));
-                                continue;
-                        }
-
-                        if (fieldValue.isObject() && fieldValue.has("fieldKey") && fieldValue.has("value")) {
-                                String nestedFieldKey = fieldValue.get("fieldKey").asText();
-                                FieldTypeEnum nestedType = resolveNestedFieldType(formField, nestedFieldKey);
-                                if (nestedType == FieldTypeEnum.FILE) {
-                                        fileNames.addAll(extractFileNamesFromValueNode(fieldValue.get("value")));
-                                }
-                                continue;
-                        }
-
-                        if (fieldValue.isArray()) {
-                                fileNames.addAll(extractFileNamesFromNestedNode(formField, fieldValue));
-                        }
-                }
-
-                return fileNames;
         }
 
         private Set<String> extractFileNamesFromValueNode(JsonNode valueNode) {
@@ -2602,37 +1369,6 @@ public class InnovationService {
                                 }
                         } else if (valueNode.has("value")) {
                                 fileNames.addAll(extractFileNamesFromValueNode(valueNode.get("value")));
-                        }
-                }
-
-                return fileNames;
-        }
-
-        private Set<String> extractFileNamesFromNestedNode(FormField parentField, JsonNode node) {
-                Set<String> fileNames = new HashSet<>();
-                if (node == null || node.isNull()) {
-                        return fileNames;
-                }
-
-                if (node.isObject()) {
-                        if (node.has("fieldKey") && node.has("value")) {
-                                String nestedFieldKey = node.get("fieldKey").asText();
-                                FieldTypeEnum nestedType = resolveNestedFieldType(parentField, nestedFieldKey);
-                                if (nestedType == FieldTypeEnum.FILE) {
-                                        fileNames.addAll(extractFileNamesFromValueNode(node.get("value")));
-                                }
-                        } else if (parentField != null && parentField.getFieldType() == FieldTypeEnum.TABLE) {
-                                Set<String> fileColumns = getFileColumnKeys(parentField);
-                                for (String columnKey : fileColumns) {
-                                        JsonNode cellNode = node.get(columnKey);
-                                        if (cellNode != null) {
-                                                fileNames.addAll(extractFileNamesFromValueNode(cellNode));
-                                        }
-                                }
-                        }
-                } else if (node.isArray()) {
-                        for (JsonNode child : node) {
-                                fileNames.addAll(extractFileNamesFromNestedNode(parentField, child));
                         }
                 }
 
@@ -2924,14 +1660,6 @@ public class InnovationService {
                 attachment.setFileSize(fileSize);
 
                 attachmentRepository.save(attachment);
-        }
-
-        private record SignatureProcessingResult(
-                        String templateId,
-                        TemplateTypeEnum templateType,
-                        DocumentTypeEnum documentType,
-                        String documentHash,
-                        String signatureHash) {
         }
 
 }

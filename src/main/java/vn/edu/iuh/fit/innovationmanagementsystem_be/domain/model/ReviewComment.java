@@ -3,12 +3,14 @@ package vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.ReviewLevelEnum;
 
 @Entity
 @Table(name = "review_comments")
 @Data
+@EqualsAndHashCode(callSuper = false)
 @NoArgsConstructor
 @AllArgsConstructor
 public class ReviewComment extends Auditable {

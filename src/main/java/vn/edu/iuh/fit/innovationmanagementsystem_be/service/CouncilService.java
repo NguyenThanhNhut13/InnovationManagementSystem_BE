@@ -270,26 +270,6 @@ public class CouncilService {
         }
     }
 
-    // Helper method: Tạo danh sách CouncilMember (method cũ - deprecated)
-    private List<CouncilMember> createCouncilMembers(Council council, List<CouncilMemberRequest> memberRequests) {
-        List<CouncilMember> councilMembers = new ArrayList<>();
-
-        for (CouncilMemberRequest memberRequest : memberRequests) {
-            User user = userRepository.findById(memberRequest.getUserId())
-                    .orElseThrow(
-                            () -> new IdInvalidException("Không tìm thấy user với ID: " + memberRequest.getUserId()));
-
-            CouncilMember councilMember = new CouncilMember();
-            councilMember.setCouncil(council);
-            councilMember.setUser(user);
-            councilMember.setRole(memberRequest.getRole());
-
-            councilMembers.add(councilMemberRepository.save(councilMember));
-        }
-
-        return councilMembers;
-    }
-
     // Helper method: Validate và lấy danh sách Innovation
     private List<Innovation> validateAndGetInnovations(List<String> innovationIds, ReviewLevelEnum councilLevel) {
         List<Innovation> innovations = new ArrayList<>();
