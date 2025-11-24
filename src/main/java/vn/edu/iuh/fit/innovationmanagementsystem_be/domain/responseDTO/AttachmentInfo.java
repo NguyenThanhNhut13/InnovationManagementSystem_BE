@@ -13,6 +13,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class AttachmentInfo {
     private String fileName;
+    private String templateId;
     private LocalDateTime uploadedAt;
     private Boolean isDigitallySigned;
     private String signerName; // Nullable
