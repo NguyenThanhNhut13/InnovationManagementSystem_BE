@@ -74,9 +74,9 @@ public class InnovationDetailService {
                                                 ? innovation.getInnovationRound().getAcademicYear()
                                                 : null)
                                 .status(innovation.getStatus() != null ? innovation.getStatus().name() : null)
-                                .roundName("Đợt " + (innovation.getInnovationRound() != null
-                                                ? innovation.getInnovationRound().getId()
-                                                : ""))
+                                .roundName(innovation.getInnovationRound() != null
+                                                ? innovation.getInnovationRound().getName()
+                                                : null)
                                 .isScored(innovation.getCouncils() != null && !innovation.getCouncils().isEmpty())
                                 .build();
         }
@@ -84,11 +84,17 @@ public class InnovationDetailService {
         private List<CoAuthorInfo> buildCoAuthorsList(Innovation innovation) {
                 List<CoInnovation> coInnovations = coInnovationRepository.findByInnovationId(innovation.getId());
                 return coInnovations.stream()
-                                .map(co -> CoAuthorInfo.builder()
-                                                .fullName(co.getCoInnovatorFullName())
-                                                .departmentName(co.getCoInnovatorDepartmentName())
-                                                .email(co.getContactInfo() != null ? co.getContactInfo() : "")
-                                                .build())
+                                .map(co -> {
+                                        User coUser = co.getUser();
+                                        String email = coUser != null && coUser.getEmail() != null
+                                                        ? coUser.getEmail()
+                                                        : co.getContactInfo();
+                                        return CoAuthorInfo.builder()
+                                                        .fullName(co.getCoInnovatorFullName())
+                                                        .departmentName(co.getCoInnovatorDepartmentName())
+                                                        .email(email)
+                                                        .build();
+                                })
                                 .collect(Collectors.toList());
         }
 
@@ -151,6 +157,7 @@ public class InnovationDetailService {
 
                                         return AttachmentInfo.builder()
                                                         .fileName(attachment.getPathUrl())
+                                                        .templateId(attachment.getTemplateId())
                                                         .uploadedAt(attachment.getCreatedAt())
                                                         .isDigitallySigned(isDigitallySigned)
                                                         .signerName(signerName)
