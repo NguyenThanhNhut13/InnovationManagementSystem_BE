@@ -32,6 +32,8 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.Utils;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.mapper.UserMapper;
 
 import java.util.Optional;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -293,5 +295,22 @@ public class UserService {
         Page<User> userPage = userRepository.searchUsersByFullNameOrPersonnelId(searchTerm.trim(), pageable);
         Page<UserResponse> userResponsePage = userPage.map(userMapper::toUserResponse);
         return Utils.toResultPaginationDTO(userResponsePage, pageable);
+    }
+
+    // 18. Lấy danh sách Users theo khoa hiện tại và vai trò
+    public List<UserResponse> getUsersByCurrentDepartmentAndRole(@NonNull UserRoleEnum roleName) {
+        User currentUser = getCurrentUser();
+        if (currentUser.getDepartment() == null) {
+            throw new IdInvalidException("Người dùng hiện tại chưa được gán vào khoa nào");
+        }
+
+        String departmentId = currentUser.getDepartment().getId();
+        List<User> users = userRepository.findByDepartmentIdAndRoles(
+                departmentId,
+                List.of(roleName));
+
+        return users.stream()
+                .map(userMapper::toUserResponse)
+                .collect(Collectors.toList());
     }
 }

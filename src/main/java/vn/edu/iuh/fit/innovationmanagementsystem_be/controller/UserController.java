@@ -29,6 +29,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.data.domain.Pageable;
+import java.util.List;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.UserRoleEnum;
 
 @RestController
 @RequestMapping("/api/v1")
@@ -95,6 +97,25 @@ public class UserController {
     public ResponseEntity<ResultPaginationDTO> searchUsers(@RequestParam String searchTerm, Pageable pageable) {
         return ResponseEntity.ok(userService.searchUsersByFullNameOrPersonnelId(searchTerm,
                 pageable));
+    }
+
+    // 6. Lấy danh sách Users theo khoa hiện tại và vai trò
+    @GetMapping("/users/current-department/role/{roleName}")
+    @PreAuthorize("hasAnyRole('TRUONG_KHOA', 'QUAN_TRI_VIEN_KHOA')")
+    @ApiMessage("Lấy danh sách người dùng theo khoa hiện tại và vai trò thành công")
+    @Operation(summary = "Get Users by Current Department and Role",
+            description = "Get list of users in current user's department with specified role")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Users retrieved successfully",
+                    content = @Content(schema = @Schema(implementation = UserResponse.class))),
+            @ApiResponse(responseCode = "401", description = "Unauthorized"),
+            @ApiResponse(responseCode = "403", description = "Forbidden - Insufficient permissions")
+    })
+    public ResponseEntity<List<UserResponse>> getUsersByCurrentDepartmentAndRole(
+            @Parameter(description = "Role name to filter users", required = true)
+            @PathVariable UserRoleEnum roleName) {
+        List<UserResponse> users = userService.getUsersByCurrentDepartmentAndRole(roleName);
+        return ResponseEntity.ok(users);
     }
 
 }
