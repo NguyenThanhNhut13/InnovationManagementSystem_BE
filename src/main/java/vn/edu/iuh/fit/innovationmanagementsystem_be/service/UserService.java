@@ -313,4 +313,19 @@ public class UserService {
                 .map(userMapper::toUserResponse)
                 .collect(Collectors.toList());
     }
+
+    // 19. Lấy danh sách tất cả Users trong khoa hiện tại
+    public List<UserResponse> getAllUsersByCurrentDepartment() {
+        User currentUser = getCurrentUser();
+        if (currentUser.getDepartment() == null) {
+            throw new IdInvalidException("Người dùng hiện tại chưa được gán vào khoa nào");
+        }
+
+        String departmentId = currentUser.getDepartment().getId();
+        List<User> users = userRepository.findByDepartmentId(departmentId);
+
+        return users.stream()
+                .map(userMapper::toUserResponse)
+                .collect(Collectors.toList());
+    }
 }

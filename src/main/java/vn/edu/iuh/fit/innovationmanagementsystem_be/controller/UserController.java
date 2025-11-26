@@ -118,4 +118,21 @@ public class UserController {
         return ResponseEntity.ok(users);
     }
 
+    // 7. Lấy danh sách tất cả Users trong khoa hiện tại
+    @GetMapping("/users/current-department")
+    @PreAuthorize("hasAnyRole('TRUONG_KHOA', 'QUAN_TRI_VIEN_KHOA')")
+    @ApiMessage("Lấy danh sách tất cả người dùng trong khoa hiện tại thành công")
+    @Operation(summary = "Get All Users by Current Department",
+            description = "Get list of all users in current user's department")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Users retrieved successfully",
+                    content = @Content(schema = @Schema(implementation = UserResponse.class))),
+            @ApiResponse(responseCode = "401", description = "Unauthorized"),
+            @ApiResponse(responseCode = "403", description = "Forbidden - Insufficient permissions")
+    })
+    public ResponseEntity<List<UserResponse>> getAllUsersByCurrentDepartment() {
+        List<UserResponse> users = userService.getAllUsersByCurrentDepartment();
+        return ResponseEntity.ok(users);
+    }
+
 }
