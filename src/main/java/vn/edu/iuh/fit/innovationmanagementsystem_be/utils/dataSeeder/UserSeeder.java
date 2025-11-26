@@ -155,7 +155,7 @@ public class UserSeeder implements DatabaseSeeder {
             case TV_HOI_DONG_KHOA -> "Thạc sĩ Chuyên ngành";
             case QUAN_TRI_VIEN_QLKH_HTQT -> "Thạc sĩ Quản lý Khoa học";
             case TV_HOI_DONG_TRUONG -> "Thạc sĩ Chuyên ngành";
-            // case CHU_TICH_HD_TRUONG -> "Tiến sĩ Chuyên ngành";
+            case CHU_TICH_HD_TRUONG -> "Tiến sĩ Chuyên ngành";
         };
     }
 
@@ -169,7 +169,7 @@ public class UserSeeder implements DatabaseSeeder {
             case TV_HOI_DONG_KHOA -> "Thành viên hội đồng khoa";
             case QUAN_TRI_VIEN_QLKH_HTQT -> "Quản trị viên QLKH-HTQT";
             case TV_HOI_DONG_TRUONG -> "Thành viên hội đồng trường";
-            // case CHU_TICH_HD_TRUONG -> "Chủ tịch hội đồng trường";
+            case CHU_TICH_HD_TRUONG -> "Chủ tịch hội đồng trường";
         };
     }
 }
