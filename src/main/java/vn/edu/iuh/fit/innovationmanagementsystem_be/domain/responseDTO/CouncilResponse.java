@@ -16,6 +16,8 @@ public class CouncilResponse {
     private String id;
     private String name;
     private ReviewLevelEnum reviewCouncilLevel;
+    private String departmentName; // null nếu cấp trường
+    private String roundName; // Tên đợt sáng kiến
     private List<CouncilMemberResponse> members;
     private Integer innovationCount;
     private LocalDateTime createdAt;

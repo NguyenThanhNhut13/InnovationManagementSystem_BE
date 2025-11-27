@@ -16,9 +16,7 @@ import java.util.List;
 @AllArgsConstructor
 public class CreateCouncilRequest {
 
-    @NotBlank(message = "Tên Hội đồng không được để trống")
-    @Size(max = 255, message = "Tên Hội đồng không được vượt quá 255 ký tự")
-    private String name;
+    // BỎ name - BE sẽ tự động generate
 
     // Optional - Nếu không truyền, hệ thống sẽ tự động gắn dựa trên role của user
     private ReviewLevelEnum reviewCouncilLevel;
@@ -28,5 +26,12 @@ public class CreateCouncilRequest {
     @Valid
     private List<CouncilMemberRequest> members;
 
-    private List<String> innovationIds;
+    // BỎ innovationIds - BE sẽ tự động lấy từ roundId
+
+    // Required - Round ID để BE tự động lấy eligible innovations và generate name
+    @NotBlank(message = "Round ID không được để trống")
+    private String roundId;
+
+    // Optional - Department ID (chỉ cần cho cấp Khoa, cấp Trường thì null)
+    private String departmentId;
 }

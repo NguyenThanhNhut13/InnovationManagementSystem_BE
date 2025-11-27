@@ -24,6 +24,10 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.InnovationReposit
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.UserRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.RoleRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.UserRoleRepository;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.InnovationRoundRepository;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.DepartmentRepository;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.InnovationRound;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.Department;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -43,6 +47,8 @@ public class CouncilService {
     private final UserRoleRepository userRoleRepository;
     private final CouncilMapper councilMapper;
     private final UserService userService;
+    private final InnovationRoundRepository innovationRoundRepository;
+    private final DepartmentRepository departmentRepository;
 
     public CouncilService(CouncilRepository councilRepository,
             CouncilMemberRepository councilMemberRepository,
@@ -51,7 +57,9 @@ public class CouncilService {
             RoleRepository roleRepository,
             UserRoleRepository userRoleRepository,
             CouncilMapper councilMapper,
-            UserService userService) {
+            UserService userService,
+            InnovationRoundRepository innovationRoundRepository,
+            DepartmentRepository departmentRepository) {
         this.councilRepository = councilRepository;
         this.councilMemberRepository = councilMemberRepository;
         this.userRepository = userRepository;
@@ -60,6 +68,8 @@ public class CouncilService {
         this.userRoleRepository = userRoleRepository;
         this.councilMapper = councilMapper;
         this.userService = userService;
+        this.innovationRoundRepository = innovationRoundRepository;
+        this.departmentRepository = departmentRepository;
     }
 
     // 1. Tạo Hội đồng mới
@@ -76,17 +86,38 @@ public class CouncilService {
             councilLevel = determineCouncilLevelFromUserRole();
         }
 
+        // Lấy round info để generate name
+        InnovationRound round = innovationRoundRepository.findById(request.getRoundId())
+                .orElseThrow(() -> new IdInvalidException("Không tìm thấy đợt sáng kiến với ID: " + request.getRoundId()));
+
+        // Lấy department info (nếu có)
+        Department department = null;
+        if (request.getDepartmentId() != null && !request.getDepartmentId().isEmpty()) {
+            department = departmentRepository.findById(request.getDepartmentId())
+                    .orElseThrow(() -> new IdInvalidException("Không tìm thấy khoa với ID: " + request.getDepartmentId()));
+        } else if (councilLevel == ReviewLevelEnum.KHOA) {
+            // Nếu cấp Khoa nhưng không có departmentId, lấy từ current user
+            User currentUser = userService.getCurrentUser();
+            if (currentUser.getDepartment() != null) {
+                department = currentUser.getDepartment();
+            }
+        }
+
+        // Tự động generate tên hội đồng
+        String councilName = generateCouncilName(round, councilLevel, department);
+
         // Validate tên Hội đồng không trùng
-        validateCouncilName(request.getName());
+        validateCouncilName(councilName);
 
         // Validate danh sách thành viên
         validateMembers(request.getMembers());
 
         // Tạo Council entity
         Council council = new Council();
-        council.setName(request.getName());
+        council.setName(councilName);
         council.setReviewCouncilLevel(councilLevel);
         council.setStatus(CouncilStatusEnum.CON_HIEU_LUC); // Mặc định còn hiệu lực
+        council.setDepartment(department); // Set department (null nếu cấp trường)
 
         // Lưu Council trước để có ID
         council = councilRepository.save(council);
@@ -96,11 +127,11 @@ public class CouncilService {
                 councilLevel);
         council.setCouncilMembers(councilMembers);
 
-        // Gán danh sách Innovation nếu có
-        if (request.getInnovationIds() != null && !request.getInnovationIds().isEmpty()) {
-            List<Innovation> innovations = validateAndGetInnovations(request.getInnovationIds(),
-                    council.getReviewCouncilLevel());
-            council.setInnovations(innovations);
+        // Tự động lấy và gán eligible innovations từ roundId
+        List<Innovation> eligibleInnovations = getEligibleInnovationsForCouncil(request.getRoundId(), councilLevel,
+                department);
+        if (!eligibleInnovations.isEmpty()) {
+            council.setInnovations(eligibleInnovations);
         }
 
         // Lưu lại Council với đầy đủ thông tin
@@ -270,24 +301,40 @@ public class CouncilService {
         }
     }
 
-    // Helper method: Validate và lấy danh sách Innovation
-    private List<Innovation> validateAndGetInnovations(List<String> innovationIds, ReviewLevelEnum councilLevel) {
-        List<Innovation> innovations = new ArrayList<>();
-
-        for (String innovationId : innovationIds) {
-            Innovation innovation = innovationRepository.findById(innovationId)
-                    .orElseThrow(() -> new IdInvalidException("Không tìm thấy sáng kiến với ID: " + innovationId));
-
-            // Kiểm tra status phải là SUBMITTED
-            if (innovation.getStatus() != InnovationStatusEnum.SUBMITTED) {
-                throw new IllegalArgumentException(
-                        "Sáng kiến '" + innovation.getInnovationName() +
-                                "' không ở trạng thái 'Chờ xét duyệt'. Chỉ có thể gán sáng kiến đã nộp cho Hội đồng");
+    // Helper method: Tự động generate tên hội đồng
+    private String generateCouncilName(InnovationRound round, ReviewLevelEnum councilLevel, Department department) {
+        if (councilLevel == ReviewLevelEnum.TRUONG) {
+            // Cấp Trường: "Hội đồng sáng kiến cấp Trường"
+            return "Hội đồng sáng kiến cấp Trường";
+        } else {
+            // Cấp Khoa: "Hội đồng sáng kiến cấp Đơn vị - {departmentName}"
+            if (department != null) {
+                return "Hội đồng sáng kiến cấp Đơn vị - " + department.getDepartmentName();
+            } else {
+                return "Hội đồng sáng kiến cấp Đơn vị";
             }
-
-            innovations.add(innovation);
         }
+    }
 
-        return innovations;
+    // Helper method: Tự động lấy eligible innovations từ roundId
+    private List<Innovation> getEligibleInnovationsForCouncil(String roundId, ReviewLevelEnum councilLevel,
+            Department department) {
+        // Lấy tất cả innovations SUBMITTED từ round
+        List<Innovation> allSubmitted = innovationRepository.findByRoundIdAndStatus(roundId,
+                InnovationStatusEnum.SUBMITTED);
+
+        if (councilLevel == ReviewLevelEnum.KHOA) {
+            // Faculty level: chỉ lấy innovations của khoa
+            if (department == null) {
+                return new ArrayList<>();
+            }
+            String departmentId = department.getId();
+            return allSubmitted.stream()
+                    .filter(i -> i.getDepartment() != null && i.getDepartment().getId().equals(departmentId))
+                    .collect(Collectors.toList());
+        } else {
+            // School level: lấy tất cả
+            return allSubmitted;
+        }
     }
 }

@@ -43,4 +43,8 @@ public class Council extends Auditable {
     @JoinTable(name = "council_innovations", joinColumns = @JoinColumn(name = "council_id"), inverseJoinColumns = @JoinColumn(name = "innovation_id"))
     private List<Innovation> innovations = new ArrayList<>();
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "department_id", nullable = true) // Nullable vì cấp trường không có department
+    private Department department;
+
 }
