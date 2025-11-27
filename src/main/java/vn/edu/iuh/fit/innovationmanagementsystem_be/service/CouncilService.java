@@ -444,6 +444,9 @@ public class CouncilService {
         Council foundCouncil = council.orElseThrow(() -> new IdInvalidException(
                 "Chưa có hội đồng nào được thành lập cho đợt sáng kiến hiện tại. Vui lòng thành lập hội đồng trước."));
 
+        // Trigger lazy load cho innovations trong cùng transaction để tránh LazyInitializationException
+        foundCouncil.getInnovations().size();
+
         // Map sang response
         CouncilResponse response = councilMapper.toCouncilResponse(foundCouncil);
         
