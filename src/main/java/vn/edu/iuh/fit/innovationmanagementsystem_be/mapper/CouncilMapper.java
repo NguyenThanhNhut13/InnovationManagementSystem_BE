@@ -5,7 +5,9 @@ import org.mapstruct.Mapping;
 import org.mapstruct.Named;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.Council;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.Innovation;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.CouncilMember;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.CouncilResponse;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.CouncilListResponse;
 
 import java.util.List;
 
@@ -16,7 +18,14 @@ public interface CouncilMapper {
     @Mapping(target = "innovationCount", source = "innovations", qualifiedByName = "countInnovations")
     @Mapping(target = "departmentName", source = "department", qualifiedByName = "getDepartmentName")
     @Mapping(target = "roundName", source = "innovations", qualifiedByName = "getRoundName")
+    @Mapping(target = "scoringProgress", ignore = true) // Sẽ được set thủ công trong service
     CouncilResponse toCouncilResponse(Council council);
+
+    @Mapping(target = "memberCount", source = "councilMembers", qualifiedByName = "countMembers")
+    @Mapping(target = "innovationCount", source = "innovations", qualifiedByName = "countInnovations")
+    @Mapping(target = "departmentName", source = "department", qualifiedByName = "getDepartmentName")
+    @Mapping(target = "roundName", source = "innovations", qualifiedByName = "getRoundName")
+    CouncilListResponse toCouncilListResponse(Council council);
 
     @Named("countInnovations")
     default Integer countInnovations(List<Innovation> innovations) {
@@ -39,5 +48,10 @@ public interface CouncilMapper {
             return firstInnovation.getInnovationRound().getName();
         }
         return null;
+    }
+
+    @Named("countMembers")
+    default Integer countMembers(List<CouncilMember> councilMembers) {
+        return councilMembers != null ? councilMembers.size() : 0;
     }
 }

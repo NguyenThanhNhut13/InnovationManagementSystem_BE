@@ -6,23 +6,19 @@ import lombok.NoArgsConstructor;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.ReviewLevelEnum;
 
 import java.time.LocalDateTime;
-import java.util.List;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class CouncilResponse {
-
+public class CouncilListResponse {
     private String id;
     private String name;
     private ReviewLevelEnum reviewCouncilLevel;
     private String departmentName; // null nếu cấp trường
     private String roundName; // Tên đợt sáng kiến
-    private List<CouncilMemberResponse> members;
+    private Integer memberCount; // Số lượng thành viên (không cần list đầy đủ)
     private Integer innovationCount;
-    private ScoringProgressResponse scoringProgress; // Thông tin tiến độ chấm điểm
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
-    private String createdBy;
-    private String updatedBy;
 }
+

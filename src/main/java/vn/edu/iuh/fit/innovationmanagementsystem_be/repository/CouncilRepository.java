@@ -18,16 +18,24 @@ public interface CouncilRepository extends JpaRepository<Council, String>, JpaSp
 
     List<Council> findByReviewCouncilLevel(ReviewLevelEnum level);
 
-    // Tìm council theo round và department (cho faculty level)
-    @Query("SELECT c FROM Council c WHERE c.innovationRound.id = :roundId AND c.reviewCouncilLevel = :level AND c.department.id = :departmentId")
+    // Tìm council theo round và department (cho faculty level) - với fetch eager
+    @Query("SELECT DISTINCT c FROM Council c " +
+            "LEFT JOIN FETCH c.innovations " +
+            "LEFT JOIN FETCH c.councilMembers cm " +
+            "LEFT JOIN FETCH cm.user " +
+            "WHERE c.innovationRound.id = :roundId AND c.reviewCouncilLevel = :level AND c.department.id = :departmentId")
     Optional<Council> findByRoundIdAndLevelAndDepartmentId(
             @Param("roundId") String roundId,
             @Param("level") ReviewLevelEnum level,
             @Param("departmentId") String departmentId
     );
 
-    // Tìm council theo round (cho school level - không có department)
-    @Query("SELECT c FROM Council c WHERE c.innovationRound.id = :roundId AND c.reviewCouncilLevel = :level AND c.department IS NULL")
+    // Tìm council theo round (cho school level - không có department) - với fetch eager
+    @Query("SELECT DISTINCT c FROM Council c " +
+            "LEFT JOIN FETCH c.innovations " +
+            "LEFT JOIN FETCH c.councilMembers cm " +
+            "LEFT JOIN FETCH cm.user " +
+            "WHERE c.innovationRound.id = :roundId AND c.reviewCouncilLevel = :level AND c.department IS NULL")
     Optional<Council> findByRoundIdAndLevelAndNoDepartment(
             @Param("roundId") String roundId,
             @Param("level") ReviewLevelEnum level

@@ -21,6 +21,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.UserRoleE
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.CouncilMemberRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.CreateCouncilRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.CouncilResponse;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.CouncilListResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.exception.IdInvalidException;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.mapper.CouncilMapper;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.CouncilRepository;
@@ -31,9 +32,12 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.RoleRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.UserRoleRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.InnovationRoundRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.DepartmentRepository;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.ReviewScoreRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.InnovationRound;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.Department;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.ReviewScore;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationRoundStatusEnum;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.ScoringProgressResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.ResultPaginationDTO;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.Utils;
 
@@ -60,6 +64,7 @@ public class CouncilService {
     private final UserService userService;
     private final InnovationRoundRepository innovationRoundRepository;
     private final DepartmentRepository departmentRepository;
+    private final ReviewScoreRepository reviewScoreRepository;
 
     public CouncilService(CouncilRepository councilRepository,
             CouncilMemberRepository councilMemberRepository,
@@ -70,7 +75,8 @@ public class CouncilService {
             CouncilMapper councilMapper,
             UserService userService,
             InnovationRoundRepository innovationRoundRepository,
-            DepartmentRepository departmentRepository) {
+            DepartmentRepository departmentRepository,
+            ReviewScoreRepository reviewScoreRepository) {
         this.councilRepository = councilRepository;
         this.councilMemberRepository = councilMemberRepository;
         this.userRepository = userRepository;
@@ -81,6 +87,7 @@ public class CouncilService {
         this.userService = userService;
         this.innovationRoundRepository = innovationRoundRepository;
         this.departmentRepository = departmentRepository;
+        this.reviewScoreRepository = reviewScoreRepository;
     }
 
     // 1. Tạo Hội đồng mới
@@ -166,7 +173,14 @@ public class CouncilService {
         Council savedCouncil = councilRepository.save(council);
 
         // Trả về response
-        return councilMapper.toCouncilResponse(savedCouncil);
+        // Map sang response
+        CouncilResponse response = councilMapper.toCouncilResponse(savedCouncil);
+        
+        // Tính toán và set scoring progress (mới tạo nên sẽ là 0)
+        ScoringProgressResponse scoringProgress = calculateScoringProgress(savedCouncil);
+        response.setScoringProgress(scoringProgress);
+        
+        return response;
     }
 
     // Helper method: Tự động xác định cấp độ Hội đồng dựa trên role của user
@@ -430,8 +444,14 @@ public class CouncilService {
         Council foundCouncil = council.orElseThrow(() -> new IdInvalidException(
                 "Chưa có hội đồng nào được thành lập cho đợt sáng kiến hiện tại. Vui lòng thành lập hội đồng trước."));
 
-        // Trả về response
-        return councilMapper.toCouncilResponse(foundCouncil);
+        // Map sang response
+        CouncilResponse response = councilMapper.toCouncilResponse(foundCouncil);
+        
+        // Tính toán và set scoring progress
+        ScoringProgressResponse scoringProgress = calculateScoringProgress(foundCouncil);
+        response.setScoringProgress(scoringProgress);
+        
+        return response;
     }
 
     // 3. Lấy danh sách hội đồng với pagination và filtering
@@ -479,11 +499,88 @@ public class CouncilService {
         // Query với pagination
         Page<Council> councilPage = councilRepository.findAll(combinedSpec, pageable);
         
-        // Map sang response
-        Page<CouncilResponse> responsePage = councilPage.map(council -> 
-            councilMapper.toCouncilResponse(council)
+        // Map sang CouncilListResponse (tóm tắt, không có scoring progress)
+        Page<CouncilListResponse> responsePage = councilPage.map(council -> 
+            councilMapper.toCouncilListResponse(council)
         );
 
         return Utils.toResultPaginationDTO(responsePage, pageable);
+    }
+
+    // Helper method: Tính toán tiến độ chấm điểm
+    public ScoringProgressResponse calculateScoringProgress(Council council) {
+        // Lấy tất cả innovations của council
+        List<Innovation> innovations = council.getInnovations();
+        if (innovations == null || innovations.isEmpty()) {
+            return new ScoringProgressResponse(0, 0, 0, null, 0);
+        }
+
+        // Lấy tất cả council members có role = THANH_VIEN (chỉ thành viên mới chấm điểm)
+        List<String> memberUserIds = council.getCouncilMembers().stream()
+                .filter(member -> member.getRole() == CouncilMemberRoleEnum.THANH_VIEN)
+                .map(member -> member.getUser().getId())
+                .collect(Collectors.toList());
+
+        if (memberUserIds.isEmpty()) {
+            // Nếu không có thành viên nào, không thể chấm điểm
+            return new ScoringProgressResponse(
+                    innovations.size(),
+                    0,
+                    innovations.size(),
+                    null,
+                    0);
+        }
+
+        int totalInnovations = innovations.size();
+        int scoredCount = 0;
+        int pendingCount = 0;
+        double totalScoreSum = 0.0;
+        int totalScoreCount = 0;
+
+        // Với mỗi innovation, kiểm tra xem đã có đủ điểm từ tất cả members chưa
+        for (Innovation innovation : innovations) {
+            int scoredMemberCount = 0;
+            double innovationScoreSum = 0.0;
+
+            // Đếm số members đã chấm điểm cho innovation này
+            for (String memberUserId : memberUserIds) {
+                Optional<ReviewScore> reviewScore = reviewScoreRepository
+                        .findByInnovationIdAndReviewerId(innovation.getId(), memberUserId);
+                
+                if (reviewScore.isPresent() && reviewScore.get().getTotalScore() != null) {
+                    scoredMemberCount++;
+                    innovationScoreSum += reviewScore.get().getTotalScore();
+                }
+            }
+
+            // Một innovation được coi là "scored" nếu đã có đủ điểm từ tất cả members
+            if (scoredMemberCount == memberUserIds.size()) {
+                scoredCount++;
+                totalScoreSum += innovationScoreSum;
+                totalScoreCount += scoredMemberCount;
+            } else {
+                pendingCount++;
+                // Vẫn tính điểm từ các members đã chấm
+                if (scoredMemberCount > 0) {
+                    totalScoreSum += innovationScoreSum;
+                    totalScoreCount += scoredMemberCount;
+                }
+            }
+        }
+
+        // Tính điểm trung bình
+        Double averageScore = (totalScoreCount > 0) ? totalScoreSum / totalScoreCount : null;
+
+        // Tính % hoàn thành
+        int completionPercentage = totalInnovations > 0
+                ? Math.round((scoredCount * 100.0f) / totalInnovations)
+                : 0;
+
+        return new ScoringProgressResponse(
+                totalInnovations,
+                scoredCount,
+                pendingCount,
+                averageScore,
+                completionPercentage);
     }
 }
