@@ -1,5 +1,10 @@
 package vn.edu.iuh.fit.innovationmanagementsystem_be.service;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.Council;
@@ -29,6 +34,8 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.DepartmentReposit
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.InnovationRound;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.Department;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationRoundStatusEnum;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.ResultPaginationDTO;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.Utils;
 
 import java.time.LocalDate;
 
@@ -425,5 +432,58 @@ public class CouncilService {
 
         // Trả về response
         return councilMapper.toCouncilResponse(foundCouncil);
+    }
+
+    // 3. Lấy danh sách hội đồng với pagination và filtering
+    public ResultPaginationDTO getAllCouncilsWithPaginationAndFilter(
+            Specification<Council> specification, Pageable pageable) {
+        
+        // Default sort: createdAt DESC nếu không có sort
+        if (pageable.getSort().isUnsorted()) {
+            pageable = PageRequest.of(
+                    pageable.getPageNumber(),
+                    pageable.getPageSize(),
+                    Sort.by("createdAt").descending());
+        }
+
+        // Xác định cấp độ hội đồng từ role của user để filter
+        ReviewLevelEnum councilLevel = determineCouncilLevelFromUserRole();
+        User currentUser = userService.getCurrentUser();
+        
+        // Tạo specification để filter theo role và department (nếu faculty level)
+        Specification<Council> roleSpec = (root, query, criteriaBuilder) -> {
+            if (councilLevel == ReviewLevelEnum.KHOA) {
+                // Faculty level: chỉ lấy councils của khoa hiện tại
+                if (currentUser.getDepartment() == null) {
+                    // Nếu user không có department, trả về empty
+                    return criteriaBuilder.disjunction();
+                }
+                return criteriaBuilder.and(
+                    criteriaBuilder.equal(root.get("reviewCouncilLevel"), councilLevel),
+                    criteriaBuilder.equal(root.get("department").get("id"), currentUser.getDepartment().getId())
+                );
+            } else {
+                // School level: chỉ lấy councils cấp trường (không có department)
+                return criteriaBuilder.and(
+                    criteriaBuilder.equal(root.get("reviewCouncilLevel"), councilLevel),
+                    criteriaBuilder.isNull(root.get("department"))
+                );
+            }
+        };
+
+        // Kết hợp với specification từ filter (nếu có)
+        Specification<Council> combinedSpec = specification != null 
+            ? roleSpec.and(specification) 
+            : roleSpec;
+
+        // Query với pagination
+        Page<Council> councilPage = councilRepository.findAll(combinedSpec, pageable);
+        
+        // Map sang response
+        Page<CouncilResponse> responsePage = councilPage.map(council -> 
+            councilMapper.toCouncilResponse(council)
+        );
+
+        return Utils.toResultPaginationDTO(responsePage, pageable);
     }
 }
