@@ -47,4 +47,8 @@ public class Council extends Auditable {
     @JoinColumn(name = "department_id", nullable = true) // Nullable vì cấp trường không có department
     private Department department;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "innovation_round_id", nullable = false)
+    private InnovationRound innovationRound;
+
 }

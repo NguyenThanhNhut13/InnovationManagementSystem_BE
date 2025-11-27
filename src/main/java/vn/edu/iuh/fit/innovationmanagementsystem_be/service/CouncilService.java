@@ -35,6 +35,7 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -119,6 +120,9 @@ public class CouncilService {
             department = currentUser.getDepartment();
         }
 
+        // Validate không được tạo trùng hội đồng cho cùng round và department
+        validateNoDuplicateCouncil(round.getId(), councilLevel, department);
+
         // Tự động generate tên hội đồng
         String councilName = generateCouncilName(round, councilLevel, department);
 
@@ -134,6 +138,7 @@ public class CouncilService {
         council.setReviewCouncilLevel(councilLevel);
         council.setStatus(CouncilStatusEnum.CON_HIEU_LUC); // Mặc định còn hiệu lực
         council.setDepartment(department); // Set department (null nếu cấp trường)
+        council.setInnovationRound(round); // Set innovation round
 
         // Lưu Council trước để có ID
         council = councilRepository.save(council);
@@ -205,6 +210,31 @@ public class CouncilService {
             if (councilLevel != ReviewLevelEnum.TRUONG) {
                 throw new IllegalArgumentException(
                         "Bạn chỉ có quyền tạo Hội đồng cấp Trường. Vui lòng chọn cấp độ 'TRUONG'");
+            }
+        }
+    }
+
+    // Helper method: Validate không được tạo trùng hội đồng cho cùng round và department
+    private void validateNoDuplicateCouncil(String roundId, ReviewLevelEnum councilLevel, Department department) {
+        Optional<Council> existingCouncil;
+        
+        if (councilLevel == ReviewLevelEnum.KHOA && department != null) {
+            // Faculty level: check theo round + level + department
+            existingCouncil = councilRepository.findByRoundIdAndLevelAndDepartmentId(
+                    roundId, councilLevel, department.getId());
+            
+            if (existingCouncil.isPresent()) {
+                throw new IllegalArgumentException(
+                        String.format("Đã tồn tại hội đồng cấp Đơn vị cho đợt này. Mỗi đợt chỉ được có 1 hội đồng cấp Đơn vị cho khoa '%s'.",
+                                department.getDepartmentName()));
+            }
+        } else if (councilLevel == ReviewLevelEnum.TRUONG) {
+            // School level: check theo round + level (không có department)
+            existingCouncil = councilRepository.findByRoundIdAndLevelAndNoDepartment(roundId, councilLevel);
+            
+            if (existingCouncil.isPresent()) {
+                throw new IllegalArgumentException(
+                        "Đã tồn tại hội đồng cấp Trường cho đợt này. Mỗi đợt chỉ được có 1 hội đồng cấp Trường.");
             }
         }
     }
