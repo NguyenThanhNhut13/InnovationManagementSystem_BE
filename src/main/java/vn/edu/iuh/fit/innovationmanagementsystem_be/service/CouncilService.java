@@ -28,6 +28,9 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.InnovationRoundRe
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.DepartmentRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.InnovationRound;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.Department;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationRoundStatusEnum;
+
+import java.time.LocalDate;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -86,21 +89,34 @@ public class CouncilService {
             councilLevel = determineCouncilLevelFromUserRole();
         }
 
-        // Lấy round info để generate name
-        InnovationRound round = innovationRoundRepository.findById(request.getRoundId())
-                .orElseThrow(() -> new IdInvalidException("Không tìm thấy đợt sáng kiến với ID: " + request.getRoundId()));
+        // Lấy round info
+        InnovationRound round;
+        if (request.getRoundId() != null && !request.getRoundId().isEmpty()) {
+            // Nếu FE truyền roundId, dùng round đó
+            round = innovationRoundRepository.findById(request.getRoundId())
+                    .orElseThrow(() -> new IdInvalidException("Không tìm thấy đợt sáng kiến với ID: " + request.getRoundId()));
+        } else {
+            // Nếu không truyền, tự động lấy round hiện tại đang mở
+            round = innovationRoundRepository.findCurrentActiveRound(
+                    LocalDate.now(), InnovationRoundStatusEnum.OPEN)
+                    .orElseThrow(() -> new IdInvalidException(
+                            "Không có đợt sáng kiến nào đang mở. Vui lòng truyền roundId hoặc đảm bảo có đợt sáng kiến đang mở"));
+        }
 
-        // Lấy department info (nếu có)
+        // Lấy department info
         Department department = null;
         if (request.getDepartmentId() != null && !request.getDepartmentId().isEmpty()) {
+            // Nếu FE truyền departmentId, dùng department đó
             department = departmentRepository.findById(request.getDepartmentId())
                     .orElseThrow(() -> new IdInvalidException("Không tìm thấy khoa với ID: " + request.getDepartmentId()));
         } else if (councilLevel == ReviewLevelEnum.KHOA) {
             // Nếu cấp Khoa nhưng không có departmentId, lấy từ current user
             User currentUser = userService.getCurrentUser();
-            if (currentUser.getDepartment() != null) {
-                department = currentUser.getDepartment();
+            if (currentUser.getDepartment() == null) {
+                throw new IdInvalidException(
+                        "Người dùng hiện tại chưa được gán vào khoa nào. Không thể tạo hội đồng cấp Khoa");
             }
+            department = currentUser.getDepartment();
         }
 
         // Tự động generate tên hội đồng
@@ -128,7 +144,7 @@ public class CouncilService {
         council.setCouncilMembers(councilMembers);
 
         // Tự động lấy và gán eligible innovations từ roundId
-        List<Innovation> eligibleInnovations = getEligibleInnovationsForCouncil(request.getRoundId(), councilLevel,
+        List<Innovation> eligibleInnovations = getEligibleInnovationsForCouncil(round.getId(), councilLevel,
                 department);
         if (!eligibleInnovations.isEmpty()) {
             council.setInnovations(eligibleInnovations);
@@ -183,8 +199,7 @@ public class CouncilService {
             }
         }
 
-        // QUAN_TRI_VIEN_HE_THONG và QUAN_TRI_VIEN_QLKH_HTQT chỉ được tạo Hội đồng cấp
-        // TRUONG
+        // QUAN_TRI_VIEN_HE_THONG và QUAN_TRI_VIEN_QLKH_HTQT chỉ được tạo Hội đồng cấp TRUONG
         if (userRoles.contains(UserRoleEnum.QUAN_TRI_VIEN_HE_THONG)
                 || userRoles.contains(UserRoleEnum.QUAN_TRI_VIEN_QLKH_HTQT)) {
             if (councilLevel != ReviewLevelEnum.TRUONG) {

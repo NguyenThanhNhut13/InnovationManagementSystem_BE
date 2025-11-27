@@ -1,7 +1,6 @@
 package vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO;
 
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
@@ -17,8 +16,9 @@ import java.util.List;
 public class CreateCouncilRequest {
 
     // BỎ name - BE sẽ tự động generate
+    // BỎ innovationIds - BE sẽ tự động lấy từ roundId
 
-    // Optional - Nếu không truyền, hệ thống sẽ tự động gắn dựa trên role của user
+    // Optional - Nếu không truyền, BE sẽ tự động xác định từ role của user
     private ReviewLevelEnum reviewCouncilLevel;
 
     @NotNull(message = "Danh sách thành viên không được để trống")
@@ -26,12 +26,9 @@ public class CreateCouncilRequest {
     @Valid
     private List<CouncilMemberRequest> members;
 
-    // BỎ innovationIds - BE sẽ tự động lấy từ roundId
-
-    // Required - Round ID để BE tự động lấy eligible innovations và generate name
-    @NotBlank(message = "Round ID không được để trống")
+    // Optional - Nếu không truyền, BE sẽ tự động lấy round hiện tại đang mở
     private String roundId;
 
-    // Optional - Department ID (chỉ cần cho cấp Khoa, cấp Trường thì null)
+    // Optional - Nếu không truyền, BE sẽ tự động lấy từ current user (nếu cấp Khoa)
     private String departmentId;
 }
