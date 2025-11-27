@@ -382,4 +382,48 @@ public class CouncilService {
             return allSubmitted;
         }
     }
+
+    // 2. Lấy thông tin hội đồng hiện tại (dựa trên round hiện tại và department của user)
+    public CouncilResponse getCurrentCouncil() {
+        // Lấy round hiện tại đang mở
+        InnovationRound currentRound = innovationRoundRepository.findCurrentActiveRound(
+                LocalDate.now(), InnovationRoundStatusEnum.OPEN)
+                .orElseThrow(() -> new IdInvalidException(
+                        "Không có đợt sáng kiến nào đang mở. Vui lòng đảm bảo có đợt sáng kiến đang mở"));
+
+        // Xác định cấp độ hội đồng từ role của user
+        ReviewLevelEnum councilLevel = determineCouncilLevelFromUserRole();
+
+        // Lấy department (nếu faculty level)
+        Department department = null;
+        if (councilLevel == ReviewLevelEnum.KHOA) {
+            User currentUser = userService.getCurrentUser();
+            if (currentUser.getDepartment() == null) {
+                throw new IdInvalidException(
+                        "Người dùng hiện tại chưa được gán vào khoa nào. Không thể lấy hội đồng cấp Khoa");
+            }
+            department = currentUser.getDepartment();
+        }
+
+        // Tìm council
+        Optional<Council> council;
+        if (councilLevel == ReviewLevelEnum.KHOA && department != null) {
+            // Faculty level: tìm theo round + level + department
+            council = councilRepository.findByRoundIdAndLevelAndDepartmentId(
+                    currentRound.getId(), councilLevel, department.getId());
+        } else if (councilLevel == ReviewLevelEnum.TRUONG) {
+            // School level: tìm theo round + level (không có department)
+            council = councilRepository.findByRoundIdAndLevelAndNoDepartment(
+                    currentRound.getId(), councilLevel);
+        } else {
+            throw new IdInvalidException("Không xác định được cấp độ hội đồng");
+        }
+
+        // Nếu không tìm thấy, throw exception
+        Council foundCouncil = council.orElseThrow(() -> new IdInvalidException(
+                "Chưa có hội đồng nào được thành lập cho đợt sáng kiến hiện tại. Vui lòng thành lập hội đồng trước."));
+
+        // Trả về response
+        return councilMapper.toCouncilResponse(foundCouncil);
+    }
 }

@@ -45,4 +45,18 @@ public class CouncilController {
         return ResponseEntity.ok(response);
     }
 
+    // 2. Lấy thông tin hội đồng hiện tại
+    @GetMapping("/councils/current")
+    @PreAuthorize("hasAnyRole('TRUONG_KHOA','QUAN_TRI_VIEN_KHOA','QUAN_TRI_VIEN_HE_THONG', 'QUAN_TRI_VIEN_QLKH_HTQT')")
+    @Operation(summary = "Get Current Council", description = "Get the current council for the active round and user's department (for faculty level) or school level")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Council found successfully", content = @Content(schema = @Schema(implementation = CouncilResponse.class))),
+            @ApiResponse(responseCode = "404", description = "No council found for current round"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized")
+    })
+    public ResponseEntity<CouncilResponse> getCurrentCouncil() {
+        CouncilResponse response = councilService.getCurrentCouncil();
+        return ResponseEntity.ok(response);
+    }
+
 }
