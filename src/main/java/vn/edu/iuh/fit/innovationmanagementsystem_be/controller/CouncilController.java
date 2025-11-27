@@ -17,6 +17,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.Council;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.CreateCouncilRequest;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.UpdateCouncilMembersRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.CouncilResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.service.CouncilService;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.ResultPaginationDTO;
@@ -110,6 +111,25 @@ public class CouncilController {
             @Parameter(description = "Filter specification for councils") @Filter Specification<Council> specification,
             @Parameter(description = "Pagination parameters") Pageable pageable) {
         return ResponseEntity.ok(councilService.getAllCouncilsWithPaginationAndFilter(specification, pageable));
+    }
+
+    // 6. Cập nhật thành viên hội đồng
+    @PutMapping("/councils/{id}/members")
+    @PreAuthorize("hasAnyRole('TRUONG_KHOA','QUAN_TRI_VIEN_KHOA','QUAN_TRI_VIEN_HE_THONG', 'QUAN_TRI_VIEN_QLKH_HTQT')")
+    @ApiMessage("Cập nhật thành viên hội đồng thành công")
+    @Operation(summary = "Update Council Members", description = "Update members of a council. Only allowed before scoring has started.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Council members updated successfully", content = @Content(schema = @Schema(implementation = CouncilResponse.class))),
+            @ApiResponse(responseCode = "400", description = "Invalid request data or scoring has already started"),
+            @ApiResponse(responseCode = "404", description = "Council not found"),
+            @ApiResponse(responseCode = "403", description = "Access denied"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized")
+    })
+    public ResponseEntity<CouncilResponse> updateCouncilMembers(
+            @Parameter(description = "Council ID", required = true) @PathVariable String id,
+            @Parameter(description = "Updated members list", required = true) @Valid @RequestBody UpdateCouncilMembersRequest request) {
+        CouncilResponse response = councilService.updateCouncilMembers(id, request);
+        return ResponseEntity.ok(response);
     }
 
 }

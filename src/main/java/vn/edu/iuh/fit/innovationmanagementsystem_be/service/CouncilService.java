@@ -21,6 +21,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.ReviewLev
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.UserRoleEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.CouncilMemberRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.CreateCouncilRequest;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.UpdateCouncilMembersRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.CouncilResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.CouncilListResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationWithScoreResponse;
@@ -725,5 +726,157 @@ public class CouncilService {
                 pendingCount,
                 averageScore,
                 completionPercentage);
+    }
+
+    // 6. Cập nhật thành viên hội đồng
+    @Transactional
+    public CouncilResponse updateCouncilMembers(String councilId, UpdateCouncilMembersRequest request) {
+        // 1. Tìm và validate council
+        Council council = findAndValidateCouncil(councilId);
+
+        // 2. Validate chưa có điểm chấm
+        validateNoScoringStarted(council);
+
+        // 3. Validate danh sách thành viên mới
+        validateMembers(request.getMembers());
+
+        // 4. Lấy danh sách thành viên hiện tại
+        List<CouncilMember> currentMembers = council.getCouncilMembers();
+        Set<String> currentUserIds = currentMembers.stream()
+                .map(member -> member.getUser().getId())
+                .collect(Collectors.toSet());
+
+        // 5. Lấy danh sách userId mới
+        Set<String> newUserIds = request.getMembers().stream()
+                .map(CouncilMemberRequest::getUserId)
+                .collect(Collectors.toSet());
+
+        // 6. Xác định thành viên cần xóa (có trong current nhưng không có trong new)
+        List<String> userIdsToRemove = currentUserIds.stream()
+                .filter(userId -> !newUserIds.contains(userId))
+                .collect(Collectors.toList());
+
+        // 7. Xác định role cần gỡ dựa trên cấp độ Hội đồng
+        UserRoleEnum councilRoleToRevoke = (council.getReviewCouncilLevel() == ReviewLevelEnum.TRUONG)
+                ? UserRoleEnum.TV_HOI_DONG_TRUONG
+                : UserRoleEnum.TV_HOI_DONG_KHOA;
+
+        // 8. Xóa thành viên cũ và gỡ role
+        for (String userIdToRemove : userIdsToRemove) {
+            // Xóa CouncilMember
+            CouncilMember memberToRemove = currentMembers.stream()
+                    .filter(m -> m.getUser().getId().equals(userIdToRemove))
+                    .findFirst()
+                    .orElse(null);
+
+            if (memberToRemove != null) {
+                councilMemberRepository.delete(memberToRemove);
+                currentMembers.remove(memberToRemove);
+            }
+
+            // Gỡ role TV_HOI_DONG nếu user không còn là thành viên của hội đồng nào khác
+            revokeCouncilRoleIfNotInOtherCouncils(userIdToRemove, councilRoleToRevoke, councilId);
+        }
+
+        // 9. Cập nhật/Thêm thành viên mới
+        UserRoleEnum councilRoleToAssign = (council.getReviewCouncilLevel() == ReviewLevelEnum.TRUONG)
+                ? UserRoleEnum.TV_HOI_DONG_TRUONG
+                : UserRoleEnum.TV_HOI_DONG_KHOA;
+
+        for (CouncilMemberRequest memberRequest : request.getMembers()) {
+            User user = userRepository.findById(memberRequest.getUserId())
+                    .orElseThrow(() -> new IdInvalidException(
+                            "Không tìm thấy user với ID: " + memberRequest.getUserId()));
+
+            // Tìm CouncilMember hiện tại (nếu có)
+            Optional<CouncilMember> existingMember = currentMembers.stream()
+                    .filter(m -> m.getUser().getId().equals(memberRequest.getUserId()))
+                    .findFirst();
+
+            if (existingMember.isPresent()) {
+                // Cập nhật role của thành viên hiện có
+                CouncilMember member = existingMember.get();
+                member.setRole(memberRequest.getRole());
+                councilMemberRepository.save(member);
+            } else {
+                // Tạo CouncilMember mới
+                CouncilMember newMember = new CouncilMember();
+                newMember.setCouncil(council);
+                newMember.setUser(user);
+                newMember.setRole(memberRequest.getRole());
+                councilMemberRepository.save(newMember);
+                currentMembers.add(newMember);
+            }
+
+            // Gắn role TV_HOI_DONG cho user nếu chưa có
+            assignCouncilRoleToUser(user, councilRoleToAssign);
+        }
+
+        // 10. Refresh council để có danh sách thành viên mới nhất
+        council = councilRepository.findById(councilId)
+                .orElseThrow(() -> new IdInvalidException("Không tìm thấy hội đồng với ID: " + councilId));
+
+        // 11. Map sang response
+        CouncilResponse response = councilMapper.toCouncilResponse(council);
+        ScoringProgressResponse scoringProgress = calculateScoringProgress(council);
+        response.setScoringProgress(scoringProgress);
+
+        return response;
+    }
+
+    // Helper method: Validate chưa có điểm chấm
+    private void validateNoScoringStarted(Council council) {
+        // Lấy danh sách innovation IDs của council
+        List<String> innovationIds = council.getInnovations().stream()
+                .map(Innovation::getId)
+                .collect(Collectors.toList());
+
+        if (innovationIds.isEmpty()) {
+            // Không có sáng kiến nào, cho phép cập nhật
+            return;
+        }
+
+        // Lấy danh sách member user IDs hiện tại
+        List<String> memberUserIds = getScoringMemberUserIds(council);
+
+        if (memberUserIds.isEmpty()) {
+            // Không có thành viên nào, cho phép cập nhật
+            return;
+        }
+
+        // Kiểm tra xem có ReviewScore nào từ các innovation và reviewer này không
+        for (String innovationId : innovationIds) {
+            for (String reviewerId : memberUserIds) {
+                if (reviewScoreRepository.existsByInnovationIdAndReviewerId(innovationId, reviewerId)) {
+                    throw new IllegalArgumentException(
+                            "Không thể cập nhật thành viên hội đồng khi đã có điểm chấm. " +
+                            "Hội đồng đã bắt đầu quá trình chấm điểm.");
+                }
+            }
+        }
+    }
+
+    // Helper method: Gỡ role TV_HOI_DONG nếu user không còn là thành viên của hội đồng nào khác cùng cấp độ
+    private void revokeCouncilRoleIfNotInOtherCouncils(String userId, UserRoleEnum councilRole, String currentCouncilId) {
+        // Xác định cấp độ hội đồng từ role
+        ReviewLevelEnum councilLevel = (councilRole == UserRoleEnum.TV_HOI_DONG_TRUONG)
+                ? ReviewLevelEnum.TRUONG
+                : ReviewLevelEnum.KHOA;
+
+        // Kiểm tra xem user có còn là thành viên của hội đồng nào khác cùng cấp độ không
+        List<CouncilMember> otherMemberships = councilMemberRepository.findByUserId(userId);
+
+        // Lọc bỏ council hiện tại và chỉ lấy các hội đồng cùng cấp độ
+        boolean isMemberOfOtherCouncilsSameLevel = otherMemberships.stream()
+                .filter(member -> !member.getCouncil().getId().equals(currentCouncilId))
+                .anyMatch(member -> member.getCouncil().getReviewCouncilLevel() == councilLevel);
+
+        if (!isMemberOfOtherCouncilsSameLevel) {
+            // User không còn là thành viên của hội đồng nào khác cùng cấp độ, gỡ role
+            Role role = roleRepository.findByRoleName(councilRole)
+                    .orElseThrow(() -> new IdInvalidException("Không tìm thấy role: " + councilRole));
+
+            userRoleRepository.deleteByUserIdAndRoleId(userId, role.getId());
+        }
     }
 }
