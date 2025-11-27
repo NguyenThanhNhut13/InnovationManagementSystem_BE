@@ -1,6 +1,7 @@
 package vn.edu.iuh.fit.innovationmanagementsystem_be.service;
 
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -22,6 +23,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.CouncilMem
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.CreateCouncilRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.CouncilResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.CouncilListResponse;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationWithScoreResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.exception.IdInvalidException;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.mapper.CouncilMapper;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.CouncilRepository;
@@ -457,7 +459,159 @@ public class CouncilService {
         return response;
     }
 
-    // 3. Lấy danh sách hội đồng với pagination và filtering
+    // 3. Lấy thông tin chi tiết hội đồng theo ID
+    @Transactional(readOnly = true)
+    public CouncilResponse getCouncilById(String councilId) {
+        // Tìm và validate council
+        Council council = findAndValidateCouncil(councilId);
+
+        // Trigger lazy load cho các collections trong cùng transaction
+        council.getCouncilMembers().size(); // Đã được fetch trong query nếu dùng findByRoundIdAndLevel...
+        council.getInnovations().size(); // Trigger lazy load
+
+        // Map sang response
+        CouncilResponse response = councilMapper.toCouncilResponse(council);
+
+        // Tính toán và set scoring progress
+        ScoringProgressResponse scoringProgress = calculateScoringProgress(council);
+        response.setScoringProgress(scoringProgress);
+
+        return response;
+    }
+
+    // Helper method: Tìm và validate council
+    private Council findAndValidateCouncil(String councilId) {
+        Council council = councilRepository.findById(councilId)
+                .orElseThrow(() -> new IdInvalidException("Không tìm thấy hội đồng với ID: " + councilId));
+        validateCouncilAccessPermission(council);
+        return council;
+    }
+
+    // Helper method: Validate quyền truy cập council
+    private void validateCouncilAccessPermission(Council council) {
+        User currentUser = userService.getCurrentUser();
+        ReviewLevelEnum councilLevel = determineCouncilLevelFromUserRole();
+
+        // Faculty level: chỉ được xem council của cùng department
+        if (councilLevel == ReviewLevelEnum.KHOA) {
+            if (currentUser.getDepartment() == null ||
+                    council.getDepartment() == null ||
+                    !council.getDepartment().getId().equals(currentUser.getDepartment().getId())) {
+                throw new IllegalArgumentException("Bạn không có quyền truy cập hội đồng này");
+            }
+        } else {
+            // School level: chỉ được xem council cấp trường (không có department)
+            if (council.getDepartment() != null) {
+                throw new IllegalArgumentException("Bạn không có quyền truy cập hội đồng này");
+            }
+        }
+    }
+
+    // Helper method: Lấy danh sách member user IDs có quyền chấm điểm (THANH_VIEN)
+    private List<String> getScoringMemberUserIds(Council council) {
+        return council.getCouncilMembers().stream()
+                .filter(member -> member.getRole() == CouncilMemberRoleEnum.THANH_VIEN)
+                .map(member -> member.getUser().getId())
+                .collect(Collectors.toList());
+    }
+
+    // Inner class để chứa kết quả scoring của một innovation
+    private static class InnovationScoringResult {
+        final int scoredReviewers;
+        final double totalScore;
+        final Double averageScore;
+        final boolean isCompleted;
+
+        InnovationScoringResult(int scoredReviewers, double totalScore, Double averageScore, boolean isCompleted) {
+            this.scoredReviewers = scoredReviewers;
+            this.totalScore = totalScore;
+            this.averageScore = averageScore;
+            this.isCompleted = isCompleted;
+        }
+    }
+
+    // Helper method: Tính scoring cho một innovation
+    private InnovationScoringResult calculateInnovationScoring(Innovation innovation, List<String> memberUserIds) {
+        int scoredReviewers = 0;
+        double totalScore = 0.0;
+
+        for (String memberUserId : memberUserIds) {
+            Optional<ReviewScore> reviewScore = reviewScoreRepository
+                    .findByInnovationIdAndReviewerId(innovation.getId(), memberUserId);
+
+            if (reviewScore.isPresent() && reviewScore.get().getTotalScore() != null) {
+                scoredReviewers++;
+                totalScore += reviewScore.get().getTotalScore();
+            }
+        }
+
+        Double averageScore = scoredReviewers > 0 ? totalScore / scoredReviewers : null;
+        boolean isCompleted = scoredReviewers == memberUserIds.size() && memberUserIds.size() > 0;
+
+        return new InnovationScoringResult(scoredReviewers, totalScore, averageScore, isCompleted);
+    }
+
+    // 4. Lấy danh sách sáng kiến của hội đồng với pagination và scoring progress
+    @Transactional(readOnly = true)
+    public ResultPaginationDTO getCouncilInnovations(String councilId, Pageable pageable) {
+        // Tìm và validate council
+        Council council = findAndValidateCouncil(councilId);
+
+        // Lấy danh sách member user IDs có quyền chấm điểm
+        List<String> memberUserIds = getScoringMemberUserIds(council);
+        int totalReviewers = memberUserIds.size();
+
+        // Lấy innovations của council với pagination
+        List<Innovation> allInnovations = council.getInnovations();
+        
+        // Tính toán pagination thủ công (vì đây là ManyToMany relationship)
+        int totalElements = allInnovations.size();
+        int page = pageable.getPageNumber();
+        int size = pageable.getPageSize();
+        int start = page * size;
+        int end = Math.min(start + size, totalElements);
+        
+        List<Innovation> pagedInnovations = start < totalElements 
+                ? allInnovations.subList(start, end)
+                : new ArrayList<>();
+
+        // Map sang InnovationWithScoreResponse
+        List<InnovationWithScoreResponse> innovationResponses = pagedInnovations.stream()
+                .map(innovation -> {
+                    // Tính scoring cho innovation này
+                    InnovationScoringResult scoringResult = calculateInnovationScoring(innovation, memberUserIds);
+
+                    // Lấy thông tin author
+                    String authorName = innovation.getUser() != null ? innovation.getUser().getFullName() : "N/A";
+                    String departmentName = innovation.getDepartment() != null 
+                            ? innovation.getDepartment().getDepartmentName() 
+                            : null;
+
+                    return new InnovationWithScoreResponse(
+                            innovation.getId(),
+                            innovation.getInnovationName(),
+                            authorName,
+                            departmentName,
+                            innovation.getStatus(),
+                            totalReviewers,
+                            scoringResult.scoredReviewers,
+                            scoringResult.averageScore,
+                            scoringResult.isCompleted
+                    );
+                })
+                .collect(Collectors.toList());
+
+        // Tạo Page object
+        Page<InnovationWithScoreResponse> responsePage = new PageImpl<>(
+                innovationResponses,
+                pageable,
+                totalElements
+        );
+
+        return Utils.toResultPaginationDTO(responsePage, pageable);
+    }
+
+    // 5. Lấy danh sách hội đồng với pagination và filtering
     public ResultPaginationDTO getAllCouncilsWithPaginationAndFilter(
             Specification<Council> specification, Pageable pageable) {
         
@@ -518,11 +672,8 @@ public class CouncilService {
             return new ScoringProgressResponse(0, 0, 0, null, 0);
         }
 
-        // Lấy tất cả council members có role = THANH_VIEN (chỉ thành viên mới chấm điểm)
-        List<String> memberUserIds = council.getCouncilMembers().stream()
-                .filter(member -> member.getRole() == CouncilMemberRoleEnum.THANH_VIEN)
-                .map(member -> member.getUser().getId())
-                .collect(Collectors.toList());
+        // Lấy danh sách member user IDs có quyền chấm điểm
+        List<String> memberUserIds = getScoringMemberUserIds(council);
 
         if (memberUserIds.isEmpty()) {
             // Nếu không có thành viên nào, không thể chấm điểm
@@ -542,31 +693,20 @@ public class CouncilService {
 
         // Với mỗi innovation, kiểm tra xem đã có đủ điểm từ tất cả members chưa
         for (Innovation innovation : innovations) {
-            int scoredMemberCount = 0;
-            double innovationScoreSum = 0.0;
-
-            // Đếm số members đã chấm điểm cho innovation này
-            for (String memberUserId : memberUserIds) {
-                Optional<ReviewScore> reviewScore = reviewScoreRepository
-                        .findByInnovationIdAndReviewerId(innovation.getId(), memberUserId);
-                
-                if (reviewScore.isPresent() && reviewScore.get().getTotalScore() != null) {
-                    scoredMemberCount++;
-                    innovationScoreSum += reviewScore.get().getTotalScore();
-                }
-            }
+            // Tính scoring cho innovation này
+            InnovationScoringResult scoringResult = calculateInnovationScoring(innovation, memberUserIds);
 
             // Một innovation được coi là "scored" nếu đã có đủ điểm từ tất cả members
-            if (scoredMemberCount == memberUserIds.size()) {
+            if (scoringResult.isCompleted) {
                 scoredCount++;
-                totalScoreSum += innovationScoreSum;
-                totalScoreCount += scoredMemberCount;
+                totalScoreSum += scoringResult.totalScore;
+                totalScoreCount += scoringResult.scoredReviewers;
             } else {
                 pendingCount++;
                 // Vẫn tính điểm từ các members đã chấm
-                if (scoredMemberCount > 0) {
-                    totalScoreSum += innovationScoreSum;
-                    totalScoreCount += scoredMemberCount;
+                if (scoringResult.scoredReviewers > 0) {
+                    totalScoreSum += scoringResult.totalScore;
+                    totalScoreCount += scoringResult.scoredReviewers;
                 }
             }
         }

@@ -64,7 +64,40 @@ public class CouncilController {
         return ResponseEntity.ok(response);
     }
 
-    // 3. Lấy danh sách hội đồng với pagination và filtering
+    // 3. Lấy thông tin chi tiết hội đồng theo ID
+    @GetMapping("/councils/{id}")
+    @PreAuthorize("hasAnyRole('TRUONG_KHOA','QUAN_TRI_VIEN_KHOA','QUAN_TRI_VIEN_HE_THONG', 'QUAN_TRI_VIEN_QLKH_HTQT', 'TV_HOI_DONG_KHOA', 'TV_HOI_DONG_TRUONG')")
+    @Operation(summary = "Get Council by ID", description = "Get detailed information of a council by ID. Access is restricted based on user's role and department.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Council found successfully", content = @Content(schema = @Schema(implementation = CouncilResponse.class))),
+            @ApiResponse(responseCode = "404", description = "Council not found"),
+            @ApiResponse(responseCode = "403", description = "Access denied"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized")
+    })
+    public ResponseEntity<CouncilResponse> getCouncilById(
+            @Parameter(description = "Council ID", required = true) @PathVariable String id) {
+        CouncilResponse response = councilService.getCouncilById(id);
+        return ResponseEntity.ok(response);
+    }
+
+    // 4. Lấy danh sách sáng kiến của hội đồng với pagination và scoring progress
+    @GetMapping("/councils/{id}/innovations")
+    @PreAuthorize("hasAnyRole('TRUONG_KHOA','QUAN_TRI_VIEN_KHOA','QUAN_TRI_VIEN_HE_THONG', 'QUAN_TRI_VIEN_QLKH_HTQT', 'TV_HOI_DONG_KHOA', 'TV_HOI_DONG_TRUONG')")
+    @ApiMessage("Lấy danh sách sáng kiến của hội đồng thành công")
+    @Operation(summary = "Get Council Innovations", description = "Get paginated list of innovations in a council with scoring progress. Access is restricted based on user's role and department.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Innovations retrieved successfully", content = @Content(schema = @Schema(implementation = ResultPaginationDTO.class))),
+            @ApiResponse(responseCode = "404", description = "Council not found"),
+            @ApiResponse(responseCode = "403", description = "Access denied"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized")
+    })
+    public ResponseEntity<ResultPaginationDTO> getCouncilInnovations(
+            @Parameter(description = "Council ID", required = true) @PathVariable String id,
+            @Parameter(description = "Pagination parameters") Pageable pageable) {
+        return ResponseEntity.ok(councilService.getCouncilInnovations(id, pageable));
+    }
+
+    // 5. Lấy danh sách hội đồng với pagination và filtering
     @GetMapping("/councils")
     @PreAuthorize("hasAnyRole('TRUONG_KHOA','QUAN_TRI_VIEN_KHOA','QUAN_TRI_VIEN_HE_THONG', 'QUAN_TRI_VIEN_QLKH_HTQT', 'TV_HOI_DONG_KHOA', 'TV_HOI_DONG_TRUONG', 'CHU_TICH', 'THU_KY', 'THANH_VIEN')")
     @ApiMessage("Lấy danh sách hội đồng thành công")
