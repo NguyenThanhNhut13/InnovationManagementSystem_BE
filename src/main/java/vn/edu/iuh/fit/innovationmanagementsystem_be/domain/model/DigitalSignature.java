@@ -38,7 +38,7 @@ public class DigitalSignature extends Auditable {
     @Column(name = "signature_hash", nullable = false, unique = true, columnDefinition = "TEXT")
     private String signatureHash; // Hash duy nhất của chữ ký
 
-    @Column(name = "document_hash", nullable = false)
+    @Column(name = "document_hash", nullable = false, columnDefinition = "TEXT")
     private String documentHash; // Hash của tài liệu trước khi ký
 
     @Enumerated(EnumType.STRING)
@@ -65,7 +65,7 @@ public class DigitalSignature extends Auditable {
     @Column(name = "timestamp_token", columnDefinition = "TEXT")
     private String timestampToken; // RFC 3161 Timestamp token (disabled for academic project)
 
-    @Column(name = "certificate_validation_status")
+    @Column(name = "certificate_validation_status", columnDefinition = "TEXT")
     private String certificateValidationStatus; // Status của certificate validation
 
     @PrePersist
