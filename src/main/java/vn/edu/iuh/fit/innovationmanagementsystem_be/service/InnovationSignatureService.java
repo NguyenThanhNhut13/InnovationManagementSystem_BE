@@ -16,6 +16,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.CreateInno
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.DigitalSignatureRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.TemplateDataRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.FormDataResponse;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.TemplateFieldResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.TemplateFormDataResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.TemplateSignatureResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.exception.IdInvalidException;
@@ -241,7 +242,7 @@ public class InnovationSignatureService {
             return new ArrayList<>();
         }
 
-        Map<String, LinkedHashMap<String, com.fasterxml.jackson.databind.JsonNode>> groupedByTemplate = new LinkedHashMap<>();
+        Map<String, List<TemplateFieldResponse>> groupedByTemplate = new LinkedHashMap<>();
 
         for (FormDataResponse formDataResponse : formDataResponses) {
             String templateId = formDataResponse.getTemplateId();
@@ -249,32 +250,28 @@ public class InnovationSignatureService {
                 continue;
             }
 
-            String fieldKey = extractEffectiveFieldKey(formDataResponse);
-            if (fieldKey == null || fieldKey.isBlank()) {
+            String label = formDataResponse.getFormFieldLabel();
+            if (label == null || label.isBlank()) {
                 continue;
             }
 
+            String fieldType = formDataResponse.getFieldType() != null
+                    ? formDataResponse.getFieldType().name()
+                    : "TEXT";
+
             com.fasterxml.jackson.databind.JsonNode valueNode = extractEffectiveFieldValue(formDataResponse);
+
+            TemplateFieldResponse fieldResponse = new TemplateFieldResponse(label, fieldType, valueNode);
+
             groupedByTemplate
-                    .computeIfAbsent(templateId, id -> new LinkedHashMap<>())
-                    .put(fieldKey, valueNode);
+                    .computeIfAbsent(templateId, id -> new ArrayList<>())
+                    .add(fieldResponse);
         }
 
         return groupedByTemplate.entrySet()
                 .stream()
                 .map(entry -> new TemplateFormDataResponse(entry.getKey(), entry.getValue()))
                 .collect(Collectors.toList());
-    }
-
-    private String extractEffectiveFieldKey(FormDataResponse formDataResponse) {
-        com.fasterxml.jackson.databind.JsonNode fieldValue = formDataResponse.getFieldValue();
-        if (fieldValue != null && fieldValue.has("fieldKey")) {
-            com.fasterxml.jackson.databind.JsonNode keyNode = fieldValue.get("fieldKey");
-            if (keyNode != null && keyNode.isTextual()) {
-                return keyNode.asText();
-            }
-        }
-        return formDataResponse.getFormFieldKey();
     }
 
     private com.fasterxml.jackson.databind.JsonNode extractEffectiveFieldValue(FormDataResponse formDataResponse) {

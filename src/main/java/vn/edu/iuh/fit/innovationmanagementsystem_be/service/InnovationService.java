@@ -42,6 +42,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.Innovatio
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.DepartmentInnovationDetailResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationScoringDetailResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.AttachmentResponse;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.AttachmentInfo;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.CoAuthorResponse;
 import java.util.stream.Collectors;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.exception.IdInvalidException;
@@ -60,7 +61,9 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.DigitalSignatureR
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.CoInnovation;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.DepartmentPhase;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.UserSignatureProfile;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.FormTemplate;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.CAStatusEnum;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.TemplateTypeEnum;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -462,7 +465,7 @@ public class InnovationService {
                                         // Tìm FormField theo fieldKey trong danh sách formFields (bao gồm cả children)
                                         InnovationFormService.FormFieldSearchResult searchResult = innovationFormService
                                                         .findFormFieldByKeyWithParent(formFields,
-                                                        fieldKey, templateRequest.getTemplateId());
+                                                                        fieldKey, templateRequest.getTemplateId());
 
                                         if (searchResult == null || searchResult.getFormField() == null) {
                                                 throw new IdInvalidException(
@@ -695,6 +698,9 @@ public class InnovationService {
                 String academicYear = innovation.getInnovationRound() != null
                                 ? innovation.getInnovationRound().getAcademicYear()
                                 : null;
+                String roundName = innovation.getInnovationRound() != null
+                                ? innovation.getInnovationRound().getName()
+                                : null;
 
                 // Lấy danh sách đồng tác giả
                 List<CoInnovation> coInnovations = coInnovationRepository.findByInnovationId(innovationId);
@@ -713,13 +719,32 @@ public class InnovationService {
 
                 // Lấy danh sách tài liệu đính kèm
                 List<Attachment> attachments = attachmentRepository.findByInnovationId(innovationId);
-                List<AttachmentResponse> attachmentResponses = attachments.stream()
-                                .map(att -> {
-                                        return new AttachmentResponse(
-                                                        att.getId(),
-                                                        att.getPathUrl(),
-                                                        att.getFileSize(),
-                                                        att.getCreatedBy());
+                List<AttachmentInfo> attachmentInfos = attachments.stream()
+                                .map(attachment -> {
+                                        String templateType = null;
+
+                                        if (attachment.getTemplateId() != null) {
+                                                Optional<FormTemplate> formTemplateOpt = formTemplateRepository
+                                                                .findById(attachment.getTemplateId());
+                                                if (formTemplateOpt.isPresent()) {
+                                                        FormTemplate formTemplate = formTemplateOpt.get();
+                                                        TemplateTypeEnum templateTypeEnum = formTemplate
+                                                                        .getTemplateType();
+
+                                                        if (templateTypeEnum != null) {
+                                                                templateType = templateTypeEnum.name();
+                                                        }
+                                                }
+                                        }
+
+                                        return AttachmentInfo.builder()
+                                                        .fileName(attachment.getPathUrl())
+                                                        .templateId(attachment.getTemplateId())
+                                                        .templateType(templateType)
+                                                        .uploadedAt(attachment.getCreatedAt())
+                                                        .isDigitallySigned(false)
+                                                        .signerName(null)
+                                                        .build();
                                 })
                                 .collect(Collectors.toList());
 
@@ -730,12 +755,13 @@ public class InnovationService {
                                 .authorEmail(author.getEmail())
                                 .departmentName(innovation.getDepartment().getDepartmentName())
                                 .academicYear(academicYear)
+                                .roundName(roundName)
                                 .isScore(innovation.getIsScore())
                                 .status(innovation.getStatus())
-                                .submittedAt(innovation.getCreatedAt()) // Ngày nộp
+                                .submittedAt(innovation.getCreatedAt())
                                 .coAuthors(coAuthors)
                                 .templates(innovationSignatureService.buildTemplateFormDataResponses(formDataResponses))
-                                .attachments(attachmentResponses)
+                                .attachments(attachmentInfos)
                                 .build();
         }
 
@@ -782,7 +808,7 @@ public class InnovationService {
 
                 // Add scoring criteria
                 response.setScoringCriteria(scoringCriteria);
-                response.setMaxTotalScore(100); // Tổng điểm tối đa
+                response.setMaxTotalScore(100);
 
                 return response;
         }

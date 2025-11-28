@@ -14,7 +14,8 @@ import java.time.LocalDateTime;
 public class AttachmentInfo {
     private String fileName;
     private String templateId;
+    private String templateType;
     private LocalDateTime uploadedAt;
     private Boolean isDigitallySigned;
-    private String signerName; // Nullable
+    private String signerName;
 }

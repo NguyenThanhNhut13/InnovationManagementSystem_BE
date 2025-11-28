@@ -842,10 +842,13 @@ public class NotificationService {
 
                 List<User> recipients = users.stream()
                                 .filter(user -> !managerIds.contains(user.getId()))
+                                .filter(user -> user.getUserRoles().stream()
+                                                .noneMatch(userRole -> userRole.getRole()
+                                                                .getRoleName() == UserRoleEnum.QUAN_TRI_VIEN_QLKH_HTQT))
                                 .collect(Collectors.toList());
 
                 if (recipients.isEmpty()) {
-                        log.info("Tất cả người dùng trong khoa {} đều thuộc nhóm quản lý, bỏ qua thông báo",
+                        log.info("Tất cả người dùng trong khoa {} đều thuộc nhóm quản lý hoặc QUAN_TRI_VIEN_QLKH_HTQT, bỏ qua thông báo",
                                         department.getDepartmentName());
                         return;
                 }

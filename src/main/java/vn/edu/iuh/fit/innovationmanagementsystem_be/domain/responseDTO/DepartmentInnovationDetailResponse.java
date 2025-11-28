@@ -14,23 +14,20 @@ import java.util.List;
 @AllArgsConstructor
 @Builder
 public class DepartmentInnovationDetailResponse {
-    // Thông tin cơ bản
     private String innovationId;
     private String innovationName;
     private String authorName;
     private String authorEmail;
     private String departmentName;
     private String academicYear;
+    private String roundName;
     private Boolean isScore;
     private InnovationStatusEnum status;
-    private LocalDateTime submittedAt; // Ngày nộp
+    private LocalDateTime submittedAt;
 
-    // Danh sách đồng tác giả
     private List<CoAuthorResponse> coAuthors;
 
-    // Nội dung chi tiết (form data)
     private List<TemplateFormDataResponse> templates;
 
-    // Tài liệu đính kèm
-    private List<AttachmentResponse> attachments;
+    private List<AttachmentInfo> attachments;
 }
