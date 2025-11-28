@@ -765,12 +765,22 @@ public class InnovationService {
                                 .build();
         }
 
-        // 9. Lấy chi tiết sáng kiến kèm bảng điểm để chấm điểm
+        // 9. Lấy chi tiết sáng kiến kèm bảng điểm để chấm điểm (cho thành viên hội đồng)
         public InnovationScoringDetailResponse getInnovationScoringDetailById(String innovationId) {
-                // Lấy innovation detail (reuse existing logic)
-                DepartmentInnovationDetailResponse baseDetail = getDepartmentInnovationDetailById(innovationId);
+                User currentUser = userService.getCurrentUser();
 
-                // Lấy Innovation entity
+                // Kiểm tra quyền - chỉ cho thành viên hội đồng
+                boolean hasCouncilMemberRole = currentUser.getUserRoles().stream()
+                                .anyMatch(userRole -> {
+                                        UserRoleEnum role = userRole.getRole().getRoleName();
+                                        return role == UserRoleEnum.TV_HOI_DONG_KHOA || role == UserRoleEnum.TV_HOI_DONG_TRUONG;
+                                });
+
+                if (!hasCouncilMemberRole) {
+                        throw new IdInvalidException("Chỉ thành viên hội đồng mới có quyền xem bảng điểm để chấm");
+                }
+
+                // Lấy innovation
                 Innovation innovation = innovationRepository.findById(innovationId)
                                 .orElseThrow(() -> new IdInvalidException("Không tìm thấy sáng kiến"));
 
@@ -789,22 +799,78 @@ public class InnovationService {
                 JsonNode scoringCriteria = innovation.getInnovationRound().getInnovationDecision()
                                 .getScoringCriteria();
 
+                // Lấy thông tin cơ bản
+                User author = innovation.getUser();
+                String academicYear = innovation.getInnovationRound() != null
+                                ? innovation.getInnovationRound().getAcademicYear()
+                                : null;
+                String roundName = innovation.getInnovationRound() != null
+                                ? innovation.getInnovationRound().getName()
+                                : null;
+
+                // Lấy danh sách đồng tác giả
+                List<CoInnovation> coInnovations = coInnovationRepository.findByInnovationId(innovationId);
+                List<CoAuthorResponse> coAuthors = coInnovations.stream()
+                                .map(co -> new CoAuthorResponse(
+                                                co.getCoInnovatorFullName(),
+                                                co.getCoInnovatorDepartmentName(),
+                                                co.getUser() != null ? co.getUser().getEmail() : null))
+                                .collect(Collectors.toList());
+
+                // Lấy form data
+                List<FormData> formDataList = formDataRepository.findByInnovationIdWithRelations(innovationId);
+                List<FormDataResponse> formDataResponses = formDataList.stream()
+                                .map(formDataMapper::toFormDataResponse)
+                                .collect(Collectors.toList());
+
+                // Lấy danh sách tài liệu đính kèm
+                List<Attachment> attachments = attachmentRepository.findByInnovationId(innovationId);
+                List<AttachmentInfo> attachmentInfos = attachments.stream()
+                                .map(attachment -> {
+                                        String templateType = null;
+
+                                        if (attachment.getTemplateId() != null) {
+                                                Optional<FormTemplate> formTemplateOpt = formTemplateRepository
+                                                                .findById(attachment.getTemplateId());
+                                                if (formTemplateOpt.isPresent()) {
+                                                        FormTemplate formTemplate = formTemplateOpt.get();
+                                                        TemplateTypeEnum templateTypeEnum = formTemplate
+                                                                        .getTemplateType();
+
+                                                        if (templateTypeEnum != null) {
+                                                                templateType = templateTypeEnum.name();
+                                                        }
+                                                }
+                                        }
+
+                                        return AttachmentInfo.builder()
+                                                        .fileName(attachment.getPathUrl())
+                                                        .templateId(attachment.getTemplateId())
+                                                        .templateType(templateType)
+                                                        .uploadedAt(attachment.getCreatedAt())
+                                                        .isDigitallySigned(false)
+                                                        .signerName(null)
+                                                        .build();
+                                })
+                                .collect(Collectors.toList());
+
                 // Build response
                 InnovationScoringDetailResponse response = new InnovationScoringDetailResponse();
 
-                // Copy all fields from baseDetail
-                response.setInnovationId(baseDetail.getInnovationId());
-                response.setInnovationName(baseDetail.getInnovationName());
-                response.setAuthorName(baseDetail.getAuthorName());
-                response.setAuthorEmail(baseDetail.getAuthorEmail());
-                response.setDepartmentName(baseDetail.getDepartmentName());
-                response.setAcademicYear(baseDetail.getAcademicYear());
-                response.setIsScore(baseDetail.getIsScore());
-                response.setStatus(baseDetail.getStatus());
-                response.setSubmittedAt(baseDetail.getSubmittedAt());
-                response.setCoAuthors(baseDetail.getCoAuthors());
-                response.setTemplates(baseDetail.getTemplates());
-                response.setAttachments(baseDetail.getAttachments());
+                response.setInnovationId(innovation.getId());
+                response.setInnovationName(innovation.getInnovationName());
+                response.setAuthorName(author.getFullName());
+                response.setAuthorEmail(author.getEmail());
+                response.setDepartmentName(innovation.getDepartment() != null
+                                ? innovation.getDepartment().getDepartmentName()
+                                : null);
+                response.setAcademicYear(academicYear);
+                response.setIsScore(innovation.getIsScore());
+                response.setStatus(innovation.getStatus());
+                response.setSubmittedAt(innovation.getCreatedAt());
+                response.setCoAuthors(coAuthors);
+                response.setTemplates(innovationSignatureService.buildTemplateFormDataResponses(formDataResponses));
+                response.setAttachments(attachmentInfos);
 
                 // Add scoring criteria
                 response.setScoringCriteria(scoringCriteria);
