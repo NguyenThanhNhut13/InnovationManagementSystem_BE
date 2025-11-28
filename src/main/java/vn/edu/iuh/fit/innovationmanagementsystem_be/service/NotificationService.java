@@ -824,6 +824,14 @@ public class NotificationService {
                         return;
                 }
 
+                // Nếu là giai đoạn SCORING, không thông báo cho department members
+                // Chỉ thông báo cho thành viên hội đồng thông qua method
+                // notifyScoringCommitteeMembersToPrepare
+                if (departmentPhase.getPhaseType() == InnovationPhaseTypeEnum.SCORING) {
+                        log.info("Giai đoạn SCORING không thông báo cho department members, chỉ thông báo cho hội đồng chấm điểm");
+                        return;
+                }
+
                 List<User> users = userRepository.findByDepartmentId(department.getId());
                 if (users.isEmpty()) {
                         log.warn("Không có người dùng nào thuộc khoa {}", department.getDepartmentName());
