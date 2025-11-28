@@ -202,9 +202,19 @@ public class CouncilService {
             return ReviewLevelEnum.KHOA;
         }
 
+        // TV_HOI_DONG_KHOA → KHOA
+        if (userRoles.contains(UserRoleEnum.TV_HOI_DONG_KHOA)) {
+            return ReviewLevelEnum.KHOA;
+        }
+
         // QUAN_TRI_VIEN_HE_THONG và QUAN_TRI_VIEN_QLKH_HTQT → TRUONG
         if (userRoles.contains(UserRoleEnum.QUAN_TRI_VIEN_HE_THONG)
                 || userRoles.contains(UserRoleEnum.QUAN_TRI_VIEN_QLKH_HTQT)) {
+            return ReviewLevelEnum.TRUONG;
+        }
+
+        // TV_HOI_DONG_TRUONG → TRUONG
+        if (userRoles.contains(UserRoleEnum.TV_HOI_DONG_TRUONG)) {
             return ReviewLevelEnum.TRUONG;
         }
 
