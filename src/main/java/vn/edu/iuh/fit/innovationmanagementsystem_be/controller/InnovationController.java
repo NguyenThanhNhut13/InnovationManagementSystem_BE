@@ -263,7 +263,7 @@ public class InnovationController {
 
         // 12. Lấy chi tiết sáng kiến kèm bảng điểm để chấm điểm
         @GetMapping("/innovations/{id}/scoring-detail")
-        @PreAuthorize("hasAnyRole('QUAN_TRI_VIEN_KHOA', 'TRUONG_KHOA', 'TV_HOI_DONG_KHOA', 'QUAN_TRI_VIEN_QLKH_HTQT', 'TV_HOI_DONG_TRUONG', 'QUAN_TRI_VIEN_HE_THONG')")
+        @PreAuthorize("hasAnyRole('TV_HOI_DONG_KHOA', 'TV_HOI_DONG_TRUONG')")
         @ApiMessage("Lấy chi tiết sáng kiến kèm bảng điểm thành công")
         @Operation(summary = "Get Innovation Scoring Detail", description = "Get innovation detail with scoring criteria for scoring/evaluation")
         @ApiResponses(value = {
