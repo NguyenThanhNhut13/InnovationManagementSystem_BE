@@ -664,8 +664,9 @@ public class CouncilService {
             throw new IdInvalidException("Bạn không phải là thành viên của hội đồng hiện tại");
         }
         
-        // 4. Lấy innovations của council hiện tại
-        List<Innovation> allInnovations = currentCouncil.getInnovations();
+        // 4. Lấy innovations của council hiện tại với user và department đã được fetch (JOIN FETCH)
+        // Sử dụng query riêng để tránh LazyInitializationException và N+1 queries
+        List<Innovation> allInnovations = innovationRepository.findByCouncilIdWithUserAndDepartment(currentCouncil.getId());
         
         // 5. Map sang MyAssignedInnovationResponse với check hasScored
         List<MyAssignedInnovationResponse> responses = allInnovations.stream()
@@ -688,7 +689,7 @@ public class CouncilService {
                         }
                     }
                     
-                    // Lấy thông tin author
+                    // Lấy thông tin author (user và department đã được fetch sẵn qua JOIN FETCH)
                     String authorName = innovation.getUser() != null ? innovation.getUser().getFullName() : "N/A";
                     String departmentName = innovation.getDepartment() != null
                             ? innovation.getDepartment().getDepartmentName()
