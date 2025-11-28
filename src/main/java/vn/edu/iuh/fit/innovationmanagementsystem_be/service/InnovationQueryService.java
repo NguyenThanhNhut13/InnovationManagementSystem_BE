@@ -389,28 +389,25 @@ public class InnovationQueryService {
 
                         DepartmentPhase departmentPhase = departmentPhaseOpt.get();
                         LocalDate deadlineDate = departmentPhase.getPhaseEndDate();
-                        return calculateTimeRemainingSeconds(deadlineDate);
+
+                        if (deadlineDate == null) {
+                                return null;
+                        }
+
+                        LocalDateTime deadlineDateTime = deadlineDate.atTime(LocalTime.MAX);
+                        LocalDateTime submissionTime = innovation.getCreatedAt();
+
+                        if (submissionTime == null) {
+                                return null;
+                        }
+
+                        long secondsBetween = ChronoUnit.SECONDS.between(submissionTime, deadlineDateTime);
+
+                        return Math.abs(secondsBetween);
                 } catch (Exception e) {
                         logger.warn("Lỗi khi tính số giây deadline cho innovation {}: {}", innovation.getId(),
                                         e.getMessage());
                         return null;
-                }
-        }
-
-        private Long calculateTimeRemainingSeconds(LocalDate deadlineDate) {
-                if (deadlineDate == null) {
-                        return null;
-                }
-
-                LocalDateTime deadlineDateTime = deadlineDate.atTime(LocalTime.MAX);
-                LocalDateTime now = LocalDateTime.now();
-
-                long secondsBetween = ChronoUnit.SECONDS.between(deadlineDateTime, now);
-
-                if (secondsBetween <= 0) {
-                        return 0L;
-                } else {
-                        return secondsBetween;
                 }
         }
 
