@@ -8,18 +8,17 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.Innovatio
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class InnovationWithScoreResponse {
+public class MyAssignedInnovationResponse {
     private String innovationId;
     private String innovationName;
     private String authorName;
     private String departmentName;
     private InnovationStatusEnum status;
     
-    // Fields cho quản lý xem
+    // Fields cho thành viên hội đồng
     private Boolean isScore;              // true = có chấm điểm, false = không chấm điểm
-    private Integer totalReviewers;        // Tổng số thành viên cần chấm (chỉ THANH_VIEN)
-    private Integer scoredReviewers;       // Số thành viên đã chấm điểm
-    private Double averageScore;           // Điểm trung bình (null nếu chưa đủ điểm)
-    private Boolean isCompleted;           // true nếu đã có đủ điểm từ tất cả reviewers
+    private Boolean hasScored;             // true = current user đã chấm/đánh giá, false = chưa
+    private Integer myScore;               // Điểm của current user (null nếu chưa chấm hoặc không chấm điểm)
+    private Boolean myIsApproved;          // Quyết định của current user (null nếu chưa đánh giá)
 }
 

@@ -13,12 +13,11 @@ import java.util.List;
 @AllArgsConstructor
 public class SubmitInnovationScoreRequest {
 
-    @NotNull(message = "Danh sách điểm không được để trống")
-    @Size(min = 1, message = "Phải chấm điểm cho ít nhất 1 tiêu chí")
+    // Optional - chỉ bắt buộc nếu isScore = true
     @Valid
     private List<ScoreCriteriaDetail> scoringDetails;
 
-    @NotNull(message = "Tổng điểm không được để trống")
+    // Optional - chỉ bắt buộc nếu isScore = true
     @Min(value = 0, message = "Tổng điểm phải >= 0")
     @Max(value = 100, message = "Tổng điểm phải <= 100")
     private Integer totalScore;
