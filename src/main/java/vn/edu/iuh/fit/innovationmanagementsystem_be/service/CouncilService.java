@@ -678,23 +678,21 @@ public class CouncilService {
         // Sử dụng query riêng để tránh LazyInitializationException và N+1 queries
         List<Innovation> allInnovations = innovationRepository.findByCouncilIdWithUserAndDepartment(currentCouncil.getId());
         
-        // 5. Map sang MyAssignedInnovationResponse với check hasScored
+        // 5. Map sang MyAssignedInnovationResponse
         List<MyAssignedInnovationResponse> responses = allInnovations.stream()
                 .map(innovation -> {
-                    // Check current user đã chấm chưa
+                    // Check current user đã đánh giá chưa (để filter và sort)
                     boolean hasScored = reviewScoreRepository.existsByInnovationIdAndReviewerId(
                             innovation.getId(),
                             currentUserId
                     );
                     
-                    // Lấy điểm của current user nếu đã chấm
-                    Integer myScore = null;
+                    // Lấy quyết định của current user nếu đã đánh giá
                     Boolean myIsApproved = null;
                     if (hasScored) {
                         Optional<ReviewScore> myScoreRecord = reviewScoreRepository
                                 .findByInnovationIdAndReviewerId(innovation.getId(), currentUserId);
                         if (myScoreRecord.isPresent()) {
-                            myScore = myScoreRecord.get().getTotalScore();
                             myIsApproved = myScoreRecord.get().getIsApproved();
                         }
                     }
@@ -705,7 +703,7 @@ public class CouncilService {
                             ? innovation.getDepartment().getDepartmentName()
                             : null;
                     
-                    // Map sang response
+                    // Map sang response (không trả về hasScored và myScore)
                     return new MyAssignedInnovationResponse(
                             innovation.getId(),
                             innovation.getInnovationName(),
@@ -713,30 +711,30 @@ public class CouncilService {
                             departmentName,
                             innovation.getStatus(),
                             innovation.getIsScore(),
-                            hasScored,
-                            myScore,
                             myIsApproved
                     );
                 })
                 .collect(Collectors.toList());
         
-        // 7. Filter theo scoringStatus (nếu có)
+        // 7. Filter theo scoringStatus (nếu có) - dùng myIsApproved để check
         if (scoringStatus != null && scoringStatus != ScoringStatusEnum.ALL) {
             if (scoringStatus == ScoringStatusEnum.PENDING) {
                 responses = responses.stream()
-                        .filter(r -> !r.getHasScored())
+                        .filter(r -> r.getMyIsApproved() == null)
                         .collect(Collectors.toList());
             } else if (scoringStatus == ScoringStatusEnum.SCORED) {
                 responses = responses.stream()
-                        .filter(r -> r.getHasScored())
+                        .filter(r -> r.getMyIsApproved() != null)
                         .collect(Collectors.toList());
             }
         }
         
-        // 8. Sort: Chưa chấm trước, đã chấm sau
+        // 8. Sort: Chưa đánh giá trước, đã đánh giá sau
         responses.sort((a, b) -> {
-            if (a.getHasScored() != b.getHasScored()) {
-                return a.getHasScored() ? 1 : -1;
+            boolean aHasScored = a.getMyIsApproved() != null;
+            boolean bHasScored = b.getMyIsApproved() != null;
+            if (aHasScored != bHasScored) {
+                return aHasScored ? 1 : -1;
             }
             // Nếu cùng trạng thái, sort theo tên
             return a.getInnovationName().compareTo(b.getInnovationName());
