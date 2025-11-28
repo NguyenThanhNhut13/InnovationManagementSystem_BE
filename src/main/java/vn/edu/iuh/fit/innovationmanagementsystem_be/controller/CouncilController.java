@@ -19,6 +19,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.Council;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.CreateCouncilRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.UpdateCouncilMembersRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.CouncilResponse;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.ScoringStatusEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.service.CouncilService;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.ResultPaginationDTO;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.annotation.ApiMessage;
@@ -130,6 +131,23 @@ public class CouncilController {
             @Parameter(description = "Updated members list", required = true) @Valid @RequestBody UpdateCouncilMembersRequest request) {
         CouncilResponse response = councilService.updateCouncilMembers(id, request);
         return ResponseEntity.ok(response);
+    }
+
+    // 7. Lấy danh sách sáng kiến được phân công cho thành viên hội đồng hiện tại
+    @GetMapping("/councils/my-assigned-innovations")
+    @PreAuthorize("hasAnyRole('TV_HOI_DONG_KHOA', 'TV_HOI_DONG_TRUONG')")
+    @ApiMessage("Lấy danh sách sáng kiến được phân công thành công")
+    @Operation(summary = "Get My Assigned Innovations", description = "Get paginated list of innovations assigned to current council member for scoring. Returns innovations from current council only.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Innovations retrieved successfully", content = @Content(schema = @Schema(implementation = ResultPaginationDTO.class))),
+            @ApiResponse(responseCode = "404", description = "No council found for current round"),
+            @ApiResponse(responseCode = "403", description = "User is not a member of current council"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized")
+    })
+    public ResponseEntity<ResultPaginationDTO> getMyAssignedInnovations(
+            @Parameter(description = "Filter by scoring status: ALL, PENDING, SCORED") @RequestParam(required = false, defaultValue = "ALL") ScoringStatusEnum scoringStatus,
+            @Parameter(description = "Pagination parameters") Pageable pageable) {
+        return ResponseEntity.ok(councilService.getMyAssignedInnovations(scoringStatus, pageable));
     }
 
 }

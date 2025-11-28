@@ -25,6 +25,8 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.UpdateCoun
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.CouncilResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.CouncilListResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationWithScoreResponse;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.MyAssignedInnovationResponse;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.ScoringStatusEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.exception.IdInvalidException;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.mapper.CouncilMapper;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.CouncilRepository;
@@ -594,6 +596,7 @@ public class CouncilService {
                             authorName,
                             departmentName,
                             innovation.getStatus(),
+                            innovation.getIsScore(),
                             totalReviewers,
                             scoringResult.scoredReviewers,
                             scoringResult.averageScore,
@@ -612,7 +615,143 @@ public class CouncilService {
         return Utils.toResultPaginationDTO(responsePage, pageable);
     }
 
-    // 5. Lấy danh sách hội đồng với pagination và filtering
+    // 5. Lấy danh sách sáng kiến được phân công cho thành viên hội đồng hiện tại
+    @Transactional(readOnly = true)
+    public ResultPaginationDTO getMyAssignedInnovations(ScoringStatusEnum scoringStatus, Pageable pageable) {
+        // 1. Lấy current user
+        User currentUser = userService.getCurrentUser();
+        String currentUserId = currentUser.getId();
+        
+        // 2. Lấy council hiện tại (tái sử dụng logic từ getCurrentCouncil)
+        InnovationRound currentRound = innovationRoundRepository.findCurrentActiveRound(
+                LocalDate.now(), InnovationRoundStatusEnum.OPEN)
+                .orElseThrow(() -> new IdInvalidException(
+                        "Không có đợt sáng kiến nào đang mở. Vui lòng đảm bảo có đợt sáng kiến đang mở"));
+        
+        ReviewLevelEnum councilLevel = determineCouncilLevelFromUserRole();
+        Department department = null;
+        if (councilLevel == ReviewLevelEnum.KHOA) {
+            if (currentUser.getDepartment() == null) {
+                throw new IdInvalidException(
+                        "Người dùng hiện tại chưa được gán vào khoa nào. Không thể lấy hội đồng cấp Khoa");
+            }
+            department = currentUser.getDepartment();
+        }
+        
+        Optional<Council> councilOpt;
+        if (councilLevel == ReviewLevelEnum.KHOA && department != null) {
+            councilOpt = councilRepository.findByRoundIdAndLevelAndDepartmentId(
+                    currentRound.getId(), councilLevel, department.getId());
+        } else if (councilLevel == ReviewLevelEnum.TRUONG) {
+            councilOpt = councilRepository.findByRoundIdAndLevelAndNoDepartment(
+                    currentRound.getId(), councilLevel);
+        } else {
+            throw new IdInvalidException("Không xác định được cấp độ hội đồng");
+        }
+        
+        Council currentCouncil = councilOpt.orElseThrow(() -> new IdInvalidException(
+                "Chưa có hội đồng nào được thành lập cho đợt sáng kiến hiện tại. Vui lòng thành lập hội đồng trước."));
+        
+        // Trigger lazy load cho innovations và members
+        currentCouncil.getInnovations().size();
+        currentCouncil.getCouncilMembers().size();
+        
+        // 3. Validate user là thành viên của council này
+        boolean isMember = currentCouncil.getCouncilMembers().stream()
+                .anyMatch(member -> member.getUser().getId().equals(currentUserId));
+        
+        if (!isMember) {
+            throw new IdInvalidException("Bạn không phải là thành viên của hội đồng hiện tại");
+        }
+        
+        // 4. Lấy innovations của council hiện tại
+        List<Innovation> allInnovations = currentCouncil.getInnovations();
+        
+        // 5. Map sang MyAssignedInnovationResponse với check hasScored
+        List<MyAssignedInnovationResponse> responses = allInnovations.stream()
+                .map(innovation -> {
+                    // Check current user đã chấm chưa
+                    boolean hasScored = reviewScoreRepository.existsByInnovationIdAndReviewerId(
+                            innovation.getId(),
+                            currentUserId
+                    );
+                    
+                    // Lấy điểm của current user nếu đã chấm
+                    Integer myScore = null;
+                    Boolean myIsApproved = null;
+                    if (hasScored) {
+                        Optional<ReviewScore> myScoreRecord = reviewScoreRepository
+                                .findByInnovationIdAndReviewerId(innovation.getId(), currentUserId);
+                        if (myScoreRecord.isPresent()) {
+                            myScore = myScoreRecord.get().getTotalScore();
+                            myIsApproved = myScoreRecord.get().getIsApproved();
+                        }
+                    }
+                    
+                    // Lấy thông tin author
+                    String authorName = innovation.getUser() != null ? innovation.getUser().getFullName() : "N/A";
+                    String departmentName = innovation.getDepartment() != null
+                            ? innovation.getDepartment().getDepartmentName()
+                            : null;
+                    
+                    // Map sang response
+                    return new MyAssignedInnovationResponse(
+                            innovation.getId(),
+                            innovation.getInnovationName(),
+                            authorName,
+                            departmentName,
+                            innovation.getStatus(),
+                            innovation.getIsScore(),
+                            hasScored,
+                            myScore,
+                            myIsApproved
+                    );
+                })
+                .collect(Collectors.toList());
+        
+        // 7. Filter theo scoringStatus (nếu có)
+        if (scoringStatus != null && scoringStatus != ScoringStatusEnum.ALL) {
+            if (scoringStatus == ScoringStatusEnum.PENDING) {
+                responses = responses.stream()
+                        .filter(r -> !r.getHasScored())
+                        .collect(Collectors.toList());
+            } else if (scoringStatus == ScoringStatusEnum.SCORED) {
+                responses = responses.stream()
+                        .filter(r -> r.getHasScored())
+                        .collect(Collectors.toList());
+            }
+        }
+        
+        // 8. Sort: Chưa chấm trước, đã chấm sau
+        responses.sort((a, b) -> {
+            if (a.getHasScored() != b.getHasScored()) {
+                return a.getHasScored() ? 1 : -1;
+            }
+            // Nếu cùng trạng thái, sort theo tên
+            return a.getInnovationName().compareTo(b.getInnovationName());
+        });
+        
+        // 9. Pagination
+        int totalElements = responses.size();
+        int page = pageable.getPageNumber();
+        int size = pageable.getPageSize();
+        int start = page * size;
+        int end = Math.min(start + size, totalElements);
+        
+        List<MyAssignedInnovationResponse> pagedResponses = start < totalElements
+                ? responses.subList(start, end)
+                : new ArrayList<>();
+        
+        Page<MyAssignedInnovationResponse> responsePage = new PageImpl<>(
+                pagedResponses,
+                pageable,
+                totalElements
+        );
+        
+        return Utils.toResultPaginationDTO(responsePage, pageable);
+    }
+
+    // 6. Lấy danh sách hội đồng với pagination và filtering
     public ResultPaginationDTO getAllCouncilsWithPaginationAndFilter(
             Specification<Council> specification, Pageable pageable) {
         
