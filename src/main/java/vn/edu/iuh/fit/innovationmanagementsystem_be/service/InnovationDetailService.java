@@ -115,6 +115,7 @@ public class InnovationDetailService {
                                 .map(attachment -> {
                                         boolean isDigitallySigned = false;
                                         String signerName = null;
+                                        String templateType = null;
 
                                         if (attachment.getTemplateId() != null
                                                         && isGeneratedTemplateFile(attachment, innovationId)) {
@@ -122,12 +123,17 @@ public class InnovationDetailService {
                                                                 .findById(attachment.getTemplateId());
                                                 if (formTemplateOpt.isPresent()) {
                                                         FormTemplate formTemplate = formTemplateOpt.get();
-                                                        TemplateTypeEnum templateType = formTemplate.getTemplateType();
+                                                        TemplateTypeEnum templateTypeEnum = formTemplate
+                                                                        .getTemplateType();
 
-                                                        if (templateType == TemplateTypeEnum.DON_DE_NGHI
-                                                                        || templateType == TemplateTypeEnum.BAO_CAO_MO_TA) {
+                                                        if (templateTypeEnum != null) {
+                                                                templateType = templateTypeEnum.name();
+                                                        }
+
+                                                        if (templateTypeEnum == TemplateTypeEnum.DON_DE_NGHI
+                                                                        || templateTypeEnum == TemplateTypeEnum.BAO_CAO_MO_TA) {
                                                                 DocumentTypeEnum documentType = mapTemplateTypeToDocumentType(
-                                                                                templateType);
+                                                                                templateTypeEnum);
 
                                                                 if (documentType != null) {
                                                                         List<DigitalSignature> signatures = digitalSignatureRepository
@@ -158,6 +164,7 @@ public class InnovationDetailService {
                                         return AttachmentInfo.builder()
                                                         .fileName(attachment.getPathUrl())
                                                         .templateId(attachment.getTemplateId())
+                                                        .templateType(templateType)
                                                         .uploadedAt(attachment.getCreatedAt())
                                                         .isDigitallySigned(isDigitallySigned)
                                                         .signerName(signerName)
