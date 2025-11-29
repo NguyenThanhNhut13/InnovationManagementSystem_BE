@@ -610,21 +610,31 @@ public class DigitalSignatureService {
             throw new IdInvalidException("innovationId và templateId không được để trống");
         }
 
-        Attachment attachment = attachmentRepository.findByInnovationIdAndTemplateId(innovationId, templateId)
-                .orElseThrow(() -> new IdInvalidException("Không tìm thấy file PDF cho template đã yêu cầu"));
+        // Kiểm tra Innovation tồn tại
+        Innovation innovation = innovationRepository.findById(innovationId)
+                .orElseThrow(() -> new IdInvalidException("Không tìm thấy sáng kiến với ID: " + innovationId));
+
+        // Kiểm tra FormTemplate tồn tại
+        FormTemplate formTemplate = formTemplateRepository.findById(templateId)
+                .orElseThrow(() -> new IdInvalidException("Không tìm thấy template với ID: " + templateId));
+
+        // Tìm attachment
+        Attachment attachment = attachmentRepository
+                .findTopByInnovationIdAndTemplateIdOrderByCreatedAtDesc(innovationId, templateId)
+                .orElseThrow(() -> new IdInvalidException(
+                        String.format("Không tìm thấy file PDF cho template đã yêu cầu. " +
+                                "InnovationId: %s, TemplateId: %s, Template Name: %s. " +
+                                "Nguyên nhân có thể: PDF chưa được tạo hoặc đã bị xóa.",
+                                innovationId, templateId, formTemplate.getTemplateType().getValue())));
 
         String pdfUrl = fileService.getPresignedUrl(attachment.getPathUrl(), 3600);
-        Optional<FormTemplate> formTemplateOpt = formTemplateRepository.findById(templateId);
-        DocumentTypeEnum documentType = formTemplateOpt
-                .map(FormTemplate::getTemplateType)
-                .map(this::mapTemplateTypeToDocumentType)
-                .orElse(null);
+        DocumentTypeEnum documentType = mapTemplateTypeToDocumentType(formTemplate.getTemplateType());
 
         TemplatePdfResponse response = new TemplatePdfResponse();
         response.setInnovationId(innovationId);
         response.setTemplateId(templateId);
         response.setDocumentType(documentType);
-        response.setOriginalFileName(resolveAttachmentOriginalFileName(attachment, formTemplateOpt.orElse(null)));
+        response.setOriginalFileName(resolveAttachmentOriginalFileName(attachment, formTemplate));
         response.setPdfUrl(pdfUrl);
 
         // Kiểm tra CA hợp lệ của user hiện tại
