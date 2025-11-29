@@ -58,11 +58,25 @@ public interface InnovationRepository extends JpaRepository<Innovation, String>,
                         @Param("roundId") String roundId,
                         @Param("status") InnovationStatusEnum status);
 
-        // Lấy innovations của council với user và department đã được fetch (để tránh LazyInitializationException)
+        // Lấy innovations của council với user và department đã được fetch (để tránh
+        // LazyInitializationException)
         @Query("SELECT DISTINCT i FROM Innovation i " +
-               "LEFT JOIN FETCH i.user " +
-               "LEFT JOIN FETCH i.department " +
-               "JOIN i.councils c " +
-               "WHERE c.id = :councilId")
+                        "LEFT JOIN FETCH i.user " +
+                        "LEFT JOIN FETCH i.department " +
+                        "JOIN i.councils c " +
+                        "WHERE c.id = :councilId")
         List<Innovation> findByCouncilIdWithUserAndDepartment(@Param("councilId") String councilId);
+
+        /**
+         * Tìm innovations theo departmentId, roundId và status
+         * (để cập nhật status khi phase SCORING bắt đầu)
+         */
+        @Query("SELECT i FROM Innovation i " +
+                        "WHERE i.department.id = :departmentId " +
+                        "AND i.innovationRound.id = :roundId " +
+                        "AND i.status = :status")
+        List<Innovation> findByDepartmentIdAndRoundIdAndStatus(
+                        @Param("departmentId") String departmentId,
+                        @Param("roundId") String roundId,
+                        @Param("status") InnovationStatusEnum status);
 }
