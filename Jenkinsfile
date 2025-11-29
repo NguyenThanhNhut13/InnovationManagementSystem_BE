@@ -42,12 +42,22 @@ pipeline {
                 }
             }
         }
+
+        stage('Clean Docker Cache') {
+            steps {
+                script {
+                    echo 'Cleaning Docker cache...'
+                    sh 'docker builder prune -f'
+                }
+            }
+        }
         
         stage('Build') {
             steps {
                 script {
                     echo 'Building Docker image...'
-                    sh 'docker build -t ${DOCKER_IMAGE}:latest .'
+                    // sh 'docker build -t ${DOCKER_IMAGE}:latest .'
+                    sh 'docker build --no-cache -t ${DOCKER_IMAGE}:latest .'
                 }
             }
         }
@@ -86,11 +96,16 @@ pipeline {
         stage('Health Check') {
             steps {
                 script {
-                    echo 'Checking application health...'
-                    sh '''
-                        sleep 30
-                        curl -f http://localhost:8081/actuator/health || echo "Health check endpoint not available"
-                    '''
+                    echo "Waiting for application to start..."
+                    sleep 60
+
+                    echo "Checking health endpoint..."
+                    sh """
+                        if ! curl -f http://localhost:8081/actuator/health; then
+                            echo '❌ Health check failed!'
+                            exit 1
+                        fi
+                    """
                 }
             }
         }
