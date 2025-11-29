@@ -27,7 +27,7 @@ public class SubmitInnovationScoreRequest {
 
     private Boolean requiresSupplementaryDocuments; // Yêu cầu bổ sung tài liệu
 
-    @NotBlank(message = "Nhận xét chi tiết không được để trống")
+    // Optional - có thể để trống
     @Size(max = 5000, message = "Nhận xét không được vượt quá 5000 ký tự")
     private String detailedComments;
 }
