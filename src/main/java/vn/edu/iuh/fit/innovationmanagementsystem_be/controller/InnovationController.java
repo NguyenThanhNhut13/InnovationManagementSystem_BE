@@ -19,10 +19,10 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.CreateInno
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.FilterMyInnovationRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.FilterAdminInnovationRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationFormDataResponse;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationScoreResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.DepartmentInnovationDetailResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationStatisticsDTO;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationAcademicYearStatisticsDTO;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationDetailResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationDetailForGiangVienResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.service.InnovationService;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.service.InnovationDetailService;
@@ -277,14 +277,30 @@ public class InnovationController {
                 return ResponseEntity.ok(innovationService.getInnovationScoringDetailById(id));
         }
 
-        // 13. Chấm điểm sáng kiến
+        // 13. Lấy đánh giá đã chấm của user hiện tại
+        @GetMapping("/innovations/{id}/my-evaluation")
+        @PreAuthorize("hasAnyRole('TV_HOI_DONG_KHOA', 'TV_HOI_DONG_TRUONG')")
+        @ApiMessage("Lấy đánh giá đã chấm thành công")
+        @Operation(summary = "Get My Evaluation", description = "Get the evaluation/score submitted by current user for an innovation")
+        @ApiResponses(value = {
+                        @ApiResponse(responseCode = "200", description = "Evaluation retrieved successfully", content = @Content(schema = @Schema(implementation = vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationScoreResponse.class))),
+                        @ApiResponse(responseCode = "400", description = "User has not scored this innovation yet"),
+                        @ApiResponse(responseCode = "403", description = "Forbidden"),
+                        @ApiResponse(responseCode = "404", description = "Innovation not found")
+        })
+        public ResponseEntity<InnovationScoreResponse> getMyEvaluation(
+                        @Parameter(description = "Innovation ID", required = true) @PathVariable String id) {
+                return ResponseEntity.ok(reviewScoreService.getMyEvaluation(id));
+        }
+
+        // 14. Chấm điểm sáng kiến (có thể cập nhật lại trong thời gian chấm điểm)
         @PostMapping("/innovations/{id}/score")
         @PreAuthorize("hasAnyRole('TV_HOI_DONG_KHOA', 'TV_HOI_DONG_TRUONG', 'QUAN_TRI_VIEN_HE_THONG')")
         @ApiMessage("Chấm điểm sáng kiến thành công")
-        @Operation(summary = "Submit Innovation Score", description = "Submit scoring for an innovation by council member")
+        @Operation(summary = "Submit or Update Innovation Score", description = "Submit or update score/evaluation for an innovation by council member. Only allowed during the scoring period. Auto-approves if score >= 70 for scored innovations. Can be used to update existing evaluation within the scoring period.")
         @ApiResponses(value = {
-                        @ApiResponse(responseCode = "200", description = "Score submitted successfully", content = @Content(schema = @Schema(implementation = vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationScoreResponse.class))),
-                        @ApiResponse(responseCode = "400", description = "Invalid request or validation error"),
+                        @ApiResponse(responseCode = "200", description = "Score submitted/updated successfully", content = @Content(schema = @Schema(implementation = vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationScoreResponse.class))),
+                        @ApiResponse(responseCode = "400", description = "Invalid request, validation error, or scoring period has ended"),
                         @ApiResponse(responseCode = "403", description = "Forbidden"),
                         @ApiResponse(responseCode = "404", description = "Innovation not found")
         })
