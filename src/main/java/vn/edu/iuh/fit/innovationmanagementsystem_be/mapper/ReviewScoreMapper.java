@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.mapstruct.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.ReviewScore;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.ScoreCriteriaDetail;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationScoreResponse;
@@ -17,9 +16,7 @@ import java.util.List;
 public abstract class ReviewScoreMapper {
 
     private static final Logger logger = LoggerFactory.getLogger(ReviewScoreMapper.class);
-
-    @Autowired
-    protected ObjectMapper objectMapper;
+    private static final ObjectMapper staticObjectMapper = new ObjectMapper();
 
     @Mapping(source = "id", target = "reviewScoreId")
     @Mapping(source = "innovation.id", target = "innovationId")
@@ -33,33 +30,31 @@ public abstract class ReviewScoreMapper {
     @AfterMapping
     protected void convertScoringDetails(@MappingTarget InnovationScoreResponse response, ReviewScore reviewScore) {
         logger.info("convertScoringDetails called for reviewScore: {}", reviewScore.getId());
-        JsonNode scoringDetailsNode = reviewScore.getScoringDetails();
         
-        logger.info("scoringDetailsNode isNull: {}, isArray: {}", 
-                scoringDetailsNode == null, 
+        JsonNode scoringDetailsNode = reviewScore.getScoringDetails();
+        logger.info("scoringDetailsNode is null: {}, isArray: {}", 
+                scoringDetailsNode == null,
                 scoringDetailsNode != null ? scoringDetailsNode.isArray() : false);
         
         if (scoringDetailsNode != null && scoringDetailsNode.isArray()) {
             try {
-                logger.info("Parsing array with size: {}", scoringDetailsNode.size());
+                logger.info("Array size: {}", scoringDetailsNode.size());
+                
                 List<ScoreCriteriaDetail> details = new ArrayList<>();
                 for (JsonNode node : scoringDetailsNode) {
                     logger.info("Parsing node: {}", node.toString());
-                    ScoreCriteriaDetail detail = objectMapper.treeToValue(node, ScoreCriteriaDetail.class);
-                    logger.info("Successfully parsed detail: criteriaId={}, selectedSubCriteriaId={}, score={}", 
-                            detail.getCriteriaId(), detail.getSelectedSubCriteriaId(), detail.getScore());
+                    ScoreCriteriaDetail detail = staticObjectMapper.treeToValue(node, ScoreCriteriaDetail.class);
                     details.add(detail);
                 }
-                logger.info("Successfully converted {} scoringDetails for reviewScore: {}", 
-                        details.size(), reviewScore.getId());
+                logger.info("Successfully converted {} details", details.size());
                 response.setScoringDetails(details);
             } catch (Exception e) {
-                logger.error("Error converting scoringDetails from JsonNode for reviewScore: {}. Error: {}", 
-                        reviewScore.getId(), e.getMessage(), e);
+                logger.error("Error converting scoringDetails from JsonNode for reviewScore: {}", 
+                        reviewScore.getId(), e);
                 response.setScoringDetails(null);
             }
         } else {
-            logger.warn("scoringDetailsNode is null or not an array for reviewScore: {}", reviewScore.getId());
+            logger.warn("scoringDetailsNode is null or not an array");
             response.setScoringDetails(null);
         }
     }
