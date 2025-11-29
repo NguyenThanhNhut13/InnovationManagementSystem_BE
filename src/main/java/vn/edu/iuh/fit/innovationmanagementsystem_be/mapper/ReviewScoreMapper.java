@@ -16,7 +16,8 @@ import java.util.List;
 public interface ReviewScoreMapper {
 
     Logger logger = LoggerFactory.getLogger(ReviewScoreMapper.class);
-    ObjectMapper staticObjectMapper = new ObjectMapper();
+    ObjectMapper staticObjectMapper = new ObjectMapper()
+            .configure(com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
     @Mapping(source = "id", target = "reviewScoreId")
     @Mapping(source = "innovation.id", target = "innovationId")
@@ -30,16 +31,16 @@ public interface ReviewScoreMapper {
     @AfterMapping
     default void convertScoringDetails(@MappingTarget InnovationScoreResponse response, ReviewScore reviewScore) {
         logger.info("convertScoringDetails called for reviewScore: {}", reviewScore.getId());
-        
+
         JsonNode scoringDetailsNode = reviewScore.getScoringDetails();
-        logger.info("scoringDetailsNode is null: {}, isArray: {}", 
+        logger.info("scoringDetailsNode is null: {}, isArray: {}",
                 scoringDetailsNode == null,
                 scoringDetailsNode != null ? scoringDetailsNode.isArray() : false);
-        
+
         if (scoringDetailsNode != null && scoringDetailsNode.isArray()) {
             try {
                 logger.info("Array size: {}", scoringDetailsNode.size());
-                
+
                 List<ScoreCriteriaDetail> details = new ArrayList<>();
                 for (JsonNode node : scoringDetailsNode) {
                     logger.info("Parsing node: {}", node.toString());
@@ -49,7 +50,7 @@ public interface ReviewScoreMapper {
                 logger.info("Successfully converted {} details", details.size());
                 response.setScoringDetails(details);
             } catch (Exception e) {
-                logger.error("Error converting scoringDetails from JsonNode for reviewScore: {}", 
+                logger.error("Error converting scoringDetails from JsonNode for reviewScore: {}",
                         reviewScore.getId(), e);
                 response.setScoringDetails(null);
             }
