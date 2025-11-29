@@ -800,6 +800,17 @@ public class InnovationService {
                                 })
                                 .collect(Collectors.toList());
 
+                // Tạo formData object
+                InnovationResponse innovationResponse = innovationMapper.toInnovationResponse(innovation);
+                Long timeRemainingSeconds = getSubmissionTimeRemainingSeconds(innovation);
+                innovationResponse.setSubmissionTimeRemainingSeconds(timeRemainingSeconds);
+
+                InnovationFormDataResponse formData = new InnovationFormDataResponse();
+                formData.setInnovation(innovationResponse);
+                formData.setTemplates(innovationSignatureService.buildTemplateFormDataResponses(formDataResponses));
+                formData.setTemplateSignatures(Collections.emptyList()); // Empty list như full-detail API
+                formData.setSubmissionTimeRemainingSeconds(timeRemainingSeconds);
+
                 return DepartmentInnovationDetailResponse.builder()
                                 .innovationId(innovation.getId())
                                 .innovationName(innovation.getInnovationName())
@@ -812,8 +823,8 @@ public class InnovationService {
                                 .status(innovation.getStatus())
                                 .submittedAt(innovation.getCreatedAt())
                                 .coAuthors(coAuthors)
-                                .templates(innovationSignatureService.buildTemplateFormDataResponses(formDataResponses))
                                 .attachments(attachmentInfos)
+                                .formData(formData)
                                 .build();
         }
 
@@ -855,8 +866,8 @@ public class InnovationService {
                 response.setStatus(baseDetail.getStatus());
                 response.setSubmittedAt(baseDetail.getSubmittedAt());
                 response.setCoAuthors(baseDetail.getCoAuthors());
-                response.setTemplates(baseDetail.getTemplates());
                 response.setAttachments(baseDetail.getAttachments());
+                response.setFormData(baseDetail.getFormData());
 
                 // Add scoring criteria
                 response.setScoringCriteria(scoringCriteria);
