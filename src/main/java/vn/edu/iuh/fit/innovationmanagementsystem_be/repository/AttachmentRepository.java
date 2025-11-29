@@ -14,6 +14,8 @@ public interface AttachmentRepository extends JpaRepository<Attachment, String> 
 
     Optional<Attachment> findByInnovationIdAndTemplateId(String innovationId, String templateId);
 
+    Optional<Attachment> findTopByInnovationIdAndTemplateIdOrderByCreatedAtDesc(String innovationId, String templateId);
+
     void deleteByInnovationId(String innovationId);
 
     void deleteByInnovationIdAndTemplateId(String innovationId, String templateId);
