@@ -707,7 +707,7 @@ public class DigitalSignatureService {
         }
     }
 
-    private DocumentTypeEnum mapTemplateTypeToDocumentType(TemplateTypeEnum templateType) {
+    public DocumentTypeEnum mapTemplateTypeToDocumentType(TemplateTypeEnum templateType) {
         if (templateType == null) {
             return null;
         }

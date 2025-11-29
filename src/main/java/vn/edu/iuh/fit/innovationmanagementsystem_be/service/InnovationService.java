@@ -41,7 +41,6 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.UpcomingD
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationDetailResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.DepartmentInnovationDetailResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationScoringDetailResponse;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.AttachmentResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.AttachmentInfo;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.CoAuthorResponse;
 import java.util.stream.Collectors;
@@ -62,8 +61,11 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.CoInnovation;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.DepartmentPhase;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.UserSignatureProfile;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.FormTemplate;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.DigitalSignature;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.CAStatusEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.TemplateTypeEnum;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.DocumentTypeEnum;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.SignatureStatusEnum;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -111,6 +113,7 @@ public class InnovationService {
         private final InnovationFormService innovationFormService;
         private final InnovationCoAuthorService innovationCoAuthorService;
         private final InnovationSignatureService innovationSignatureService;
+        private final DigitalSignatureService digitalSignatureService;
 
         public InnovationService(InnovationRepository innovationRepository,
                         InnovationPhaseRepository innovationPhaseRepository,
@@ -135,7 +138,8 @@ public class InnovationService {
                         InnovationStatisticsService innovationStatisticsService,
                         InnovationFormService innovationFormService,
                         InnovationCoAuthorService innovationCoAuthorService,
-                        InnovationSignatureService innovationSignatureService) {
+                        InnovationSignatureService innovationSignatureService,
+                        DigitalSignatureService digitalSignatureService) {
                 this.innovationRepository = innovationRepository;
                 this.innovationPhaseRepository = innovationPhaseRepository;
                 this.formDataService = formDataService;
@@ -160,6 +164,7 @@ public class InnovationService {
                 this.innovationFormService = innovationFormService;
                 this.innovationCoAuthorService = innovationCoAuthorService;
                 this.innovationSignatureService = innovationSignatureService;
+                this.digitalSignatureService = digitalSignatureService;
         }
 
         // 1. Lấy tất cả sáng kiến của user hiện tại với filter chi tiết
@@ -665,7 +670,8 @@ public class InnovationService {
                 return response;
         }
 
-        // 8. Lấy chi tiết sáng kiến cho TRUONG_KHOA, QUAN_TRI_VIEN_KHOA và thành viên hội đồng
+        // 8. Lấy chi tiết sáng kiến cho TRUONG_KHOA, QUAN_TRI_VIEN_KHOA và thành viên
+        // hội đồng
         public DepartmentInnovationDetailResponse getDepartmentInnovationDetailById(String innovationId) {
                 User currentUser = userService.getCurrentUser();
 
@@ -678,27 +684,31 @@ public class InnovationService {
                 boolean hasCouncilMemberRole = currentUser.getUserRoles().stream()
                                 .anyMatch(userRole -> {
                                         UserRoleEnum role = userRole.getRole().getRoleName();
-                                        return role == UserRoleEnum.TV_HOI_DONG_KHOA || role == UserRoleEnum.TV_HOI_DONG_TRUONG;
+                                        return role == UserRoleEnum.TV_HOI_DONG_KHOA
+                                                        || role == UserRoleEnum.TV_HOI_DONG_TRUONG;
                                 });
 
                 if (!hasQuanTriVienKhoaRole && !hasTruongKhoaRole && !hasCouncilMemberRole) {
-                        throw new IdInvalidException("Chỉ QUAN_TRI_VIEN_KHOA, TRUONG_KHOA hoặc thành viên hội đồng mới có quyền xem");
+                        throw new IdInvalidException(
+                                        "Chỉ QUAN_TRI_VIEN_KHOA, TRUONG_KHOA hoặc thành viên hội đồng mới có quyền xem");
                 }
 
                 // Lấy innovation
                 Innovation innovation = innovationRepository.findById(innovationId)
                                 .orElseThrow(() -> new IdInvalidException("Không tìm thấy sáng kiến"));
 
-                // Kiểm tra department matching - chỉ áp dụng cho QUAN_TRI_VIEN_KHOA và TRUONG_KHOA
+                // Kiểm tra department matching - chỉ áp dụng cho QUAN_TRI_VIEN_KHOA và
+                // TRUONG_KHOA
                 // Thành viên hội đồng có thể xem sáng kiến của mọi khoa
                 if (hasQuanTriVienKhoaRole || hasTruongKhoaRole) {
-                if (innovation.getDepartment() == null || currentUser.getDepartment() == null) {
-                        throw new IdInvalidException("Không thể xác định phòng ban của sáng kiến hoặc người dùng");
-                }
+                        if (innovation.getDepartment() == null || currentUser.getDepartment() == null) {
+                                throw new IdInvalidException(
+                                                "Không thể xác định phòng ban của sáng kiến hoặc người dùng");
+                        }
 
-                // Kiểm tra department matching
-                if (!innovation.getDepartment().getId().equals(currentUser.getDepartment().getId())) {
-                        throw new IdInvalidException("Bạn chỉ có thể xem sáng kiến của khoa mình");
+                        // Kiểm tra department matching
+                        if (!innovation.getDepartment().getId().equals(currentUser.getDepartment().getId())) {
+                                throw new IdInvalidException("Bạn chỉ có thể xem sáng kiến của khoa mình");
                         }
                 }
 
@@ -728,11 +738,20 @@ public class InnovationService {
 
                 // Lấy danh sách tài liệu đính kèm
                 List<Attachment> attachments = attachmentRepository.findByInnovationId(innovationId);
+
+                // Lấy tất cả digital signatures của innovation này
+                List<DigitalSignature> digitalSignatures = digitalSignatureRepository
+                                .findByInnovationIdWithRelations(innovationId);
+
                 List<AttachmentInfo> attachmentInfos = attachments.stream()
                                 .map(attachment -> {
                                         String templateType = null;
+                                        boolean isDigitallySigned = false;
+                                        String signerName = null;
 
-                                        if (attachment.getTemplateId() != null) {
+                                        // Chỉ xử lý templateType và digital signature cho PDF template (có fileSize)
+                                        // File đính kèm user upload có fileSize = NULL
+                                        if (attachment.getFileSize() != null && attachment.getTemplateId() != null) {
                                                 Optional<FormTemplate> formTemplateOpt = formTemplateRepository
                                                                 .findById(attachment.getTemplateId());
                                                 if (formTemplateOpt.isPresent()) {
@@ -742,6 +761,30 @@ public class InnovationService {
 
                                                         if (templateTypeEnum != null) {
                                                                 templateType = templateTypeEnum.name();
+                                                                // Map TemplateTypeEnum sang DocumentTypeEnum
+                                                                DocumentTypeEnum documentType = digitalSignatureService
+                                                                                .mapTemplateTypeToDocumentType(
+                                                                                                templateTypeEnum);
+
+                                                                // Kiểm tra digital signature cho PDF template
+                                                                if (documentType != null) {
+                                                                        Optional<DigitalSignature> signatureOpt = digitalSignatures
+                                                                                        .stream()
+                                                                                        .filter(sig -> sig
+                                                                                                        .getDocumentType() == documentType
+                                                                                                        && sig.getStatus() == SignatureStatusEnum.SIGNED)
+                                                                                        .findFirst();
+
+                                                                        if (signatureOpt.isPresent()) {
+                                                                                isDigitallySigned = true;
+                                                                                DigitalSignature signature = signatureOpt
+                                                                                                .get();
+                                                                                if (signature.getUser() != null) {
+                                                                                        signerName = signature.getUser()
+                                                                                                        .getFullName();
+                                                                                }
+                                                                        }
+                                                                }
                                                         }
                                                 }
                                         }
@@ -751,8 +794,8 @@ public class InnovationService {
                                                         .templateId(attachment.getTemplateId())
                                                         .templateType(templateType)
                                                         .uploadedAt(attachment.getCreatedAt())
-                                                        .isDigitallySigned(false)
-                                                        .signerName(null)
+                                                        .isDigitallySigned(isDigitallySigned)
+                                                        .signerName(signerName)
                                                         .build();
                                 })
                                 .collect(Collectors.toList());
