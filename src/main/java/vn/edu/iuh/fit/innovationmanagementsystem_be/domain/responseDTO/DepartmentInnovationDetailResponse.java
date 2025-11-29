@@ -27,7 +27,9 @@ public class DepartmentInnovationDetailResponse {
 
     private List<CoAuthorResponse> coAuthors;
 
-    private List<TemplateFormDataResponse> templates;
-
     private List<AttachmentInfo> attachments;
+
+    // Form data với cấu trúc đầy đủ (innovation, templates, templateSignatures,
+    // submissionTimeRemainingSeconds)
+    private InnovationFormDataResponse formData;
 }
