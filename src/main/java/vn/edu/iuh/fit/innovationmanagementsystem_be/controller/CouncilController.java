@@ -114,22 +114,22 @@ public class CouncilController {
         return ResponseEntity.ok(councilService.getAllCouncilsWithPaginationAndFilter(specification, pageable));
     }
 
-    // 6. Cập nhật thành viên hội đồng
+    // 6. Cập nhật hội đồng (thành viên và tự động gán sáng kiến mới)
     @PutMapping("/councils/{id}/members")
     @PreAuthorize("hasAnyRole('TRUONG_KHOA','QUAN_TRI_VIEN_KHOA','QUAN_TRI_VIEN_HE_THONG', 'QUAN_TRI_VIEN_QLKH_HTQT')")
-    @ApiMessage("Cập nhật thành viên hội đồng thành công")
-    @Operation(summary = "Update Council Members", description = "Update members of a council. Only allowed before scoring has started.")
+    @ApiMessage("Cập nhật hội đồng thành công")
+    @Operation(summary = "Update Council", description = "Update council members and automatically assign newly submitted innovations. Only allowed before scoring has started.")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Council members updated successfully", content = @Content(schema = @Schema(implementation = CouncilResponse.class))),
+            @ApiResponse(responseCode = "200", description = "Council updated successfully", content = @Content(schema = @Schema(implementation = CouncilResponse.class))),
             @ApiResponse(responseCode = "400", description = "Invalid request data or scoring has already started"),
             @ApiResponse(responseCode = "404", description = "Council not found"),
             @ApiResponse(responseCode = "403", description = "Access denied"),
             @ApiResponse(responseCode = "401", description = "Unauthorized")
     })
-    public ResponseEntity<CouncilResponse> updateCouncilMembers(
+    public ResponseEntity<CouncilResponse> updateCouncil(
             @Parameter(description = "Council ID", required = true) @PathVariable String id,
             @Parameter(description = "Updated members list", required = true) @Valid @RequestBody UpdateCouncilMembersRequest request) {
-        CouncilResponse response = councilService.updateCouncilMembers(id, request);
+        CouncilResponse response = councilService.updateCouncil(id, request);
         return ResponseEntity.ok(response);
     }
 

@@ -878,7 +878,7 @@ public class CouncilService {
 
     // 6. Cập nhật thành viên hội đồng
     @Transactional
-    public CouncilResponse updateCouncilMembers(String councilId, UpdateCouncilMembersRequest request) {
+    public CouncilResponse updateCouncil(String councilId, UpdateCouncilMembersRequest request) {
         // 1. Tìm và validate council
         Council council = findAndValidateCouncil(councilId);
 
@@ -964,7 +964,33 @@ public class CouncilService {
         council = councilRepository.findById(councilId)
                 .orElseThrow(() -> new IdInvalidException("Không tìm thấy hội đồng với ID: " + councilId));
 
-        // 11. Map sang response
+        // 11. Tự động gán các sáng kiến mới được nộp (chưa được gán vào hội đồng)
+        // Trigger lazy load để tránh LazyInitializationException
+        List<Innovation> currentInnovations = council.getInnovations();
+        currentInnovations.size(); // Trigger lazy load
+        Set<String> currentInnovationIds = currentInnovations.stream()
+                .map(Innovation::getId)
+                .collect(Collectors.toSet());
+        
+        // Lấy các sáng kiến eligible mới
+        List<Innovation> eligibleInnovations = getEligibleInnovationsForCouncil(
+                council.getInnovationRound().getId(), 
+                council.getReviewCouncilLevel(), 
+                council.getDepartment()
+        );
+        
+        // Chỉ thêm các sáng kiến chưa được gán
+        List<Innovation> newInnovations = eligibleInnovations.stream()
+                .filter(innovation -> !currentInnovationIds.contains(innovation.getId()))
+                .collect(Collectors.toList());
+        
+        if (!newInnovations.isEmpty()) {
+            currentInnovations.addAll(newInnovations);
+            council.setInnovations(currentInnovations);
+            council = councilRepository.save(council);
+        }
+
+        // 12. Map sang response
         CouncilResponse response = councilMapper.toCouncilResponse(council);
         ScoringProgressResponse scoringProgress = calculateScoringProgress(council);
         response.setScoringProgress(scoringProgress);
