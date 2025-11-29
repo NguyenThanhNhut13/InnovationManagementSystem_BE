@@ -7,18 +7,20 @@ services:
     container_name: postgres
     ports:
       - "5432:5432"
+    env_file:
+      - .env
     environment:
       POSTGRES_DB: innovation_management
       POSTGRES_USER: ${SPRING_DATASOURCE_USERNAME}
       POSTGRES_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
       POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --locale=C"
-      TZ: Asia/Ho_Chi_Minh # (Tuỳ chọn) Đồng bộ giờ cho DB
+      TZ: Asia/Ho_Chi_Minh
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./init-scripts:/docker-entrypoint-initdb.d
     restart: unless-stopped
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U postgres -d innovation_management" ]
+      test: [ "CMD-SHELL", "pg_isready -U ${SPRING_DATASOURCE_USERNAME} -d innovation_management" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -27,6 +29,8 @@ services:
   redis:
     image: redis:7-alpine
     container_name: redis
+    env_file:
+      - .env
     ports:
       - "6379:6379"
     command: redis-server --appendonly yes --requirepass ${SPRING_DATA_REDIS_PASSWORD}
@@ -34,7 +38,7 @@ services:
       - redis_data:/data
     restart: unless-stopped
     healthcheck:
-      test: [ "CMD", "redis-cli", "ping" ]
+      test: [ "CMD", "redis-cli", "-a", "${SPRING_DATA_REDIS_PASSWORD}", "ping" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -43,6 +47,8 @@ services:
   minio:
     image: minio/minio:latest
     container_name: minio
+    env_file:
+      - .env
     ports:
       - "9000:9000"
       - "9001:9001"
@@ -73,11 +79,9 @@ services:
     ports:
       - "8080:8080"
       - "50000:50000"
-    # --- PHẦN ĐÃ THÊM ĐỂ FIX GIỜ ---
     environment:
       - JAVA_OPTS=-Duser.timezone=Asia/Ho_Chi_Minh
       - TZ=Asia/Ho_Chi_Minh
-    # -------------------------------
     volumes:
       - jenkins_home:/var/jenkins_home
       - /var/run/docker.sock:/var/run/docker.sock
@@ -109,7 +113,7 @@ services:
       - SPRING_MAIL_PORT=${SPRING_MAIL_PORT}
       - SPRING_MAIL_USERNAME=${SPRING_MAIL_USERNAME}
       - SPRING_MAIL_PASSWORD=${SPRING_MAIL_PASSWORD}
-      - TZ=Asia/Ho_Chi_Minh # (Tuỳ chọn) Đồng bộ giờ cho Backend App luôn
+      - TZ=Asia/Ho_Chi_Minh
     depends_on:
       postgres:
         condition: service_healthy

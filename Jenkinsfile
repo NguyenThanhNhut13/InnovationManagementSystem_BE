@@ -101,7 +101,7 @@ pipeline {
 
                     echo "Checking health endpoint..."
                     sh """
-                        if ! curl -f http://app:8081/api/v1/utils/ping; then
+                        if ! curl -f http://localhost:8081/api/v1/utils/ping; then
                             echo '❌ Health check failed!'
                             exit 1
                         fi
