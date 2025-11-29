@@ -115,7 +115,7 @@ public class CouncilController {
     }
 
     // 6. Cập nhật hội đồng (thành viên và tự động gán sáng kiến mới)
-    @PutMapping("/councils/{id}/members")
+    @PutMapping("/councils/{id}")
     @PreAuthorize("hasAnyRole('TRUONG_KHOA','QUAN_TRI_VIEN_KHOA','QUAN_TRI_VIEN_HE_THONG', 'QUAN_TRI_VIEN_QLKH_HTQT')")
     @ApiMessage("Cập nhật hội đồng thành công")
     @Operation(summary = "Update Council", description = "Update council members and automatically assign newly submitted innovations. Only allowed before scoring has started.")
