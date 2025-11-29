@@ -32,22 +32,34 @@ public abstract class ReviewScoreMapper {
 
     @AfterMapping
     protected void convertScoringDetails(@MappingTarget InnovationScoreResponse response, ReviewScore reviewScore) {
+        logger.info("convertScoringDetails called for reviewScore: {}", reviewScore.getId());
         JsonNode scoringDetailsNode = reviewScore.getScoringDetails();
+        
+        logger.info("scoringDetailsNode isNull: {}, isArray: {}", 
+                scoringDetailsNode == null, 
+                scoringDetailsNode != null ? scoringDetailsNode.isArray() : false);
         
         if (scoringDetailsNode != null && scoringDetailsNode.isArray()) {
             try {
+                logger.info("Parsing array with size: {}", scoringDetailsNode.size());
                 List<ScoreCriteriaDetail> details = new ArrayList<>();
                 for (JsonNode node : scoringDetailsNode) {
+                    logger.info("Parsing node: {}", node.toString());
                     ScoreCriteriaDetail detail = objectMapper.treeToValue(node, ScoreCriteriaDetail.class);
+                    logger.info("Successfully parsed detail: criteriaId={}, selectedSubCriteriaId={}, score={}", 
+                            detail.getCriteriaId(), detail.getSelectedSubCriteriaId(), detail.getScore());
                     details.add(detail);
                 }
+                logger.info("Successfully converted {} scoringDetails for reviewScore: {}", 
+                        details.size(), reviewScore.getId());
                 response.setScoringDetails(details);
             } catch (Exception e) {
-                logger.error("Error converting scoringDetails from JsonNode for reviewScore: {}", 
-                        reviewScore.getId(), e);
+                logger.error("Error converting scoringDetails from JsonNode for reviewScore: {}. Error: {}", 
+                        reviewScore.getId(), e.getMessage(), e);
                 response.setScoringDetails(null);
             }
         } else {
+            logger.warn("scoringDetailsNode is null or not an array for reviewScore: {}", reviewScore.getId());
             response.setScoringDetails(null);
         }
     }
