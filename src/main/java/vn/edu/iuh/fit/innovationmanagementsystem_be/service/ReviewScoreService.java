@@ -12,16 +12,20 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.SubmitInno
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationScoreResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.exception.IdInvalidException;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.mapper.ReviewScoreMapper;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationPhaseLevelEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationPhaseTypeEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.PhaseStatusEnum;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.ReviewLevelEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.CouncilMemberRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.DepartmentPhaseRepository;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.InnovationPhaseRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.InnovationRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.ReviewScoreRepository;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -33,6 +37,7 @@ public class ReviewScoreService {
     private final InnovationRepository innovationRepository;
     private final CouncilMemberRepository councilMemberRepository;
     private final DepartmentPhaseRepository departmentPhaseRepository;
+    private final InnovationPhaseRepository innovationPhaseRepository;
     private final UserService userService;
     private final ReviewScoreMapper reviewScoreMapper;
     private final ObjectMapper objectMapper;
@@ -42,6 +47,7 @@ public class ReviewScoreService {
             InnovationRepository innovationRepository,
             CouncilMemberRepository councilMemberRepository,
             DepartmentPhaseRepository departmentPhaseRepository,
+            InnovationPhaseRepository innovationPhaseRepository,
             UserService userService,
             ReviewScoreMapper reviewScoreMapper,
             ObjectMapper objectMapper) {
@@ -49,6 +55,7 @@ public class ReviewScoreService {
         this.innovationRepository = innovationRepository;
         this.councilMemberRepository = councilMemberRepository;
         this.departmentPhaseRepository = departmentPhaseRepository;
+        this.innovationPhaseRepository = innovationPhaseRepository;
         this.userService = userService;
         this.reviewScoreMapper = reviewScoreMapper;
         this.objectMapper = objectMapper;
@@ -132,12 +139,20 @@ public class ReviewScoreService {
                 reviewScore.setIsApproved(true);
                 logger.info("Auto-approved innovation {} with score {} >= 70", innovationId, request.getTotalScore());
             } else {
+                // Null check để an toàn
+                if (request.getIsApproved() == null) {
+                    throw new IdInvalidException("Quyết định đánh giá không được để trống");
+                }
                 reviewScore.setIsApproved(request.getIsApproved());
             }
         } else {
             // Sáng kiến KHÔNG chấm điểm
             reviewScore.setScoringDetails(null);
             reviewScore.setTotalScore(null);
+            // Null check để an toàn
+            if (request.getIsApproved() == null) {
+                throw new IdInvalidException("Quyết định đánh giá không được để trống");
+            }
             reviewScore.setIsApproved(request.getIsApproved());
         }
         
@@ -303,47 +318,106 @@ public class ReviewScoreService {
 
     // Helper: Validate thời gian chấm điểm
     private void validateScoringPeriod(Innovation innovation) {
-        // Lấy department của innovation (ưu tiên từ innovation, nếu không có thì từ user)
-        Department department = innovation.getDepartment();
-        if (department == null && innovation.getUser() != null) {
-            department = innovation.getUser().getDepartment();
-        }
-
-        if (department == null) {
-            throw new IdInvalidException("Không xác định được khoa của sáng kiến");
-        }
-
         // Lấy innovation round
         InnovationRound round = innovation.getInnovationRound();
         if (round == null) {
             throw new IdInvalidException("Sáng kiến chưa được gán vào đợt sáng kiến nào");
         }
 
-        // Tìm DepartmentPhase với type SCORING cho department và round này
-        Optional<DepartmentPhase> scoringPhaseOpt = departmentPhaseRepository
-                .findByDepartmentIdAndInnovationRoundIdAndPhaseType(
-                        department.getId(),
-                        round.getId(),
-                        InnovationPhaseTypeEnum.SCORING);
-
-        if (scoringPhaseOpt.isEmpty()) {
-            throw new IdInvalidException("Không tìm thấy giai đoạn chấm điểm cho khoa và đợt sáng kiến này");
+        // Lấy danh sách councils của innovation
+        List<Council> councils = innovation.getCouncils();
+        if (councils == null || councils.isEmpty()) {
+            throw new IdInvalidException("Sáng kiến chưa được gán cho Hội đồng nào");
         }
 
-        DepartmentPhase scoringPhase = scoringPhaseOpt.get();
+        // Filter councils theo round hiện tại (tránh lấy councils từ đợt khác)
+        List<Council> councilsInCurrentRound = councils.stream()
+                .filter(council -> council.getInnovationRound() != null 
+                        && council.getInnovationRound().getId().equals(round.getId()))
+                .collect(Collectors.toList());
+
+        if (councilsInCurrentRound.isEmpty()) {
+            throw new IdInvalidException("Sáng kiến chưa được gán cho Hội đồng nào trong đợt sáng kiến này");
+        }
+
+        // Xác định council level từ councils trong round hiện tại
+        // Lấy council mà current user là thành viên
+        User currentUser = userService.getCurrentUser();
+        Council relevantCouncil = councilsInCurrentRound.stream()
+                .filter(council -> {
+                    List<CouncilMember> members = councilMemberRepository.findByCouncilId(council.getId());
+                    return members.stream()
+                            .anyMatch(member -> member.getUser().getId().equals(currentUser.getId()));
+                })
+                .findFirst()
+                .orElseThrow(() -> new IdInvalidException(
+                        "Bạn không phải là thành viên của bất kỳ hội đồng nào được gán cho sáng kiến này trong đợt hiện tại"));
+
+        ReviewLevelEnum councilLevel = relevantCouncil.getReviewCouncilLevel();
+        LocalDate currentDate = LocalDate.now();
+        LocalDate startDate;
+        LocalDate endDate;
+        PhaseStatusEnum phaseStatus;
+
+        if (councilLevel == ReviewLevelEnum.KHOA) {
+            // Faculty level: dùng DepartmentPhase (giữ nguyên logic hiện tại)
+            Department department = relevantCouncil.getDepartment();
+            if (department == null) {
+                department = innovation.getDepartment();
+                if (department == null && innovation.getUser() != null) {
+                    department = innovation.getUser().getDepartment();
+                }
+            }
+
+            if (department == null) {
+                throw new IdInvalidException("Không xác định được khoa của sáng kiến cho hội đồng cấp khoa");
+            }
+
+            // Tìm DepartmentPhase với type SCORING cho department và round này
+            Optional<DepartmentPhase> scoringPhaseOpt = departmentPhaseRepository
+                    .findByDepartmentIdAndInnovationRoundIdAndPhaseType(
+                            department.getId(),
+                            round.getId(),
+                            InnovationPhaseTypeEnum.SCORING);
+
+            if (scoringPhaseOpt.isEmpty()) {
+                throw new IdInvalidException("Không tìm thấy giai đoạn chấm điểm cho khoa và đợt sáng kiến này");
+            }
+
+            DepartmentPhase scoringPhase = scoringPhaseOpt.get();
+            phaseStatus = scoringPhase.getPhaseStatus();
+            startDate = scoringPhase.getPhaseStartDate();
+            endDate = scoringPhase.getPhaseEndDate();
+        } else {
+            // School level: dùng InnovationPhase với level = SCHOOL
+            Optional<InnovationPhase> scoringPhaseOpt = innovationPhaseRepository
+                    .findByInnovationRoundIdAndPhaseType(
+                            round.getId(),
+                            InnovationPhaseTypeEnum.SCORING);
+
+            if (scoringPhaseOpt.isEmpty()) {
+                throw new IdInvalidException("Không tìm thấy giai đoạn chấm điểm cấp trường cho đợt sáng kiến này");
+            }
+
+            InnovationPhase scoringPhase = scoringPhaseOpt.get();
+
+            // Kiểm tra level phải là SCHOOL
+            if (scoringPhase.getLevel() != InnovationPhaseLevelEnum.SCHOOL) {
+                throw new IdInvalidException("Giai đoạn chấm điểm không phải cấp trường");
+            }
+
+            phaseStatus = scoringPhase.getPhaseStatus();
+            startDate = scoringPhase.getPhaseStartDate();
+            endDate = scoringPhase.getPhaseEndDate();
+        }
 
         // Kiểm tra phase status phải là ACTIVE
-        if (scoringPhase.getPhaseStatus() != PhaseStatusEnum.ACTIVE) {
+        if (phaseStatus != PhaseStatusEnum.ACTIVE) {
             throw new IdInvalidException(
-                    "Giai đoạn chấm điểm chưa được kích hoạt. Trạng thái hiện tại: "
-                            + scoringPhase.getPhaseStatus());
+                    "Giai đoạn chấm điểm chưa được kích hoạt. Trạng thái hiện tại: " + phaseStatus);
         }
 
         // Kiểm tra thời gian hiện tại có nằm trong khoảng chấm điểm không
-        LocalDate currentDate = LocalDate.now();
-        LocalDate startDate = scoringPhase.getPhaseStartDate();
-        LocalDate endDate = scoringPhase.getPhaseEndDate();
-
         if (startDate == null || endDate == null) {
             throw new IdInvalidException("Giai đoạn chấm điểm chưa có thời gian bắt đầu/kết thúc");
         }
@@ -358,7 +432,7 @@ public class ReviewScoreService {
                     "Đã hết thời gian chấm điểm. Thời gian chấm điểm kết thúc vào: " + endDate);
         }
 
-        logger.info("Validation passed: Current date {} is within scoring period {} - {}",
-                currentDate, startDate, endDate);
+        logger.info("Validation passed: Current date {} is within scoring period {} - {} for council level {}",
+                currentDate, startDate, endDate, councilLevel);
     }
 }
