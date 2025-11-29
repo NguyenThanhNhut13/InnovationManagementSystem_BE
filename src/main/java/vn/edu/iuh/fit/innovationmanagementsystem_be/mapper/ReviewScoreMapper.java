@@ -1,17 +1,22 @@
 package vn.edu.iuh.fit.innovationmanagementsystem_be.mapper;
 
-import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.mapstruct.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.ReviewScore;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.ScoreCriteriaDetail;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationScoreResponse;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Mapper(componentModel = "spring")
 public abstract class ReviewScoreMapper {
+
+    private static final Logger logger = LoggerFactory.getLogger(ReviewScoreMapper.class);
 
     @Autowired
     protected ObjectMapper objectMapper;
@@ -27,12 +32,23 @@ public abstract class ReviewScoreMapper {
 
     @AfterMapping
     protected void convertScoringDetails(@MappingTarget InnovationScoreResponse response, ReviewScore reviewScore) {
-        if (reviewScore.getScoringDetails() != null) {
-            List<ScoreCriteriaDetail> details = objectMapper.convertValue(
-                    reviewScore.getScoringDetails(),
-                    new TypeReference<List<ScoreCriteriaDetail>>() {
-                    });
-            response.setScoringDetails(details);
+        JsonNode scoringDetailsNode = reviewScore.getScoringDetails();
+        
+        if (scoringDetailsNode != null && scoringDetailsNode.isArray()) {
+            try {
+                List<ScoreCriteriaDetail> details = new ArrayList<>();
+                for (JsonNode node : scoringDetailsNode) {
+                    ScoreCriteriaDetail detail = objectMapper.treeToValue(node, ScoreCriteriaDetail.class);
+                    details.add(detail);
+                }
+                response.setScoringDetails(details);
+            } catch (Exception e) {
+                logger.error("Error converting scoringDetails from JsonNode for reviewScore: {}", 
+                        reviewScore.getId(), e);
+                response.setScoringDetails(null);
+            }
+        } else {
+            response.setScoringDetails(null);
         }
     }
 }
