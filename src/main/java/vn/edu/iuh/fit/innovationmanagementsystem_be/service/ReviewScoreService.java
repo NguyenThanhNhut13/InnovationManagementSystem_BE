@@ -341,18 +341,21 @@ public class ReviewScoreService {
         }
 
         // Xác định council level từ councils trong round hiện tại
-        // Lấy council mà current user là thành viên
+        // Lấy council mà current user là thành viên VÀ có phase ACTIVE
         User currentUser = userService.getCurrentUser();
         Council relevantCouncil = councilsInCurrentRound.stream()
                 .filter(council -> {
+                    // Check user là thành viên
                     List<CouncilMember> members = councilMemberRepository.findByCouncilId(council.getId());
-                    return members.stream()
+                    boolean isMember = members.stream()
                             .anyMatch(member -> member.getUser().getId().equals(currentUser.getId()));
+                    return isMember && isScoringPhaseActive(council, innovation, round);
                 })
                 .findFirst()
                 .orElseThrow(() -> new IdInvalidException(
-                        "Bạn không phải là thành viên của bất kỳ hội đồng nào được gán cho sáng kiến này trong đợt hiện tại"));
+                        "Bạn không phải là thành viên của bất kỳ hội đồng nào đang trong thời gian chấm điểm cho sáng kiến này"));
 
+        // Lấy phase và validate
         ReviewLevelEnum councilLevel = relevantCouncil.getReviewCouncilLevel();
         LocalDate currentDate = LocalDate.now();
         LocalDate startDate;
@@ -360,48 +363,26 @@ public class ReviewScoreService {
         PhaseStatusEnum phaseStatus;
 
         if (councilLevel == ReviewLevelEnum.KHOA) {
-            // Faculty level: dùng DepartmentPhase (giữ nguyên logic hiện tại)
-            Department department = relevantCouncil.getDepartment();
-            if (department == null) {
-                department = innovation.getDepartment();
-                if (department == null && innovation.getUser() != null) {
-                    department = innovation.getUser().getDepartment();
-                }
-            }
-
+            Department department = getDepartmentForCouncil(relevantCouncil, innovation);
             if (department == null) {
                 throw new IdInvalidException("Không xác định được khoa của sáng kiến cho hội đồng cấp khoa");
             }
 
-            // Tìm DepartmentPhase với type SCORING cho department và round này
-            Optional<DepartmentPhase> scoringPhaseOpt = departmentPhaseRepository
+            DepartmentPhase scoringPhase = departmentPhaseRepository
                     .findByDepartmentIdAndInnovationRoundIdAndPhaseType(
                             department.getId(),
                             round.getId(),
-                            InnovationPhaseTypeEnum.SCORING);
+                            InnovationPhaseTypeEnum.SCORING)
+                    .orElseThrow(() -> new IdInvalidException("Không tìm thấy giai đoạn chấm điểm cho khoa và đợt sáng kiến này"));
 
-            if (scoringPhaseOpt.isEmpty()) {
-                throw new IdInvalidException("Không tìm thấy giai đoạn chấm điểm cho khoa và đợt sáng kiến này");
-            }
-
-            DepartmentPhase scoringPhase = scoringPhaseOpt.get();
             phaseStatus = scoringPhase.getPhaseStatus();
             startDate = scoringPhase.getPhaseStartDate();
             endDate = scoringPhase.getPhaseEndDate();
         } else {
-            // School level: dùng InnovationPhase với level = SCHOOL
-            Optional<InnovationPhase> scoringPhaseOpt = innovationPhaseRepository
-                    .findByInnovationRoundIdAndPhaseType(
-                            round.getId(),
-                            InnovationPhaseTypeEnum.SCORING);
+            InnovationPhase scoringPhase = innovationPhaseRepository
+                    .findByInnovationRoundIdAndPhaseType(round.getId(), InnovationPhaseTypeEnum.SCORING)
+                    .orElseThrow(() -> new IdInvalidException("Không tìm thấy giai đoạn chấm điểm cấp trường cho đợt sáng kiến này"));
 
-            if (scoringPhaseOpt.isEmpty()) {
-                throw new IdInvalidException("Không tìm thấy giai đoạn chấm điểm cấp trường cho đợt sáng kiến này");
-            }
-
-            InnovationPhase scoringPhase = scoringPhaseOpt.get();
-
-            // Kiểm tra level phải là SCHOOL
             if (scoringPhase.getLevel() != InnovationPhaseLevelEnum.SCHOOL) {
                 throw new IdInvalidException("Giai đoạn chấm điểm không phải cấp trường");
             }
@@ -434,5 +415,43 @@ public class ReviewScoreService {
 
         logger.info("Validation passed: Current date {} is within scoring period {} - {} for council level {}",
                 currentDate, startDate, endDate, councilLevel);
+    }
+
+    // Helper: Check xem scoring phase có ACTIVE không
+    private boolean isScoringPhaseActive(Council council, Innovation innovation, InnovationRound round) {
+        ReviewLevelEnum level = council.getReviewCouncilLevel();
+        if (level == ReviewLevelEnum.KHOA) {
+            Department department = getDepartmentForCouncil(council, innovation);
+            if (department == null) {
+                return false;
+            }
+            Optional<DepartmentPhase> phaseOpt = departmentPhaseRepository
+                    .findByDepartmentIdAndInnovationRoundIdAndPhaseType(
+                            department.getId(),
+                            round.getId(),
+                            InnovationPhaseTypeEnum.SCORING);
+            return phaseOpt.isPresent() && phaseOpt.get().getPhaseStatus() == PhaseStatusEnum.ACTIVE;
+        } else {
+            Optional<InnovationPhase> phaseOpt = innovationPhaseRepository
+                    .findByInnovationRoundIdAndPhaseType(round.getId(), InnovationPhaseTypeEnum.SCORING);
+            if (phaseOpt.isEmpty()) {
+                return false;
+            }
+            InnovationPhase phase = phaseOpt.get();
+            return phase.getLevel() == InnovationPhaseLevelEnum.SCHOOL 
+                    && phase.getPhaseStatus() == PhaseStatusEnum.ACTIVE;
+        }
+    }
+
+    // Helper: Lấy department cho council (ưu tiên từ council, sau đó từ innovation)
+    private Department getDepartmentForCouncil(Council council, Innovation innovation) {
+        Department department = council.getDepartment();
+        if (department == null) {
+            department = innovation.getDepartment();
+            if (department == null && innovation.getUser() != null) {
+                department = innovation.getUser().getDepartment();
+            }
+        }
+        return department;
     }
 }
