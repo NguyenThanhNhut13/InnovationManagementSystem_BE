@@ -13,10 +13,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Mapper(componentModel = "spring")
-public abstract class ReviewScoreMapper {
+public interface ReviewScoreMapper {
 
-    private static final Logger logger = LoggerFactory.getLogger(ReviewScoreMapper.class);
-    private static final ObjectMapper staticObjectMapper = new ObjectMapper();
+    Logger logger = LoggerFactory.getLogger(ReviewScoreMapper.class);
+    ObjectMapper staticObjectMapper = new ObjectMapper();
 
     @Mapping(source = "id", target = "reviewScoreId")
     @Mapping(source = "innovation.id", target = "innovationId")
@@ -25,10 +25,10 @@ public abstract class ReviewScoreMapper {
     @Mapping(source = "reviewer.email", target = "reviewerEmail")
     @Mapping(target = "scoringDetails", ignore = true)
     @Mapping(target = "maxTotalScore", expression = "java(100)")
-    public abstract InnovationScoreResponse toInnovationScoreResponse(ReviewScore reviewScore);
+    InnovationScoreResponse toInnovationScoreResponse(ReviewScore reviewScore);
 
     @AfterMapping
-    protected void convertScoringDetails(@MappingTarget InnovationScoreResponse response, ReviewScore reviewScore) {
+    default void convertScoringDetails(@MappingTarget InnovationScoreResponse response, ReviewScore reviewScore) {
         logger.info("convertScoringDetails called for reviewScore: {}", reviewScore.getId());
         
         JsonNode scoringDetailsNode = reviewScore.getScoringDetails();
