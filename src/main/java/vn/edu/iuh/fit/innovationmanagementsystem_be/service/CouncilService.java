@@ -220,7 +220,7 @@ public class CouncilService {
 
         // Nếu không có role phù hợp, throw exception
         throw new IllegalArgumentException(
-                "Bạn không có quyền tạo Hội đồng. Chỉ TRUONG_KHOA, QUAN_TRI_VIEN_KHOA, QUAN_TRI_VIEN_HE_THONG, QUAN_TRI_VIEN_QLKH_HTQT mới có quyền tạo Hội đồng");
+                "Không xác định được cấp độ hội đồng. Chỉ TRUONG_KHOA, QUAN_TRI_VIEN_KHOA, QUAN_TRI_VIEN_HE_THONG, QUAN_TRI_VIEN_QLKH_HTQT, TV_HOI_DONG_KHOA, TV_HOI_DONG_TRUONG mới có quyền truy cập hội đồng");
     }
 
     // Helper method: Validate quyền tạo Hội đồng theo cấp độ
@@ -671,7 +671,7 @@ public class CouncilService {
                 .anyMatch(member -> member.getUser().getId().equals(currentUserId));
         
         if (!isMember) {
-            throw new IdInvalidException("Bạn không phải là thành viên của hội đồng hiện tại");
+            throw new IdInvalidException("Bạn không phải là thành viên của hội đồng này");
         }
         
         // 4. Lấy innovations của council hiện tại với user và department đã được fetch (JOIN FETCH)
