@@ -17,10 +17,13 @@ import java.util.List;
 @Mapper(componentModel = "spring")
 public abstract class ReviewScoreMapper {
 
-    protected final Logger logger = LoggerFactory.getLogger(ReviewScoreMapper.class);
+    private final Logger logger = LoggerFactory.getLogger(ReviewScoreMapper.class);
+    private ObjectMapper objectMapper;
 
     @Autowired
-    protected ObjectMapper objectMapper;
+    public void setObjectMapper(ObjectMapper objectMapper) {
+        this.objectMapper = objectMapper;
+    }
 
     @Mapping(source = "id", target = "reviewScoreId")
     @Mapping(source = "innovation.id", target = "innovationId")
@@ -33,26 +36,39 @@ public abstract class ReviewScoreMapper {
 
     @AfterMapping
     protected void convertScoringDetails(@MappingTarget InnovationScoreResponse response, ReviewScore reviewScore) {
+        logger.info("Converting scoringDetails for reviewScore: {}", reviewScore.getId());
+
         JsonNode scoringDetailsNode = reviewScore.getScoringDetails();
+
+        logger.info("scoringDetailsNode - isNull: {}, type: {}",
+                scoringDetailsNode == null,
+                scoringDetailsNode != null ? scoringDetailsNode.getNodeType() : "null");
 
         if (scoringDetailsNode != null && !scoringDetailsNode.isNull()) {
             try {
                 if (scoringDetailsNode.isArray()) {
+                    logger.info("Converting array with {} elements", scoringDetailsNode.size());
+
                     List<ScoreCriteriaDetail> details = objectMapper.convertValue(
                             scoringDetailsNode,
                             new TypeReference<List<ScoreCriteriaDetail>>() {
                             });
+
+                    logger.info("Successfully converted {} scoring details", details.size());
                     response.setScoringDetails(details);
                 } else {
-                    logger.warn("scoringDetailsNode is not an array for reviewScore: {}", reviewScore.getId());
+                    logger.warn("scoringDetailsNode is not an array for reviewScore: {}, type: {}",
+                            reviewScore.getId(), scoringDetailsNode.getNodeType());
                     response.setScoringDetails(new ArrayList<>());
                 }
             } catch (Exception e) {
                 logger.error("Error converting scoringDetails from JsonNode for reviewScore: {}",
                         reviewScore.getId(), e);
+                logger.error("Raw JSON: {}", scoringDetailsNode.toString());
                 response.setScoringDetails(null);
             }
         } else {
+            logger.info("scoringDetailsNode is null or isNull() for reviewScore: {}", reviewScore.getId());
             response.setScoringDetails(null);
         }
     }
