@@ -611,7 +611,7 @@ public class DigitalSignatureService {
         }
 
         // Kiểm tra Innovation tồn tại
-        Innovation innovation = innovationRepository.findById(innovationId)
+        innovationRepository.findById(innovationId)
                 .orElseThrow(() -> new IdInvalidException("Không tìm thấy sáng kiến với ID: " + innovationId));
 
         // Kiểm tra FormTemplate tồn tại

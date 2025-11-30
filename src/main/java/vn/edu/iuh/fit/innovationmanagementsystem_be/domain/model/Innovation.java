@@ -62,9 +62,6 @@ public class Innovation extends Auditable {
     private List<DigitalSignature> digitalSignatures = new ArrayList<>();
 
     @OneToMany(mappedBy = "innovation", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
-    private List<ReviewComment> reviewComments = new ArrayList<>();
-
-    @OneToMany(mappedBy = "innovation", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
     private List<ReviewScore> reviewScores = new ArrayList<>();
 
     @ManyToOne(fetch = FetchType.LAZY)

@@ -28,7 +28,7 @@ public class InnovationDetailService {
         private final UserService userService;
         private final CoInnovationRepository coInnovationRepository;
         private final AttachmentRepository attachmentRepository;
-        private final ReviewCommentRepository reviewCommentRepository;
+        // private final ReviewCommentRepository reviewCommentRepository;
         private final ReviewScoreRepository reviewScoreRepository;
         private final FormTemplateRepository formTemplateRepository;
         private final DigitalSignatureRepository digitalSignatureRepository;
@@ -318,20 +318,6 @@ public class InnovationDetailService {
                                         .actorRole("QUAN_TRI_VIEN_KHOA")
                                         .timestamp(innovation.getUpdatedAt())
                                         .notes("Hồ sơ đầy đủ, chuyển sang giai đoạn đánh giá")
-                                        .build());
-                }
-
-                List<ReviewComment> comments = reviewCommentRepository.findByInnovationId(innovation.getId());
-                if (!comments.isEmpty()) {
-                        ReviewComment firstComment = comments.get(0);
-                        history.add(ActivityHistoryInfo.builder()
-                                        .actionName("Đánh giá hội đồng")
-                                        .fromStatus("Chờ khoa đánh giá")
-                                        .toStatus("Khoa đã đánh giá")
-                                        .actorName("Hội đồng cấp Khoa")
-                                        .actorRole("TV_HOI_DONG_KHOA")
-                                        .timestamp(firstComment.getCreatedAt())
-                                        .notes("Hội đồng đã hoàn thành đánh giá")
                                         .build());
                 }
 
