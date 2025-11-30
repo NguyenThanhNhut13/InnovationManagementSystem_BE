@@ -84,12 +84,13 @@ public class ReviewScoreService {
         // 4. Validate user là thành viên Hội đồng của innovation này
         validateUserIsCouncilMember(innovation, reviewer);
 
-        // 5. Validate thời gian chấm điểm (chỉ cho phép chấm/cập nhật trong thời gian chấm điểm)
+        // 5. Validate thời gian chấm điểm (chỉ cho phép chấm/cập nhật trong thời gian
+        // chấm điểm)
         validateScoringPeriod(innovation);
 
         // 6. Check loại sáng kiến
         Boolean isScore = innovation.getIsScore();
-        
+
         if (isScore != null && isScore) {
             // Sáng kiến CÓ chấm điểm
             // Validate scoring details và total score
@@ -99,14 +100,15 @@ public class ReviewScoreService {
             if (request.getTotalScore() == null) {
                 throw new IdInvalidException("Tổng điểm không được để trống cho sáng kiến có chấm điểm");
             }
-            
+
             validateScoringDetails(innovation, request.getScoringDetails());
             validateTotalScore(request.getScoringDetails(), request.getTotalScore());
         } else {
             // Sáng kiến KHÔNG chấm điểm
             // Không cần scoring details và total score
             if (request.getScoringDetails() != null && !request.getScoringDetails().isEmpty()) {
-                throw new IdInvalidException("Sáng kiến này không cần chấm điểm. Vui lòng chỉ đánh giá thông qua/không thông qua");
+                throw new IdInvalidException(
+                        "Sáng kiến này không cần chấm điểm. Vui lòng chỉ đánh giá thông qua/không thông qua");
             }
         }
 
@@ -133,7 +135,7 @@ public class ReviewScoreService {
             // Sáng kiến CÓ chấm điểm
             reviewScore.setScoringDetails(objectMapper.valueToTree(request.getScoringDetails()));
             reviewScore.setTotalScore(request.getTotalScore());
-            
+
             // Tự động thông qua nếu >= 70 điểm
             if (request.getTotalScore() >= 70) {
                 reviewScore.setIsApproved(true);
@@ -155,7 +157,7 @@ public class ReviewScoreService {
             }
             reviewScore.setIsApproved(request.getIsApproved());
         }
-        
+
         reviewScore.setRequiresSupplementaryDocuments(
                 request.getRequiresSupplementaryDocuments() != null
                         ? request.getRequiresSupplementaryDocuments()
@@ -195,8 +197,35 @@ public class ReviewScoreService {
             throw new IdInvalidException("Bạn chưa chấm điểm cho sáng kiến này");
         }
 
+        // DEBUG: Log raw data từ database
+        ReviewScore score = reviewScore.get();
+        logger.info("====== DEBUG ReviewScore từ Database ======");
+        logger.info("ReviewScore ID: {}", score.getId());
+        logger.info("Total Score: {}", score.getTotalScore());
+        logger.info("Is Approved: {}", score.getIsApproved());
+        logger.info("Scoring Details (raw JSON from DB): {}", score.getScoringDetails());
+        logger.info("Scoring Details is null: {}", score.getScoringDetails() == null);
+        if (score.getScoringDetails() != null) {
+            logger.info("Scoring Details type: {}", score.getScoringDetails().getClass().getName());
+            logger.info("Scoring Details toString: {}", score.getScoringDetails().toString());
+            logger.info("Is array: {}", score.getScoringDetails().isArray());
+            logger.info("Is null node: {}", score.getScoringDetails().isNull());
+        }
+        logger.info("==========================================");
+
         // 5. Return response
-        return reviewScoreMapper.toInnovationScoreResponse(reviewScore.get());
+        InnovationScoreResponse response = reviewScoreMapper.toInnovationScoreResponse(score);
+
+        // DEBUG: Log response sau khi map
+        logger.info("====== DEBUG Response sau khi map ======");
+        logger.info("Response scoringDetails: {}", response.getScoringDetails());
+        logger.info("Response scoringDetails is null: {}", response.getScoringDetails() == null);
+        if (response.getScoringDetails() != null) {
+            logger.info("Response scoringDetails size: {}", response.getScoringDetails().size());
+        }
+        logger.info("=======================================");
+
+        return response;
     }
 
     // Helper: Validate user là thành viên Hội đồng của innovation
@@ -332,7 +361,7 @@ public class ReviewScoreService {
 
         // Filter councils theo round hiện tại (tránh lấy councils từ đợt khác)
         List<Council> councilsInCurrentRound = councils.stream()
-                .filter(council -> council.getInnovationRound() != null 
+                .filter(council -> council.getInnovationRound() != null
                         && council.getInnovationRound().getId().equals(round.getId()))
                 .collect(Collectors.toList());
 
@@ -373,7 +402,8 @@ public class ReviewScoreService {
                             department.getId(),
                             round.getId(),
                             InnovationPhaseTypeEnum.SCORING)
-                    .orElseThrow(() -> new IdInvalidException("Không tìm thấy giai đoạn chấm điểm cho khoa và đợt sáng kiến này"));
+                    .orElseThrow(() -> new IdInvalidException(
+                            "Không tìm thấy giai đoạn chấm điểm cho khoa và đợt sáng kiến này"));
 
             phaseStatus = scoringPhase.getPhaseStatus();
             startDate = scoringPhase.getPhaseStartDate();
@@ -381,7 +411,8 @@ public class ReviewScoreService {
         } else {
             InnovationPhase scoringPhase = innovationPhaseRepository
                     .findByInnovationRoundIdAndPhaseType(round.getId(), InnovationPhaseTypeEnum.SCORING)
-                    .orElseThrow(() -> new IdInvalidException("Không tìm thấy giai đoạn chấm điểm cấp trường cho đợt sáng kiến này"));
+                    .orElseThrow(() -> new IdInvalidException(
+                            "Không tìm thấy giai đoạn chấm điểm cấp trường cho đợt sáng kiến này"));
 
             if (scoringPhase.getLevel() != InnovationPhaseLevelEnum.SCHOOL) {
                 throw new IdInvalidException("Giai đoạn chấm điểm không phải cấp trường");
@@ -438,7 +469,7 @@ public class ReviewScoreService {
                 return false;
             }
             InnovationPhase phase = phaseOpt.get();
-            return phase.getLevel() == InnovationPhaseLevelEnum.SCHOOL 
+            return phase.getLevel() == InnovationPhaseLevelEnum.SCHOOL
                     && phase.getPhaseStatus() == PhaseStatusEnum.ACTIVE;
         }
     }
