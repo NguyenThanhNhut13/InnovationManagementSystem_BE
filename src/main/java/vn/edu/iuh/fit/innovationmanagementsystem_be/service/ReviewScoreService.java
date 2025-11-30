@@ -197,33 +197,25 @@ public class ReviewScoreService {
             throw new IdInvalidException("Bạn chưa chấm điểm cho sáng kiến này");
         }
 
-        // DEBUG: Log raw data từ database
         ReviewScore score = reviewScore.get();
-        logger.info("====== DEBUG ReviewScore từ Database ======");
-        logger.info("ReviewScore ID: {}", score.getId());
-        logger.info("Total Score: {}", score.getTotalScore());
-        logger.info("Is Approved: {}", score.getIsApproved());
-        logger.info("Scoring Details (raw JSON from DB): {}", score.getScoringDetails());
-        logger.info("Scoring Details is null: {}", score.getScoringDetails() == null);
-        if (score.getScoringDetails() != null) {
-            logger.info("Scoring Details type: {}", score.getScoringDetails().getClass().getName());
-            logger.info("Scoring Details toString: {}", score.getScoringDetails().toString());
-            logger.info("Is array: {}", score.getScoringDetails().isArray());
-            logger.info("Is null node: {}", score.getScoringDetails().isNull());
-        }
-        logger.info("==========================================");
 
-        // 5. Return response
+        // 5. Map to response using mapper
         InnovationScoreResponse response = reviewScoreMapper.toInnovationScoreResponse(score);
 
-        // DEBUG: Log response sau khi map
-        logger.info("====== DEBUG Response sau khi map ======");
-        logger.info("Response scoringDetails: {}", response.getScoringDetails());
-        logger.info("Response scoringDetails is null: {}", response.getScoringDetails() == null);
-        if (response.getScoringDetails() != null) {
-            logger.info("Response scoringDetails size: {}", response.getScoringDetails().size());
+        // 6. Manually map scoringDetails (workaround for MapStruct issue)
+        if (score.getScoringDetails() != null && !score.getScoringDetails().isNull()
+                && score.getScoringDetails().isArray()) {
+            try {
+                List<ScoreCriteriaDetail> scoringDetails = objectMapper.convertValue(
+                        score.getScoringDetails(),
+                        objectMapper.getTypeFactory().constructCollectionType(List.class, ScoreCriteriaDetail.class));
+                response.setScoringDetails(scoringDetails);
+                logger.info("Manually mapped {} scoring details", scoringDetails.size());
+            } catch (Exception e) {
+                logger.error("Error manually mapping scoringDetails for reviewScore: {}", score.getId(), e);
+                response.setScoringDetails(null);
+            }
         }
-        logger.info("=======================================");
 
         return response;
     }
