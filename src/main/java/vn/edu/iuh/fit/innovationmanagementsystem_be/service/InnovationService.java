@@ -746,9 +746,30 @@ public class InnovationService {
                                         boolean isDigitallySigned = false;
                                         String signerName = null;
 
-                                        // Chỉ xử lý templateType và digital signature cho PDF template (có fileSize)
-                                        // File đính kèm user upload có fileSize = NULL
-                                        if (attachment.getFileSize() != null && attachment.getTemplateId() != null) {
+                                        // Kiểm tra xem attachment có phải là PDF template được generate hay không
+                                        // PDF template: fileName != originalFileName hoặc fileName có dạng UUID pattern
+                                        // User attachment: fileName == originalFileName và không có UUID pattern
+                                        boolean isPdfTemplate = false;
+
+                                        if (attachment.getFileName() != null
+                                                        && attachment.getOriginalFileName() != null) {
+                                                // Nếu fileName khác originalFileName => là PDF template
+                                                if (!attachment.getFileName()
+                                                                .equals(attachment.getOriginalFileName())) {
+                                                        isPdfTemplate = true;
+                                                } else {
+                                                        // Nếu fileName == originalFileName, check pattern UUID
+                                                        // PDF template có pattern: {UUID}_{UUID}.pdf
+                                                        String fileName = attachment.getFileName();
+                                                        // Pattern kiểm tra: có chứa UUID (8-4-4-4-12 chars) và kết thúc
+                                                        // bằng .pdf
+                                                        String uuidPattern = ".*[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}.*\\.pdf$";
+                                                        isPdfTemplate = fileName.toLowerCase().matches(uuidPattern);
+                                                }
+                                        }
+
+                                        // Chỉ xử lý templateType và digital signature cho PDF template
+                                        if (isPdfTemplate && attachment.getTemplateId() != null) {
                                                 Optional<FormTemplate> formTemplateOpt = formTemplateRepository
                                                                 .findById(attachment.getTemplateId());
                                                 if (formTemplateOpt.isPresent()) {
@@ -802,7 +823,8 @@ public class InnovationService {
 
                 InnovationFormDataResponse formData = new InnovationFormDataResponse();
                 // Không set innovation vì đã có ở DepartmentInnovationDetailResponse root level
-                formData.setTemplates(innovationSignatureService.buildTemplateFormDataResponsesWithTableConfig(formDataList));
+                formData.setTemplates(
+                                innovationSignatureService.buildTemplateFormDataResponsesWithTableConfig(formDataList));
                 formData.setTemplateSignatures(Collections.emptyList()); // Empty list như full-detail API
                 formData.setSubmissionTimeRemainingSeconds(timeRemainingSeconds);
 
