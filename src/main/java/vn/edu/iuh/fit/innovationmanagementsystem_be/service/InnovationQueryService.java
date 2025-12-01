@@ -376,6 +376,10 @@ public class InnovationQueryService {
                         return null;
                 }
 
+                if (innovation.getStatus() == InnovationStatusEnum.DRAFT) {
+                        return 0L;
+                }
+
                 try {
                         Optional<DepartmentPhase> departmentPhaseOpt = departmentPhaseRepository
                                         .findByDepartmentIdAndInnovationRoundIdAndPhaseType(
@@ -395,7 +399,7 @@ public class InnovationQueryService {
                         }
 
                         LocalDateTime deadlineDateTime = deadlineDate.atTime(LocalTime.MAX);
-                        LocalDateTime submissionTime = innovation.getCreatedAt();
+                        LocalDateTime submissionTime = innovation.getSubmittedAt();
 
                         if (submissionTime == null) {
                                 return null;
