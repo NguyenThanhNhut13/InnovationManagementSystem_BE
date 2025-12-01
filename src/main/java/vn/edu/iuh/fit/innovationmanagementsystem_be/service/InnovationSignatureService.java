@@ -272,7 +272,7 @@ public class InnovationSignatureService {
 
         return groupedByTemplate.entrySet()
                 .stream()
-                .map(entry -> new TemplateFormDataResponse(entry.getKey(), entry.getValue()))
+                .map(entry -> new TemplateFormDataResponse(entry.getKey(), null, entry.getValue()))
                 .collect(Collectors.toList());
     }
 
@@ -292,6 +292,7 @@ public class InnovationSignatureService {
      * Build template form data responses with tableConfig for viewing innovation detail.
      * This method is specifically for DepartmentInnovationDetailResponse to include tableConfig
      * for rendering table headers in the frontend.
+     * Only returns templates with type DON_DE_NGHI and BAO_CAO_MO_TA.
      */
     public List<TemplateFormDataResponse> buildTemplateFormDataResponsesWithTableConfig(
             List<FormData> formDataList) {
@@ -299,7 +300,8 @@ public class InnovationSignatureService {
             return new ArrayList<>();
         }
 
-        Map<String, List<TemplateFieldResponse>> groupedByTemplate = new LinkedHashMap<>();
+        // Map to store templateId -> (templateType, fields)
+        Map<String, TemplateInfo> templateMap = new LinkedHashMap<>();
 
         for (FormData formData : formDataList) {
             FormField formField = formData.getFormField();
@@ -307,10 +309,20 @@ public class InnovationSignatureService {
                 continue;
             }
 
-            String templateId = formField.getFormTemplate() != null 
-                ? formField.getFormTemplate().getId() 
-                : null;
+            FormTemplate formTemplate = formField.getFormTemplate();
+            if (formTemplate == null) {
+                continue;
+            }
+
+            String templateId = formTemplate.getId();
             if (templateId == null || templateId.isBlank()) {
+                continue;
+            }
+
+            // Filter: chỉ lấy DON_DE_NGHI và BAO_CAO_MO_TA
+            TemplateTypeEnum templateType = formTemplate.getTemplateType();
+            if (templateType != TemplateTypeEnum.DON_DE_NGHI 
+                    && templateType != TemplateTypeEnum.BAO_CAO_MO_TA) {
                 continue;
             }
 
@@ -333,15 +345,36 @@ public class InnovationSignatureService {
 
             TemplateFieldResponse fieldResponse = new TemplateFieldResponse(label, fieldType, valueNode, tableConfig);
 
-            groupedByTemplate
-                    .computeIfAbsent(templateId, id -> new ArrayList<>())
-                    .add(fieldResponse);
+            // Store template info (templateType and fields)
+            templateMap.computeIfAbsent(templateId, id -> new TemplateInfo(templateType, new ArrayList<>()))
+                    .getFields().add(fieldResponse);
         }
 
-        return groupedByTemplate.entrySet()
+        return templateMap.entrySet()
                 .stream()
-                .map(entry -> new TemplateFormDataResponse(entry.getKey(), entry.getValue()))
+                .map(entry -> new TemplateFormDataResponse(entry.getKey(), entry.getValue().getTemplateType(), entry.getValue().getFields()))
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * Helper class to store template info (templateType and fields)
+     */
+    private static class TemplateInfo {
+        private final TemplateTypeEnum templateType;
+        private final List<TemplateFieldResponse> fields;
+
+        public TemplateInfo(TemplateTypeEnum templateType, List<TemplateFieldResponse> fields) {
+            this.templateType = templateType;
+            this.fields = fields;
+        }
+
+        public TemplateTypeEnum getTemplateType() {
+            return templateType;
+        }
+
+        public List<TemplateFieldResponse> getFields() {
+            return fields;
+        }
     }
 
     /**
