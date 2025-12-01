@@ -33,6 +33,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.FilterMyIn
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.FilterAdminInnovationRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.FormDataResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationFormDataResponse;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.MyInnovationResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationStatisticsDTO;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationAcademicYearStatisticsDTO;
@@ -91,6 +92,7 @@ public class InnovationService {
         private final InnovationRepository innovationRepository;
         private final InnovationPhaseRepository innovationPhaseRepository;
         private final FormDataService formDataService;
+        private final InnovationMapper innovationMapper;
         private final FormDataMapper formDataMapper;
         private final FormDataRepository formDataRepository;
         private final UserService userService;
@@ -141,6 +143,7 @@ public class InnovationService {
                 this.innovationRepository = innovationRepository;
                 this.innovationPhaseRepository = innovationPhaseRepository;
                 this.formDataService = formDataService;
+                this.innovationMapper = innovationMapper;
                 this.formDataMapper = formDataMapper;
                 this.formDataRepository = formDataRepository;
                 this.userService = userService;
@@ -567,6 +570,7 @@ public class InnovationService {
                 }
 
                 InnovationFormDataResponse response = new InnovationFormDataResponse();
+                InnovationResponse innovationResponse = innovationMapper.toInnovationResponse(savedInnovation);
 
                 // Tính số giây còn lại/trễ từ deadline
                 Long timeRemainingSeconds = null;
@@ -575,6 +579,8 @@ public class InnovationService {
                 } else {
                         timeRemainingSeconds = getSubmissionTimeRemainingSeconds(savedInnovation);
                 }
+                innovationResponse.setSubmissionTimeRemainingSeconds(timeRemainingSeconds);
+                response.setInnovation(innovationResponse);
                 // response.setFormDataList(formDataResponses);
                 response.setTemplates(innovationSignatureService.buildTemplateFormDataResponses(formDataResponses));
                 response.setTemplateSignatures(
@@ -615,7 +621,10 @@ public class InnovationService {
                 }
 
                 InnovationFormDataResponse response = new InnovationFormDataResponse();
+                InnovationResponse innovationResponse = innovationMapper.toInnovationResponse(innovation);
                 Long timeRemainingSeconds = getSubmissionTimeRemainingSeconds(innovation);
+                innovationResponse.setSubmissionTimeRemainingSeconds(timeRemainingSeconds);
+                response.setInnovation(innovationResponse);
                 response.setTemplates(innovationSignatureService.buildTemplateFormDataResponses(formDataResponses));
                 response.setTemplateSignatures(Collections.emptyList());
                 response.setSubmissionTimeRemainingSeconds(timeRemainingSeconds);
@@ -662,7 +671,10 @@ public class InnovationService {
                 }
 
                 InnovationFormDataResponse response = new InnovationFormDataResponse();
+                InnovationResponse innovationResponse = innovationMapper.toInnovationResponse(innovation);
                 Long timeRemainingSeconds = getSubmissionTimeRemainingSeconds(innovation);
+                innovationResponse.setSubmissionTimeRemainingSeconds(timeRemainingSeconds);
+                response.setInnovation(innovationResponse);
                 response.setTemplates(innovationSignatureService.buildTemplateFormDataResponses(formDataResponses));
                 response.setTemplateSignatures(Collections.emptyList());
                 response.setSubmissionTimeRemainingSeconds(timeRemainingSeconds);
@@ -732,6 +744,9 @@ public class InnovationService {
 
                 // Lấy form data
                 List<FormData> formDataList = formDataRepository.findByInnovationIdWithRelations(innovationId);
+                List<FormDataResponse> formDataResponses = formDataList.stream()
+                                .map(formDataMapper::toFormDataResponse)
+                                .collect(Collectors.toList());
 
                 // Lấy danh sách tài liệu đính kèm
                 List<Attachment> attachments = attachmentRepository.findByInnovationId(innovationId);
@@ -746,9 +761,30 @@ public class InnovationService {
                                         boolean isDigitallySigned = false;
                                         String signerName = null;
 
-                                        // Chỉ xử lý templateType và digital signature cho PDF template (có fileSize)
-                                        // File đính kèm user upload có fileSize = NULL
-                                        if (attachment.getFileSize() != null && attachment.getTemplateId() != null) {
+                                        // Kiểm tra xem attachment có phải là PDF template được generate hay không
+                                        // PDF template: fileName != originalFileName hoặc fileName có dạng UUID pattern
+                                        // User attachment: fileName == originalFileName và không có UUID pattern
+                                        boolean isPdfTemplate = false;
+
+                                        if (attachment.getFileName() != null
+                                                        && attachment.getOriginalFileName() != null) {
+                                                // Nếu fileName khác originalFileName => là PDF template
+                                                if (!attachment.getFileName()
+                                                                .equals(attachment.getOriginalFileName())) {
+                                                        isPdfTemplate = true;
+                                                } else {
+                                                        // Nếu fileName == originalFileName, check pattern UUID
+                                                        // PDF template có pattern: {UUID}_{UUID}.pdf
+                                                        String fileName = attachment.getFileName();
+                                                        // Pattern kiểm tra: có chứa UUID (8-4-4-4-12 chars) và kết thúc
+                                                        // bằng .pdf
+                                                        String uuidPattern = ".*[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}.*\\.pdf$";
+                                                        isPdfTemplate = fileName.toLowerCase().matches(uuidPattern);
+                                                }
+                                        }
+
+                                        // Chỉ xử lý templateType và digital signature cho PDF template
+                                        if (isPdfTemplate && attachment.getTemplateId() != null) {
                                                 Optional<FormTemplate> formTemplateOpt = formTemplateRepository
                                                                 .findById(attachment.getTemplateId());
                                                 if (formTemplateOpt.isPresent()) {
@@ -797,12 +833,14 @@ public class InnovationService {
                                 })
                                 .collect(Collectors.toList());
 
-                // Tạo formData object (không bao gồm innovation vì đã có ở root level)
+                // Tạo formData object
+                InnovationResponse innovationResponse = innovationMapper.toInnovationResponse(innovation);
                 Long timeRemainingSeconds = getSubmissionTimeRemainingSeconds(innovation);
+                innovationResponse.setSubmissionTimeRemainingSeconds(timeRemainingSeconds);
 
                 InnovationFormDataResponse formData = new InnovationFormDataResponse();
-                // Không set innovation vì đã có ở DepartmentInnovationDetailResponse root level
-                formData.setTemplates(innovationSignatureService.buildTemplateFormDataResponsesWithTableConfig(formDataList));
+                formData.setInnovation(innovationResponse);
+                formData.setTemplates(innovationSignatureService.buildTemplateFormDataResponses(formDataResponses));
                 formData.setTemplateSignatures(Collections.emptyList()); // Empty list như full-detail API
                 formData.setSubmissionTimeRemainingSeconds(timeRemainingSeconds);
 
@@ -939,7 +977,10 @@ public class InnovationService {
                 }
 
                 InnovationFormDataResponse response = new InnovationFormDataResponse();
+                InnovationResponse innovationResponse = innovationMapper.toInnovationResponse(innovation);
                 Long timeRemainingSeconds = getSubmissionTimeRemainingSeconds(innovation);
+                innovationResponse.setSubmissionTimeRemainingSeconds(timeRemainingSeconds);
+                response.setInnovation(innovationResponse);
                 response.setTemplates(innovationSignatureService.buildTemplateFormDataResponses(formDataResponses));
                 response.setTemplateSignatures(Collections.emptyList());
                 response.setSubmissionTimeRemainingSeconds(timeRemainingSeconds);
