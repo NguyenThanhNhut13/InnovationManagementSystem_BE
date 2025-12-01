@@ -6,9 +6,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.Attachment;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.FormData;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.FormField;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.FormTemplate;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.Innovation;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.FieldTypeEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.DocumentTypeEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.TemplateTypeEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.UserRoleEnum;
@@ -276,6 +278,77 @@ public class InnovationSignatureService {
 
     private com.fasterxml.jackson.databind.JsonNode extractEffectiveFieldValue(FormDataResponse formDataResponse) {
         com.fasterxml.jackson.databind.JsonNode fieldValue = formDataResponse.getFieldValue();
+        if (fieldValue == null) {
+            return objectMapper.nullNode();
+        }
+        if (fieldValue.has("value")) {
+            com.fasterxml.jackson.databind.JsonNode valueNode = fieldValue.get("value");
+            return valueNode != null ? valueNode : objectMapper.nullNode();
+        }
+        return fieldValue;
+    }
+
+    /**
+     * Build template form data responses with tableConfig for viewing innovation detail.
+     * This method is specifically for DepartmentInnovationDetailResponse to include tableConfig
+     * for rendering table headers in the frontend.
+     */
+    public List<TemplateFormDataResponse> buildTemplateFormDataResponsesWithTableConfig(
+            List<FormData> formDataList) {
+        if (formDataList == null || formDataList.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        Map<String, List<TemplateFieldResponse>> groupedByTemplate = new LinkedHashMap<>();
+
+        for (FormData formData : formDataList) {
+            FormField formField = formData.getFormField();
+            if (formField == null) {
+                continue;
+            }
+
+            String templateId = formField.getFormTemplate() != null 
+                ? formField.getFormTemplate().getId() 
+                : null;
+            if (templateId == null || templateId.isBlank()) {
+                continue;
+            }
+
+            String label = formField.getLabel();
+            if (label == null || label.isBlank()) {
+                continue;
+            }
+
+            String fieldType = formField.getFieldType() != null
+                    ? formField.getFieldType().name()
+                    : "TEXT";
+
+            com.fasterxml.jackson.databind.JsonNode valueNode = extractEffectiveFieldValueFromFormData(formData);
+            
+            // Get tableConfig if fieldType is TABLE
+            com.fasterxml.jackson.databind.JsonNode tableConfig = null;
+            if (formField.getFieldType() == FieldTypeEnum.TABLE) {
+                tableConfig = formField.getTableConfig();
+            }
+
+            TemplateFieldResponse fieldResponse = new TemplateFieldResponse(label, fieldType, valueNode, tableConfig);
+
+            groupedByTemplate
+                    .computeIfAbsent(templateId, id -> new ArrayList<>())
+                    .add(fieldResponse);
+        }
+
+        return groupedByTemplate.entrySet()
+                .stream()
+                .map(entry -> new TemplateFormDataResponse(entry.getKey(), entry.getValue()))
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Helper method to extract effective field value from FormData entity.
+     */
+    private com.fasterxml.jackson.databind.JsonNode extractEffectiveFieldValueFromFormData(FormData formData) {
+        com.fasterxml.jackson.databind.JsonNode fieldValue = formData.getFieldValue();
         if (fieldValue == null) {
             return objectMapper.nullNode();
         }

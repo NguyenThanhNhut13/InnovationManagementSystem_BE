@@ -800,14 +800,12 @@ public class InnovationService {
                                 })
                                 .collect(Collectors.toList());
 
-                // Tạo formData object
-                InnovationResponse innovationResponse = innovationMapper.toInnovationResponse(innovation);
+                // Tạo formData object (không bao gồm innovation vì đã có ở root level)
                 Long timeRemainingSeconds = getSubmissionTimeRemainingSeconds(innovation);
-                innovationResponse.setSubmissionTimeRemainingSeconds(timeRemainingSeconds);
 
                 InnovationFormDataResponse formData = new InnovationFormDataResponse();
-                formData.setInnovation(innovationResponse);
-                formData.setTemplates(innovationSignatureService.buildTemplateFormDataResponses(formDataResponses));
+                // Không set innovation vì đã có ở DepartmentInnovationDetailResponse root level
+                formData.setTemplates(innovationSignatureService.buildTemplateFormDataResponsesWithTableConfig(formDataList));
                 formData.setTemplateSignatures(Collections.emptyList()); // Empty list như full-detail API
                 formData.setSubmissionTimeRemainingSeconds(timeRemainingSeconds);
 
