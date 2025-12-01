@@ -33,7 +33,6 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.FilterMyIn
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.FilterAdminInnovationRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.FormDataResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationFormDataResponse;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.MyInnovationResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationStatisticsDTO;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationAcademicYearStatisticsDTO;
@@ -92,7 +91,6 @@ public class InnovationService {
         private final InnovationRepository innovationRepository;
         private final InnovationPhaseRepository innovationPhaseRepository;
         private final FormDataService formDataService;
-        private final InnovationMapper innovationMapper;
         private final FormDataMapper formDataMapper;
         private final FormDataRepository formDataRepository;
         private final UserService userService;
@@ -143,7 +141,6 @@ public class InnovationService {
                 this.innovationRepository = innovationRepository;
                 this.innovationPhaseRepository = innovationPhaseRepository;
                 this.formDataService = formDataService;
-                this.innovationMapper = innovationMapper;
                 this.formDataMapper = formDataMapper;
                 this.formDataRepository = formDataRepository;
                 this.userService = userService;
@@ -570,7 +567,6 @@ public class InnovationService {
                 }
 
                 InnovationFormDataResponse response = new InnovationFormDataResponse();
-                InnovationResponse innovationResponse = innovationMapper.toInnovationResponse(savedInnovation);
 
                 // Tính số giây còn lại/trễ từ deadline
                 Long timeRemainingSeconds = null;
@@ -579,8 +575,6 @@ public class InnovationService {
                 } else {
                         timeRemainingSeconds = getSubmissionTimeRemainingSeconds(savedInnovation);
                 }
-                innovationResponse.setSubmissionTimeRemainingSeconds(timeRemainingSeconds);
-                response.setInnovation(innovationResponse);
                 // response.setFormDataList(formDataResponses);
                 response.setTemplates(innovationSignatureService.buildTemplateFormDataResponses(formDataResponses));
                 response.setTemplateSignatures(
@@ -621,10 +615,7 @@ public class InnovationService {
                 }
 
                 InnovationFormDataResponse response = new InnovationFormDataResponse();
-                InnovationResponse innovationResponse = innovationMapper.toInnovationResponse(innovation);
                 Long timeRemainingSeconds = getSubmissionTimeRemainingSeconds(innovation);
-                innovationResponse.setSubmissionTimeRemainingSeconds(timeRemainingSeconds);
-                response.setInnovation(innovationResponse);
                 response.setTemplates(innovationSignatureService.buildTemplateFormDataResponses(formDataResponses));
                 response.setTemplateSignatures(Collections.emptyList());
                 response.setSubmissionTimeRemainingSeconds(timeRemainingSeconds);
@@ -671,10 +662,7 @@ public class InnovationService {
                 }
 
                 InnovationFormDataResponse response = new InnovationFormDataResponse();
-                InnovationResponse innovationResponse = innovationMapper.toInnovationResponse(innovation);
                 Long timeRemainingSeconds = getSubmissionTimeRemainingSeconds(innovation);
-                innovationResponse.setSubmissionTimeRemainingSeconds(timeRemainingSeconds);
-                response.setInnovation(innovationResponse);
                 response.setTemplates(innovationSignatureService.buildTemplateFormDataResponses(formDataResponses));
                 response.setTemplateSignatures(Collections.emptyList());
                 response.setSubmissionTimeRemainingSeconds(timeRemainingSeconds);
@@ -744,9 +732,6 @@ public class InnovationService {
 
                 // Lấy form data
                 List<FormData> formDataList = formDataRepository.findByInnovationIdWithRelations(innovationId);
-                List<FormDataResponse> formDataResponses = formDataList.stream()
-                                .map(formDataMapper::toFormDataResponse)
-                                .collect(Collectors.toList());
 
                 // Lấy danh sách tài liệu đính kèm
                 List<Attachment> attachments = attachmentRepository.findByInnovationId(innovationId);
@@ -954,10 +939,7 @@ public class InnovationService {
                 }
 
                 InnovationFormDataResponse response = new InnovationFormDataResponse();
-                InnovationResponse innovationResponse = innovationMapper.toInnovationResponse(innovation);
                 Long timeRemainingSeconds = getSubmissionTimeRemainingSeconds(innovation);
-                innovationResponse.setSubmissionTimeRemainingSeconds(timeRemainingSeconds);
-                response.setInnovation(innovationResponse);
                 response.setTemplates(innovationSignatureService.buildTemplateFormDataResponses(formDataResponses));
                 response.setTemplateSignatures(Collections.emptyList());
                 response.setSubmissionTimeRemainingSeconds(timeRemainingSeconds);

@@ -12,8 +12,6 @@ import java.util.ArrayList;
 @AllArgsConstructor
 public class InnovationFormDataResponse {
 
-    private InnovationResponse innovation;
-
     // private List<FormDataResponse> formDataList;
 
     private List<TemplateFormDataResponse> templates = new ArrayList<>();
