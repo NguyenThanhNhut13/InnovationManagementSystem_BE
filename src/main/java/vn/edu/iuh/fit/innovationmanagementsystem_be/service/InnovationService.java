@@ -644,28 +644,10 @@ public class InnovationService {
 
                 List<FormData> formDataList = formDataRepository.findByInnovationIdWithRelations(innovationId);
 
-                List<FormDataResponse> formDataResponses = new ArrayList<>();
-
-                for (FormData formData : formDataList) {
-                        FormDataResponse formDataResponse = formDataMapper.toFormDataResponse(formData);
-
-                        if (formData.getFormField() != null) {
-                                FormField formField = formData.getFormField();
-
-                                if (formField.getFormTemplate() == null) {
-                                        formField = formFieldRepository.findByIdWithTemplate(formField.getId())
-                                                        .orElse(formField);
-                                }
-                        } else {
-                                logger.warn("FormField is null for FormData ID: {}", formData.getId());
-                        }
-
-                        formDataResponses.add(formDataResponse);
-                }
-
                 InnovationFormDataResponse response = new InnovationFormDataResponse();
                 Long timeRemainingSeconds = getSubmissionTimeRemainingSeconds(innovation);
-                response.setTemplates(innovationSignatureService.buildTemplateFormDataResponses(formDataResponses));
+                // Dùng buildTemplateFormDataResponsesWithTableConfig để trả về structure mới với fields array
+                response.setTemplates(innovationSignatureService.buildTemplateFormDataResponsesWithTableConfig(formDataList));
                 response.setTemplateSignatures(Collections.emptyList());
                 response.setSubmissionTimeRemainingSeconds(timeRemainingSeconds);
 
