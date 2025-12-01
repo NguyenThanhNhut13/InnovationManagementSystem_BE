@@ -401,9 +401,13 @@ public class InnovationQueryService {
                                 return null;
                         }
 
-                        long secondsBetween = ChronoUnit.SECONDS.between(submissionTime, deadlineDateTime);
+                        long secondsBetween = ChronoUnit.SECONDS.between(deadlineDateTime, submissionTime);
 
-                        return Math.abs(secondsBetween);
+                        if (secondsBetween <= 0) {
+                                return 0L;
+                        } else {
+                                return secondsBetween;
+                        }
                 } catch (Exception e) {
                         logger.warn("Lỗi khi tính số giây deadline cho innovation {}: {}", innovation.getId(),
                                         e.getMessage());
