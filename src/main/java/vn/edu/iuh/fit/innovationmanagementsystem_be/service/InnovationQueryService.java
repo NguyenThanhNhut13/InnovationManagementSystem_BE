@@ -376,6 +376,10 @@ public class InnovationQueryService {
                         return null;
                 }
 
+                if (innovation.getStatus() == InnovationStatusEnum.DRAFT) {
+                        return 0L;
+                }
+
                 try {
                         Optional<DepartmentPhase> departmentPhaseOpt = departmentPhaseRepository
                                         .findByDepartmentIdAndInnovationRoundIdAndPhaseType(
@@ -395,15 +399,19 @@ public class InnovationQueryService {
                         }
 
                         LocalDateTime deadlineDateTime = deadlineDate.atTime(LocalTime.MAX);
-                        LocalDateTime submissionTime = innovation.getCreatedAt();
+                        LocalDateTime submissionTime = innovation.getSubmittedAt();
 
                         if (submissionTime == null) {
                                 return null;
                         }
 
-                        long secondsBetween = ChronoUnit.SECONDS.between(submissionTime, deadlineDateTime);
+                        long secondsBetween = ChronoUnit.SECONDS.between(deadlineDateTime, submissionTime);
 
-                        return Math.abs(secondsBetween);
+                        if (secondsBetween <= 0) {
+                                return 0L;
+                        } else {
+                                return secondsBetween;
+                        }
                 } catch (Exception e) {
                         logger.warn("Lỗi khi tính số giây deadline cho innovation {}: {}", innovation.getId(),
                                         e.getMessage());

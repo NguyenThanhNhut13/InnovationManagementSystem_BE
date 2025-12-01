@@ -361,6 +361,13 @@ public class InnovationService {
                         existingInnovation.setStatus(request.getStatus());
                         existingInnovation.setIsScore(request.getIsScore() != null ? request.getIsScore() : false);
                         existingInnovation.setBasisText(request.getBasisText());
+
+                        // Set submittedAt chỉ khi chuyển từ DRAFT sang SUBMITTED lần đầu
+                        if (request.getStatus() == InnovationStatusEnum.SUBMITTED
+                                        && existingInnovation.getSubmittedAt() == null) {
+                                existingInnovation.setSubmittedAt(java.time.LocalDateTime.now());
+                        }
+
                         savedInnovation = innovationRepository.save(existingInnovation);
 
                         // Lấy danh sách file đính kèm cũ TRƯỚC KHI xóa Attachment (để còn metadata)
@@ -439,6 +446,11 @@ public class InnovationService {
                         innovation.setIsScore(request.getIsScore() != null ? request.getIsScore() : false);
                         innovation.setStatus(request.getStatus());
                         innovation.setBasisText(request.getBasisText());
+
+                        // Set submittedAt nếu tạo mới với status SUBMITTED
+                        if (request.getStatus() == InnovationStatusEnum.SUBMITTED) {
+                                innovation.setSubmittedAt(java.time.LocalDateTime.now());
+                        }
 
                         savedInnovation = innovationRepository.save(innovation);
 
@@ -701,14 +713,14 @@ public class InnovationService {
                 // TRUONG_KHOA
                 // Thành viên hội đồng có thể xem sáng kiến của mọi khoa
                 if (hasQuanTriVienKhoaRole || hasTruongKhoaRole) {
-                if (innovation.getDepartment() == null || currentUser.getDepartment() == null) {
+                        if (innovation.getDepartment() == null || currentUser.getDepartment() == null) {
                                 throw new IdInvalidException(
                                                 "Không thể xác định phòng ban của sáng kiến hoặc người dùng");
-                }
+                        }
 
-                // Kiểm tra department matching
-                if (!innovation.getDepartment().getId().equals(currentUser.getDepartment().getId())) {
-                        throw new IdInvalidException("Bạn chỉ có thể xem sáng kiến của khoa mình");
+                        // Kiểm tra department matching
+                        if (!innovation.getDepartment().getId().equals(currentUser.getDepartment().getId())) {
+                                throw new IdInvalidException("Bạn chỉ có thể xem sáng kiến của khoa mình");
                         }
                 }
 
@@ -1316,6 +1328,10 @@ public class InnovationService {
                         return null;
                 }
 
+                if (innovation.getStatus() == InnovationStatusEnum.DRAFT) {
+                        return 0L;
+                }
+
                 try {
                         Optional<DepartmentPhase> departmentPhaseOpt = departmentPhaseRepository
                                         .findByDepartmentIdAndInnovationRoundIdAndPhaseType(
@@ -1329,7 +1345,25 @@ public class InnovationService {
 
                         DepartmentPhase departmentPhase = departmentPhaseOpt.get();
                         LocalDate deadlineDate = departmentPhase.getPhaseEndDate();
-                        return calculateTimeRemainingSeconds(deadlineDate);
+
+                        if (deadlineDate == null) {
+                                return null;
+                        }
+
+                        LocalDateTime deadlineDateTime = deadlineDate.atTime(LocalTime.MAX);
+                        LocalDateTime submissionTime = innovation.getSubmittedAt();
+
+                        if (submissionTime == null) {
+                                return null;
+                        }
+
+                        long secondsBetween = ChronoUnit.SECONDS.between(deadlineDateTime, submissionTime);
+
+                        if (secondsBetween <= 0) {
+                                return 0L;
+                        } else {
+                                return secondsBetween;
+                        }
                 } catch (Exception e) {
                         logger.warn("Lỗi khi tính số giây deadline cho innovation {}: {}", innovation.getId(),
                                         e.getMessage());

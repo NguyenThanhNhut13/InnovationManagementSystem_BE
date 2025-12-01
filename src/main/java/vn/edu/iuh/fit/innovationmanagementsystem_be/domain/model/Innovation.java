@@ -7,6 +7,7 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationStatusEnum;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.ArrayList;
 
@@ -35,6 +36,9 @@ public class Innovation extends Auditable {
 
     @Column(name = "basis_text", columnDefinition = "TEXT")
     private String basisText;
+
+    @Column(name = "submitted_at")
+    private LocalDateTime submittedAt;
 
     // Relationships
 
