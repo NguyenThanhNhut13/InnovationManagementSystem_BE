@@ -33,6 +33,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.FilterMyIn
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.FilterAdminInnovationRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.FormDataResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationFormDataResponse;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.MyInnovationResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationStatisticsDTO;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationAcademicYearStatisticsDTO;
@@ -91,6 +92,7 @@ public class InnovationService {
         private final InnovationRepository innovationRepository;
         private final InnovationPhaseRepository innovationPhaseRepository;
         private final FormDataService formDataService;
+        private final InnovationMapper innovationMapper;
         private final FormDataMapper formDataMapper;
         private final FormDataRepository formDataRepository;
         private final UserService userService;
@@ -141,6 +143,7 @@ public class InnovationService {
                 this.innovationRepository = innovationRepository;
                 this.innovationPhaseRepository = innovationPhaseRepository;
                 this.formDataService = formDataService;
+                this.innovationMapper = innovationMapper;
                 this.formDataMapper = formDataMapper;
                 this.formDataRepository = formDataRepository;
                 this.userService = userService;
@@ -575,7 +578,6 @@ public class InnovationService {
                 } else {
                         timeRemainingSeconds = getSubmissionTimeRemainingSeconds(savedInnovation);
                 }
-                // response.setFormDataList(formDataResponses);
                 response.setTemplates(innovationSignatureService.buildTemplateFormDataResponses(formDataResponses));
                 response.setTemplateSignatures(
                                 innovationSignatureService.buildTemplateSignatureResponses(signatureResults));
@@ -732,6 +734,7 @@ public class InnovationService {
 
                 // Lấy form data
                 List<FormData> formDataList = formDataRepository.findByInnovationIdWithRelations(innovationId);
+                // Không cần map formDataResponses vì sẽ dùng formDataList trực tiếp
 
                 // Lấy danh sách tài liệu đính kèm
                 List<Attachment> attachments = attachmentRepository.findByInnovationId(innovationId);
@@ -818,8 +821,10 @@ public class InnovationService {
                                 })
                                 .collect(Collectors.toList());
 
-                // Tạo formData object (không bao gồm innovation vì đã có ở root level)
+                // Tạo formData object
+                InnovationResponse innovationResponse = innovationMapper.toInnovationResponse(innovation);
                 Long timeRemainingSeconds = getSubmissionTimeRemainingSeconds(innovation);
+                innovationResponse.setSubmissionTimeRemainingSeconds(timeRemainingSeconds);
 
                 InnovationFormDataResponse formData = new InnovationFormDataResponse();
                 // Không set innovation vì đã có ở DepartmentInnovationDetailResponse root level
