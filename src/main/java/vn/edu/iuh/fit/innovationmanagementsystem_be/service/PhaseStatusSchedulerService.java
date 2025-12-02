@@ -4,12 +4,18 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.Council;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.InnovationPhase;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationPhaseLevelEnum;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationPhaseTypeEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.PhaseStatusEnum;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.ReviewLevelEnum;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.CouncilRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.InnovationPhaseRepository;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Service tự động cập nhật trạng thái của InnovationPhase
@@ -20,9 +26,15 @@ import java.util.List;
 public class PhaseStatusSchedulerService {
 
     private final InnovationPhaseRepository innovationPhaseRepository;
+    private final CouncilRepository councilRepository;
+    private final CouncilService councilService;
 
-    public PhaseStatusSchedulerService(InnovationPhaseRepository innovationPhaseRepository) {
+    public PhaseStatusSchedulerService(InnovationPhaseRepository innovationPhaseRepository,
+            CouncilRepository councilRepository,
+            CouncilService councilService) {
         this.innovationPhaseRepository = innovationPhaseRepository;
+        this.councilRepository = councilRepository;
+        this.councilService = councilService;
     }
 
     /**
@@ -73,6 +85,26 @@ public class PhaseStatusSchedulerService {
             innovationPhaseRepository.save(phase);
             log.info("Cập nhật phase '{}' (ID: {}) từ ACTIVE sang COMPLETED",
                     phase.getName(), phase.getId());
+
+            // Nếu là phase SCORING cấp Trường, tự động cập nhật trạng thái innovation
+            if (phase.getPhaseType() == InnovationPhaseTypeEnum.SCORING
+                    && phase.getLevel() == InnovationPhaseLevelEnum.SCHOOL) {
+                try {
+                    String roundId = phase.getInnovationRound().getId();
+                    Optional<Council> councilOpt = councilRepository.findByRoundIdAndLevelAndNoDepartment(
+                            roundId, ReviewLevelEnum.TRUONG);
+
+                    if (councilOpt.isPresent()) {
+                        Council council = councilOpt.get();
+                        councilService.updateInnovationStatusesForCouncil(council);
+                        log.info("Đã tự động cập nhật trạng thái sáng kiến cho council cấp Trường '{}' (ID: {}) sau khi phase SCORING kết thúc",
+                                council.getName(), council.getId());
+                    }
+                } catch (Exception e) {
+                    log.error("Lỗi khi cập nhật trạng thái sáng kiến sau khi phase SCORING cấp Trường kết thúc: {}",
+                            e.getMessage(), e);
+                }
+            }
         }
 
         return activePhases.size();

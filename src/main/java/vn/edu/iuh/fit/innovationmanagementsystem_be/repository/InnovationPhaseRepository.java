@@ -60,4 +60,16 @@ public interface InnovationPhaseRepository
             "WHERE ip.phaseStatus = 'ACTIVE' " +
             "AND ip.phaseEndDate < :currentDate")
     List<InnovationPhase> findActivePhasesReadyToComplete(@Param("currentDate") java.time.LocalDate currentDate);
+
+    /**
+     * Tìm các innovation phase SCORING cấp Trường đã kết thúc (endDate < currentDate)
+     * (để tự động cập nhật trạng thái innovation sau khi hết thời gian chấm điểm)
+     * 
+     * @param currentDate Ngày hiện tại
+     */
+    @Query("SELECT ip FROM InnovationPhase ip " +
+            "WHERE ip.phaseType = 'SCORING' " +
+            "AND ip.level = 'SCHOOL' " +
+            "AND ip.phaseEndDate < :currentDate")
+    List<InnovationPhase> findSchoolScoringPhasesEnded(@Param("currentDate") java.time.LocalDate currentDate);
 }

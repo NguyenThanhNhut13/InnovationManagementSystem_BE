@@ -57,6 +57,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.InnovationPhaseRe
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.DepartmentPhaseRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.ResultPaginationDTO;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.Utils;
+import lombok.extern.slf4j.Slf4j;
 
 import java.time.LocalDate;
 
@@ -68,6 +69,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
+@Slf4j
 @Transactional
 public class CouncilService {
 
@@ -84,6 +86,7 @@ public class CouncilService {
     private final ReviewScoreRepository reviewScoreRepository;
     private final InnovationPhaseRepository innovationPhaseRepository;
     private final DepartmentPhaseRepository departmentPhaseRepository;
+    private final NotificationService notificationService;
 
     public CouncilService(CouncilRepository councilRepository,
             CouncilMemberRepository councilMemberRepository,
@@ -97,7 +100,8 @@ public class CouncilService {
             DepartmentRepository departmentRepository,
             ReviewScoreRepository reviewScoreRepository,
             InnovationPhaseRepository innovationPhaseRepository,
-            DepartmentPhaseRepository departmentPhaseRepository) {
+            DepartmentPhaseRepository departmentPhaseRepository,
+            NotificationService notificationService) {
         this.councilRepository = councilRepository;
         this.councilMemberRepository = councilMemberRepository;
         this.userRepository = userRepository;
@@ -111,6 +115,7 @@ public class CouncilService {
         this.reviewScoreRepository = reviewScoreRepository;
         this.innovationPhaseRepository = innovationPhaseRepository;
         this.departmentPhaseRepository = departmentPhaseRepository;
+        this.notificationService = notificationService;
     }
 
     // 1. Tạo Hội đồng mới
@@ -1101,7 +1106,7 @@ public class CouncilService {
     }
 
     // 7. Lấy kết quả chấm điểm của hội đồng
-    @Transactional(readOnly = true)
+    @Transactional
     public CouncilResultsResponse getCouncilResults(String councilId) {
         // Tìm và validate council
         Council council = findAndValidateCouncil(councilId);
@@ -1536,5 +1541,116 @@ public class CouncilService {
 
         // Bằng nhau nhưng Chủ tịch chưa chấm
         return String.format("Bằng nhau (%d/%d) - Chưa có kết quả (Chủ tịch chưa chấm điểm)", approvedCount, scoredMembers);
+    }
+
+    // 8. Cập nhật trạng thái sáng kiến cho tất cả innovation trong council (tự động khi phase SCORING kết thúc)
+    @Transactional
+    public void updateInnovationStatusesForCouncil(Council council) {
+        log.info("Bắt đầu cập nhật trạng thái sáng kiến cho council '{}' (ID: {})", council.getName(), council.getId());
+        
+        // Lấy danh sách member user IDs có quyền chấm điểm
+        List<String> memberUserIds = getScoringMemberUserIds(council);
+        int totalMembers = memberUserIds.size();
+        
+        // Lấy danh sách innovations
+        List<Innovation> innovations = council.getInnovations();
+        
+        int updatedCount = 0;
+        for (Innovation innovation : innovations) {
+            // Tính toán kết quả
+            InnovationResultDetail result = calculateInnovationResult(innovation, memberUserIds, totalMembers, council);
+            
+            // Cập nhật trạng thái nếu có kết quả cuối cùng
+            if (result.getFinalDecision() != null) {
+                updateInnovationStatusAfterScoring(innovation, result.getFinalDecision(), council);
+                updatedCount++;
+            }
+        }
+        
+        log.info("Hoàn thành cập nhật trạng thái sáng kiến cho council '{}'. Đã cập nhật {} innovation", 
+                council.getName(), updatedCount);
+    }
+
+    // Helper method: Cập nhật trạng thái sáng kiến sau khi hết thời gian chấm điểm
+    @Transactional
+    private void updateInnovationStatusAfterScoring(Innovation innovation, Boolean finalDecision, Council council) {
+        // Chỉ cập nhật nếu chưa được cập nhật trước đó
+        InnovationStatusEnum currentStatus = innovation.getStatus();
+        ReviewLevelEnum councilLevel = council.getReviewCouncilLevel();
+        
+        // Xác định trạng thái mới dựa trên cấp hội đồng và quyết định cuối cùng
+        InnovationStatusEnum newStatus = null;
+        
+        if (councilLevel == ReviewLevelEnum.KHOA) {
+            // Hội đồng Khoa
+            if (finalDecision) {
+                // Đã được thông qua ở cấp Khoa
+                if (currentStatus == InnovationStatusEnum.PENDING_KHOA_REVIEW || 
+                    currentStatus == InnovationStatusEnum.KHOA_REVIEWED) {
+                    
+                    // Kiểm tra xem phase SCORING cấp Trường đã bắt đầu chưa
+                    InnovationRound round = innovation.getInnovationRound();
+                    Optional<InnovationPhase> schoolScoringPhase = innovationPhaseRepository
+                            .findByInnovationRoundIdAndPhaseType(round.getId(), InnovationPhaseTypeEnum.SCORING);
+                    
+                    boolean isSchoolScoringActive = schoolScoringPhase.isPresent() 
+                            && schoolScoringPhase.get().getLevel() == InnovationPhaseLevelEnum.SCHOOL
+                            && schoolScoringPhase.get().getPhaseStatus() == PhaseStatusEnum.ACTIVE;
+                    
+                    if (isSchoolScoringActive) {
+                        // Phase SCORING cấp Trường đã bắt đầu → chuyển thẳng sang PENDING_TRUONG_REVIEW
+                        newStatus = InnovationStatusEnum.PENDING_TRUONG_REVIEW;
+                    } else {
+                        // Phase SCORING cấp Trường chưa bắt đầu → chuyển sang KHOA_APPROVED
+                        // InnovationStatusScheduler sẽ xử lý chuyển sang PENDING_TRUONG_REVIEW sau
+                        newStatus = InnovationStatusEnum.KHOA_APPROVED;
+                    }
+                }
+            } else {
+                // Không được thông qua ở cấp Khoa
+                if (currentStatus == InnovationStatusEnum.PENDING_KHOA_REVIEW || 
+                    currentStatus == InnovationStatusEnum.KHOA_REVIEWED) {
+                    newStatus = InnovationStatusEnum.KHOA_REJECTED;
+                }
+            }
+        } else if (councilLevel == ReviewLevelEnum.TRUONG) {
+            // Hội đồng Trường
+            if (finalDecision) {
+                // Đã được thông qua ở cấp Trường
+                if (currentStatus == InnovationStatusEnum.PENDING_TRUONG_REVIEW || 
+                    currentStatus == InnovationStatusEnum.TRUONG_REVIEWED ||
+                    currentStatus == InnovationStatusEnum.KHOA_APPROVED) {
+                    newStatus = InnovationStatusEnum.TRUONG_APPROVED;
+                }
+            } else {
+                // Không được thông qua ở cấp Trường
+                if (currentStatus == InnovationStatusEnum.PENDING_TRUONG_REVIEW || 
+                    currentStatus == InnovationStatusEnum.TRUONG_REVIEWED ||
+                    currentStatus == InnovationStatusEnum.KHOA_APPROVED) {
+                    newStatus = InnovationStatusEnum.TRUONG_REJECTED;
+                }
+            }
+        }
+        
+        // Cập nhật trạng thái nếu có thay đổi
+        if (newStatus != null && newStatus != currentStatus) {
+            innovation.setStatus(newStatus);
+            innovationRepository.save(innovation);
+            
+            log.info("Đã cập nhật trạng thái sáng kiến '{}' (ID: {}) từ {} sang {} sau khi hội đồng {} chấm điểm",
+                    innovation.getInnovationName(), innovation.getId(), currentStatus, newStatus, councilLevel);
+            
+            // Gửi thông báo cho tác giả
+            if (innovation.getUser() != null) {
+                notificationService.notifyAuthorAboutCouncilResult(
+                        innovation.getId(),
+                        innovation.getInnovationName(),
+                        innovation.getUser().getId(),
+                        councilLevel,
+                        finalDecision,
+                        council.getName()
+                );
+            }
+        }
     }
 }

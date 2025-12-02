@@ -112,4 +112,19 @@ public interface DepartmentPhaseRepository
                         "AND dp.phaseStartDate = :currentDate")
         List<DepartmentPhase> findScoringPhasesActivatedToday(
                         @org.springframework.data.repository.query.Param("currentDate") java.time.LocalDate currentDate);
+
+        /**
+         * Tìm các department phase SCORING đã kết thúc (endDate < currentDate)
+         * (để tự động cập nhật trạng thái innovation sau khi hết thời gian chấm điểm)
+         * Fetch join department và innovationRound để tránh LazyInitializationException
+         * 
+         * @param currentDate Ngày hiện tại
+         */
+        @org.springframework.data.jpa.repository.Query("SELECT dp FROM DepartmentPhase dp " +
+                        "LEFT JOIN FETCH dp.department " +
+                        "LEFT JOIN FETCH dp.innovationRound " +
+                        "WHERE dp.phaseType = 'SCORING' " +
+                        "AND dp.phaseEndDate < :currentDate")
+        List<DepartmentPhase> findScoringPhasesEnded(
+                        @org.springframework.data.repository.query.Param("currentDate") java.time.LocalDate currentDate);
 }

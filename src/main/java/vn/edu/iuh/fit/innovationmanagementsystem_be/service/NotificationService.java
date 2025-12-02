@@ -16,6 +16,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.UserNotificatio
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationPhaseTypeEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationStatusEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.NotificationTypeEnum;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.ReviewLevelEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.UserRoleEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.NotificationDetailResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.NotificationResponse;
@@ -1106,5 +1107,57 @@ public class NotificationService {
         private enum DepartmentPhaseAction {
                 PUBLISH,
                 CLOSE
+        }
+
+        /**
+         * Gửi thông báo cho tác giả về kết quả đánh giá của hội đồng
+         */
+        @Transactional
+        public void notifyAuthorAboutCouncilResult(String innovationId, String innovationName,
+                        String authorId, ReviewLevelEnum councilLevel, Boolean isApproved, String councilName) {
+                try {
+                        User author = userRepository.findById(authorId)
+                                        .orElseThrow(() -> new IdInvalidException("Không tìm thấy tác giả với ID: " + authorId));
+
+                        String councilLevelName = councilLevel == ReviewLevelEnum.KHOA ? "Khoa" : "Trường";
+                        String statusText = isApproved ? "thông qua" : "không thông qua";
+
+                        String title = String.format("Kết quả đánh giá sáng kiến từ hội đồng %s", councilLevelName);
+                        String message = String.format(
+                                        "Sáng kiến \"%s\" của bạn đã được hội đồng %s \"%s\" đánh giá và %s.",
+                                        innovationName, councilLevelName, councilName, statusText);
+
+                        Map<String, Object> data = new HashMap<>();
+                        data.put("innovationId", innovationId);
+                        data.put("innovationName", innovationName);
+                        data.put("councilLevel", councilLevel.name());
+                        data.put("councilName", councilName);
+                        data.put("isApproved", isApproved);
+                        data.put("statusText", statusText);
+
+                        NotificationTypeEnum notificationType = isApproved 
+                                        ? NotificationTypeEnum.INNOVATION_APPROVED 
+                                        : NotificationTypeEnum.INNOVATION_REJECTED;
+                        
+                        Notification notification = createNotification(title, message, notificationType,
+                                        data, null, null);
+
+                        Map<String, Object> wsNotification = createWebSocketNotification(
+                                        notification.getId(), title, message, notificationType, data);
+
+                        UserNotification userNotification = new UserNotification();
+                        userNotification.setUser(author);
+                        userNotification.setNotification(notification);
+                        userNotification.setIsRead(false);
+                        userNotificationRepository.save(userNotification);
+
+                        String userDestination = "/queue/notifications/" + author.getId();
+                        messagingTemplate.convertAndSend(userDestination, wsNotification);
+
+                        log.info("Đã gửi thông báo kết quả đánh giá cho tác giả {} về sáng kiến {}", authorId, innovationId);
+                } catch (Exception e) {
+                        log.error("Lỗi khi gửi thông báo kết quả đánh giá cho tác giả {} về sáng kiến {}: {}",
+                                        authorId, innovationId, e.getMessage(), e);
+                }
         }
 }
