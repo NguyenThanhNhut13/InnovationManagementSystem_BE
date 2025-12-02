@@ -15,11 +15,14 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.Council;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.CreateCouncilRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.UpdateCouncilMembersRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.CouncilResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.CouncilResultsResponse;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.CouncilListResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.ScoringStatusEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.service.CouncilService;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.ResultPaginationDTO;
@@ -166,6 +169,20 @@ public class CouncilController {
     public ResponseEntity<CouncilResultsResponse> getCouncilResults(
             @Parameter(description = "Council ID", required = true) @PathVariable String id) {
         CouncilResultsResponse response = councilService.getCouncilResults(id);
+        return ResponseEntity.ok(response);
+    }
+
+    // 9. Lấy danh sách hội đồng mà user hiện tại là thư ký
+    @GetMapping("/councils/secretary/my-councils")
+    @PreAuthorize("hasAnyRole('TV_HOI_DONG_KHOA', 'TV_HOI_DONG_TRUONG')")
+    @ApiMessage("Lấy danh sách hội đồng mà user là thư ký thành công")
+    @Operation(summary = "Get Councils Where User Is Secretary", description = "Get list of councils where the current user is secretary (THU_KY). Returns both faculty and school level councils.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Councils retrieved successfully", content = @Content(schema = @Schema(implementation = List.class))),
+            @ApiResponse(responseCode = "401", description = "Unauthorized")
+    })
+    public ResponseEntity<List<CouncilListResponse>> getCouncilsWhereUserIsSecretary() {
+        List<CouncilListResponse> response = councilService.getCouncilsWhereUserIsSecretary();
         return ResponseEntity.ok(response);
     }
 

@@ -864,6 +864,45 @@ public class CouncilService {
         return Utils.toResultPaginationDTO(responsePage, pageable);
     }
 
+    // 9. Lấy danh sách hội đồng mà user hiện tại là thư ký
+    @Transactional(readOnly = true)
+    public List<CouncilListResponse> getCouncilsWhereUserIsSecretary() {
+        User currentUser = userService.getCurrentUser();
+        String currentUserId = currentUser.getId();
+        
+        // Lấy tất cả council members của user
+        List<CouncilMember> memberships = councilMemberRepository.findByUserId(currentUserId);
+        
+        // Filter chỉ lấy những council mà user là THU_KY và lấy council IDs
+        List<String> secretaryCouncilIds = memberships.stream()
+                .filter(member -> member.getRole() == CouncilMemberRoleEnum.THU_KY)
+                .map(member -> member.getCouncil().getId())
+                .distinct()
+                .collect(Collectors.toList());
+        
+        if (secretaryCouncilIds.isEmpty()) {
+            return new ArrayList<>();
+        }
+        
+        // Fetch councils với đầy đủ quan hệ cần thiết (tránh N+1 query)
+        List<Council> secretaryCouncils = councilRepository.findAllById(secretaryCouncilIds);
+        
+        // Trigger lazy load cho các quan hệ cần thiết trong cùng transaction
+        for (Council council : secretaryCouncils) {
+            council.getInnovationRound().getId(); // Fetch round
+            if (council.getDepartment() != null) {
+                council.getDepartment().getId(); // Fetch department
+            }
+            council.getCouncilMembers().size(); // Fetch members
+            council.getInnovations().size(); // Fetch innovations
+        }
+        
+        // Map sang CouncilListResponse
+        return secretaryCouncils.stream()
+                .map(councilMapper::toCouncilListResponse)
+                .collect(Collectors.toList());
+    }
+
     // Helper method: Tính toán tiến độ chấm điểm
     public ScoringProgressResponse calculateScoringProgress(Council council) {
         // Lấy tất cả innovations của council
