@@ -40,7 +40,7 @@ public interface InnovationRepository extends JpaRepository<Innovation, String>,
         @Query("SELECT ir.academicYear, COUNT(i) FROM Innovation i JOIN i.innovationRound ir WHERE i.user.id = :userId GROUP BY ir.academicYear ORDER BY ir.academicYear")
         List<Object[]> countInnovationsByAcademicYearAndUserId(@Param("userId") String userId);
 
-        @Query("SELECT ir.academicYear, COUNT(i) FROM Innovation i JOIN i.innovationRound ir WHERE i.user.id = :userId AND i.status IN ('DRAFT', 'SUBMITTED', 'PENDING_KHOA_REVIEW', 'KHOA_REVIEWED', 'KHOA_APPROVED', 'PENDING_TRUONG_REVIEW', 'TRUONG_REVIEWED') GROUP BY ir.academicYear ORDER BY ir.academicYear")
+        @Query("SELECT ir.academicYear, COUNT(i) FROM Innovation i JOIN i.innovationRound ir WHERE i.user.id = :userId AND i.status IN ('DRAFT', 'SUBMITTED', 'PENDING_KHOA_REVIEW', 'KHOA_APPROVED', 'PENDING_TRUONG_REVIEW', 'TRUONG_REVIEWED') GROUP BY ir.academicYear ORDER BY ir.academicYear")
         List<Object[]> countSubmittedInnovationsByAcademicYearAndUserId(@Param("userId") String userId);
 
         @Query("SELECT ir.academicYear, COUNT(i) FROM Innovation i JOIN i.innovationRound ir WHERE i.user.id = :userId AND i.status IN ('TRUONG_APPROVED', 'FINAL_APPROVED') GROUP BY ir.academicYear ORDER BY ir.academicYear")

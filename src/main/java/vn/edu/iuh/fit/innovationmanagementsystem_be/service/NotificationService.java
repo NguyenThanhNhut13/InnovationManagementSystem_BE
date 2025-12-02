@@ -1093,7 +1093,6 @@ public class NotificationService {
                         case DRAFT -> "Nháp";
                         case SUBMITTED -> "Đã nộp";
                         case PENDING_KHOA_REVIEW -> "Chờ khoa duyệt";
-                        case KHOA_REVIEWED -> "Khoa đã duyệt";
                         case KHOA_APPROVED -> "Khoa đã phê duyệt";
                         case KHOA_REJECTED -> "Khoa đã từ chối";
                         case PENDING_TRUONG_REVIEW -> "Chờ trưởng khoa duyệt";

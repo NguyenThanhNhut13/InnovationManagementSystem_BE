@@ -1585,31 +1585,12 @@ public class CouncilService {
             // Hội đồng Khoa
             if (finalDecision) {
                 // Đã được thông qua ở cấp Khoa
-                if (currentStatus == InnovationStatusEnum.PENDING_KHOA_REVIEW || 
-                    currentStatus == InnovationStatusEnum.KHOA_REVIEWED) {
-                    
-                    // Kiểm tra xem phase SCORING cấp Trường đã bắt đầu chưa
-                    InnovationRound round = innovation.getInnovationRound();
-                    Optional<InnovationPhase> schoolScoringPhase = innovationPhaseRepository
-                            .findByInnovationRoundIdAndPhaseType(round.getId(), InnovationPhaseTypeEnum.SCORING);
-                    
-                    boolean isSchoolScoringActive = schoolScoringPhase.isPresent() 
-                            && schoolScoringPhase.get().getLevel() == InnovationPhaseLevelEnum.SCHOOL
-                            && schoolScoringPhase.get().getPhaseStatus() == PhaseStatusEnum.ACTIVE;
-                    
-                    if (isSchoolScoringActive) {
-                        // Phase SCORING cấp Trường đã bắt đầu → chuyển thẳng sang PENDING_TRUONG_REVIEW
-                        newStatus = InnovationStatusEnum.PENDING_TRUONG_REVIEW;
-                    } else {
-                        // Phase SCORING cấp Trường chưa bắt đầu → chuyển sang KHOA_APPROVED
-                        // InnovationStatusScheduler sẽ xử lý chuyển sang PENDING_TRUONG_REVIEW sau
-                        newStatus = InnovationStatusEnum.KHOA_APPROVED;
-                    }
+                if (currentStatus == InnovationStatusEnum.PENDING_KHOA_REVIEW) {
+                    newStatus = InnovationStatusEnum.KHOA_APPROVED;
                 }
             } else {
                 // Không được thông qua ở cấp Khoa
-                if (currentStatus == InnovationStatusEnum.PENDING_KHOA_REVIEW || 
-                    currentStatus == InnovationStatusEnum.KHOA_REVIEWED) {
+                if (currentStatus == InnovationStatusEnum.PENDING_KHOA_REVIEW) {
                     newStatus = InnovationStatusEnum.KHOA_REJECTED;
                 }
             }

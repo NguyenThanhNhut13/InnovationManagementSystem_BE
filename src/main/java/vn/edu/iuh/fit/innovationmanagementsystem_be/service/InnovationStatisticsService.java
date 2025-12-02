@@ -52,7 +52,6 @@ public class InnovationStatisticsService {
                                 InnovationStatusEnum.DRAFT,
                                 InnovationStatusEnum.SUBMITTED,
                                 InnovationStatusEnum.PENDING_KHOA_REVIEW,
-                                InnovationStatusEnum.KHOA_REVIEWED,
                                 InnovationStatusEnum.KHOA_APPROVED,
                                 InnovationStatusEnum.PENDING_TRUONG_REVIEW,
                                 InnovationStatusEnum.TRUONG_REVIEWED);

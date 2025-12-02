@@ -4,7 +4,6 @@ public enum InnovationStatusEnum {
     DRAFT,
     SUBMITTED,
     PENDING_KHOA_REVIEW,
-    KHOA_REVIEWED,
     KHOA_APPROVED,
     KHOA_REJECTED,
     PENDING_TRUONG_REVIEW,
