@@ -18,5 +18,6 @@ public class MyAssignedInnovationResponse {
     // Fields cho thành viên hội đồng
     private Boolean isScore;              // true = có chấm điểm, false = không chấm điểm
     private Boolean myIsApproved;          // Quyết định của current user (null nếu chưa đánh giá)
+    private Boolean canScore;             // true nếu đang trong thời gian chấm điểm
 }
 

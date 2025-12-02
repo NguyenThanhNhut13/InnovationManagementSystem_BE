@@ -46,6 +46,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.DepartmentPhase
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationRoundStatusEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationPhaseTypeEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationPhaseLevelEnum;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.PhaseStatusEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.ScoringProgressResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.CouncilResultsResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationResultDetail;
@@ -727,7 +728,10 @@ public class CouncilService {
                             ? innovation.getDepartment().getDepartmentName()
                             : null;
                     
-                    // Map sang response (không trả về hasScored và myScore)
+                    // Tính toán canScore
+                    boolean canScore = calculateCanScore(innovation, currentCouncil, currentRound);
+                    
+                    // Map sang response
                     return new MyAssignedInnovationResponse(
                             innovation.getId(),
                             innovation.getInnovationName(),
@@ -735,7 +739,8 @@ public class CouncilService {
                             departmentName,
                             innovation.getStatus(),
                             innovation.getIsScore(),
-                            myIsApproved
+                            myIsApproved,
+                            canScore
                     );
                 })
                 .collect(Collectors.toList());
@@ -1095,7 +1100,7 @@ public class CouncilService {
         boolean canViewResults = scoringEndDate != null && currentDate.isAfter(scoringEndDate);
 
         if (!canViewResults) {
-            throw new IllegalArgumentException(
+                throw new IllegalArgumentException(
                     "Chưa hết thời gian chấm điểm. Chỉ có thể xem kết quả sau ngày " + scoringEndDate);
         }
 
@@ -1213,6 +1218,73 @@ public class CouncilService {
             }
             return null;
         }
+    }
+
+    // Helper method: Tính toán canScore cho một innovation
+    private boolean calculateCanScore(Innovation innovation, Council council, InnovationRound round) {
+        ReviewLevelEnum councilLevel = council.getReviewCouncilLevel();
+        LocalDate currentDate = LocalDate.now();
+        LocalDate startDate;
+        LocalDate endDate;
+        PhaseStatusEnum phaseStatus;
+
+        if (councilLevel == ReviewLevelEnum.KHOA) {
+            Department department = getDepartmentForCouncil(council, innovation);
+            if (department == null) {
+                return false;
+            }
+
+            Optional<DepartmentPhase> scoringPhaseOpt = departmentPhaseRepository
+                    .findByDepartmentIdAndInnovationRoundIdAndPhaseType(
+                            department.getId(),
+                            round.getId(),
+                            InnovationPhaseTypeEnum.SCORING);
+
+            if (scoringPhaseOpt.isEmpty()) {
+                return false;
+            }
+
+            DepartmentPhase scoringPhase = scoringPhaseOpt.get();
+            phaseStatus = scoringPhase.getPhaseStatus();
+            startDate = scoringPhase.getPhaseStartDate();
+            endDate = scoringPhase.getPhaseEndDate();
+        } else {
+            Optional<InnovationPhase> scoringPhaseOpt = innovationPhaseRepository
+                    .findByInnovationRoundIdAndPhaseType(round.getId(), InnovationPhaseTypeEnum.SCORING);
+
+            if (scoringPhaseOpt.isEmpty()) {
+                return false;
+            }
+
+            InnovationPhase scoringPhase = scoringPhaseOpt.get();
+            if (scoringPhase.getLevel() != InnovationPhaseLevelEnum.SCHOOL) {
+                return false;
+            }
+
+            phaseStatus = scoringPhase.getPhaseStatus();
+            startDate = scoringPhase.getPhaseStartDate();
+            endDate = scoringPhase.getPhaseEndDate();
+        }
+
+        // Nếu phase chưa ACTIVE hoặc không có startDate/endDate
+        if (phaseStatus != PhaseStatusEnum.ACTIVE || startDate == null || endDate == null) {
+            return false;
+        }
+
+        // Check xem có trong thời gian chấm điểm không
+        return !currentDate.isBefore(startDate) && !currentDate.isAfter(endDate);
+    }
+
+    // Helper: Lấy department cho council (ưu tiên từ council, sau đó từ innovation)
+    private Department getDepartmentForCouncil(Council council, Innovation innovation) {
+        Department department = council.getDepartment();
+        if (department == null) {
+            department = innovation.getDepartment();
+            if (department == null && innovation.getUser() != null) {
+                department = innovation.getUser().getDepartment();
+            }
+        }
+        return department;
     }
 
     // Helper method: Tính kết quả cho một innovation

@@ -12,6 +12,8 @@ public interface CouncilMemberRepository extends JpaRepository<CouncilMember, St
 
     List<CouncilMember> findByCouncilId(String councilId);
 
+    List<CouncilMember> findByCouncilIdIn(List<String> councilIds);
+
     Long countByCouncilIdAndRole(String councilId, CouncilMemberRoleEnum role);
 
     List<CouncilMember> findByUserId(String userId);
