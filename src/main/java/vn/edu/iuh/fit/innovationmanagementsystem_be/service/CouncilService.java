@@ -1313,8 +1313,8 @@ public class CouncilService {
                 canView = false;
                 status = ScoringPeriodStatusEnum.NOT_STARTED;
             }
-        } else if (!currentDate.isBefore(endDate)) {
-            // Đã hết thời gian chấm điểm (bao gồm cả ngày kết thúc)
+        } else if (currentDate.isAfter(endDate)) {
+            // Đã hết thời gian chấm điểm
             canScore = false;
             canView = true; // Vẫn có thể xem sau khi hết thời gian
             status = ScoringPeriodStatusEnum.ENDED;
