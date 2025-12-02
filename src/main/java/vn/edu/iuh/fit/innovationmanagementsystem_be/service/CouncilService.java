@@ -1283,12 +1283,18 @@ public class CouncilService {
             endDate = scoringPhase.getPhaseEndDate();
         }
 
-        // Nếu phase chưa ACTIVE hoặc không có startDate/endDate
-        if (phaseStatus != PhaseStatusEnum.ACTIVE || startDate == null || endDate == null) {
+        // Nếu không có startDate/endDate thì không thể tính toán
+        if (startDate == null || endDate == null) {
             return new ScoringPeriodInfo(startDate, endDate, false, false, ScoringPeriodStatusEnum.NOT_STARTED);
         }
 
-        // Tính toán status
+        // Cho phép tính toán khi phase là ACTIVE hoặc COMPLETED
+        // (COMPLETED = đã hết thời gian nhưng vẫn cần tính toán để trả về ENDED status với canView = true)
+        if (phaseStatus != PhaseStatusEnum.ACTIVE && phaseStatus != PhaseStatusEnum.COMPLETED) {
+            return new ScoringPeriodInfo(startDate, endDate, false, false, ScoringPeriodStatusEnum.NOT_STARTED);
+        }
+
+        // Tính toán status dựa trên currentDate vs startDate/endDate
         boolean canScore = false;
         boolean canView = false;
         ScoringPeriodStatusEnum status;
