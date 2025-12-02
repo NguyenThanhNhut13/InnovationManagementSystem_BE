@@ -1110,7 +1110,12 @@ public class CouncilService {
         List<InnovationResultDetail> innovationResults = new ArrayList<>();
         int completedCount = 0;
         int pendingCount = 0;
-        int totalPendingMembers = 0;
+        
+        // Map để đếm số innovation mà mỗi member đã chấm
+        java.util.Map<String, Integer> memberScoredCount = new java.util.HashMap<>();
+        for (String memberId : memberUserIds) {
+            memberScoredCount.put(memberId, 0);
+        }
 
         for (Innovation innovation : innovations) {
             InnovationResultDetail result = calculateInnovationResult(innovation, memberUserIds, totalMembers, council);
@@ -1120,16 +1125,49 @@ public class CouncilService {
                 completedCount++;
             } else {
                 pendingCount++;
-                totalPendingMembers += (totalMembers - result.getScoredMembers());
+            }
+            
+            // Đếm số innovation mà mỗi member đã chấm
+            for (MemberEvaluationDetail evaluation : result.getMemberEvaluations()) {
+                if (evaluation.getHasScored() != null && evaluation.getHasScored()) {
+                    memberScoredCount.put(evaluation.getMemberId(), 
+                        memberScoredCount.get(evaluation.getMemberId()) + 1);
+                }
             }
         }
 
-        // Tạo warning message nếu có thành viên chưa chấm
+        // Phân loại thành viên
+        int notScoredAtAll = 0;      // Chưa chấm bất kỳ innovation nào
+        int notScoredAll = 0;        // Đã chấm một số nhưng chưa chấm hết tất cả
+        int totalInnovations = innovations.size();
+
+        for (String memberId : memberUserIds) {
+            int scoredCount = memberScoredCount.get(memberId);
+            if (scoredCount == 0) {
+                notScoredAtAll++;
+            } else if (scoredCount < totalInnovations) {
+                notScoredAll++;
+            }
+        }
+
+        // Tạo warning message nếu có thành viên chưa chấm hoặc chưa chấm xong
         String warningMessage = null;
-        if (totalPendingMembers > 0) {
-            warningMessage = String.format(
-                    "Có %d thành viên chưa hoàn thành chấm điểm. Kết quả có thể không đầy đủ.",
-                    totalPendingMembers);
+        if (notScoredAtAll > 0 || notScoredAll > 0) {
+            StringBuilder message = new StringBuilder();
+            if (notScoredAtAll > 0 && notScoredAll > 0) {
+                message.append(String.format(
+                    "Có %d thành viên chưa đánh giá và %d thành viên chưa đánh giá xong. Kết quả có thể không đầy đủ.",
+                    notScoredAtAll, notScoredAll));
+            } else if (notScoredAtAll > 0) {
+                message.append(String.format(
+                    "Có %d thành viên chưa đánh giá. Kết quả có thể không đầy đủ.",
+                    notScoredAtAll));
+            } else {
+                message.append(String.format(
+                    "Có %d thành viên chưa đánh giá xong. Kết quả có thể không đầy đủ.",
+                    notScoredAll));
+            }
+            warningMessage = message.toString();
         }
 
         // Tạo response
