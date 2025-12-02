@@ -1295,7 +1295,7 @@ public class CouncilService {
 
         // Xác định vị trí hiện tại so với thời gian chấm điểm
         boolean isBeforeStartDate = currentDate.isBefore(startDate);
-        boolean isAfterEndDate = !currentDate.isBefore(endDate);
+        boolean isAfterEndDate = currentDate.isAfter(endDate); // Chỉ sau ngày kết thúc mới là ENDED
 
         if (isBeforeStartDate) {
             // Trường hợp 1: Chưa đến thời gian chấm điểm
