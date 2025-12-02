@@ -19,6 +19,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.Council;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.CreateCouncilRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.UpdateCouncilMembersRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.CouncilResponse;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.CouncilResultsResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.ScoringStatusEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.service.CouncilService;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.ResultPaginationDTO;
@@ -148,6 +149,24 @@ public class CouncilController {
             @Parameter(description = "Filter by scoring status: ALL, PENDING, SCORED") @RequestParam(required = false, defaultValue = "ALL") ScoringStatusEnum scoringStatus,
             @Parameter(description = "Pagination parameters") Pageable pageable) {
         return ResponseEntity.ok(councilService.getMyAssignedInnovations(scoringStatus, pageable));
+    }
+
+    // 8. Lấy kết quả chấm điểm của hội đồng
+    @GetMapping("/councils/{id}/results")
+    @PreAuthorize("hasAnyRole('TRUONG_KHOA','QUAN_TRI_VIEN_KHOA','QUAN_TRI_VIEN_HE_THONG', 'QUAN_TRI_VIEN_QLKH_HTQT', 'TV_HOI_DONG_KHOA', 'TV_HOI_DONG_TRUONG')")
+    @ApiMessage("Lấy kết quả chấm điểm thành công")
+    @Operation(summary = "Get Council Results", description = "Get detailed scoring results for all innovations in a council. Only available after scoring period has ended.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Results retrieved successfully", content = @Content(schema = @Schema(implementation = CouncilResultsResponse.class))),
+            @ApiResponse(responseCode = "400", description = "Scoring period has not ended yet"),
+            @ApiResponse(responseCode = "404", description = "Council not found"),
+            @ApiResponse(responseCode = "403", description = "Access denied"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized")
+    })
+    public ResponseEntity<CouncilResultsResponse> getCouncilResults(
+            @Parameter(description = "Council ID", required = true) @PathVariable String id) {
+        CouncilResultsResponse response = councilService.getCouncilResults(id);
+        return ResponseEntity.ok(response);
     }
 
 }

@@ -41,8 +41,17 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.ReviewScoreReposi
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.InnovationRound;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.Department;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.ReviewScore;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.InnovationPhase;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.DepartmentPhase;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationRoundStatusEnum;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationPhaseTypeEnum;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationPhaseLevelEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.ScoringProgressResponse;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.CouncilResultsResponse;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationResultDetail;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.MemberEvaluationDetail;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.InnovationPhaseRepository;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.DepartmentPhaseRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.ResultPaginationDTO;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.Utils;
 
@@ -70,6 +79,8 @@ public class CouncilService {
     private final InnovationRoundRepository innovationRoundRepository;
     private final DepartmentRepository departmentRepository;
     private final ReviewScoreRepository reviewScoreRepository;
+    private final InnovationPhaseRepository innovationPhaseRepository;
+    private final DepartmentPhaseRepository departmentPhaseRepository;
 
     public CouncilService(CouncilRepository councilRepository,
             CouncilMemberRepository councilMemberRepository,
@@ -81,7 +92,9 @@ public class CouncilService {
             UserService userService,
             InnovationRoundRepository innovationRoundRepository,
             DepartmentRepository departmentRepository,
-            ReviewScoreRepository reviewScoreRepository) {
+            ReviewScoreRepository reviewScoreRepository,
+            InnovationPhaseRepository innovationPhaseRepository,
+            DepartmentPhaseRepository departmentPhaseRepository) {
         this.councilRepository = councilRepository;
         this.councilMemberRepository = councilMemberRepository;
         this.userRepository = userRepository;
@@ -93,6 +106,8 @@ public class CouncilService {
         this.innovationRoundRepository = innovationRoundRepository;
         this.departmentRepository = departmentRepository;
         this.reviewScoreRepository = reviewScoreRepository;
+        this.innovationPhaseRepository = innovationPhaseRepository;
+        this.departmentPhaseRepository = departmentPhaseRepository;
     }
 
     // 1. Tạo Hội đồng mới
@@ -290,6 +305,13 @@ public class CouncilService {
 
         if (members.size() < 3) {
             throw new IllegalArgumentException("Hội đồng phải có ít nhất 3 thành viên");
+        }
+
+        // Validate số lượng thành viên phải là số lẻ
+        if (members.size() % 2 == 0) {
+            throw new IllegalArgumentException(
+                    "Hội đồng phải có số lượng thành viên là số lẻ (3, 5, 7, ...) để đảm bảo quyết định rõ ràng. " +
+                    "Hiện tại có " + members.size() + " thành viên.");
         }
 
         // Đếm số lượng Chủ tịch và Thư ký
@@ -1052,5 +1074,304 @@ public class CouncilService {
 
             userRoleRepository.deleteByUserIdAndRoleId(userId, role.getId());
         }
+    }
+
+    // 7. Lấy kết quả chấm điểm của hội đồng
+    @Transactional(readOnly = true)
+    public CouncilResultsResponse getCouncilResults(String councilId) {
+        // Tìm và validate council
+        Council council = findAndValidateCouncil(councilId);
+
+        // Trigger lazy load
+        council.getCouncilMembers().size();
+        council.getInnovations().size();
+        council.getInnovationRound().getId(); // Trigger lazy load
+
+        // Lấy scoring phase end date
+        LocalDate scoringEndDate = getScoringPhaseEndDate(council);
+        LocalDate currentDate = LocalDate.now();
+        boolean canViewResults = scoringEndDate != null && currentDate.isAfter(scoringEndDate);
+
+        if (!canViewResults) {
+            throw new IllegalArgumentException(
+                    "Chưa hết thời gian chấm điểm. Chỉ có thể xem kết quả sau ngày " + scoringEndDate);
+        }
+
+        // Lấy danh sách member user IDs có quyền chấm điểm
+        List<String> memberUserIds = getScoringMemberUserIds(council);
+        int totalMembers = memberUserIds.size();
+
+        // Lấy danh sách innovations
+        List<Innovation> innovations = council.getInnovations();
+
+        // Tính kết quả cho từng innovation
+        List<InnovationResultDetail> innovationResults = new ArrayList<>();
+        int completedCount = 0;
+        int pendingCount = 0;
+        int totalPendingMembers = 0;
+
+        for (Innovation innovation : innovations) {
+            InnovationResultDetail result = calculateInnovationResult(innovation, memberUserIds, totalMembers, council);
+            innovationResults.add(result);
+
+            if (result.getScoredMembers() == totalMembers) {
+                completedCount++;
+            } else {
+                pendingCount++;
+                totalPendingMembers += (totalMembers - result.getScoredMembers());
+            }
+        }
+
+        // Tạo warning message nếu có thành viên chưa chấm
+        String warningMessage = null;
+        if (totalPendingMembers > 0) {
+            warningMessage = String.format(
+                    "Có %d thành viên chưa hoàn thành chấm điểm. Kết quả có thể không đầy đủ.",
+                    totalPendingMembers);
+        }
+
+        // Tạo response
+        CouncilResultsResponse response = new CouncilResultsResponse();
+        response.setCouncilId(council.getId());
+        response.setCouncilName(council.getName());
+        response.setReviewCouncilLevel(council.getReviewCouncilLevel().name());
+        response.setScoringEndDate(scoringEndDate);
+        response.setCanViewResults(true);
+        response.setTotalInnovations(innovations.size());
+        response.setCompletedInnovations(completedCount);
+        response.setPendingInnovations(pendingCount);
+        response.setWarningMessage(warningMessage);
+        response.setInnovationResults(innovationResults);
+
+        return response;
+    }
+
+    // Helper method: Lấy scoring phase end date
+    private LocalDate getScoringPhaseEndDate(Council council) {
+        ReviewLevelEnum councilLevel = council.getReviewCouncilLevel();
+        InnovationRound round = council.getInnovationRound();
+
+        if (councilLevel == ReviewLevelEnum.KHOA) {
+            Department department = council.getDepartment();
+            if (department == null) {
+                return null;
+            }
+
+            Optional<DepartmentPhase> scoringPhase = departmentPhaseRepository
+                    .findByDepartmentIdAndInnovationRoundIdAndPhaseType(
+                            department.getId(),
+                            round.getId(),
+                            InnovationPhaseTypeEnum.SCORING);
+
+            return scoringPhase.map(DepartmentPhase::getPhaseEndDate).orElse(null);
+        } else {
+            Optional<InnovationPhase> scoringPhase = innovationPhaseRepository
+                    .findByInnovationRoundIdAndPhaseType(round.getId(), InnovationPhaseTypeEnum.SCORING);
+
+            if (scoringPhase.isPresent() && scoringPhase.get().getLevel() == InnovationPhaseLevelEnum.SCHOOL) {
+                return scoringPhase.get().getPhaseEndDate();
+            }
+            return null;
+        }
+    }
+
+    // Helper method: Tính kết quả cho một innovation
+    private InnovationResultDetail calculateInnovationResult(Innovation innovation, List<String> memberUserIds,
+            int totalMembers, Council council) {
+        // Lấy danh sách đánh giá của từng thành viên
+        List<MemberEvaluationDetail> memberEvaluations = new ArrayList<>();
+        int scoredMembers = 0;
+        int approvedCount = 0;
+        int rejectedCount = 0;
+        double totalScore = 0.0;
+        int scoreCount = 0;
+
+        // Lấy thông tin Chủ tịch để dùng cho tie-breaking
+        Boolean chairmanDecision = null;
+        Double chairmanScore = null;
+
+        // Lấy danh sách council members để map role
+        List<CouncilMember> councilMembers = councilMemberRepository.findByCouncilId(council.getId());
+        java.util.Map<String, CouncilMemberRoleEnum> memberRoleMap = councilMembers.stream()
+                .collect(java.util.stream.Collectors.toMap(
+                        m -> m.getUser().getId(),
+                        CouncilMember::getRole));
+
+        for (String memberUserId : memberUserIds) {
+            // Lấy thông tin thành viên
+            User member = userRepository.findById(memberUserId)
+                    .orElseThrow(() -> new IdInvalidException("Không tìm thấy user với ID: " + memberUserId));
+
+            // Lấy role của thành viên trong council
+            CouncilMemberRoleEnum memberRoleEnum = memberRoleMap.getOrDefault(memberUserId,
+                    CouncilMemberRoleEnum.THANH_VIEN);
+            String memberRole = memberRoleEnum.name();
+
+            // Lấy đánh giá của thành viên
+            Optional<ReviewScore> reviewScore = reviewScoreRepository
+                    .findByInnovationIdAndReviewerId(innovation.getId(), memberUserId);
+
+            MemberEvaluationDetail evaluation = new MemberEvaluationDetail();
+            evaluation.setMemberId(memberUserId);
+            evaluation.setMemberName(member.getFullName());
+            evaluation.setMemberRole(memberRole);
+
+            if (reviewScore.isPresent() && reviewScore.get().getIsApproved() != null) {
+                // Đã chấm điểm
+                scoredMembers++;
+                evaluation.setHasScored(true);
+                evaluation.setIsApproved(reviewScore.get().getIsApproved());
+                evaluation.setTotalScore(reviewScore.get().getTotalScore());
+                evaluation.setComments(reviewScore.get().getDetailedComments());
+                evaluation.setReviewedAt(reviewScore.get().getReviewedAt());
+
+                if (reviewScore.get().getIsApproved()) {
+                    approvedCount++;
+                } else {
+                    rejectedCount++;
+                }
+
+                if (reviewScore.get().getTotalScore() != null) {
+                    totalScore += reviewScore.get().getTotalScore();
+                    scoreCount++;
+                }
+
+                // Lưu quyết định của Chủ tịch
+                if (memberRoleEnum == CouncilMemberRoleEnum.CHU_TICH) {
+                    chairmanDecision = reviewScore.get().getIsApproved();
+                    chairmanScore = reviewScore.get().getTotalScore() != null
+                            ? reviewScore.get().getTotalScore().doubleValue()
+                            : null;
+                }
+            } else {
+                // Chưa chấm điểm
+                evaluation.setHasScored(false);
+                evaluation.setIsApproved(null);
+                evaluation.setTotalScore(null);
+                evaluation.setComments(null);
+                evaluation.setReviewedAt(null);
+            }
+
+            memberEvaluations.add(evaluation);
+        }
+
+        // Tính điểm trung bình
+        Double averageScore = scoreCount > 0 ? totalScore / scoreCount : null;
+
+        // Tính finalDecision với logic tie-breaking
+        Boolean finalDecision = calculateFinalDecision(
+                innovation.getIsScore(),
+                approvedCount,
+                rejectedCount,
+                scoredMembers,
+                totalMembers,
+                averageScore,
+                chairmanDecision,
+                chairmanScore);
+
+        // Tạo decision reason
+        String decisionReason = generateDecisionReason(
+                innovation.getIsScore(),
+                approvedCount,
+                rejectedCount,
+                scoredMembers,
+                totalMembers,
+                averageScore,
+                chairmanDecision);
+
+        // Tạo result
+        InnovationResultDetail result = new InnovationResultDetail();
+        result.setInnovationId(innovation.getId());
+        result.setInnovationName(innovation.getInnovationName());
+        result.setAuthorName(innovation.getUser() != null ? innovation.getUser().getFullName() : "N/A");
+        result.setDepartmentName(
+                innovation.getDepartment() != null ? innovation.getDepartment().getDepartmentName() : null);
+        result.setIsScore(innovation.getIsScore());
+        result.setTotalMembers(totalMembers);
+        result.setScoredMembers(scoredMembers);
+        result.setApprovedCount(approvedCount);
+        result.setRejectedCount(rejectedCount);
+        result.setPendingCount(totalMembers - scoredMembers);
+        result.setAverageScore(averageScore);
+        result.setFinalDecision(finalDecision);
+        result.setDecisionReason(decisionReason);
+        result.setMemberEvaluations(memberEvaluations);
+
+        return result;
+    }
+
+    // Helper method: Tính finalDecision với logic tie-breaking
+    private Boolean calculateFinalDecision(Boolean isScore, int approvedCount, int rejectedCount, int scoredMembers,
+            int totalMembers, Double averageScore, Boolean chairmanDecision, Double chairmanScore) {
+        // Nếu chưa có ai chấm điểm
+        if (scoredMembers == 0) {
+            return null;
+        }
+
+        // Nếu đa số thông qua
+        if (approvedCount > rejectedCount) {
+            return true;
+        }
+
+        // Nếu đa số không thông qua
+        if (rejectedCount > approvedCount) {
+            return false;
+        }
+
+        // Nếu bằng nhau (approvedCount == rejectedCount)
+        // Trường hợp này chỉ xảy ra khi số thành viên chấm điểm là số chẵn
+        // (vì tổng số thành viên luôn là số lẻ)
+
+        // Tie-breaking 1: Nếu sáng kiến có chấm điểm, dùng điểm trung bình
+        if (isScore != null && isScore && averageScore != null) {
+            if (averageScore >= 70.0) {
+                return true;
+            } else if (averageScore < 70.0) {
+                return false;
+            }
+            // Nếu averageScore == 70.0 (rất hiếm), tiếp tục tie-breaking 2
+        }
+
+        // Tie-breaking 2: Dùng quyết định của Chủ tịch
+        if (chairmanDecision != null) {
+            return chairmanDecision;
+        }
+
+        // Nếu không có quyết định của Chủ tịch, trả về null (chưa quyết định được)
+        return null;
+    }
+
+    // Helper method: Tạo decision reason
+    private String generateDecisionReason(Boolean isScore, int approvedCount, int rejectedCount, int scoredMembers,
+            int totalMembers, Double averageScore, Boolean chairmanDecision) {
+        if (scoredMembers == 0) {
+            return "Chưa có thành viên nào chấm điểm";
+        }
+
+        if (approvedCount > rejectedCount) {
+            return String.format("Đa số thông qua (%d/%d)", approvedCount, scoredMembers);
+        }
+
+        if (rejectedCount > approvedCount) {
+            return String.format("Đa số không thông qua (%d/%d)", rejectedCount, scoredMembers);
+        }
+
+        // Bằng nhau
+        if (isScore != null && isScore && averageScore != null) {
+            if (averageScore >= 70.0) {
+                return String.format("Bằng nhau (%d/%d) - Dựa vào điểm trung bình (%.2f >= 70)",
+                        approvedCount, scoredMembers, averageScore);
+            } else {
+                return String.format("Bằng nhau (%d/%d) - Dựa vào điểm trung bình (%.2f < 70)",
+                        approvedCount, scoredMembers, averageScore);
+            }
+        }
+
+        if (chairmanDecision != null) {
+            return String.format("Bằng nhau (%d/%d) - Quyết định của Chủ tịch (%s)",
+                    approvedCount, scoredMembers, chairmanDecision ? "Thông qua" : "Không thông qua");
+        }
+
+        return String.format("Bằng nhau (%d/%d) - Chưa quyết định được", approvedCount, scoredMembers);
     }
 }
