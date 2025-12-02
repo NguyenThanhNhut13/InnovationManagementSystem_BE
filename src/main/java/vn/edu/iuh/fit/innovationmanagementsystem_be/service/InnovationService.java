@@ -1023,12 +1023,13 @@ public class InnovationService {
                         // Chưa đến thời gian chấm điểm
                         // Check xem có trong khoảng 3 ngày trước không (nếu có council)
                         LocalDate previewStartDate = startDate.minusDays(3);
-                        if (currentDate.isAfter(previewStartDate) || currentDate.isEqual(previewStartDate)) {
+                        // Chỉ cho phép xem nếu currentDate >= previewStartDate (tức là trong 3 ngày trước)
+                        if (!currentDate.isBefore(previewStartDate)) {
                                 // Trong khoảng 3 ngày trước, cho phép xem trước
                                 canView = true;
                                 status = ScoringPeriodStatusEnum.PREVIEW;
                         } else {
-                                // Chưa đến thời gian xem trước
+                                // Chưa đến thời gian xem trước (trước 4 ngày trở lên)
                                 canView = false;
                                 status = ScoringPeriodStatusEnum.NOT_STARTED;
                         }
