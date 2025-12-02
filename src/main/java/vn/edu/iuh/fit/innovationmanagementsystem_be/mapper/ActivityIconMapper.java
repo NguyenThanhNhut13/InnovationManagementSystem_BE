@@ -14,7 +14,6 @@ public class ActivityIconMapper {
             case DRAFT -> "create";
             case SUBMITTED -> "submit";
             case PENDING_KHOA_REVIEW, PENDING_TRUONG_REVIEW -> "pending";
-            case TRUONG_REVIEWED -> "review";
             case KHOA_APPROVED, TRUONG_APPROVED, FINAL_APPROVED -> "approve";
             case KHOA_REJECTED, TRUONG_REJECTED -> "reject";
         };

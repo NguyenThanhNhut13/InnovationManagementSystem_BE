@@ -14,7 +14,6 @@ public class ActivityColorMapper {
             case DRAFT -> "blue";
             case SUBMITTED -> "orange";
             case PENDING_KHOA_REVIEW, PENDING_TRUONG_REVIEW -> "yellow";
-            case TRUONG_REVIEWED -> "purple";
             case KHOA_APPROVED, TRUONG_APPROVED, FINAL_APPROVED -> "green";
             case KHOA_REJECTED, TRUONG_REJECTED -> "red";
         };

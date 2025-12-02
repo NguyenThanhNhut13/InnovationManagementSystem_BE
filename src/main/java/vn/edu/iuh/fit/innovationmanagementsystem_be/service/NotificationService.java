@@ -1095,10 +1095,9 @@ public class NotificationService {
                         case PENDING_KHOA_REVIEW -> "Chờ khoa duyệt";
                         case KHOA_APPROVED -> "Khoa đã phê duyệt";
                         case KHOA_REJECTED -> "Khoa đã từ chối";
-                        case PENDING_TRUONG_REVIEW -> "Chờ trưởng khoa duyệt";
-                        case TRUONG_REVIEWED -> "Trưởng khoa đã duyệt";
-                        case TRUONG_APPROVED -> "Trưởng khoa đã phê duyệt";
-                        case TRUONG_REJECTED -> "Trưởng khoa đã từ chối";
+                        case PENDING_TRUONG_REVIEW -> "Chờ trường duyệt";
+                        case TRUONG_APPROVED -> "Trường đã phê duyệt";
+                        case TRUONG_REJECTED -> "Trường đã từ chối";
                         case FINAL_APPROVED -> "Đã phê duyệt cuối cùng";
                 };
         }

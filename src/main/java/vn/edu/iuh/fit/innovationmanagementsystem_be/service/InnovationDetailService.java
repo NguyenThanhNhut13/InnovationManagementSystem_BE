@@ -285,8 +285,8 @@ public class InnovationDetailService {
                 boolean isApproved = innovation.getStatus() != null && innovation.getStatus().name().equals("APPROVED");
 
                 steps.add(WorkflowStepInfo.builder()
-                                .stepName("Trưởng Khoa phê duyệt")
-                                .description("Đã được Trưởng Khoa phê duyệt")
+                                .stepName("Trường phê duyệt")
+                                .description("Đã được Trường phê duyệt")
                                 .completedAt(isApproved ? innovation.getUpdatedAt() : null)
                                 .isCompleted(isApproved)
                                 .isCurrent(isUnderReview && !isApproved)

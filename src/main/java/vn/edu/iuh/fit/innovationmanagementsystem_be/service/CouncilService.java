@@ -1599,14 +1599,12 @@ public class CouncilService {
             if (finalDecision) {
                 // Đã được thông qua ở cấp Trường
                 if (currentStatus == InnovationStatusEnum.PENDING_TRUONG_REVIEW || 
-                    currentStatus == InnovationStatusEnum.TRUONG_REVIEWED ||
                     currentStatus == InnovationStatusEnum.KHOA_APPROVED) {
                     newStatus = InnovationStatusEnum.TRUONG_APPROVED;
                 }
             } else {
                 // Không được thông qua ở cấp Trường
                 if (currentStatus == InnovationStatusEnum.PENDING_TRUONG_REVIEW || 
-                    currentStatus == InnovationStatusEnum.TRUONG_REVIEWED ||
                     currentStatus == InnovationStatusEnum.KHOA_APPROVED) {
                     newStatus = InnovationStatusEnum.TRUONG_REJECTED;
                 }
