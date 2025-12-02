@@ -542,10 +542,12 @@ public class CouncilService {
         }
     }
 
-    // Helper method: Lấy danh sách member user IDs có quyền chấm điểm (THANH_VIEN)
+    // Helper method: Lấy danh sách member user IDs có quyền chấm điểm (THANH_VIEN, CHU_TICH, THU_KY)
     private List<String> getScoringMemberUserIds(Council council) {
         return council.getCouncilMembers().stream()
-                .filter(member -> member.getRole() == CouncilMemberRoleEnum.THANH_VIEN)
+                .filter(member -> member.getRole() == CouncilMemberRoleEnum.THANH_VIEN 
+                        || member.getRole() == CouncilMemberRoleEnum.CHU_TICH
+                        || member.getRole() == CouncilMemberRoleEnum.THU_KY)
                 .map(member -> member.getUser().getId())
                 .collect(Collectors.toList());
     }
@@ -1303,17 +1305,17 @@ public class CouncilService {
     // Helper method: Tính finalDecision với logic tie-breaking
     private Boolean calculateFinalDecision(Boolean isScore, int approvedCount, int rejectedCount, int scoredMembers,
             int totalMembers, Double averageScore, Boolean chairmanDecision, Double chairmanScore) {
-        // Nếu chưa có ai chấm điểm
+        // Nếu chưa có ai chấm điểm (kể cả Chủ tịch)
         if (scoredMembers == 0) {
             return null;
         }
 
-        // Nếu đa số thông qua
+        // Nếu đa số thông qua → lấy kết quả, không cần Chủ tịch
         if (approvedCount > rejectedCount) {
             return true;
         }
 
-        // Nếu đa số không thông qua
+        // Nếu đa số không thông qua → lấy kết quả, không cần Chủ tịch
         if (rejectedCount > approvedCount) {
             return false;
         }
@@ -1321,6 +1323,7 @@ public class CouncilService {
         // Nếu bằng nhau (approvedCount == rejectedCount)
         // Trường hợp này chỉ xảy ra khi số thành viên chấm điểm là số chẵn
         // (vì tổng số thành viên luôn là số lẻ)
+        // → Cần Chủ tịch chấm để quyết định
 
         // Tie-breaking 1: Nếu sáng kiến có chấm điểm, dùng điểm trung bình
         if (isScore != null && isScore && averageScore != null) {
@@ -1337,7 +1340,7 @@ public class CouncilService {
             return chairmanDecision;
         }
 
-        // Nếu không có quyết định của Chủ tịch, trả về null (chưa quyết định được)
+        // Nếu bằng nhau và không có quyết định của Chủ tịch → null
         return null;
     }
 
@@ -1348,6 +1351,7 @@ public class CouncilService {
             return "Chưa có thành viên nào chấm điểm";
         }
 
+        // Đa số rõ ràng → không cần Chủ tịch
         if (approvedCount > rejectedCount) {
             return String.format("Đa số thông qua (%d/%d)", approvedCount, scoredMembers);
         }
@@ -1356,7 +1360,7 @@ public class CouncilService {
             return String.format("Đa số không thông qua (%d/%d)", rejectedCount, scoredMembers);
         }
 
-        // Bằng nhau
+        // Bằng nhau → cần Chủ tịch
         if (isScore != null && isScore && averageScore != null) {
             if (averageScore >= 70.0) {
                 return String.format("Bằng nhau (%d/%d) - Dựa vào điểm trung bình (%.2f >= 70)",
@@ -1372,6 +1376,7 @@ public class CouncilService {
                     approvedCount, scoredMembers, chairmanDecision ? "Thông qua" : "Không thông qua");
         }
 
-        return String.format("Bằng nhau (%d/%d) - Chưa quyết định được", approvedCount, scoredMembers);
+        // Bằng nhau nhưng Chủ tịch chưa chấm
+        return String.format("Bằng nhau (%d/%d) - Chưa có kết quả (Chủ tịch chưa chấm điểm)", approvedCount, scoredMembers);
     }
 }
