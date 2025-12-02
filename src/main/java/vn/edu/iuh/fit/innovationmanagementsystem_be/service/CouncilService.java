@@ -494,6 +494,14 @@ public class CouncilService {
         ScoringProgressResponse scoringProgress = calculateScoringProgress(foundCouncil);
         response.setScoringProgress(scoringProgress);
         
+        // Tính toán và set scoring period info (chung cho tất cả innovations trong council)
+        ScoringPeriodInfo scoringPeriodInfo = calculateScoringPeriodInfoForCouncil(foundCouncil, currentRound);
+        response.setScoringStartDate(scoringPeriodInfo.getStartDate());
+        response.setScoringEndDate(scoringPeriodInfo.getEndDate());
+        response.setCanScore(scoringPeriodInfo.isCanScore());
+        response.setCanView(scoringPeriodInfo.isCanView());
+        response.setScoringPeriodStatus(scoringPeriodInfo.getStatus());
+        
         return response;
     }
 
@@ -513,6 +521,17 @@ public class CouncilService {
         // Tính toán và set scoring progress
         ScoringProgressResponse scoringProgress = calculateScoringProgress(council);
         response.setScoringProgress(scoringProgress);
+
+        // Tính toán và set scoring period info (chung cho tất cả innovations trong council)
+        InnovationRound round = council.getInnovationRound();
+        if (round != null) {
+            ScoringPeriodInfo scoringPeriodInfo = calculateScoringPeriodInfoForCouncil(council, round);
+            response.setScoringStartDate(scoringPeriodInfo.getStartDate());
+            response.setScoringEndDate(scoringPeriodInfo.getEndDate());
+            response.setCanScore(scoringPeriodInfo.isCanScore());
+            response.setCanView(scoringPeriodInfo.isCanView());
+            response.setScoringPeriodStatus(scoringPeriodInfo.getStatus());
+        }
 
         return response;
     }
@@ -730,10 +749,7 @@ public class CouncilService {
                             ? innovation.getDepartment().getDepartmentName()
                             : null;
                     
-                    // Tính toán scoring period info
-                    ScoringPeriodInfo scoringPeriodInfo = calculateScoringPeriodInfo(innovation, currentCouncil, currentRound);
-                    
-                    // Map sang response
+                    // Map sang response (scoring period info đã được lấy từ council response)
                     return new MyAssignedInnovationResponse(
                             innovation.getId(),
                             innovation.getInnovationName(),
@@ -741,11 +757,7 @@ public class CouncilService {
                             departmentName,
                             innovation.getStatus(),
                             innovation.getIsScore(),
-                            myIsApproved,
-                            scoringPeriodInfo.isCanScore(),
-                            scoringPeriodInfo.isCanView(),
-                            scoringPeriodInfo.getStatus() != null ? scoringPeriodInfo.getStatus().name() : null,
-                            scoringPeriodInfo.getStartDate()
+                            myIsApproved
                     );
                 })
                 .collect(Collectors.toList());
@@ -1225,8 +1237,8 @@ public class CouncilService {
         }
     }
 
-    // Helper method: Tính toán scoring period info cho một innovation
-    private ScoringPeriodInfo calculateScoringPeriodInfo(Innovation innovation, Council council, InnovationRound round) {
+    // Helper method: Tính toán scoring period info cho council (không cần innovation)
+    private ScoringPeriodInfo calculateScoringPeriodInfoForCouncil(Council council, InnovationRound round) {
         ReviewLevelEnum councilLevel = council.getReviewCouncilLevel();
         LocalDate currentDate = LocalDate.now();
         LocalDate startDate;
@@ -1234,7 +1246,7 @@ public class CouncilService {
         PhaseStatusEnum phaseStatus;
 
         if (councilLevel == ReviewLevelEnum.KHOA) {
-            Department department = getDepartmentForCouncil(council, innovation);
+            Department department = council.getDepartment();
             if (department == null) {
                 return new ScoringPeriodInfo(null, null, false, false, ScoringPeriodStatusEnum.NOT_STARTED);
             }
@@ -1310,17 +1322,6 @@ public class CouncilService {
         return new ScoringPeriodInfo(startDate, endDate, canScore, canView, status);
     }
 
-    // Helper: Lấy department cho council (ưu tiên từ council, sau đó từ innovation)
-    private Department getDepartmentForCouncil(Council council, Innovation innovation) {
-        Department department = council.getDepartment();
-        if (department == null) {
-            department = innovation.getDepartment();
-            if (department == null && innovation.getUser() != null) {
-                department = innovation.getUser().getDepartment();
-            }
-        }
-        return department;
-    }
 
     // Helper method: Tính kết quả cho một innovation
     private InnovationResultDetail calculateInnovationResult(Innovation innovation, List<String> memberUserIds,
