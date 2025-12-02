@@ -1288,40 +1288,46 @@ public class CouncilService {
             return new ScoringPeriodInfo(startDate, endDate, false, false, ScoringPeriodStatusEnum.NOT_STARTED);
         }
 
-        // Cho phép tính toán khi phase là ACTIVE hoặc COMPLETED
-        // (COMPLETED = đã hết thời gian nhưng vẫn cần tính toán để trả về ENDED status với canView = true)
-        if (phaseStatus != PhaseStatusEnum.ACTIVE && phaseStatus != PhaseStatusEnum.COMPLETED) {
-            return new ScoringPeriodInfo(startDate, endDate, false, false, ScoringPeriodStatusEnum.NOT_STARTED);
-        }
-
         // Tính toán status dựa trên currentDate vs startDate/endDate
         boolean canScore = false;
         boolean canView = false;
-        ScoringPeriodStatusEnum status;
+        ScoringPeriodStatusEnum status = ScoringPeriodStatusEnum.NOT_STARTED; // Giá trị mặc định
 
-        if (currentDate.isBefore(startDate)) {
-            // Chưa đến thời gian chấm điểm
-            // Check xem có trong khoảng 3 ngày trước không (nếu có council)
+        // Xác định vị trí hiện tại so với thời gian chấm điểm
+        boolean isBeforeStartDate = currentDate.isBefore(startDate);
+        boolean isAfterEndDate = !currentDate.isBefore(endDate);
+
+        if (isBeforeStartDate) {
+            // Trường hợp 1: Chưa đến thời gian chấm điểm
+            canScore = false; // Không cho phép chấm điểm
+            
+            // Kiểm tra xem có trong khoảng 3 ngày trước không (preview period)
             LocalDate previewStartDate = startDate.minusDays(3);
-            // Chỉ cho phép xem nếu currentDate >= previewStartDate (tức là trong 3 ngày trước)
-            if (!currentDate.isBefore(previewStartDate)) {
-                // Trong khoảng 3 ngày trước, cho phép xem trước
+            boolean isInPreviewPeriod = !currentDate.isBefore(previewStartDate);
+            
+            if (isInPreviewPeriod) {
+                // Trong khoảng 3 ngày trước: cho phép xem trước
                 canView = true;
                 status = ScoringPeriodStatusEnum.PREVIEW;
             } else {
-                // Chưa đến thời gian xem trước (trước 4 ngày trở lên)
+                // Trước 4 ngày trở lên: không cho xem
                 canView = false;
                 status = ScoringPeriodStatusEnum.NOT_STARTED;
             }
-        } else if (currentDate.isAfter(endDate)) {
-            // Đã hết thời gian chấm điểm
-            canScore = false;
-            canView = true; // Vẫn có thể xem sau khi hết thời gian
+            
+        } else if (isAfterEndDate) {
+            // Trường hợp 2: Đã hết thời gian chấm điểm
+            canScore = false; // Không cho phép chấm điểm
+            canView = true; // Vẫn cho phép xem để xem lại đánh giá đã chấm
             status = ScoringPeriodStatusEnum.ENDED;
+            
         } else {
-            // Đang trong thời gian chấm điểm
-            canScore = true;
-            canView = true;
+            // Trường hợp 3: Đang trong thời gian chấm điểm
+            canView = true; // Luôn cho phép xem
+            
+            // Chỉ cho phép chấm điểm nếu phase status là ACTIVE
+            boolean isPhaseActive = phaseStatus == PhaseStatusEnum.ACTIVE;
+            canScore = isPhaseActive;
             status = ScoringPeriodStatusEnum.ACTIVE;
         }
 
