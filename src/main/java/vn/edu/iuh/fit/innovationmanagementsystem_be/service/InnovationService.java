@@ -685,14 +685,14 @@ public class InnovationService {
                 // TRUONG_KHOA
                 // Thành viên hội đồng có thể xem sáng kiến của mọi khoa
                 if (hasQuanTriVienKhoaRole || hasTruongKhoaRole) {
-                        if (innovation.getDepartment() == null || currentUser.getDepartment() == null) {
+                if (innovation.getDepartment() == null || currentUser.getDepartment() == null) {
                                 throw new IdInvalidException(
                                                 "Không thể xác định phòng ban của sáng kiến hoặc người dùng");
-                        }
+                }
 
-                        // Kiểm tra department matching
-                        if (!innovation.getDepartment().getId().equals(currentUser.getDepartment().getId())) {
-                                throw new IdInvalidException("Bạn chỉ có thể xem sáng kiến của khoa mình");
+                // Kiểm tra department matching
+                if (!innovation.getDepartment().getId().equals(currentUser.getDepartment().getId())) {
+                        throw new IdInvalidException("Bạn chỉ có thể xem sáng kiến của khoa mình");
                         }
                 }
 
