@@ -254,6 +254,17 @@ public class InnovationService {
                                 throw new IdInvalidException("Bạn không có quyền chỉnh sửa sáng kiến này");
                         }
 
+                        // CHẶN UPDATE nếu innovation không ở trạng thái DRAFT
+                        if (existingInnovation.getStatus() != InnovationStatusEnum.DRAFT) {
+                                throw new IdInvalidException(
+                                                "Không thể chỉnh sửa sáng kiến đã nộp. " +
+                                                                "Trạng thái hiện tại: " + existingInnovation.getStatus()
+                                                                + ". " +
+                                                                "Chỉ sáng kiến ở trạng thái DRAFT mới có thể chỉnh sửa. "
+                                                                +
+                                                                "Vui lòng liên hệ quản trị viên nếu cần thay đổi.");
+                        }
+
                         // Nếu status là SUBMITTED, kiểm tra innovation hiện tại phải là DRAFT
                         if (request.getStatus() == InnovationStatusEnum.SUBMITTED) {
                                 if (existingInnovation.getStatus() != InnovationStatusEnum.DRAFT) {
@@ -646,8 +657,10 @@ public class InnovationService {
 
                 InnovationFormDataResponse response = new InnovationFormDataResponse();
                 Long timeRemainingSeconds = getSubmissionTimeRemainingSeconds(innovation);
-                // Dùng buildTemplateFormDataResponsesWithTableConfig để trả về structure mới với fields array
-                response.setTemplates(innovationSignatureService.buildTemplateFormDataResponsesWithTableConfig(formDataList));
+                // Dùng buildTemplateFormDataResponsesWithTableConfig để trả về structure mới
+                // với fields array
+                response.setTemplates(
+                                innovationSignatureService.buildTemplateFormDataResponsesWithTableConfig(formDataList));
                 response.setTemplateSignatures(Collections.emptyList());
                 response.setSubmissionTimeRemainingSeconds(timeRemainingSeconds);
 
@@ -882,7 +895,6 @@ public class InnovationService {
 
                 return response;
         }
-
 
         // 8. Lấy danh sách sáng kiến của khoa với filter chi tiết
         public ResultPaginationDTO getAllDepartmentInnovationsWithDetailedFilter(
