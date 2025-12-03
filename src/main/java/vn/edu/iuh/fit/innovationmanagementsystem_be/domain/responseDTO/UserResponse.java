@@ -23,6 +23,8 @@ public class UserResponse {
     private String qualification;
     private String title;
     private List<String> roles;
+    private Boolean isSecretary; // true nếu user là thư ký của ít nhất 1 council (cả khoa và trường)
+    private Boolean isChairman; // true nếu user là chủ tịch của ít nhất 1 council (cả khoa và trường)
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

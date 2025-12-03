@@ -26,6 +26,8 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.DepartmentReposit
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.RoleRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.UserRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.UserRoleRepository;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.CouncilMemberRepository;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.CouncilMemberRoleEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.JwtTokenUtil;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.ResultPaginationDTO;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.Utils;
@@ -46,11 +48,12 @@ public class UserService {
     private final UserMapper userMapper;
     private final JwtTokenUtil jwtTokenUtil;
     private final UserSignatureProfileService userSignatureProfileService;
+    private final CouncilMemberRepository councilMemberRepository;
 
     public UserService(UserRepository userRepository, DepartmentRepository departmentRepository,
             PasswordEncoder passwordEncoder, RoleRepository roleRepository, UserRoleRepository userRoleRepository,
             UserMapper userMapper, JwtTokenUtil jwtTokenUtil,
-            UserSignatureProfileService userSignatureProfileService) {
+            UserSignatureProfileService userSignatureProfileService, CouncilMemberRepository councilMemberRepository) {
         this.userRepository = userRepository;
         this.departmentRepository = departmentRepository;
         this.passwordEncoder = passwordEncoder;
@@ -59,6 +62,7 @@ public class UserService {
         this.userMapper = userMapper;
         this.jwtTokenUtil = jwtTokenUtil;
         this.userSignatureProfileService = userSignatureProfileService;
+        this.councilMemberRepository = councilMemberRepository;
     }
 
     // 1. Tạo User
@@ -229,7 +233,52 @@ public class UserService {
     // 15. Lấy Current User Response
     public UserResponse getCurrentUserResponse() {
         User currentUser = getCurrentUser();
-        return userMapper.toUserResponse(currentUser);
+        UserResponse response = userMapper.toUserResponse(currentUser);
+        
+        // Set isSecretary và isChairman
+        setCouncilRoleFlags(currentUser, response);
+        
+        return response;
+    }
+    
+    // Helper method: Get council role flags cho user
+    public CouncilRoleFlags getCouncilRoleFlags(String userId) {
+        List<vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.CouncilMember> memberships = 
+            councilMemberRepository.findByUserId(userId);
+        
+        boolean isSecretary = memberships.stream()
+            .anyMatch(member -> member.getRole() == CouncilMemberRoleEnum.THU_KY);
+        
+        boolean isChairman = memberships.stream()
+            .anyMatch(member -> member.getRole() == CouncilMemberRoleEnum.CHU_TICH);
+        
+        return new CouncilRoleFlags(isSecretary, isChairman);
+    }
+    
+    // Helper method: Set isSecretary và isChairman cho user
+    private void setCouncilRoleFlags(User user, UserResponse response) {
+        CouncilRoleFlags flags = getCouncilRoleFlags(user.getId());
+        response.setIsSecretary(flags.isSecretary());
+        response.setIsChairman(flags.isChairman());
+    }
+    
+    // Inner class để chứa council role flags
+    public static class CouncilRoleFlags {
+        private final boolean isSecretary;
+        private final boolean isChairman;
+        
+        public CouncilRoleFlags(boolean isSecretary, boolean isChairman) {
+            this.isSecretary = isSecretary;
+            this.isChairman = isChairman;
+        }
+        
+        public boolean isSecretary() {
+            return isSecretary;
+        }
+        
+        public boolean isChairman() {
+            return isChairman;
+        }
     }
 
     // 16. Cập nhật Profile của Current User

@@ -24,6 +24,8 @@ public class LoginResponse {
     private String title;
     private LocalDate dateOfBirth;
     private List<String> roles;
+    private Boolean isSecretary; // true nếu user là thư ký của ít nhất 1 council (cả khoa và trường)
+    private Boolean isChairman; // true nếu user là chủ tịch của ít nhất 1 council (cả khoa và trường)
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private String accessToken;
