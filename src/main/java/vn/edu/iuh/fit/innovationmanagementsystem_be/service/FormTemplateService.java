@@ -1329,6 +1329,13 @@ public class FormTemplateService {
                     log.error("Error getting basisText for innovation: " + result.getInnovationId(), e);
                 }
                 return null;
+            case "ketLuanVeSangKien":
+                if (result.getFinalDecision() == null) {
+                    return null; // Chưa có quyết định
+                }
+                return result.getFinalDecision() 
+                    ? "Đề nghị Hội đồng Sáng kiến Trường xét công nhận" 
+                    : "Không đề nghị Hội đồng Sáng kiến Trường xét công nhận";
             default:
                 log.warn("Unknown innovation data sourceFieldKey: " + sourceFieldKey);
                 return null;
