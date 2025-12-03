@@ -22,3 +22,4 @@ public class SecretarySummaryTemplateResponse extends CreateTemplateWithFieldsRe
     private Map<String, Object> fieldDataMap;
 }
 
+

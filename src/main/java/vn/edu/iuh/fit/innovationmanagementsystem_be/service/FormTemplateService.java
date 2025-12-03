@@ -38,7 +38,6 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.Secretary
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.CouncilResultsResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationResultDetail;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationFormDataResponse;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.TemplateFormDataResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.TemplateFieldResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.CouncilRepository;
@@ -50,6 +49,9 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.InnovationRoundRe
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.InnovationRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.FormFieldRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.FormDataRepository;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.ReviewScoreRepository;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.ReviewScore;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.ScoreCriteriaDetail;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.ResultPaginationDTO;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.Utils;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.HtmlTemplateUtils;
@@ -81,6 +83,7 @@ public class FormTemplateService {
     private final InnovationRepository innovationRepository;
     private final FormFieldRepository formFieldRepository;
     private final FormDataRepository formDataRepository;
+    private final ReviewScoreRepository reviewScoreRepository;
     private final ObjectMapper objectMapper;
 
     public FormTemplateService(FormTemplateRepository formTemplateRepository,
@@ -94,6 +97,7 @@ public class FormTemplateService {
             InnovationRepository innovationRepository,
             FormFieldRepository formFieldRepository,
             FormDataRepository formDataRepository,
+            ReviewScoreRepository reviewScoreRepository,
             ObjectMapper objectMapper) {
         this.formTemplateRepository = formTemplateRepository;
         this.innovationRoundRepository = innovationRoundRepository;
@@ -106,6 +110,7 @@ public class FormTemplateService {
         this.innovationRepository = innovationRepository;
         this.formFieldRepository = formFieldRepository;
         this.formDataRepository = formDataRepository;
+        this.reviewScoreRepository = reviewScoreRepository;
         this.objectMapper = objectMapper;
     }
 
@@ -1000,7 +1005,7 @@ public class FormTemplateService {
 
                 if (hasDataFields) {
                     FieldDataConfig fieldConfig = new FieldDataConfig(field.getFieldKey(), FieldTypeEnum.SECTION);
-                    fieldConfig.isRepeatable = Boolean.TRUE.equals(field.getRepeatable());
+                    // isRepeatable không được sử dụng, bỏ qua
                     fieldConfig.childConfigs = childConfigs;
                     fieldsNeedingData.add(fieldConfig);
                 }
@@ -1030,6 +1035,50 @@ public class FormTemplateService {
         }
 
         return fieldsNeedingData;
+    }
+
+    /**
+     * Helper method để convert value sang Integer
+     */
+    private Integer getIntegerValue(Object value) {
+        if (value == null) {
+            return null;
+        }
+        if (value instanceof Integer) {
+            return (Integer) value;
+        }
+        if (value instanceof Number) {
+            return ((Number) value).intValue();
+        }
+        if (value instanceof String) {
+            try {
+                return Integer.parseInt((String) value);
+            } catch (NumberFormatException e) {
+                return null;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Map columnKey sang criteriaId cho các cột điểm
+     */
+    private String getCriteriaIdFromColumnKey(String columnKey) {
+        if (columnKey == null) {
+            return null;
+        }
+        
+        // Map các columnKey điểm với criteriaId cố định
+        switch (columnKey) {
+            case "tinh_moi_cua_sang_kien":
+                return "1";
+            case "tinh_kha_thi_cua_sang_kien":
+                return "2";
+            case "tinh_hieu_qua_cua_sang_kien":
+                return "3";
+            default:
+                return null;
+        }
     }
 
     /**
@@ -1073,6 +1122,26 @@ public class FormTemplateService {
                         Object value = resolveTableColumnValue(columnConfig, result, councilId, templateId);
                         // Luôn put vào map, kể cả null
                         rowData.put(columnConfig.columnKey, value);
+                    }
+
+                    // Tính tong_diem nếu có các cột điểm
+                    Integer tinhMoi = getIntegerValue(rowData.get("tinh_moi_cua_sang_kien"));
+                    Integer tinhKhaThi = getIntegerValue(rowData.get("tinh_kha_thi_cua_sang_kien"));
+                    Integer tinhHieuQua = getIntegerValue(rowData.get("tinh_hieu_qua_cua_sang_kien"));
+                    
+                    if (tinhMoi != null || tinhKhaThi != null || tinhHieuQua != null) {
+                        // Tính tổng điểm nếu có ít nhất 1 điểm (số nguyên)
+                        int sum = (tinhMoi != null ? tinhMoi : 0) +
+                                 (tinhKhaThi != null ? tinhKhaThi : 0) +
+                                 (tinhHieuQua != null ? tinhHieuQua : 0);
+                        rowData.put("tong_diem", sum);
+                    } else {
+                        // Nếu không có điểm nào, dùng averageScore từ result (convert sang Integer nếu cần)
+                        if (result.getAverageScore() != null) {
+                            rowData.put("tong_diem", result.getAverageScore().intValue());
+                        } else {
+                            rowData.put("tong_diem", null);
+                        }
                     }
 
                     rowDataList.add(rowData);
@@ -1157,11 +1226,76 @@ public class FormTemplateService {
                 // Lấy từ database
                 return getContributedFieldValue(columnConfig.columnKey, result.getInnovationId(), templateId);
 
+            case "NUMBER":
+                // Kiểm tra xem có phải là cột điểm không
+                String criteriaId = getCriteriaIdFromColumnKey(columnConfig.columnKey);
+                if (criteriaId != null) {
+                    return getScoreValue(result.getInnovationId(), criteriaId);
+                }
+                // Nếu không phải cột điểm, trả về null (NUMBER thường không có data động)
+                return null;
+
             default:
                 return null;
         }
 
         return null;
+    }
+
+    /**
+     * Lấy điểm trung bình cho criteria cụ thể từ ReviewScore
+     * Tính trung bình điểm của tất cả reviewers cho criteria này
+     * Trả về Integer (số nguyên)
+     */
+    private Integer getScoreValue(String innovationId, String criteriaId) {
+        try {
+            // Lấy tất cả ReviewScore cho innovation này
+            List<ReviewScore> reviewScores = reviewScoreRepository.findByInnovationId(innovationId);
+            
+            if (reviewScores == null || reviewScores.isEmpty()) {
+                log.warn("No review scores found for innovationId: " + innovationId);
+                return null;
+            }
+
+            List<Integer> scores = new ArrayList<>();
+            
+            // Parse scoringDetails từ mỗi ReviewScore
+            for (ReviewScore reviewScore : reviewScores) {
+                if (reviewScore.getScoringDetails() == null || reviewScore.getScoringDetails().isNull()) {
+                    continue;
+                }
+
+                try {
+                    // Convert JsonNode sang List<ScoreCriteriaDetail>
+                    List<ScoreCriteriaDetail> scoringDetails = objectMapper.convertValue(
+                            reviewScore.getScoringDetails(),
+                            objectMapper.getTypeFactory().constructCollectionType(
+                                    List.class, ScoreCriteriaDetail.class));
+
+                    // Tìm điểm cho criteriaId này
+                    for (ScoreCriteriaDetail detail : scoringDetails) {
+                        if (criteriaId.equals(detail.getCriteriaId()) && detail.getScore() != null) {
+                            scores.add(detail.getScore());
+                            break; // Mỗi reviewer chỉ có 1 điểm cho mỗi criteria
+                        }
+                    }
+                } catch (Exception e) {
+                    log.error("Error parsing scoringDetails for reviewScore: " + reviewScore.getId(), e);
+                }
+            }
+
+            // Tính trung bình (làm tròn)
+            if (scores.isEmpty()) {
+                return null;
+            }
+
+            int sum = scores.stream().mapToInt(Integer::intValue).sum();
+            return Math.round((float) sum / scores.size());
+
+        } catch (Exception e) {
+            log.error("Error getting score value for innovationId: " + innovationId + ", criteriaId: " + criteriaId, e);
+            return null;
+        }
     }
 
     /**
@@ -1773,7 +1907,6 @@ private Object getContributedFieldValue(String fieldKey, String innovationId, St
     private static class FieldDataConfig {
         String fieldKey;
         FieldTypeEnum fieldType;
-        boolean isRepeatable;
         List<ChildFieldConfig> childConfigs;
         List<TableColumnConfig> tableColumns;
 
