@@ -1183,6 +1183,18 @@ public class FormTemplateService {
                 return result.getIsScore() != null && result.getIsScore() ? "Có chấm điểm" : "Không chấm điểm";
             case "departmentName":
                 return result.getDepartmentName();
+            case "basisText":
+                // Lấy từ Innovation entity
+                try {
+                    Innovation innovation = innovationRepository.findById(result.getInnovationId())
+                            .orElse(null);
+                    if (innovation != null) {
+                        return innovation.getBasisText();
+                    }
+                } catch (Exception e) {
+                    log.error("Error getting basisText for innovation: " + result.getInnovationId(), e);
+                }
+                return null;
             default:
                 log.warn("Unknown innovation data sourceFieldKey: " + sourceFieldKey);
                 return null;
