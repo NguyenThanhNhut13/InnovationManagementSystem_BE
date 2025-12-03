@@ -49,11 +49,13 @@ public class UserService {
     private final JwtTokenUtil jwtTokenUtil;
     private final UserSignatureProfileService userSignatureProfileService;
     private final CouncilMemberRepository councilMemberRepository;
+    private final CertificateRevocationService certificateRevocationService;
 
     public UserService(UserRepository userRepository, DepartmentRepository departmentRepository,
             PasswordEncoder passwordEncoder, RoleRepository roleRepository, UserRoleRepository userRoleRepository,
             UserMapper userMapper, JwtTokenUtil jwtTokenUtil,
-            UserSignatureProfileService userSignatureProfileService, CouncilMemberRepository councilMemberRepository) {
+            UserSignatureProfileService userSignatureProfileService, CouncilMemberRepository councilMemberRepository,
+            CertificateRevocationService certificateRevocationService) {
         this.userRepository = userRepository;
         this.departmentRepository = departmentRepository;
         this.passwordEncoder = passwordEncoder;
@@ -63,6 +65,7 @@ public class UserService {
         this.jwtTokenUtil = jwtTokenUtil;
         this.userSignatureProfileService = userSignatureProfileService;
         this.councilMemberRepository = councilMemberRepository;
+        this.certificateRevocationService = certificateRevocationService;
     }
 
     // 1. Tạo User
@@ -234,48 +237,48 @@ public class UserService {
     public UserResponse getCurrentUserResponse() {
         User currentUser = getCurrentUser();
         UserResponse response = userMapper.toUserResponse(currentUser);
-        
+
         // Set isSecretary và isChairman
         setCouncilRoleFlags(currentUser, response);
-        
+
         return response;
     }
-    
+
     // Helper method: Get council role flags cho user
     public CouncilRoleFlags getCouncilRoleFlags(String userId) {
-        List<vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.CouncilMember> memberships = 
-            councilMemberRepository.findByUserId(userId);
-        
+        List<vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.CouncilMember> memberships = councilMemberRepository
+                .findByUserId(userId);
+
         boolean isSecretary = memberships.stream()
-            .anyMatch(member -> member.getRole() == CouncilMemberRoleEnum.THU_KY);
-        
+                .anyMatch(member -> member.getRole() == CouncilMemberRoleEnum.THU_KY);
+
         boolean isChairman = memberships.stream()
-            .anyMatch(member -> member.getRole() == CouncilMemberRoleEnum.CHU_TICH);
-        
+                .anyMatch(member -> member.getRole() == CouncilMemberRoleEnum.CHU_TICH);
+
         return new CouncilRoleFlags(isSecretary, isChairman);
     }
-    
+
     // Helper method: Set isSecretary và isChairman cho user
     private void setCouncilRoleFlags(User user, UserResponse response) {
         CouncilRoleFlags flags = getCouncilRoleFlags(user.getId());
         response.setIsSecretary(flags.isSecretary());
         response.setIsChairman(flags.isChairman());
     }
-    
+
     // Inner class để chứa council role flags
     public static class CouncilRoleFlags {
         private final boolean isSecretary;
         private final boolean isChairman;
-        
+
         public CouncilRoleFlags(boolean isSecretary, boolean isChairman) {
             this.isSecretary = isSecretary;
             this.isChairman = isChairman;
         }
-        
+
         public boolean isSecretary() {
             return isSecretary;
         }
-        
+
         public boolean isChairman() {
             return isChairman;
         }
@@ -376,5 +379,35 @@ public class UserService {
         return users.stream()
                 .map(userMapper::toUserResponse)
                 .collect(Collectors.toList());
+    }
+
+    // 20. Cập nhật User Status (với auto revocation/restoration)
+    public void updateUserStatus(String userId,
+            vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.UserStatusEnum newStatus) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IdInvalidException("User không tồn tại"));
+
+        vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.UserStatusEnum oldStatus = user.getStatus();
+
+        // Cập nhật status
+        user.setStatus(newStatus);
+        userRepository.save(user);
+
+        // Nếu chuyển từ ACTIVE -> INACTIVE/SUSPENDED → Thu hồi certificate
+        if (oldStatus == vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.UserStatusEnum.ACTIVE
+                && newStatus != vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.UserStatusEnum.ACTIVE) {
+            certificateRevocationService.revokeOnStatusChange(user, newStatus);
+            org.slf4j.LoggerFactory.getLogger(UserService.class).info(
+                    "User {} status changed from {} to {} - Certificate revoked",
+                    userId, oldStatus, newStatus);
+        }
+
+        // Nếu chuyển từ INACTIVE/SUSPENDED -> ACTIVE → Khôi phục certificate
+        if (oldStatus != vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.UserStatusEnum.ACTIVE
+                && newStatus == vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.UserStatusEnum.ACTIVE) {
+            certificateRevocationService.restoreCertificate(userId);
+            org.slf4j.LoggerFactory.getLogger(UserService.class).info(
+                    "User {} reactivated - Certificate restored", userId);
+        }
     }
 }
