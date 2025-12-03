@@ -24,6 +24,8 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.UpdateForm
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.CreateTemplateResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.CreateTemplateWithFieldsResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.FormTemplateResponse;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.SecretarySummaryTemplateResponse;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.TemplateTypeEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.service.FormTemplateService;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.ResultPaginationDTO;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.annotation.ApiMessage;
@@ -181,6 +183,26 @@ public class FormTemplateController {
         })
         public ResponseEntity<List<FormTemplateResponse>> getFormTemplatesByCurrentUserRoles() {
                 return ResponseEntity.ok(formTemplateService.getFormTemplatesByCurrentUserRoles());
+        }
+
+        // 11. Lấy template tổng hợp cho thư ký (Mẫu 3, 4, 5)
+        @GetMapping("/form-templates/council/{councilId}/secretary/{templateType}")
+        @PreAuthorize("hasAnyRole('TV_HOI_DONG_KHOA', 'TV_HOI_DONG_TRUONG')")
+        @ApiMessage("Lấy mẫu tổng hợp cho thư ký thành công")
+        @Operation(summary = "Get Secretary Summary Template", 
+                   description = "Get template 3, 4, or 5 with data for secretary. templateType: BIEN_BAN_HOP, TONG_HOP_DE_NGHI, TONG_HOP_CHAM_DIEM")
+        @ApiResponses(value = {
+                @ApiResponse(responseCode = "200", description = "Template retrieved successfully"),
+                @ApiResponse(responseCode = "404", description = "Template or council not found"),
+                @ApiResponse(responseCode = "403", description = "User is not secretary of this council"),
+                @ApiResponse(responseCode = "400", description = "Invalid template type or scoring period has not ended")
+        })
+        public ResponseEntity<SecretarySummaryTemplateResponse> getSecretarySummaryTemplate(
+                @Parameter(description = "Council ID", required = true) @PathVariable String councilId,
+                @Parameter(description = "Template Type", required = true) 
+                @PathVariable TemplateTypeEnum templateType) {
+                
+                return ResponseEntity.ok(formTemplateService.getSecretarySummaryTemplate(councilId, templateType));
         }
 
 }
