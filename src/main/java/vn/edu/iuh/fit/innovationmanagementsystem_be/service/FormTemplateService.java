@@ -1901,46 +1901,4 @@ private Object getContributedFieldValue(String fieldKey, String innovationId, St
         return node.toString();
     }
 
-    /**
-     * Helper classes
-     */
-    private static class FieldDataConfig {
-        String fieldKey;
-        FieldTypeEnum fieldType;
-        List<ChildFieldConfig> childConfigs;
-        List<TableColumnConfig> tableColumns;
-
-        FieldDataConfig(String fieldKey, FieldTypeEnum fieldType) {
-            this.fieldKey = fieldKey;
-            this.fieldType = fieldType;
-            this.childConfigs = new ArrayList<>();
-            this.tableColumns = new ArrayList<>();
-        }
-    }
-
-    private static class ChildFieldConfig {
-        String fieldKey;
-        String fieldType;
-        String sourceFieldKey; // Cho INNOVATION_DATA và USER_DATA
-        JsonNode referenceConfig; // Cho REFERENCE
-        List<String> targetTemplateIds; // Cho CONTRIBUTED (thay vì formTemplateId)
-
-        ChildFieldConfig(String fieldKey, String fieldType) {
-            this.fieldKey = fieldKey;
-            this.fieldType = fieldType;
-        }
-    }
-
-    private static class TableColumnConfig {
-        String columnKey;
-        String columnType;
-        String sourceFieldKey; // Cho INNOVATION_DATA và USER_DATA
-        JsonNode referenceConfig; // Cho REFERENCE
-        List<String> targetTemplateIds; // Cho CONTRIBUTED (thay vì formTemplateId)
-
-        TableColumnConfig(String columnKey, String columnType) {
-            this.columnKey = columnKey;
-            this.columnType = columnType;
-        }
-    }
 }
