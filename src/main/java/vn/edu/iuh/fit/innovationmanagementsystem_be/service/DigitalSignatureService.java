@@ -54,6 +54,7 @@ public class DigitalSignatureService {
     private final AttachmentRepository attachmentRepository;
     private final FileService fileService;
     private final FormTemplateRepository formTemplateRepository;
+    private final CertificateRevocationService certificateRevocationService;
 
     public DigitalSignatureService(DigitalSignatureRepository digitalSignatureRepository,
             InnovationRepository innovationRepository,
@@ -66,7 +67,8 @@ public class DigitalSignatureService {
             HSMEncryptionService hsmEncryptionService,
             AttachmentRepository attachmentRepository,
             FileService fileService,
-            FormTemplateRepository formTemplateRepository) {
+            FormTemplateRepository formTemplateRepository,
+            CertificateRevocationService certificateRevocationService) {
         this.digitalSignatureRepository = digitalSignatureRepository;
         this.innovationRepository = innovationRepository;
         this.userSignatureProfileRepository = userSignatureProfileRepository;
@@ -79,6 +81,7 @@ public class DigitalSignatureService {
         this.attachmentRepository = attachmentRepository;
         this.fileService = fileService;
         this.formTemplateRepository = formTemplateRepository;
+        this.certificateRevocationService = certificateRevocationService;
     }
 
     // 1. Tạo digital signature
@@ -96,6 +99,9 @@ public class DigitalSignatureService {
         // Lấy user signature profile
         UserSignatureProfile signatureProfile = this.userSignatureProfileRepository.findByUserId(currentUser.getId())
                 .orElseThrow(() -> new IdInvalidException("Người dùng chưa có hồ sơ chữ ký số"));
+
+        // Kiểm tra user status và CRL
+        validateUserCanSign(currentUser, signatureProfile);
 
         // 1. Validate certificate trước khi ký
         if (signatureProfile.getCertificateData() != null) {
@@ -376,6 +382,32 @@ public class DigitalSignatureService {
                                 "Phòng ban của sáng kiến: " + innovation.getDepartment().getId() +
                                 ", Phòng ban của bạn: " + currentUser.getDepartment().getId());
             }
+        }
+    }
+
+    // Validate user status và certificate revocation status
+    private void validateUserCanSign(User user, UserSignatureProfile profile) {
+        // 1. Kiểm tra user status
+        if (user.getStatus() != vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.UserStatusEnum.ACTIVE) {
+            throw new IdInvalidException(
+                    "Tài khoản không được phép ký số. " +
+                            "Trạng thái hiện tại: " + user.getStatus() + ". " +
+                            "Chỉ tài khoản ACTIVE mới có thể ký tài liệu.");
+        }
+
+        // 2. Kiểm tra certificate có bị thu hồi không
+        if (profile != null && profile.getCertificateSerial() != null &&
+                certificateRevocationService.isCertificateRevoked(profile.getCertificateSerial())) {
+            java.util.Optional<vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.CertificateRevocation> revocation = certificateRevocationService
+                    .getRevocationInfo(profile.getCertificateSerial());
+
+            String reason = revocation
+                    .map(r -> r.getRevocationReason().getDescription())
+                    .orElse("không rõ");
+
+            throw new IdInvalidException(
+                    "Certificate đã bị thu hồi. Lý do: " + reason + ". " +
+                            "Vui lòng liên hệ quản trị viên để được hỗ trợ.");
         }
     }
 
