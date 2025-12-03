@@ -60,7 +60,7 @@ public class OtpService {
         try {
             return redisTemplate.getExpire(key, TimeUnit.SECONDS);
         } catch (Exception e) {
-            return null;
+            throw new IdInvalidException("Không thể lấy TTL của OTP: " + e.getMessage());
         }
     }
 
@@ -70,7 +70,7 @@ public class OtpService {
         try {
             redisTemplate.delete(key);
         } catch (Exception e) {
-
+            throw new IdInvalidException("Không thể xóa OTP: " + e.getMessage());
         }
     }
 

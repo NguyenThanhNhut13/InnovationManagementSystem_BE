@@ -1,7 +1,5 @@
 package vn.edu.iuh.fit.innovationmanagementsystem_be.repository;
 
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
@@ -16,30 +14,28 @@ import java.util.Optional;
 @Repository
 public interface CouncilRepository extends JpaRepository<Council, String>, JpaSpecificationExecutor<Council> {
 
-        Optional<Council> findByName(String name);
+    Optional<Council> findByNameIgnoreCase(String name);
 
-        boolean existsByName(String name);
+    List<Council> findByReviewCouncilLevel(ReviewLevelEnum level);
 
-        @Query("SELECT c FROM Council c WHERE c.name LIKE %:keyword%")
-        Page<Council> findByNameContaining(@Param("keyword") String keyword, Pageable pageable);
+    // Tìm council theo round và department (cho faculty level) - chỉ fetch councilMembers để tránh MultipleBagFetchException
+    @Query("SELECT DISTINCT c FROM Council c " +
+            "LEFT JOIN FETCH c.councilMembers cm " +
+            "LEFT JOIN FETCH cm.user " +
+            "WHERE c.innovationRound.id = :roundId AND c.reviewCouncilLevel = :level AND c.department.id = :departmentId")
+    Optional<Council> findByRoundIdAndLevelAndDepartmentId(
+            @Param("roundId") String roundId,
+            @Param("level") ReviewLevelEnum level,
+            @Param("departmentId") String departmentId
+    );
 
-        @Query("SELECT c FROM Council c WHERE c.reviewCouncilLevel = :level")
-        Page<Council> findByReviewLevel(@Param("level") ReviewLevelEnum level, Pageable pageable);
-
-        @Query("SELECT c FROM Council c WHERE c.name LIKE %:keyword% AND c.reviewCouncilLevel = :level")
-        Page<Council> findByNameContainingAndReviewLevel(@Param("keyword") String keyword,
-                        @Param("level") ReviewLevelEnum level,
-                        Pageable pageable);
-
-        @Query("SELECT c FROM Council c")
-        Page<Council> findActiveCouncils(Pageable pageable);
-
-        @Query("SELECT c FROM Council c WHERE c.reviewCouncilLevel = :level")
-        Page<Council> findActiveCouncilsByReviewLevel(@Param("level") ReviewLevelEnum level, Pageable pageable);
-
-        @Query("SELECT c FROM Council c")
-        List<Council> findAllActiveCouncils();
-
-        @Query("SELECT c FROM Council c WHERE c.reviewCouncilLevel = :level")
-        List<Council> findActiveCouncilsByReviewLevel(@Param("level") ReviewLevelEnum level);
+    // Tìm council theo round (cho school level - không có department) - chỉ fetch councilMembers để tránh MultipleBagFetchException
+    @Query("SELECT DISTINCT c FROM Council c " +
+            "LEFT JOIN FETCH c.councilMembers cm " +
+            "LEFT JOIN FETCH cm.user " +
+            "WHERE c.innovationRound.id = :roundId AND c.reviewCouncilLevel = :level AND c.department IS NULL")
+    Optional<Council> findByRoundIdAndLevelAndNoDepartment(
+            @Param("roundId") String roundId,
+            @Param("level") ReviewLevelEnum level
+    );
 }

@@ -1,5 +1,7 @@
 package vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO;
 
+import java.util.List;
+
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -18,24 +20,10 @@ public class UpdateFormTemplateRequest {
 
     private String templateContent;
 
+    private Boolean isLibrary;
+
+    private String roundId;
+
     @Valid
-    private java.util.List<FieldData> fields;
-
-    @Data
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class FieldData {
-        private String id; // nếu null => tạo mới
-        private String fieldKey;
-        private String label;
-        private vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.FieldTypeEnum type;
-        private Boolean required;
-        private String placeholder;
-        private CreateTemplateWithFieldsRequest.TableConfigData tableConfig;
-        private java.util.List<String> options;
-        private Boolean repeatable;
-        @Valid
-        private java.util.List<CreateTemplateWithFieldsRequest.FieldData> children;
-
-    }
+    private List<FormFieldRequest> fields;
 }

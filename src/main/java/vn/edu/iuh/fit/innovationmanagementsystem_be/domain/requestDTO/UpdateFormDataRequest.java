@@ -1,5 +1,6 @@
 package vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -9,7 +10,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class UpdateFormDataRequest {
 
-    private String fieldValue;
+    private JsonNode fieldValue;
 
     private String formFieldId;
 

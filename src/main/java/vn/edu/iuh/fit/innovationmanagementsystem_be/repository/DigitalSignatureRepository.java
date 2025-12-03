@@ -1,6 +1,7 @@
 package vn.edu.iuh.fit.innovationmanagementsystem_be.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -10,23 +11,10 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.Signature
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.UserRoleEnum;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface DigitalSignatureRepository extends JpaRepository<DigitalSignature, String> {
-
-        List<DigitalSignature> findByInnovationIdAndDocumentType(String innovationId, DocumentTypeEnum documentType);
-
-        List<DigitalSignature> findByInnovationIdAndDocumentTypeAndSignedAsRole(
-                        String innovationId,
-                        DocumentTypeEnum documentType,
-                        UserRoleEnum signedAsRole);
-
-        List<DigitalSignature> findByInnovationIdAndDocumentTypeAndStatus(
-                        String innovationId,
-                        DocumentTypeEnum documentType,
-                        SignatureStatusEnum status);
-
-        List<DigitalSignature> findByUserIdAndDocumentType(String userId, DocumentTypeEnum documentType);
 
         boolean existsByInnovationIdAndDocumentTypeAndUserIdAndStatus(
                         String innovationId,
@@ -54,4 +42,10 @@ public interface DigitalSignatureRepository extends JpaRepository<DigitalSignatu
                         DocumentTypeEnum documentType,
                         UserRoleEnum signedAsRole,
                         SignatureStatusEnum status);
+
+        Optional<DigitalSignature> findBySignatureHash(String signatureHash);
+
+        @Modifying
+        @Query("DELETE FROM DigitalSignature ds WHERE ds.innovation.id = :innovationId")
+        void deleteByInnovationId(@Param("innovationId") String innovationId);
 }

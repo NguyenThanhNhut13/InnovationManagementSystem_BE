@@ -23,6 +23,7 @@ public class InnovationPhaseResponse {
     private InnovationPhaseLevelEnum level;
     private Integer phaseOrder;
     private Boolean isDeadline;
+    private Boolean allowLateSubmission;
 
     // Audit info
     private LocalDateTime createdAt;

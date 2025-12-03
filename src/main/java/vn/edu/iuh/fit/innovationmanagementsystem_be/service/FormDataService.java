@@ -41,7 +41,7 @@ public class FormDataService {
         public FormDataResponse createFormData(FormDataRequest request) {
 
                 if (request == null || request.getInnovationId() == null || request.getFormFieldId() == null) {
-                        throw new IllegalArgumentException("Innovation ID và Form Field ID không được để trống");
+                        throw new IdInvalidException("Innovation ID và Form Field ID không được để trống");
                 }
 
                 Innovation innovation = innovationRepository.findById(request.getInnovationId())
@@ -65,24 +65,7 @@ public class FormDataService {
                 return formDataMapper.toFormDataResponse(formDataWithRelations);
         }
 
-        // 2. Tạo Multiple FormData
-        public List<FormDataResponse> createMultipleFormData(List<FormDataRequest> requests) {
-                List<FormData> formDataList = requests.stream()
-                                .map(formDataMapper::toFormData)
-                                .collect(Collectors.toList());
-                List<FormData> savedFormDataList = formDataRepository.saveAll(formDataList);
-
-                return savedFormDataList.stream()
-                                .map(savedFormData -> {
-                                        FormData formDataWithRelations = formDataRepository
-                                                        .findByIdWithRelations(savedFormData.getId())
-                                                        .orElse(savedFormData);
-                                        return formDataMapper.toFormDataResponse(formDataWithRelations);
-                                })
-                                .collect(Collectors.toList());
-        }
-
-        // 3. Cập nhật FormData
+        // 2. Cập nhật FormData
         public FormDataResponse updateFormData(String formDataId, UpdateFormDataRequest request) {
                 FormData formData = formDataRepository.findById(formDataId)
                                 .orElseThrow(() -> new IdInvalidException(
@@ -117,26 +100,7 @@ public class FormDataService {
                 return formDataMapper.toFormDataResponse(formDataWithRelations);
         }
 
-        // 4. Cập nhật Multiple FormData
-        public List<FormDataResponse> updateMultipleFormData(List<FormDataRequest> requests) {
-                List<FormData> formDataList = requests.stream()
-                                .map(formDataMapper::toFormData)
-                                .collect(Collectors.toList());
-                List<FormData> savedFormDataList = formDataRepository.saveAll(formDataList);
-                return savedFormDataList.stream()
-                                .map(formDataMapper::toFormDataResponse)
-                                .collect(Collectors.toList());
-        }
-
-        // 5. Lấy FormData by Id
-        public FormDataResponse getFormDataById(String formDataId) {
-                FormData formData = formDataRepository.findByIdWithRelations(formDataId)
-                                .orElseThrow(() -> new IdInvalidException(
-                                                "Không tìm thấy Form Data với ID: " + formDataId));
-                return formDataMapper.toFormDataResponse(formData);
-        }
-
-        // 6. Lấy FormData by InnovationId
+        // 3. Lấy FormData by InnovationId
         public List<FormDataResponse> getFormDataByInnovationId(String innovationId) {
                 List<FormData> formDataList = formDataRepository.findByInnovationIdWithRelations(innovationId);
                 return formDataList.stream()
@@ -144,15 +108,7 @@ public class FormDataService {
                                 .collect(Collectors.toList());
         }
 
-        // 7. Lấy FormData by TemplateId
-        public List<FormDataResponse> getFormDataByTemplateId(String templateId) {
-                List<FormData> formDataList = formDataRepository.findByFormFieldFormTemplateId(templateId);
-                return formDataList.stream()
-                                .map(formDataMapper::toFormDataResponse)
-                                .collect(Collectors.toList());
-        }
-
-        // 8. Lấy FormData với FormField
+        // 4. Lấy FormData với FormField
         public List<FormDataResponse> getFormDataWithFormFields(String innovationId, String templateId) {
                 List<FormData> formDataList = formDataRepository.findByInnovationIdAndTemplateIdWithRelations(
                                 innovationId,

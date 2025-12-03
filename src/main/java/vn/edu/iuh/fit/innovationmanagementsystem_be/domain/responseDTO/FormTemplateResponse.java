@@ -18,6 +18,7 @@ public class FormTemplateResponse {
     private TemplateTypeEnum templateType;
     private TargetRoleCode targetRole;
     private String templateContent;
+    private Boolean isLibrary;
     private String innovationRoundId;
     private String innovationRoundName;
     private List<FormFieldResponse> formFields;

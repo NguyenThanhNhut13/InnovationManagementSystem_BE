@@ -43,4 +43,6 @@ public class InnovationPhaseRequest {
     private Integer phaseOrder;
 
     private Boolean isDeadline = false;
+
+    private Boolean allowLateSubmission = false;
 }

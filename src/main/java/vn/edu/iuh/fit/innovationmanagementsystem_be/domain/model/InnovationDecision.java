@@ -26,7 +26,7 @@ public class InnovationDecision extends Auditable {
     @Column(name = "id", columnDefinition = "VARCHAR(36)")
     private String id;
 
-    @Column(name = "decision_number", nullable = false, unique = true, columnDefinition = "VARCHAR(100)")
+    @Column(name = "decision_number", nullable = false, columnDefinition = "VARCHAR(100)")
     private String decisionNumber;
 
     @Column(name = "title", nullable = false, columnDefinition = "TEXT")

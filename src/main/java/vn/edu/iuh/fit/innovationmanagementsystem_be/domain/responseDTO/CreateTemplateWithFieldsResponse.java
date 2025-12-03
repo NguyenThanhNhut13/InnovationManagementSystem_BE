@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.FieldTypeEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.TemplateTypeEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.TargetRoleCode;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.UserRoleEnum;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -20,6 +21,7 @@ public class CreateTemplateWithFieldsResponse {
     private String templateContent;
     private TemplateTypeEnum templateType;
     private TargetRoleCode targetRole;
+    private Boolean isLibrary;
     private String roundId;
     private List<FieldResponse> fields;
     private LocalDateTime createdAt;
@@ -37,10 +39,17 @@ public class CreateTemplateWithFieldsResponse {
         private String label;
         private FieldTypeEnum type;
         private Boolean required;
-        private String placeholder;
+        private Boolean isReadOnly;
         private JsonNode tableConfig;
         private JsonNode options;
         private Boolean repeatable;
-        private List<FieldResponse> children;
+        private JsonNode children;
+        private JsonNode referenceConfig;
+        private JsonNode userDataConfig;
+        private JsonNode innovationDataConfig;
+
+        private JsonNode contributionConfig;
+
+        private UserRoleEnum signingRole;
     }
 }

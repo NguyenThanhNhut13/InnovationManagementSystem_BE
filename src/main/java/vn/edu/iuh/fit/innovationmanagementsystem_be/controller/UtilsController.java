@@ -24,11 +24,16 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.beans.factory.annotation.Value;
+import jakarta.validation.Valid;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.Base64DecodeRequest;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.Base64EncodeRequest;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.Base64EncodeResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.FileExistsResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.FileInfoResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.FileUploadResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.MultipleFileUploadResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.exception.IdInvalidException;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.service.Base64Service;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.service.FileService;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.RestResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.annotation.ApiMessage;
@@ -42,22 +47,24 @@ import java.util.ArrayList;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/v1/utils")
+@RequestMapping("/api/v1")
 @Tag(name = "Utils", description = "Utility APIs for file management and other utilities")
 @SecurityRequirement(name = "Bearer Authentication")
 public class UtilsController {
 
     private final FileService fileService;
+    private final Base64Service base64Service;
 
     @Value("${CONVERTAPI_TOKEN:}")
     private String convertApiToken;
 
-    public UtilsController(FileService fileService) {
+    public UtilsController(FileService fileService, Base64Service base64Service) {
         this.fileService = fileService;
+        this.base64Service = base64Service;
     }
 
     // 1. Upload một file to MinIO
-    @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PostMapping(value = "/utils/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @ApiMessage("Upload file thành công")
     @Operation(summary = "Upload Single File", description = "Upload a single file to MinIO storage")
     @ApiResponses(value = {
@@ -91,7 +98,7 @@ public class UtilsController {
     }
 
     // 2. Upload nhiều file to MinIO
-    @PostMapping("/upload-multiple")
+    @PostMapping("/utils/upload-multiple")
     @ApiMessage("Upload nhiều file thành công")
     @Operation(summary = "Upload Multiple Files", description = "Upload multiple files to MinIO storage")
     @ApiResponses(value = {
@@ -147,7 +154,7 @@ public class UtilsController {
     }
 
     // 3. Download file từ MinIO
-    @GetMapping("/download/{fileName}")
+    @GetMapping("/utils/download/{fileName}")
     @ApiMessage("Download file thành công")
     @Operation(summary = "Download File", description = "Download a file from MinIO storage")
     @ApiResponses(value = {
@@ -178,7 +185,7 @@ public class UtilsController {
     }
 
     // 4. Lấy thông tin file & không download
-    @GetMapping("/info/{fileName}")
+    @GetMapping("/utils/info/{fileName}")
     @ApiMessage("Lấy thông tin file thành công")
     public ResponseEntity<FileInfoResponse> getFileInfo(@PathVariable String fileName) throws Exception {
 
@@ -199,7 +206,7 @@ public class UtilsController {
     }
 
     // 5. Xóa file từ MinIO
-    @DeleteMapping("/delete/{fileName}")
+    @DeleteMapping("/utils/delete/{fileName}")
     @ApiMessage("Xóa file thành công")
     public ResponseEntity<Void> deleteFile(@PathVariable String fileName) throws Exception {
 
@@ -213,7 +220,7 @@ public class UtilsController {
     }
 
     // 6. Check if file exists
-    @GetMapping("/exists/{fileName}")
+    @GetMapping("/utils/exists/{fileName}")
     @ApiMessage("Kiểm tra file tồn tại thành công")
     public ResponseEntity<FileExistsResponse> checkFileExists(@PathVariable String fileName) {
         boolean exists = fileService.fileExists(fileName);
@@ -224,7 +231,7 @@ public class UtilsController {
     }
 
     // 7. Convert DOC/DOCX file to HTML using LibreOffice container
-    @PostMapping(value = "/doc-to-html", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PostMapping(value = "/utils/doc-to-html", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @ApiMessage("Convert DOC/DOCX sang HTML thành công")
     public ResponseEntity<String> convertDocToHtml(@RequestParam("file") MultipartFile file) {
         File tempFile = null;
@@ -341,7 +348,7 @@ public class UtilsController {
     }
 
     // 8. Ping endpoint for Uptime
-    @GetMapping("/ping")
+    @GetMapping("/utils/ping")
     @ApiMessage("pong")
     @Operation(summary = "Ping", description = "Endpoint rất nhẹ để kiểm tra sức khỏe service và tránh sleep")
     @ApiResponses(value = {
@@ -355,7 +362,7 @@ public class UtilsController {
         return ResponseEntity.ok(body);
     }
 
-    @GetMapping("/view/{fileName}")
+    @GetMapping("/utils/view/{fileName}")
     public ResponseEntity<RestResponse<String>> getIframeUrl(@PathVariable String fileName) {
         try {
             String url = fileService.getPresignedUrl(fileName, 60 * 5);
@@ -377,7 +384,7 @@ public class UtilsController {
     }
 
     // 9. ConvertAPI: DOC/DOCX -> HTML
-    @PostMapping(value = "/convert-word-to-html", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PostMapping(value = "/utils/convert-word-to-html", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @Operation(summary = "Convert Word to HTML via ConvertAPI", description = "Proxy qua backend để ẩn token. Trả về base64 'FileData' từ ConvertAPI.")
     public ResponseEntity<?> convertWordToHtmlViaThirdParty(
             @RequestParam("file") MultipartFile file) {
@@ -432,6 +439,55 @@ public class UtilsController {
             if (tempFile != null && tempFile.exists()) {
                 tempFile.delete();
             }
+        }
+    }
+
+    // 10. Encode text to Base64
+    @PostMapping("/utils/base64/encode")
+    @ApiMessage("Encode text to Base64 thành công")
+    @Operation(summary = "Encode text to Base64", description = "Nhận plain text và trả về chuỗi Base64 để test.")
+    public ResponseEntity<Base64EncodeResponse> encodeBase64(
+            @Valid @RequestBody Base64EncodeRequest request) {
+
+        String encoded = base64Service.encode(request.getPlainText());
+        Base64EncodeResponse response = new Base64EncodeResponse(encoded);
+        return ResponseEntity.ok(response);
+    }
+
+    // 11. Decode Base64 to text
+    @PostMapping("/utils/base64/decode")
+    @ApiMessage("Decode Base64 thành text thành công")
+    @Operation(summary = "Decode Base64 to HTML", description = "Nhận chuỗi Base64 và trả về nội dung HTML để hiển thị.")
+    public ResponseEntity<String> decodeBase64(
+            @Valid @RequestBody Base64DecodeRequest request) {
+
+        String decoded = base64Service.decode(request.getBase64Text());
+        return ResponseEntity.ok()
+                .contentType(MediaType.TEXT_HTML)
+                .body(decoded);
+    }
+
+    // 12. Test MinIO connection
+    @GetMapping("/utils/test-minio")
+    @ApiMessage("Kiểm tra kết nối MinIO thành công")
+    @Operation(summary = "Test MinIO Connection", description = "Kiểm tra kết nối MinIO và hiển thị thông tin bucket")
+    public ResponseEntity<RestResponse<String>> testMinioConnection() {
+        try {
+            fileService.testMinioConnection();
+            RestResponse<String> response = RestResponse.<String>builder()
+                    .statusCode(200)
+                    .message("Kết nối MinIO thành công. Xem log để biết chi tiết.")
+                    .data("MinIO connection OK")
+                    .build();
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            RestResponse<String> errorResponse = RestResponse.<String>builder()
+                    .statusCode(500)
+                    .message("Lỗi kết nối MinIO: " + e.getMessage())
+                    .data(null)
+                    .build();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(errorResponse);
         }
     }
 

@@ -39,6 +39,11 @@ public class FormatRestResponse implements ResponseBodyAdvice<Object> {
             return false;
         }
 
+        // Skip formatting for base64 endpoints that return raw strings
+        if (methodName.contains("encodeBase64") || methodName.contains("decodeBase64")) {
+            return false;
+        }
+
         // Skip formatting for digital signature endpoints that return raw strings
         if (methodName.contains("generateSignature") || methodName.contains("generateDocumentHash")) {
             return false;
@@ -62,7 +67,6 @@ public class FormatRestResponse implements ResponseBodyAdvice<Object> {
         if (body instanceof Resource || status >= 400) {
             return body;
         } else if (body instanceof String) {
-            // Handle String responses by wrapping them in RestResponse
             res.setData(body);
             ApiMessage message = returnType.getMethodAnnotation(ApiMessage.class);
             res.setMessage(message != null ? message.value() : "Thành công");

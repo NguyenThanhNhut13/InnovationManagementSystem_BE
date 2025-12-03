@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebSocket Test - Innovation System</title>
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            color: #333;
+            border-bottom: 3px solid #4CAF50;
+            padding-bottom: 10px;
+        }
+
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+
+        .connected {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .disconnected {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        button:hover {
+            background: #45a049;
+        }
+
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .disconnect-btn {
+            background: #f44336;
+        }
+
+        .disconnect-btn:hover {
+            background: #da190b;
+        }
+
+        #messages {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .message {
+            padding: 10px;
+            margin: 5px 0;
+            background: white;
+            border-left: 4px solid #4CAF50;
+            border-radius: 4px;
+            animation: highlight 0.5s;
+        }
+
+        .message-time {
+            color: #666;
+            font-size: 12px;
+        }
+
+        .message-content {
+            margin-top: 5px;
+        }
+
+        .test-section {
+            margin-top: 20px;
+            padding: 15px;
+            background: #e3f2fd;
+            border-radius: 4px;
+        }
+
+        input {
+            padding: 8px;
+            width: 300px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        @keyframes highlight {
+            0% {
+                background: #fff3cd;
+            }
+
+            100% {
+                background: white;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>WebSocket Notification Test</h1>
+
+        <div id="status" class="status disconnected">
+            Chua ket noi
+        </div>
+
+        <div>
+            <button id="connectBtn" onclick="connectWS()">Ket noi WebSocket</button>
+            <button id="disconnectBtn" onclick="disconnectWS()" disabled class="disconnect-btn">Ngat ket noi</button>
+        </div>
+
+        <h3>Notifications nhan duoc:</h3>
+        <div id="messages">
+            <p style="color: #999;">Chua co notification nao...</p>
+        </div>
+    </div>
+
+    <script>
+        var stompClient = null;
+        var isConnected = false;
+
+        function connectWS() {
+            console.log('Dang ket noi den WebSocket...');
+
+            var socket = new SockJS('http://localhost:8080/ws');
+            stompClient = Stomp.over(socket);
+
+            stompClient.debug = function (str) {
+                console.log('STOMP: ' + str);
+            };
+
+            stompClient.connect({}, function (frame) {
+                console.log('Connected: ' + frame);
+                isConnected = true;
+                updateStatus(true);
+
+                var userId = prompt('Nhap User ID cua ban (VD: ce8bd90e-c133-4fe5-bd24-3be351587ba9):');
+                if (userId && userId.trim() !== '') {
+                    var destination = '/queue/notifications/' + userId.trim();
+                    stompClient.subscribe(destination, function (message) {
+                        console.log('=== RAW STOMP MESSAGE ===');
+                        console.log(message);
+
+                        var parsedBody = JSON.parse(message.body);
+                        console.log('=== PARSED JSON ===');
+                        console.log(parsedBody);
+
+                        showNotification(parsedBody);
+                    });
+                    console.log('Da subscribe vao: ' + destination);
+                    console.log('Ban se nhan duoc notification dua tren role va department cua ban');
+                } else {
+                    alert('Ban can nhap User ID de nhan notification!');
+                }
+            }, function (error) {
+                console.error('Connection error: ', error);
+                updateStatus(false);
+                alert('Khong the ket noi WebSocket!\n\nKiem tra:\n1. Backend co dang chay o port 8080?\n2. Mo Console (F12) de xem chi tiet loi');
+            });
+        }
+
+        function disconnectWS() {
+            if (stompClient !== null) {
+                stompClient.disconnect();
+            }
+            isConnected = false;
+            updateStatus(false);
+            console.log('Disconnected');
+        }
+
+        function updateStatus(connected) {
+            var statusDiv = document.getElementById('status');
+            var connectBtn = document.getElementById('connectBtn');
+            var disconnectBtn = document.getElementById('disconnectBtn');
+
+            if (connected) {
+                statusDiv.className = 'status connected';
+                statusDiv.innerHTML = 'Da ket noi - Dang lang nghe notifications...';
+                connectBtn.disabled = true;
+                disconnectBtn.disabled = false;
+            } else {
+                statusDiv.className = 'status disconnected';
+                statusDiv.innerHTML = 'Chua ket noi';
+                connectBtn.disabled = false;
+                disconnectBtn.disabled = true;
+            }
+        }
+
+        function showNotification(wsMessage) {
+            var messagesDiv = document.getElementById('messages');
+
+            if (messagesDiv.querySelector('p')) {
+                messagesDiv.innerHTML = '';
+            }
+
+            // Parse notification từ data
+            var notification = wsMessage.data || wsMessage;
+
+            var messageDiv = document.createElement('div');
+            messageDiv.className = 'message';
+
+            var time = notification.timestamp ? new Date(notification.timestamp).toLocaleString('vi-VN') : new Date().toLocaleString('vi-VN');
+            var title = notification.title || 'Notification';
+            var message = notification.message || JSON.stringify(notification);
+
+            var dataHtml = '<div style="margin-top: 8px; padding: 8px; background: #f0f0f0; border-radius: 4px; font-size: 11px;"><strong>Data:</strong><br>' + JSON.stringify(notification, null, 2) + '</div>';
+
+            messageDiv.innerHTML = '<div class="message-time">' + time + '</div><div class="message-content"><strong>' + title + '</strong><p style="margin: 5px 0; color: #666;">' + message + '</p>' + dataHtml + '</div>';
+
+            messagesDiv.insertBefore(messageDiv, messagesDiv.firstChild);
+
+            console.log('Received notification:', wsMessage);
+        }
+
+        function sendTest() {
+            var message = document.getElementById('testMessage').value;
+
+            fetch('http://localhost:8080/api/v1/test/notification?message=' + encodeURIComponent(message), {
+                method: 'POST'
+            })
+                .then(function (response) {
+                    return response.text();
+                })
+                .then(function (data) {
+                    console.log('Test notification sent:', data);
+                })
+                .catch(function (error) {
+                    console.error('Error sending test notification:', error);
+                    alert('Loi khi gui test notification. Kiem tra backend!');
+                });
+        }
+
+        window.onbeforeunload = function () {
+            disconnectWS();
+        };
+    </script>
+</body>
+
+</html>

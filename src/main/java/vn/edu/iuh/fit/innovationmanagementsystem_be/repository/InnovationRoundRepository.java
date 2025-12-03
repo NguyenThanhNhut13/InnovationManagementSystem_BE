@@ -16,19 +16,20 @@ import java.util.Optional;
 public interface InnovationRoundRepository
                 extends JpaRepository<InnovationRound, String>, JpaSpecificationExecutor<InnovationRound> {
 
-        List<InnovationRound> findByInnovationDecisionIdOrderByCreatedAtDesc(String innovationDecisionId);
-
-        @Query("SELECT r FROM InnovationRound r WHERE r.innovationDecision.id = :decisionId " +
-                        "AND :currentDate >= r.registrationStartDate " +
-                        "AND :currentDate <= r.registrationEndDate")
-        Optional<InnovationRound> findCurrentActiveRound(@Param("decisionId") String decisionId,
-                        @Param("currentDate") LocalDate currentDate);
-
-        @Query("SELECT r FROM InnovationRound r WHERE :currentDate >= r.registrationStartDate " +
-                        "AND :currentDate <= r.registrationEndDate " +
-                        "ORDER BY r.createdAt DESC")
-        Optional<InnovationRound> findCurrentActiveRound(@Param("currentDate") LocalDate currentDate);
-
         List<InnovationRound> findByStatus(InnovationRoundStatusEnum status);
+
+        List<InnovationRound> findByAcademicYearAndNameIgnoreCase(String academicYear, String name);
+
+        @Query("SELECT r FROM InnovationRound r WHERE r.status = :status " +
+                        "ORDER BY r.createdAt DESC")
+        Optional<InnovationRound> findCurrentActiveRound(@Param("currentDate") LocalDate currentDate,
+                        @Param("status") InnovationRoundStatusEnum status);
+
+        @Query("SELECT r FROM InnovationRound r WHERE r.status = :status " +
+                        "ORDER BY r.createdAt DESC")
+        Optional<InnovationRound> findByStatusOrderByCreatedAtDesc(@Param("status") InnovationRoundStatusEnum status);
+
+        @Query("SELECT r FROM InnovationRound r ORDER BY r.createdAt DESC")
+        Optional<InnovationRound> findLatestRound();
 
 }

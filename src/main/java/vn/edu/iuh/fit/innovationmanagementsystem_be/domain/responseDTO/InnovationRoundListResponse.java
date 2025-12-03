@@ -12,11 +12,11 @@ import java.time.LocalDate;
 @AllArgsConstructor
 public class InnovationRoundListResponse {
     private String id;
-    private String name; // Đợt sáng kiến
-    private String academicYear; // Năm học
-    private LocalDate registrationStartDate; // Thời gian bắt đầu
-    private LocalDate registrationEndDate; // Thời gian kết thúc
-    private Integer phaseCount; // Giai đoạn (số lượng phases)
-    private Integer criteriaCount; // Tiêu chí (số lượng criteria trong scoringCriteria)
-    private InnovationRoundStatusEnum status; // Trạng thái
+    private String name;
+    private String academicYear;
+    private LocalDate registrationStartDate;
+    private LocalDate registrationEndDate;
+    private Integer phaseCount;
+    private Integer criteriaCount;
+    private InnovationRoundStatusEnum status;
 }

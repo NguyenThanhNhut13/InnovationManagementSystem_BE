@@ -1,6 +1,5 @@
 package vn.edu.iuh.fit.innovationmanagementsystem_be.controller;
 
-import com.turkraft.springfilter.boot.Filter;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -10,134 +9,68 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
-import java.util.List;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.Innovation;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.InnovationFormDataRequest;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationStatusEnum;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.CreateInnovationWithTemplatesRequest;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.FilterMyInnovationRequest;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.FilterAdminInnovationRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationFormDataResponse;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationResponse;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationScoreResponse;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.DepartmentInnovationDetailResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationStatisticsDTO;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationAcademicYearStatisticsDTO;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.UpcomingDeadlinesResponse;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.RecentActivitiesResponse;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.ActivityResponse;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationDetailForGiangVienResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.service.InnovationService;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.service.ActivityLogService;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.ActivityLogRepository;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.service.UserService;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.service.InnovationDetailService;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.service.ReviewScoreService;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.ResultPaginationDTO;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.annotation.ApiMessage;
 
 @RestController
 @RequestMapping("/api/v1")
-@Tag(name = "Innovation Management", description = "Innovation management APIs")
+@Tag(name = "Innovation Management", description = "Innovation managementAPIs")
 @SecurityRequirement(name = "Bearer Authentication")
 public class InnovationController {
 
         private final InnovationService innovationService;
-        private final ActivityLogService activityLogService;
-        private final UserService userService;
+        private final InnovationDetailService innovationDetailService;
+        private final ReviewScoreService reviewScoreService;
 
-        public InnovationController(InnovationService innovationService, ActivityLogService activityLogService,
-                        UserService userService, ActivityLogRepository activityLogRepository) {
+        public InnovationController(InnovationService innovationService,
+                        InnovationDetailService innovationDetailService,
+                        ReviewScoreService reviewScoreService) {
                 this.innovationService = innovationService;
-                this.activityLogService = activityLogService;
-                this.userService = userService;
-
+                this.innovationDetailService = innovationDetailService;
+                this.reviewScoreService = reviewScoreService;
         }
 
-        // 1. Lấy danh sách sáng kiến
-        @GetMapping("/innovations")
-        @ApiMessage("Lấy danh sách sáng kiến thành công")
-        @Operation(summary = "Get All Innovations", description = "Get paginated list of all innovations with filtering")
-        @ApiResponses(value = {
-                        @ApiResponse(responseCode = "200", description = "Innovations retrieved successfully", content = @Content(schema = @Schema(implementation = ResultPaginationDTO.class))),
-                        @ApiResponse(responseCode = "401", description = "Unauthorized")
-        })
-        public ResponseEntity<ResultPaginationDTO> getAllInnovations(
-                        @Parameter(description = "Filter specification for innovations") @Filter Specification<Innovation> specification,
-                        @Parameter(description = "Pagination parameters") Pageable pageable) {
-                return ResponseEntity.ok(innovationService.getAllInnovations(specification, pageable));
-        }
-
-        // 2. Lấy sáng kiến by Id
-        @GetMapping("/innovations/{id}")
-        @ApiMessage("Lấy thông tin sáng kiến bằng id thành công")
-        @Operation(summary = "Get Innovation by ID", description = "Get innovation details by innovation ID")
-        @ApiResponses(value = {
-                        @ApiResponse(responseCode = "200", description = "Innovation retrieved successfully", content = @Content(schema = @Schema(implementation = InnovationResponse.class))),
-                        @ApiResponse(responseCode = "404", description = "Innovation not found"),
-                        @ApiResponse(responseCode = "401", description = "Unauthorized")
-        })
-        public ResponseEntity<InnovationResponse> getInnovationById(
-                        @Parameter(description = "Innovation ID", required = true) @PathVariable String id) {
-                return ResponseEntity.ok(innovationService.getInnovationById(id));
-        }
-
-        // 3. Tạo sáng kiến & Submit Form Data (Tạo sáng kiến tự động khi điền form)
-        @PostMapping("/innovations/form-data")
-        @ApiMessage("Tạo sáng kiến và điền thông tin thành công")
-        @Operation(summary = "Create Innovation with Form Data", description = "Create a new innovation and submit form data")
-        @ApiResponses(value = {
-                        @ApiResponse(responseCode = "200", description = "Innovation created and form data submitted successfully", content = @Content(schema = @Schema(implementation = InnovationFormDataResponse.class))),
-                        @ApiResponse(responseCode = "400", description = "Invalid request data"),
-                        @ApiResponse(responseCode = "401", description = "Unauthorized")
-        })
-        public ResponseEntity<InnovationFormDataResponse> createInnovationAndSubmitFormData(
-                        @Parameter(description = "Innovation form data request", required = true) @Valid @RequestBody InnovationFormDataRequest request) {
-                InnovationFormDataResponse response = innovationService.createInnovationAndSubmitFormData(request);
-                return ResponseEntity.ok(response);
-        }
-
-        // 4. Cập nhật FormData sáng kiến
-        @PutMapping("/innovations/{innovationId}/form-data")
-        @ApiMessage("Cập nhật thông tin form thành công")
-        public ResponseEntity<InnovationFormDataResponse> updateInnovationFormData(
-                        @PathVariable String innovationId,
-                        @Valid @RequestBody InnovationFormDataRequest request) {
-                InnovationFormDataResponse response = innovationService.updateInnovationFormData(innovationId, request);
-                return ResponseEntity.ok(response);
-        }
-
-        // 5. Lấy FormData sáng kiến
-        @GetMapping("/innovations/{innovationId}/form-data")
-        @ApiMessage("Lấy FormData của sáng kiến thành công")
-        public ResponseEntity<InnovationFormDataResponse> getInnovationFormData(
-                        @PathVariable String innovationId,
-                        @RequestParam(required = false) String templateId) {
-                InnovationFormDataResponse response = innovationService.getInnovationFormData(innovationId, templateId);
-                return ResponseEntity.ok(response);
-        }
-
-        // 6. Lấy tất cả sáng kiến của user hiện tại với filter
-        @GetMapping("/innovations/my-innovations")
-        @ApiMessage("Lấy danh sách sáng kiến của tôi thành công")
-        @Operation(summary = "Get My Innovations with Filter", description = "Get paginated list of all innovations for current user with filtering support")
+        // 1. Lấy tất cả sáng kiến của user hiện tại với filter chi tiết
+        @GetMapping("/innovations/my-innovations/filter")
+        @ApiMessage("Lấy danh sách sáng kiến của tôi với filter chi tiết thành công")
+        @Operation(summary = "Get My Innovations with Detailed Filter", description = "Get paginated list of all innovations for current user. If no filter parameters are provided, returns all innovations of the current user. Supports detailed filtering: search by name/author, status, round, and score")
         @ApiResponses(value = {
                         @ApiResponse(responseCode = "200", description = "User innovations retrieved successfully", content = @Content(schema = @Schema(implementation = ResultPaginationDTO.class))),
                         @ApiResponse(responseCode = "401", description = "Unauthorized")
         })
-        public ResponseEntity<ResultPaginationDTO> getMyInnovations(
-                        @Parameter(description = "Filter specification for innovations") @Filter Specification<Innovation> specification,
+        public ResponseEntity<ResultPaginationDTO> getMyInnovationsWithDetailedFilter(
+                        @Parameter(description = "Search text for innovation name or author name") @RequestParam(required = false) String searchText,
+                        @Parameter(description = "Innovation status") @RequestParam(required = false) InnovationStatusEnum status,
+                        @Parameter(description = "Innovation round ID") @RequestParam(required = false) String innovationRoundId,
+                        @Parameter(description = "Is scored or not") @RequestParam(required = false) Boolean isScore,
                         @Parameter(description = "Pagination parameters") Pageable pageable) {
+                FilterMyInnovationRequest filterRequest = new FilterMyInnovationRequest(
+                                searchText, status, innovationRoundId, isScore);
+
                 return ResponseEntity.ok(
-                                innovationService.getAllInnovationsByCurrentUserWithFilter(specification, pageable));
+                                innovationService.getAllInnovationsByCurrentUserWithDetailedFilter(filterRequest,
+                                                pageable));
         }
 
-        // 7. Lấy danh sách sáng kiến của tôi theo trạng thái
-        @GetMapping("/innovations/my-innovations/by-status")
-        @ApiMessage("Lấy danh sách sáng kiến của tôi theo trạng thái thành công")
-        public ResponseEntity<ResultPaginationDTO> getMyInnovationsByStatus(
-                        @RequestParam String status,
-                        Pageable pageable) {
-                return ResponseEntity.ok(innovationService.getInnovationsByUserAndStatus(status, pageable));
-        }
-
-        // 7. Lấy thống kê sáng kiến của giảng viên
+        // 2. Lấy thống kê sáng kiến của Current User - OK
         @GetMapping("/innovations/statistics")
         @ApiMessage("Lấy thống kê sáng kiến thành công")
         @Operation(summary = "Get Innovation Statistics", description = "Get innovation statistics for current user (GIANG_VIEN role)")
@@ -146,19 +79,21 @@ public class InnovationController {
                         @ApiResponse(responseCode = "401", description = "Unauthorized"),
                         @ApiResponse(responseCode = "403", description = "Forbidden - GIANG_VIEN role required")
         })
+
         public ResponseEntity<InnovationStatisticsDTO> getInnovationStatistics() {
                 InnovationStatisticsDTO statistics = innovationService.getInnovationStatisticsForCurrentUser();
                 return ResponseEntity.ok(statistics);
         }
 
-        // 8. Lấy thống kê sáng kiến theo năm học
+        // 3. Lấy thống kê sáng kiến theo năm học - OK
         @GetMapping("/innovations/statistics/academic-year")
         @ApiMessage("Lấy thống kê sáng kiến theo năm học thành công")
-        @Operation(summary = "Get Innovation Statistics by Academic Year", description = "Get innovation statistics grouped by academic year for current user")
+        @Operation(summary = "Get Innovation Statistics by Academic Year", description = "Get innovation statistics grouped by academic year for currentuser")
         @ApiResponses(value = {
                         @ApiResponse(responseCode = "200", description = "Academic year statistics retrieved successfully", content = @Content(schema = @Schema(implementation = InnovationAcademicYearStatisticsDTO.class))),
                         @ApiResponse(responseCode = "401", description = "Unauthorized"),
                         @ApiResponse(responseCode = "403", description = "Forbidden - GIANG_VIEN role required")
+
         })
         public ResponseEntity<InnovationAcademicYearStatisticsDTO> getInnovationStatisticsByAcademicYear() {
                 InnovationAcademicYearStatisticsDTO statistics = innovationService
@@ -166,133 +101,228 @@ public class InnovationController {
                 return ResponseEntity.ok(statistics);
         }
 
-        // 9. Lấy hạn chót sắp tới
-        @GetMapping("/innovations/upcoming-deadlines")
-        @ApiMessage("Lấy danh sách hạn chót sắp tới thành công")
-        @Operation(summary = "Get Upcoming Deadlines", description = "Get upcoming deadlines from current active innovation round")
+        // 4. Tạo Innovation & Submit FormData nhiều Template
+        @PostMapping("/innovations/templates")
+        @ApiMessage("Tạo sáng kiến với nhiều template thành công")
+        @Operation(summary = "Create Innovation with Multiple Templates", description = "Create a new innovation and submit form data for multiple templates")
         @ApiResponses(value = {
-                        @ApiResponse(responseCode = "200", description = "Upcoming deadlines retrieved successfully", content = @Content(schema = @Schema(implementation = UpcomingDeadlinesResponse.class))),
-                        @ApiResponse(responseCode = "401", description = "Unauthorized"),
-                        @ApiResponse(responseCode = "404", description = "No active round found")
-        })
-        public ResponseEntity<UpcomingDeadlinesResponse> getUpcomingDeadlines() {
-                UpcomingDeadlinesResponse deadlines = innovationService.getUpcomingDeadlines();
-                return ResponseEntity.ok(deadlines);
-        }
-
-        // 10. Lấy hoạt động gần đây
-        @GetMapping("/innovations/activities/recent")
-        @ApiMessage("Lấy hoạt động gần đây thành công")
-        @Operation(summary = "Get Recent Activities", description = "Get recent activities for current user")
-        @ApiResponses(value = {
-                        @ApiResponse(responseCode = "200", description = "Recent activities retrieved successfully", content = @Content(schema = @Schema(implementation = RecentActivitiesResponse.class))),
+                        @ApiResponse(responseCode = "200", description = "Innovation created and formdata for all templates submitted successfully", content = @Content(schema = @Schema(implementation = InnovationFormDataResponse.class))),
+                        @ApiResponse(responseCode = "400", description = "Invalid request data"),
                         @ApiResponse(responseCode = "401", description = "Unauthorized")
         })
-        public ResponseEntity<RecentActivitiesResponse> getRecentActivities(
-                        @Parameter(description = "Page number (0-based)") @RequestParam(defaultValue = "0") int page,
-                        @Parameter(description = "Page size") @RequestParam(defaultValue = "10") int size) {
-                String userId = userService.getCurrentUserId();
-                RecentActivitiesResponse activities = activityLogService.getRecentActivities(userId, page, size);
-                return ResponseEntity.ok(activities);
-        }
-
-        // 11. Lấy hoạt động gần đây cho dashboard (không phân trang)
-        @GetMapping("/innovations/activities/recent-dashboard")
-        @ApiMessage("Lấy hoạt động gần đây cho dashboard thành công")
-        @Operation(summary = "Get Recent Activities for Dashboard", description = "Get recent activities for dashboard display")
-        @ApiResponses(value = {
-                        @ApiResponse(responseCode = "200", description = "Recent activities retrieved successfully"),
-                        @ApiResponse(responseCode = "401", description = "Unauthorized")
-        })
-        public ResponseEntity<RecentActivitiesResponse> getRecentActivitiesForDashboard(
-                        @Parameter(description = "Number of activities to return") @RequestParam(defaultValue = "5") int limit) {
-                String userId = userService.getCurrentUserId();
-                List<ActivityResponse> activities = activityLogService.getRecentActivitiesForDashboard(userId, limit);
-                Long unreadCount = activityLogService.getUnreadCount(userId);
-
-                RecentActivitiesResponse response = RecentActivitiesResponse.builder()
-                                .activities(activities)
-                                .totalActivities((long) activities.size())
-                                .unreadCount(unreadCount)
-                                .hasMore(false)
-                                .build();
-
+        public ResponseEntity<InnovationFormDataResponse> createInnovationWithMultipleTemplates(
+                        @Parameter(description = "Innovation with multiple templates request", required = true) @Valid @RequestBody CreateInnovationWithTemplatesRequest request) {
+                InnovationFormDataResponse response = innovationService.createInnovationWithMultipleTemplates(request);
                 return ResponseEntity.ok(response);
         }
 
-        // 12. Đánh dấu tất cả hoạt động là đã đọc
-        @PutMapping("/innovations/activities/mark-all-read")
-        @ApiMessage("Đánh dấu tất cả hoạt động là đã đọc thành công")
-        @Operation(summary = "Mark All Activities as Read", description = "Mark all activities as read for current user")
+        // 5. Lấy sáng kiến by Id của user hiện tại (chỉ cho phép xem sáng kiến của
+        // chính mình)
+        @GetMapping("/my-innovations/{id}")
+        @PreAuthorize("hasAnyRole('GIANG_VIEN')")
+        @ApiMessage("Lấy thông tin sáng kiến của tôi bằng id thành công")
+        @Operation(summary = "Get My Innovation by ID", description = "Get innovation details with all form data and form fields by innovation ID (only for current user's innovations)")
         @ApiResponses(value = {
-                        @ApiResponse(responseCode = "200", description = "All activities marked as read"),
+                        @ApiResponse(responseCode = "200", description = "Innovation with form data and form fields retrieved successfully", content = @Content(schema = @Schema(implementation = InnovationFormDataResponse.class))),
+                        @ApiResponse(responseCode = "404", description = "Innovation not found"),
+                        @ApiResponse(responseCode = "403", description = "Forbidden - You can only view your own innovations"),
                         @ApiResponse(responseCode = "401", description = "Unauthorized")
         })
-        public ResponseEntity<String> markAllActivitiesAsRead() {
-                String userId = userService.getCurrentUserId();
-                activityLogService.markAllAsRead(userId);
-                return ResponseEntity.ok("Tất cả hoạt động đã được đánh dấu là đã đọc");
+        public ResponseEntity<InnovationFormDataResponse> getMyInnovationById(
+                        @Parameter(description = "Innovation ID", required = true) @PathVariable String id) {
+                return ResponseEntity.ok(innovationService.getMyInnovationWithFormDataById(id));
         }
 
-        // 13. Lấy số hoạt động chưa đọc
-        @GetMapping("/innovations/activities/unread-count")
-        @ApiMessage("Lấy số hoạt động chưa đọc thành công")
-        @Operation(summary = "Get Unread Activities Count", description = "Get count of unread activities for current user")
+        // 6. Lấy sáng kiến by Id cho QUAN_TRI_VIEN_KHOA và TRUONG_KHOA (chỉ cho phép
+        // xem sáng kiến của phòng ban mình)
+        // @GetMapping("/department-innovations/{id}")
+        // @PreAuthorize("hasAnyRole('QUAN_TRI_VIEN_KHOA', 'TRUONG_KHOA')")
+        // @ApiMessage("Lấy thông tin sáng kiến của phòng ban bằng id thành công")
+        // @Operation(summary = "Get Department Innovation by ID", description = "Get
+        // innovation details with all form data and form fields by innovation ID (only
+        // for QUAN_TRI_VIEN_KHOA and TRUONG_KHOA to view innovations of their
+        // department)")
+        // @ApiResponses(value = {
+        // @ApiResponse(responseCode = "200", description = "Innovation with form data
+        // and form fields retrieved successfully", content = @Content(schema =
+        // @Schema(implementation = InnovationFormDataResponse.class))),
+        // @ApiResponse(responseCode = "404", description = "Innovation not found"),
+        // @ApiResponse(responseCode = "403", description = "Forbidden - You can only
+        // view innovations of your department"),
+        // @ApiResponse(responseCode = "401", description = "Unauthorized")
+        // })
+        // public ResponseEntity<InnovationFormDataResponse>
+        // getDepartmentInnovationById(
+        // @Parameter(description = "Innovation ID", required = true) @PathVariable
+        // String id) {
+        // return
+        // ResponseEntity.ok(innovationService.getDepartmentInnovationWithFormDataById(id));
+        // }
+
+        // 7. Lấy chi tiết sáng kiến của phòng ban cho QUAN_TRI_VIEN_KHOA và TRUONG_KHOA
+        @GetMapping("/innovations/department/{id}/detail")
+        @PreAuthorize("hasAnyRole('TRUONG_KHOA', 'QUAN_TRI_VIEN_KHOA')")
+        @ApiMessage("Lấy chi tiết sáng kiến của phòng ban bằng id thành công")
+        @Operation(summary = "Get Department Innovation Detail by ID", description = "Get innovation detail information including overview, co-authors, and attachment count by innovation ID (only for department innovations)")
         @ApiResponses(value = {
-                        @ApiResponse(responseCode = "200", description = "Unread count retrieved successfully"),
+                        @ApiResponse(responseCode = "200", description = "Innovation detail retrieved successfully", content = @Content(schema = @Schema(implementation = DepartmentInnovationDetailResponse.class))),
+                        @ApiResponse(responseCode = "404", description = "Innovation not found"),
+                        @ApiResponse(responseCode = "403", description = "Forbidden - You can only view innovations of your department"),
                         @ApiResponse(responseCode = "401", description = "Unauthorized")
         })
-        public ResponseEntity<Long> getUnreadCount() {
-                String userId = userService.getCurrentUserId();
-                Long unreadCount = activityLogService.getUnreadCount(userId);
-                return ResponseEntity.ok(unreadCount);
+        public ResponseEntity<DepartmentInnovationDetailResponse> getDepartmentInnovationDetail(
+                        @Parameter(description = "Innovation ID", required = true) @PathVariable String id) {
+                return ResponseEntity.ok(innovationService.getDepartmentInnovationDetailById(id));
         }
 
-        // 15. Đánh dấu một hoạt động cụ thể là đã đọc
-        @PutMapping("/innovations/activities/{activityId}/mark-read")
-        @ApiMessage("Đánh dấu hoạt động cụ thể là đã đọc thành công")
-        @Operation(summary = "Mark Specific Activity as Read", description = "Mark a specific activity as read")
+        // 8. Lấy tất cả sáng kiến của khoa với filter cho QUAN_TRI_VIEN_KHOA và
+        // TRUONG_KHOA
+        @GetMapping("/department-innovations")
+        @PreAuthorize("hasAnyRole('QUAN_TRI_VIEN_KHOA', 'TRUONG_KHOA')")
+        @ApiMessage("Lấy danh sách sáng kiến của khoa thành công")
+        @Operation(summary = "Get All Department Innovations with Filter", description = "Get paginated list of all innovations for department with filtering support (only for QUAN_TRI_VIEN_KHOA and TRUONG_KHOA)")
         @ApiResponses(value = {
-                        @ApiResponse(responseCode = "200", description = "Activity marked as read"),
+                        @ApiResponse(responseCode = "200", description = "Department innovations retrieved successfully", content = @Content(schema = @Schema(implementation = ResultPaginationDTO.class))),
+                        @ApiResponse(responseCode = "403", description = "Forbidden - Only QUAN_TRI_VIEN_KHOA and TRUONG_KHOA can access"),
+                        @ApiResponse(responseCode = "401", description = "Unauthorized")
+        })
+        public ResponseEntity<ResultPaginationDTO> getAllDepartmentInnovations(
+                        @Parameter(description = "Search text for innovation name or author name") @RequestParam(required = false) String searchText,
+                        @Parameter(description = "Innovation status") @RequestParam(required = false) InnovationStatusEnum status,
+                        @Parameter(description = "Innovation round ID") @RequestParam(required = false) String innovationRoundId,
+                        @Parameter(description = "Is scored or not") @RequestParam(required = false) Boolean isScore,
+                        @Parameter(description = "Pagination parameters") Pageable pageable) {
+                FilterMyInnovationRequest filterRequest = new FilterMyInnovationRequest(
+                                searchText, status, innovationRoundId, isScore);
+                return ResponseEntity.ok(
+                                innovationService.getAllDepartmentInnovationsWithDetailedFilter(filterRequest,
+                                                pageable));
+        }
+
+        // 9. Xóa sáng kiến trạng thái DRAFT của user hiện tại
+        @DeleteMapping("/my-innovations/{id}")
+        @PreAuthorize("hasAnyRole('GIANG_VIEN')")
+        @ApiMessage("Xóa sáng kiến của tôi thành công")
+        @Operation(summary = "Delete My Draft Innovation", description = "Xóa sáng kiến đang ở trạng thái DRAFT của user hiện tại và xóa tệp MinIO liên quan")
+        @ApiResponses(value = {
+                        @ApiResponse(responseCode = "200", description = "Innovation deleted successfully"),
                         @ApiResponse(responseCode = "401", description = "Unauthorized"),
-                        @ApiResponse(responseCode = "404", description = "Activity not found")
+                        @ApiResponse(responseCode = "403", description = "Forbidden - You can only delete your own innovations"),
+                        @ApiResponse(responseCode = "404", description = "Innovation not found")
         })
-        public ResponseEntity<Void> markActivityAsRead(
-                        @Parameter(description = "Activity ID") @PathVariable String activityId) {
-                activityLogService.markAsRead(activityId);
+        public ResponseEntity<Void> deleteMyDraftInnovation(
+                        @Parameter(description = "Innovation ID", required = true) @PathVariable String id) {
+                innovationService.deleteMyDraftInnovation(id);
                 return ResponseEntity.ok().build();
         }
 
-        // 16. Duyệt sáng kiến
-        @PutMapping("/innovations/{innovationId}/approve")
-        @ApiMessage("Duyệt sáng kiến thành công")
-        @Operation(summary = "Approve Innovation", description = "Approve an innovation")
+        // 10. Lấy tất cả sáng kiến với filter cho QUAN_TRI_VIEN_QLKH_HTQT,
+        // TV_HOI_DONG_TRUONG, CHU_TICH_HD_TRUONG, QUAN_TRI_VIEN_HE_THONG
+        @GetMapping("/innovations/school-innovations")
+        @PreAuthorize("hasAnyRole('QUAN_TRI_VIEN_QLKH_HTQT', 'TV_HOI_DONG_TRUONG', 'CHU_TICH_HD_TRUONG', 'QUAN_TRI_VIEN_HE_THONG')")
+        @ApiMessage("Lấy danh sách tất cả sáng kiến cho trường thành công")
+        @Operation(summary = "Get All Innovations for School with Filter", description = "Get paginated list of all innovations with filtering support (only for QUAN_TRI_VIEN_QLKH_HTQT, TV_HOI_DONG_TRUONG, CHU_TICH_HD_TRUONG, QUAN_TRI_VIEN_HE_THONG). Supports detailed filtering: search by name/author, status, round, and department")
         @ApiResponses(value = {
-                        @ApiResponse(responseCode = "200", description = "Innovation approved successfully", content = @Content(schema = @Schema(implementation = InnovationResponse.class))),
-                        @ApiResponse(responseCode = "401", description = "Unauthorized"),
-                        @ApiResponse(responseCode = "404", description = "Innovation not found")
+                        @ApiResponse(responseCode = "200", description = "All innovations retrieved successfully", content = @Content(schema = @Schema(implementation = ResultPaginationDTO.class))),
+                        @ApiResponse(responseCode = "403", description = "Forbidden - Only QUAN_TRI_VIEN_QLKH_HTQT, TV_HOI_DONG_TRUONG, CHU_TICH_HD_TRUONG, QUAN_TRI_VIEN_HE_THONG can access"),
+                        @ApiResponse(responseCode = "401", description = "Unauthorized")
         })
-        public ResponseEntity<InnovationResponse> approveInnovation(
-                        @Parameter(description = "Innovation ID") @PathVariable String innovationId,
-                        @Parameter(description = "Approval reason") @RequestParam(required = false) String reason) {
-                InnovationResponse response = innovationService.approveInnovation(innovationId, reason);
-                return ResponseEntity.ok(response);
+        public ResponseEntity<ResultPaginationDTO> getAllInnovationsForAdminRoles(
+                        @Parameter(description = "Search text for innovation name or author name") @RequestParam(required = false) String searchText,
+                        @Parameter(description = "Innovation status") @RequestParam(required = false) InnovationStatusEnum status,
+                        @Parameter(description = "Innovation round ID") @RequestParam(required = false) String innovationRoundId,
+                        @Parameter(description = "Department ID") @RequestParam(required = false) String departmentId,
+                        @Parameter(description = "Pagination parameters") Pageable pageable) {
+                FilterAdminInnovationRequest filterRequest = new FilterAdminInnovationRequest(
+                                searchText, status, innovationRoundId, departmentId);
+                return ResponseEntity.ok(
+                                innovationService.getAllInnovationsForAdminRolesWithFilter(filterRequest, pageable));
         }
 
-        // 17. Từ chối sáng kiến
-        @PutMapping("/innovations/{innovationId}/reject")
-        @ApiMessage("Từ chối sáng kiến thành công")
-        @Operation(summary = "Reject Innovation", description = "Reject an innovation")
+        // 11. Lấy chi tiết sáng kiến của user hiện tại bằng ID
+        // @GetMapping("/my-innovations/{id}/detail")
+        // @PreAuthorize("hasAnyRole('GIANG_VIEN')")
+        // @ApiMessage("Lấy chi tiết sáng kiến của tôi bằng id thành công")
+        // @Operation(summary = "Get My Innovation Detail by ID", description = "Get
+        // innovation detail information including overview, co-authors, and attachment
+        // count by innovation ID (only for current user's innovations)")
+        // @ApiResponses(value = {
+        // @ApiResponse(responseCode = "200", description = "Innovation detail retrieved
+        // successfully", content = @Content(schema = @Schema(implementation =
+        // InnovationDetailResponse.class))),
+        // @ApiResponse(responseCode = "404", description = "Innovation not found"),
+        // @ApiResponse(responseCode = "403", description = "Forbidden - You can only
+        // view your own innovations"),
+        // @ApiResponse(responseCode = "401", description = "Unauthorized")
+        // })
+        // public ResponseEntity<InnovationDetailResponse> getMyInnovationDetailById(
+        // @Parameter(description = "Innovation ID", required = true) @PathVariable
+        // String id) {
+        // return ResponseEntity.ok(innovationService.getInnovationDetailById(id));
+        // }
+
+        // 12. Lấy chi tiết sáng kiến kèm bảng điểm để chấm điểm
+        @GetMapping("/innovations/{id}/scoring-detail")
+        @PreAuthorize("hasAnyRole('TV_HOI_DONG_KHOA', 'TV_HOI_DONG_TRUONG')")
+        @ApiMessage("Lấy chi tiết sáng kiến kèm bảng điểm thành công")
+        @Operation(summary = "Get Innovation Scoring Detail", description = "Get innovation detail with scoring criteria for scoring/evaluation")
         @ApiResponses(value = {
-                        @ApiResponse(responseCode = "200", description = "Innovation rejected successfully", content = @Content(schema = @Schema(implementation = InnovationResponse.class))),
-                        @ApiResponse(responseCode = "401", description = "Unauthorized"),
+                        @ApiResponse(responseCode = "200", description = "Innovation scoring detail retrieved successfully", content = @Content(schema = @Schema(implementation = vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationScoringDetailResponse.class))),
+                        @ApiResponse(responseCode = "404", description = "Innovation not found"),
+                        @ApiResponse(responseCode = "403", description = "Forbidden"),
+                        @ApiResponse(responseCode = "401", description = "Unauthorized")
+        })
+        public ResponseEntity<vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationScoringDetailResponse> getInnovationScoringDetail(
+                        @Parameter(description = "Innovation ID", required = true) @PathVariable String id) {
+                return ResponseEntity.ok(innovationService.getInnovationScoringDetailById(id));
+        }
+
+        // 13. Lấy đánh giá đã chấm của user hiện tại
+        @GetMapping("/innovations/{id}/my-evaluation")
+        @PreAuthorize("hasAnyRole('TV_HOI_DONG_KHOA', 'TV_HOI_DONG_TRUONG')")
+        @ApiMessage("Lấy đánh giá đã chấm thành công")
+        @Operation(summary = "Get My Evaluation", description = "Get the evaluation/score submitted by current user for an innovation")
+        @ApiResponses(value = {
+                        @ApiResponse(responseCode = "200", description = "Evaluation retrieved successfully", content = @Content(schema = @Schema(implementation = vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationScoreResponse.class))),
+                        @ApiResponse(responseCode = "400", description = "User has not scored this innovation yet"),
+                        @ApiResponse(responseCode = "403", description = "Forbidden"),
                         @ApiResponse(responseCode = "404", description = "Innovation not found")
         })
-        public ResponseEntity<InnovationResponse> rejectInnovation(
-                        @Parameter(description = "Innovation ID") @PathVariable String innovationId,
-                        @Parameter(description = "Rejection reason") @RequestParam(required = false) String reason) {
-                InnovationResponse response = innovationService.rejectInnovation(innovationId, reason);
-                return ResponseEntity.ok(response);
+        public ResponseEntity<InnovationScoreResponse> getMyEvaluation(
+                        @Parameter(description = "Innovation ID", required = true) @PathVariable String id) {
+                return ResponseEntity.ok(reviewScoreService.getMyEvaluation(id));
+        }
+
+        // 14. Chấm điểm sáng kiến (có thể cập nhật lại trong thời gian chấm điểm)
+        @PostMapping("/innovations/{id}/score")
+        @PreAuthorize("hasAnyRole('TV_HOI_DONG_KHOA', 'TV_HOI_DONG_TRUONG', 'QUAN_TRI_VIEN_HE_THONG')")
+        @ApiMessage("Chấm điểm sáng kiến thành công")
+        @Operation(summary = "Submit or Update Innovation Score", description = "Submit or update score/evaluation for an innovation by council member. Only allowed during the scoring period. Auto-approves if score >= 70 for scored innovations. Can be used to update existing evaluation within the scoring period.")
+        @ApiResponses(value = {
+                        @ApiResponse(responseCode = "200", description = "Score submitted/updated successfully", content = @Content(schema = @Schema(implementation = vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationScoreResponse.class))),
+                        @ApiResponse(responseCode = "400", description = "Invalid request, validation error, or scoring period has ended"),
+                        @ApiResponse(responseCode = "403", description = "Forbidden"),
+                        @ApiResponse(responseCode = "404", description = "Innovation not found")
+        })
+        public ResponseEntity<vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationScoreResponse> submitInnovationScore(
+                        @Parameter(description = "Innovation ID", required = true) @PathVariable String id,
+                        @Valid @RequestBody vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.SubmitInnovationScoreRequest request) {
+                return ResponseEntity.ok(reviewScoreService.submitInnovationScore(id, request));
+        }
+
+        // 14. Lấy chi tiết đầy đủ sáng kiến cho GIANG_VIEN (6 tabs)
+        @GetMapping("/innovations/my-innovations/{id}/full-detail")
+        @PreAuthorize("hasAnyRole('GIANG_VIEN')")
+        @ApiMessage("Lấy chi tiết đầy đủ sáng kiến của tôi thành công")
+        @Operation(summary = "Get My Innovation Full Detail", description = "Get full innovation detail with all 6 tabs for GIANG_VIEN: Overview, Form Content, Attachments, Reviews, Workflow, History")
+        @ApiResponses(value = {
+                        @ApiResponse(responseCode = "200", description = "Success", content = @Content(schema = @Schema(implementation = InnovationDetailForGiangVienResponse.class))),
+                        @ApiResponse(responseCode = "404", description = "Innovation not found"),
+                        @ApiResponse(responseCode = "403", description = "Forbidden - Not the owner of this innovation")
+        })
+        public ResponseEntity<InnovationDetailForGiangVienResponse> getMyInnovationFullDetail(
+                        @Parameter(description = "Innovation ID", required = true) @PathVariable String id) {
+                return ResponseEntity.ok(innovationDetailService.getMyInnovationDetailForGiangVien(id));
         }
 
 }

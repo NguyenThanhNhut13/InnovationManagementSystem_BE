@@ -1,10 +1,13 @@
 package vn.edu.iuh.fit.innovationmanagementsystem_be.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.FormData;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.FieldTypeEnum;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationStatusEnum;
 
 import java.util.List;
 import java.util.Optional;
@@ -12,32 +15,45 @@ import java.util.Optional;
 @Repository
 public interface FormDataRepository extends JpaRepository<FormData, String> {
 
-    List<FormData> findByInnovationId(String innovationId);
+        @Query("SELECT fd FROM FormData fd " +
+                        "LEFT JOIN FETCH fd.formField ff " +
+                        "LEFT JOIN FETCH ff.formTemplate ft " +
+                        "LEFT JOIN FETCH fd.innovation i " +
+                        "WHERE fd.id = :id")
+        Optional<FormData> findByIdWithRelations(@Param("id") String id);
 
-    List<FormData> findByInnovationIdAndFormFieldFormTemplateId(String innovationId, String templateId);
+        @Query("SELECT fd FROM FormData fd " +
+                        "LEFT JOIN FETCH fd.formField ff " +
+                        "LEFT JOIN FETCH ff.formTemplate ft " +
+                        "LEFT JOIN FETCH fd.innovation i " +
+                        "WHERE fd.innovation.id = :innovationId")
+        List<FormData> findByInnovationIdWithRelations(@Param("innovationId") String innovationId);
 
-    List<FormData> findByFormFieldFormTemplateId(String templateId);
+        @Query("SELECT fd FROM FormData fd " +
+                        "LEFT JOIN FETCH fd.formField ff " +
+                        "LEFT JOIN FETCH ff.formTemplate ft " +
+                        "LEFT JOIN FETCH fd.innovation i " +
+                        "WHERE fd.innovation.id = :innovationId AND ff.formTemplate.id = :templateId")
+        List<FormData> findByInnovationIdAndTemplateIdWithRelations(@Param("innovationId") String innovationId,
+                        @Param("templateId") String templateId);
 
-    @Query("SELECT fd FROM FormData fd " +
-            "LEFT JOIN FETCH fd.formField ff " +
-            "LEFT JOIN FETCH ff.formTemplate ft " +
-            "LEFT JOIN FETCH fd.innovation i " +
-            "WHERE fd.id = :id")
-    Optional<FormData> findByIdWithRelations(@Param("id") String id);
+        @Query("SELECT fd FROM FormData fd " +
+                        "LEFT JOIN FETCH fd.formField ff " +
+                        "LEFT JOIN FETCH ff.formTemplate ft " +
+                        "LEFT JOIN FETCH fd.innovation i " +
+                        "WHERE fd.innovation.id IN :innovationIds")
+        List<FormData> findByInnovationIdsWithRelations(@Param("innovationIds") List<String> innovationIds);
 
-    @Query("SELECT fd FROM FormData fd " +
-            "LEFT JOIN FETCH fd.formField ff " +
-            "LEFT JOIN FETCH ff.formTemplate ft " +
-            "LEFT JOIN FETCH fd.innovation i " +
-            "WHERE fd.innovation.id = :innovationId")
-    List<FormData> findByInnovationIdWithRelations(@Param("innovationId") String innovationId);
+        @Modifying
+        @Query("DELETE FROM FormData fd WHERE fd.innovation.id = :innovationId")
+        void deleteByInnovationId(@Param("innovationId") String innovationId);
 
-    @Query("SELECT fd FROM FormData fd " +
-            "LEFT JOIN FETCH fd.formField ff " +
-            "LEFT JOIN FETCH ff.formTemplate ft " +
-            "LEFT JOIN FETCH fd.innovation i " +
-            "WHERE fd.innovation.id = :innovationId AND ff.formTemplate.id = :templateId")
-    List<FormData> findByInnovationIdAndTemplateIdWithRelations(@Param("innovationId") String innovationId,
-            @Param("templateId") String templateId);
+        @Query("SELECT fd FROM FormData fd " +
+                        "LEFT JOIN FETCH fd.formField ff " +
+                        "LEFT JOIN FETCH fd.innovation i " +
+                        "WHERE ff.fieldType = :fieldType AND i.status = :status")
+        List<FormData> findSignatureFormDataWithSubmittedInnovations(
+                        @Param("fieldType") FieldTypeEnum fieldType,
+                        @Param("status") InnovationStatusEnum status);
 
 }

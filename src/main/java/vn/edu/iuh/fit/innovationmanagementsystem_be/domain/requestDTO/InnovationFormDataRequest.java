@@ -1,45 +1,37 @@
 package vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO;
 
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotEmpty;
-import jakarta.validation.constraints.Pattern;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationStatusEnum;
 
-import java.util.List;
+import java.util.Map;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 public class InnovationFormDataRequest {
 
+    @NotBlank(message = "Innovation Name không được để trống")
+    private String innovationName;
+
+    // InnovationPhaseID là optional - mặc định lấy phase SUBMISSION của round
+    // OPEN
+    private String innovationPhaseId;
+
     @NotBlank(message = "Template ID không được để trống")
     private String templateId;
 
-    @NotEmpty(message = "Danh sách form data không được để trống")
-    private List<FormDataItemRequest> formDataItems;
+    private InnovationStatusEnum status = InnovationStatusEnum.DRAFT;
 
-    // Action type: DRAFT (lưu nháp) hoặc SUBMITTED (nộp chính thức)
-    @Pattern(regexp = "^(DRAFT|SUBMITTED)$", message = "Action type chỉ được là DRAFT hoặc SUBMITTED")
-    private String actionType = InnovationStatusEnum.DRAFT.name();
+    private Boolean isScore = false;
 
-    // Thông tin sáng kiến
-    private String innovationName;
-    private String innovationPhaseId;
-    private Boolean isScore;
+    private String baseOn;
 
-    @Data
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class FormDataItemRequest {
-        @NotBlank(message = "Field value không được để trống")
-        private String fieldValue;
+    // Dữ liệu form với fieldKey và fieldValue
+    private Map<String, Object> formData;
 
-        @NotBlank(message = "Form field ID không được để trống")
-        private String formFieldId;
-
-        private String dataId; // Cho update operations
-    }
+    // Cho update operations
+    private String innovationId;
 }

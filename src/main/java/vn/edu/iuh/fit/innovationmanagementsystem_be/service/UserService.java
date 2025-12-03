@@ -2,25 +2,22 @@ package vn.edu.iuh.fit.innovationmanagementsystem_be.service;
 
 import java.util.ArrayList;
 
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.domain.Specification;
 import org.springframework.lang.NonNull;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
-
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.transaction.Transactional;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.Department;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.Role;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.User;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.UserRole;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.UserSignatureProfile;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.UserStatusEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.UserRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.UserSignatureProfileRequest;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.UpdateProfileRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.UserResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.UserRoleResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.UserRoleEnum;
@@ -29,12 +26,16 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.DepartmentReposit
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.RoleRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.UserRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.UserRoleRepository;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.CouncilMemberRepository;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.CouncilMemberRoleEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.JwtTokenUtil;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.ResultPaginationDTO;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.Utils;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.mapper.UserMapper;
 
 import java.util.Optional;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -47,11 +48,14 @@ public class UserService {
     private final UserMapper userMapper;
     private final JwtTokenUtil jwtTokenUtil;
     private final UserSignatureProfileService userSignatureProfileService;
+    private final CouncilMemberRepository councilMemberRepository;
+    private final CertificateRevocationService certificateRevocationService;
 
     public UserService(UserRepository userRepository, DepartmentRepository departmentRepository,
             PasswordEncoder passwordEncoder, RoleRepository roleRepository, UserRoleRepository userRoleRepository,
             UserMapper userMapper, JwtTokenUtil jwtTokenUtil,
-            UserSignatureProfileService userSignatureProfileService) {
+            UserSignatureProfileService userSignatureProfileService, CouncilMemberRepository councilMemberRepository,
+            CertificateRevocationService certificateRevocationService) {
         this.userRepository = userRepository;
         this.departmentRepository = departmentRepository;
         this.passwordEncoder = passwordEncoder;
@@ -60,6 +64,8 @@ public class UserService {
         this.userMapper = userMapper;
         this.jwtTokenUtil = jwtTokenUtil;
         this.userSignatureProfileService = userSignatureProfileService;
+        this.councilMemberRepository = councilMemberRepository;
+        this.certificateRevocationService = certificateRevocationService;
     }
 
     // 1. Tạo User
@@ -88,67 +94,6 @@ public class UserService {
         this.userSignatureProfileService.createUserSignatureProfile(request);
 
         return userMapper.toUserResponse(user);
-    }
-
-    // 2. Lấy All Users với Pagination
-    public ResultPaginationDTO getUsersWithPagination(@NonNull Specification<User> specification,
-            @NonNull Pageable pageable) {
-        Page<User> users = userRepository.findAll(specification, pageable);
-
-        Page<UserResponse> userResponses = users.map(userMapper::toUserResponse);
-
-        return Utils.toResultPaginationDTO(userResponses, pageable);
-    }
-
-    // 3. Lấy User By Id
-    public UserResponse getUserById(@NonNull String id) {
-        User user = userRepository.findById(id)
-                .orElseThrow(() -> new IdInvalidException("Người dùng không tồn tại với ID: " + id));
-        return userMapper.toUserResponse(user);
-    }
-
-    // 4. Cập nhật User
-    public UserResponse updateUser(@NonNull String id, @NonNull UserRequest userRequest) {
-        User user = userRepository.findById(id)
-                .orElseThrow(() -> new IdInvalidException("Người dùng không tồn tại với ID: " + id));
-
-        if (userRequest.getFullName() != null) {
-            user.setFullName(userRequest.getFullName());
-        }
-        if (userRequest.getEmail() != null) {
-            if (!user.getEmail().equals(userRequest.getEmail())
-                    && userRepository.existsByEmail(userRequest.getEmail())) {
-                throw new IdInvalidException("Email đã tồn tại trong hệ thống");
-            }
-            user.setEmail(userRequest.getEmail());
-        }
-        if (userRequest.getPhoneNumber() != null) {
-            user.setPhoneNumber(userRequest.getPhoneNumber());
-        }
-        if (userRequest.getPassword() != null) {
-            user.setPassword(passwordEncoder.encode(userRequest.getPassword()));
-        }
-        if (userRequest.getDepartmentId() != null) {
-            Department department = departmentRepository.findById(userRequest.getDepartmentId())
-                    .orElseThrow(() -> new IdInvalidException("Phòng ban không tồn tại"));
-            user.setDepartment(department);
-        }
-        user.setStatus(userRequest.getStatus() != null ? userRequest.getStatus() : UserStatusEnum.ACTIVE);
-
-        userRepository.save(user);
-        return userMapper.toUserResponse(user);
-    }
-
-    // 5. Lấy Users By Status với Pagination
-    public ResultPaginationDTO getUsersByStatusWithPagination(@NonNull UserStatusEnum status,
-            @NonNull Pageable pageable) {
-        Specification<User> statusSpec = (root, query, criteriaBuilder) -> criteriaBuilder.equal(root.get("status"),
-                status);
-
-        Page<User> userPage = userRepository.findAll(statusSpec, pageable);
-
-        Page<UserResponse> userResponses = userPage.map(userMapper::toUserResponse);
-        return Utils.toResultPaginationDTO(userResponses, pageable);
     }
 
     // 6. Gán Role To User
@@ -195,43 +140,6 @@ public class UserService {
         }
         userRoleRepository.deleteByUserIdAndRoleId(userId, roleId);
 
-    }
-
-    // 8. Lấy Users By Role với Pagination
-    public ResultPaginationDTO getUsersByRoleWithPagination(@NonNull String roleId, @NonNull Pageable pageable) {
-        Page<UserRole> userRolePage = userRoleRepository.findByRoleId(roleId, pageable);
-
-        Page<User> userPage = userRolePage.map(UserRole::getUser);
-
-        Page<UserResponse> userResponsePage = userPage.map(userMapper::toUserResponse);
-
-        return Utils.toResultPaginationDTO(userResponsePage, pageable);
-
-    }
-
-    // 9. Lấy Users By Department với Pagination
-    public ResultPaginationDTO getUsersByDepartmentWithPagination(@NonNull String departmentId,
-            @NonNull Pageable pageable) {
-
-        if (!departmentRepository.existsById(departmentId)) {
-            throw new IdInvalidException("Phòng ban không tồn tại với ID: " + departmentId);
-        }
-
-        Page<User> userPage = userRepository.findByDepartmentId(departmentId, pageable);
-        Page<UserResponse> userResponsePage = userPage.map(userMapper::toUserResponse);
-        return Utils.toResultPaginationDTO(userResponsePage, pageable);
-    }
-
-    // 10. Tìm kiếm Users By Full Name, Email or Personnel ID
-    public ResultPaginationDTO searchUsersByFullNameOrEmailOrPersonnelId(@NonNull String searchTerm,
-            @NonNull Pageable pageable) {
-        if (searchTerm == null || searchTerm.trim().isEmpty()) {
-            throw new IdInvalidException("Từ khóa tìm kiếm không được để trống");
-        }
-
-        Page<User> userPage = userRepository.searchUsersByFullNameOrEmailOrPersonnelId(searchTerm.trim(), pageable);
-        Page<UserResponse> userResponsePage = userPage.map(userMapper::toUserResponse);
-        return Utils.toResultPaginationDTO(userResponsePage, pageable);
     }
 
     // 11. Lấy Current User từ JWT Token
@@ -325,18 +233,88 @@ public class UserService {
         return currentUser.getId().equals(innovationUserId);
     }
 
-    // 14. Tạo UserSignatureProfile cho user hiện có
-    public UserSignatureProfile createUserSignatureProfileForExistingUser(String userId) {
-        // Validate user exists
-        userRepository.findById(userId)
-                .orElseThrow(() -> new IdInvalidException("Không tìm thấy user với ID: " + userId));
-
-        return userSignatureProfileService.createUserSignatureProfileForExistingUser(userId);
-    }
-
     // 15. Lấy Current User Response
     public UserResponse getCurrentUserResponse() {
         User currentUser = getCurrentUser();
+        UserResponse response = userMapper.toUserResponse(currentUser);
+
+        // Set isSecretary và isChairman
+        setCouncilRoleFlags(currentUser, response);
+
+        return response;
+    }
+
+    // Helper method: Get council role flags cho user
+    public CouncilRoleFlags getCouncilRoleFlags(String userId) {
+        List<vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.CouncilMember> memberships = councilMemberRepository
+                .findByUserId(userId);
+
+        boolean isSecretary = memberships.stream()
+                .anyMatch(member -> member.getRole() == CouncilMemberRoleEnum.THU_KY);
+
+        boolean isChairman = memberships.stream()
+                .anyMatch(member -> member.getRole() == CouncilMemberRoleEnum.CHU_TICH);
+
+        return new CouncilRoleFlags(isSecretary, isChairman);
+    }
+
+    // Helper method: Set isSecretary và isChairman cho user
+    private void setCouncilRoleFlags(User user, UserResponse response) {
+        CouncilRoleFlags flags = getCouncilRoleFlags(user.getId());
+        response.setIsSecretary(flags.isSecretary());
+        response.setIsChairman(flags.isChairman());
+    }
+
+    // Inner class để chứa council role flags
+    public static class CouncilRoleFlags {
+        private final boolean isSecretary;
+        private final boolean isChairman;
+
+        public CouncilRoleFlags(boolean isSecretary, boolean isChairman) {
+            this.isSecretary = isSecretary;
+            this.isChairman = isChairman;
+        }
+
+        public boolean isSecretary() {
+            return isSecretary;
+        }
+
+        public boolean isChairman() {
+            return isChairman;
+        }
+    }
+
+    // 16. Cập nhật Profile của Current User
+    public UserResponse updateCurrentUserProfile(@NonNull UpdateProfileRequest updateProfileRequest) {
+        User currentUser = getCurrentUser();
+
+        if (updateProfileRequest.getFullName() != null && !updateProfileRequest.getFullName().trim().isEmpty()) {
+            currentUser.setFullName(updateProfileRequest.getFullName().trim());
+        }
+
+        if (updateProfileRequest.getEmail() != null && !updateProfileRequest.getEmail().trim().isEmpty()) {
+            String newEmail = updateProfileRequest.getEmail().trim();
+            if (!currentUser.getEmail().equals(newEmail)) {
+                if (userRepository.existsByEmail(newEmail)) {
+                    throw new IdInvalidException("Email đã tồn tại trong hệ thống");
+                }
+                currentUser.setEmail(newEmail);
+            }
+        }
+
+        if (updateProfileRequest.getDateOfBirth() != null) {
+            currentUser.setDateOfBirth(updateProfileRequest.getDateOfBirth());
+        }
+
+        if (updateProfileRequest.getQualification() != null) {
+            currentUser.setQualification(updateProfileRequest.getQualification().trim());
+        }
+
+        if (updateProfileRequest.getTitle() != null) {
+            currentUser.setTitle(updateProfileRequest.getTitle().trim());
+        }
+
+        userRepository.save(currentUser);
         return userMapper.toUserResponse(currentUser);
     }
 
@@ -357,5 +335,79 @@ public class UserService {
         }
         user.getUserRoles().add(userRole);
 
+    }
+
+    // 17. Tìm kiếm Users By Full Name or Personnel ID
+    public ResultPaginationDTO searchUsersByFullNameOrPersonnelId(@NonNull String searchTerm,
+            @NonNull Pageable pageable) {
+        if (searchTerm == null || searchTerm.trim().isEmpty()) {
+            throw new IdInvalidException("Từ khóa tìm kiếm không được để trống");
+        }
+
+        Page<User> userPage = userRepository.searchUsersByFullNameOrPersonnelId(searchTerm.trim(), pageable);
+        Page<UserResponse> userResponsePage = userPage.map(userMapper::toUserResponse);
+        return Utils.toResultPaginationDTO(userResponsePage, pageable);
+    }
+
+    // 18. Lấy danh sách Users theo khoa hiện tại và vai trò
+    public List<UserResponse> getUsersByCurrentDepartmentAndRole(@NonNull UserRoleEnum roleName) {
+        User currentUser = getCurrentUser();
+        if (currentUser.getDepartment() == null) {
+            throw new IdInvalidException("Người dùng hiện tại chưa được gán vào khoa nào");
+        }
+
+        String departmentId = currentUser.getDepartment().getId();
+        List<User> users = userRepository.findByDepartmentIdAndRoles(
+                departmentId,
+                List.of(roleName));
+
+        return users.stream()
+                .map(userMapper::toUserResponse)
+                .collect(Collectors.toList());
+    }
+
+    // 19. Lấy danh sách tất cả Users trong khoa hiện tại
+    public List<UserResponse> getAllUsersByCurrentDepartment() {
+        User currentUser = getCurrentUser();
+        if (currentUser.getDepartment() == null) {
+            throw new IdInvalidException("Người dùng hiện tại chưa được gán vào khoa nào");
+        }
+
+        String departmentId = currentUser.getDepartment().getId();
+        List<User> users = userRepository.findByDepartmentId(departmentId);
+
+        return users.stream()
+                .map(userMapper::toUserResponse)
+                .collect(Collectors.toList());
+    }
+
+    // 20. Cập nhật User Status (với auto revocation/restoration)
+    public void updateUserStatus(String userId,
+            vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.UserStatusEnum newStatus) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IdInvalidException("User không tồn tại"));
+
+        vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.UserStatusEnum oldStatus = user.getStatus();
+
+        // Cập nhật status
+        user.setStatus(newStatus);
+        userRepository.save(user);
+
+        // Nếu chuyển từ ACTIVE -> INACTIVE/SUSPENDED → Thu hồi certificate
+        if (oldStatus == vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.UserStatusEnum.ACTIVE
+                && newStatus != vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.UserStatusEnum.ACTIVE) {
+            certificateRevocationService.revokeOnStatusChange(user, newStatus);
+            org.slf4j.LoggerFactory.getLogger(UserService.class).info(
+                    "User {} status changed from {} to {} - Certificate revoked",
+                    userId, oldStatus, newStatus);
+        }
+
+        // Nếu chuyển từ INACTIVE/SUSPENDED -> ACTIVE → Khôi phục certificate
+        if (oldStatus != vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.UserStatusEnum.ACTIVE
+                && newStatus == vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.UserStatusEnum.ACTIVE) {
+            certificateRevocationService.restoreCertificate(userId);
+            org.slf4j.LoggerFactory.getLogger(UserService.class).info(
+                    "User {} reactivated - Certificate restored", userId);
+        }
     }
 }

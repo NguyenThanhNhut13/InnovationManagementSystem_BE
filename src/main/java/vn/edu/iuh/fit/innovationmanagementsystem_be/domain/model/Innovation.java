@@ -7,6 +7,7 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationStatusEnum;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.ArrayList;
 
@@ -32,6 +33,12 @@ public class Innovation extends Auditable {
 
     @Column(name = "is_score", columnDefinition = "BOOLEAN")
     private Boolean isScore;
+
+    @Column(name = "basis_text", columnDefinition = "TEXT")
+    private String basisText;
+
+    @Column(name = "submitted_at")
+    private LocalDateTime submittedAt;
 
     // Relationships
 
@@ -59,9 +66,6 @@ public class Innovation extends Auditable {
     private List<DigitalSignature> digitalSignatures = new ArrayList<>();
 
     @OneToMany(mappedBy = "innovation", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
-    private List<ReviewComment> reviewComments = new ArrayList<>();
-
-    @OneToMany(mappedBy = "innovation", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
     private List<ReviewScore> reviewScores = new ArrayList<>();
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -71,6 +75,9 @@ public class Innovation extends Auditable {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "innovation_phase_id")
     private InnovationPhase innovationPhase;
+
+    @ManyToMany(mappedBy = "innovations", fetch = FetchType.LAZY)
+    private List<Council> councils = new ArrayList<>();
 
     @PrePersist
     protected void ensureDefaults() {

@@ -18,8 +18,6 @@ public interface InnovationRepository extends JpaRepository<Innovation, String>,
 
         Page<Innovation> findByUserId(String userId, Pageable pageable);
 
-        Page<Innovation> findByUserIdAndStatus(String userId, InnovationStatusEnum status, Pageable pageable);
-
         // Thống kê innovation cho giảng viên
         long countByUserId(String userId);
 
@@ -42,7 +40,7 @@ public interface InnovationRepository extends JpaRepository<Innovation, String>,
         @Query("SELECT ir.academicYear, COUNT(i) FROM Innovation i JOIN i.innovationRound ir WHERE i.user.id = :userId GROUP BY ir.academicYear ORDER BY ir.academicYear")
         List<Object[]> countInnovationsByAcademicYearAndUserId(@Param("userId") String userId);
 
-        @Query("SELECT ir.academicYear, COUNT(i) FROM Innovation i JOIN i.innovationRound ir WHERE i.user.id = :userId AND i.status IN ('DRAFT', 'SUBMITTED', 'PENDING_KHOA_REVIEW', 'KHOA_REVIEWED', 'KHOA_APPROVED', 'PENDING_TRUONG_REVIEW', 'TRUONG_REVIEWED') GROUP BY ir.academicYear ORDER BY ir.academicYear")
+        @Query("SELECT ir.academicYear, COUNT(i) FROM Innovation i JOIN i.innovationRound ir WHERE i.user.id = :userId AND i.status IN ('DRAFT', 'SUBMITTED', 'PENDING_KHOA_REVIEW', 'KHOA_APPROVED', 'PENDING_TRUONG_REVIEW') GROUP BY ir.academicYear ORDER BY ir.academicYear")
         List<Object[]> countSubmittedInnovationsByAcademicYearAndUserId(@Param("userId") String userId);
 
         @Query("SELECT ir.academicYear, COUNT(i) FROM Innovation i JOIN i.innovationRound ir WHERE i.user.id = :userId AND i.status IN ('TRUONG_APPROVED', 'FINAL_APPROVED') GROUP BY ir.academicYear ORDER BY ir.academicYear")
@@ -53,4 +51,32 @@ public interface InnovationRepository extends JpaRepository<Innovation, String>,
 
         @Query("SELECT ir.academicYear, COUNT(i) FROM Innovation i JOIN i.innovationRound ir WHERE i.user.id = :userId AND i.status IN ('SUBMITTED', 'DRAFT') GROUP BY ir.academicYear ORDER BY ir.academicYear")
         List<Object[]> countPendingInnovationsByAcademicYearAndUserId(@Param("userId") String userId);
+
+        // Lấy danh sách innovations theo roundId và status
+        @Query("SELECT i FROM Innovation i WHERE i.innovationRound.id = :roundId AND i.status = :status")
+        List<Innovation> findByRoundIdAndStatus(
+                        @Param("roundId") String roundId,
+                        @Param("status") InnovationStatusEnum status);
+
+        // Lấy innovations của council với user và department đã được fetch (để tránh
+        // LazyInitializationException)
+        @Query("SELECT DISTINCT i FROM Innovation i " +
+                        "LEFT JOIN FETCH i.user " +
+                        "LEFT JOIN FETCH i.department " +
+                        "JOIN i.councils c " +
+                        "WHERE c.id = :councilId")
+        List<Innovation> findByCouncilIdWithUserAndDepartment(@Param("councilId") String councilId);
+
+        /**
+         * Tìm innovations theo departmentId, roundId và status
+         * (để cập nhật status khi phase SCORING bắt đầu)
+         */
+        @Query("SELECT i FROM Innovation i " +
+                        "WHERE i.department.id = :departmentId " +
+                        "AND i.innovationRound.id = :roundId " +
+                        "AND i.status = :status")
+        List<Innovation> findByDepartmentIdAndRoundIdAndStatus(
+                        @Param("departmentId") String departmentId,
+                        @Param("roundId") String roundId,
+                        @Param("status") InnovationStatusEnum status);
 }

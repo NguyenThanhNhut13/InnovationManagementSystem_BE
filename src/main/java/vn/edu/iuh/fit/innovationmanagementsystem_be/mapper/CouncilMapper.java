@@ -4,43 +4,54 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.Named;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.Council;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.Innovation;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.CouncilMember;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.CouncilRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.CouncilResponse;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.CouncilMemberResponse;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.CouncilListResponse;
 
-import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 
-@Mapper(componentModel = "spring")
+@Mapper(componentModel = "spring", uses = { CouncilMemberMapper.class })
 public interface CouncilMapper {
 
-    @Mapping(target = "councilMembers", source = "councilMembers", qualifiedByName = "mapCouncilMembersToResponse")
+    @Mapping(target = "members", source = "councilMembers")
+    @Mapping(target = "innovationCount", source = "innovations", qualifiedByName = "countInnovations")
+    @Mapping(target = "departmentName", source = "department", qualifiedByName = "getDepartmentName")
+    @Mapping(target = "roundName", source = "innovations", qualifiedByName = "getRoundName")
+    @Mapping(target = "scoringProgress", ignore = true) // Sẽ được set thủ công trong service
     CouncilResponse toCouncilResponse(Council council);
 
-    @Mapping(target = "id", ignore = true)
-    @Mapping(target = "councilMembers", ignore = true)
-    @Mapping(target = "createdAt", ignore = true)
-    @Mapping(target = "createdBy", ignore = true)
-    @Mapping(target = "updatedAt", ignore = true)
-    @Mapping(target = "updatedBy", ignore = true)
-    Council toCouncil(CouncilRequest councilRequest);
+    @Mapping(target = "memberCount", source = "councilMembers", qualifiedByName = "countMembers")
+    @Mapping(target = "innovationCount", source = "innovations", qualifiedByName = "countInnovations")
+    @Mapping(target = "departmentName", source = "department", qualifiedByName = "getDepartmentName")
+    @Mapping(target = "roundName", source = "innovations", qualifiedByName = "getRoundName")
+    CouncilListResponse toCouncilListResponse(Council council);
 
-    @Mapping(target = "userId", source = "user.id")
-    @Mapping(target = "userFullName", source = "user.fullName")
-    @Mapping(target = "userEmail", source = "user.email")
-    @Mapping(target = "userPersonnelId", source = "user.personnelId")
-    @Mapping(target = "departmentName", source = "user.department.departmentName")
-    CouncilMemberResponse toCouncilMemberResponse(CouncilMember councilMember);
+    @Named("countInnovations")
+    default Integer countInnovations(List<Innovation> innovations) {
+        return innovations != null ? innovations.size() : 0;
+    }
 
-    @Named("mapCouncilMembersToResponse")
-    default List<CouncilMemberResponse> mapCouncilMembersToResponse(List<CouncilMember> councilMembers) {
-        if (councilMembers == null) {
-            return Collections.emptyList();
+    @Named("getDepartmentName")
+    default String getDepartmentName(vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.Department department) {
+        return department != null ? department.getDepartmentName() : null;
+    }
+
+    @Named("getRoundName")
+    default String getRoundName(List<Innovation> innovations) {
+        if (innovations == null || innovations.isEmpty()) {
+            return null;
         }
-        return councilMembers.stream()
-                .map(this::toCouncilMemberResponse)
-                .collect(Collectors.toList());
+        // Lấy roundName từ innovation đầu tiên
+        Innovation firstInnovation = innovations.get(0);
+        if (firstInnovation.getInnovationRound() != null) {
+            return firstInnovation.getInnovationRound().getName();
+        }
+        return null;
+    }
+
+    @Named("countMembers")
+    default Integer countMembers(List<CouncilMember> councilMembers) {
+        return councilMembers != null ? councilMembers.size() : 0;
     }
 }

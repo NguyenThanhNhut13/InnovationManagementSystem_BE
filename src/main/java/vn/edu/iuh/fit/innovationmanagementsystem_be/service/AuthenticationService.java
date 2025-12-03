@@ -33,12 +33,13 @@ public class AuthenticationService {
     private final RateLimitingService rateLimitingService;
     private final OtpService otpService;
     private final AuthenticationMapper authenticationMapper;
+    private final UserService userService;
 
     public AuthenticationService(AuthenticationManager authenticationManager, JwtTokenUtil jwtTokenUtil,
             UserRepository userRepository, RedisTokenService redisTokenService,
             RefreshTokenValidationService refreshTokenValidationService, PasswordEncoder passwordEncoder,
             EmailService emailService, RateLimitingService rateLimitingService, OtpService otpService,
-            AuthenticationMapper authenticationMapper) {
+            AuthenticationMapper authenticationMapper, UserService userService) {
         this.authenticationManager = authenticationManager;
         this.jwtTokenUtil = jwtTokenUtil;
         this.userRepository = userRepository;
@@ -49,6 +50,7 @@ public class AuthenticationService {
         this.rateLimitingService = rateLimitingService;
         this.otpService = otpService;
         this.authenticationMapper = authenticationMapper;
+        this.userService = userService;
     }
 
     // 1. Đăng nhập
@@ -74,6 +76,12 @@ public class AuthenticationService {
             LoginResponse loginResponse = authenticationMapper.toLoginResponse(user);
             loginResponse.setAccessToken(accessToken);
             loginResponse.setRefreshToken(refreshToken);
+            
+            // Set isSecretary và isChairman (dùng chung logic từ UserService)
+            UserService.CouncilRoleFlags flags = userService.getCouncilRoleFlags(user.getId());
+            loginResponse.setIsSecretary(flags.isSecretary());
+            loginResponse.setIsChairman(flags.isChairman());
+            
             return loginResponse;
 
         } catch (BadCredentialsException e) {
@@ -272,7 +280,7 @@ public class AuthenticationService {
             }
             return null;
         } catch (Exception e) {
-            return null;
+            throw new IdInvalidException("Không thể lấy username hiện tại: " + e.getMessage());
         }
     }
 }

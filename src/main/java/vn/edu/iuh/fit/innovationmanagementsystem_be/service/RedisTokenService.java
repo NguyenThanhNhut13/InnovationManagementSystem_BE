@@ -36,7 +36,7 @@ public class RedisTokenService {
             Object value = redisTemplate.opsForValue().get(key);
             return value != null ? value.toString() : null;
         } catch (Exception e) {
-            return null;
+            throw new IdInvalidException("Không thể lấy userId từ refresh token: " + e.getMessage());
         }
     }
 
@@ -52,6 +52,7 @@ public class RedisTokenService {
         try {
             redisTemplate.delete(key);
         } catch (Exception e) {
+            throw new IdInvalidException("Không thể xóa refresh token: " + e.getMessage());
         }
     }
 
@@ -73,6 +74,7 @@ public class RedisTokenService {
         try {
             redisTemplate.opsForValue().set(key, "blacklisted", ttlInSeconds, TimeUnit.SECONDS);
         } catch (Exception e) {
+            throw new IdInvalidException("Không thể blacklist access token: " + e.getMessage());
         }
     }
 
@@ -92,7 +94,7 @@ public class RedisTokenService {
         try {
             return redisTemplate.getExpire(key, TimeUnit.SECONDS);
         } catch (Exception e) {
-            return null;
+            throw new IdInvalidException("Không thể lấy TTL của refresh token: " + e.getMessage());
         }
     }
 

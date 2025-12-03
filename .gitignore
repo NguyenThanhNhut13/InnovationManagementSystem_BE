@@ -33,14 +33,13 @@ build/
 .vscode/
 
 # RSA Keys - không commit keys lên git
-src/main/resources/
-*.pem
-*.key
-*.crt
-*.p12
-*.pfx
+src/main/resources/keys/*
 
 # Env file
 .env
 
 .cursor/
+.kiro-rules.yml
+md/
+postman/
+daigram/

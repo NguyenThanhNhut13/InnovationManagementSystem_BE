@@ -7,6 +7,7 @@ public enum InnovationRoundStatusEnum {
     DRAFT("DRAFT"), OPEN("OPEN"), CLOSED("CLOSED"), COMPLETED("COMPLETED");
 
     private final String value;
+
     InnovationRoundStatusEnum(String value) {
         this.value = value;
     }

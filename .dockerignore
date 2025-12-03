@@ -1,0 +1,12 @@
+target/
+.git/
+.idea/
+.vscode/
+.cursor/
+.kiro/
+*.md
+.gitignore
+.gitattributes
+docker-compose.yml
+Jenkinsfile
+*.log

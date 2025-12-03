@@ -7,6 +7,7 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.UserStatusEnum;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.ArrayList;
 
@@ -32,15 +33,21 @@ public class User extends Auditable {
     @Column(name = "email", nullable = false, unique = true, columnDefinition = "VARCHAR(255)")
     private String email;
 
-    @Column(name = "phone_number", nullable = false, unique = true, columnDefinition = "VARCHAR(20)")
-    private String phoneNumber;
-
     @Column(name = "password", nullable = false, columnDefinition = "VARCHAR(255)")
     private String password;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
     private UserStatusEnum status = UserStatusEnum.ACTIVE;
+
+    @Column(name = "date_of_birth", columnDefinition = "DATE")
+    private LocalDate dateOfBirth;
+
+    @Column(name = "qualification", columnDefinition = "VARCHAR(255)")
+    private String qualification;
+
+    @Column(name = "title", columnDefinition = "VARCHAR(255)")
+    private String title;
 
     // Relationships
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
@@ -65,7 +72,6 @@ public class User extends Auditable {
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<DigitalSignature> digitalSignatures;
 
-    // Pre-persist method để set status mặc định
     @PrePersist
     protected void onCreate() {
         if (status == null) {

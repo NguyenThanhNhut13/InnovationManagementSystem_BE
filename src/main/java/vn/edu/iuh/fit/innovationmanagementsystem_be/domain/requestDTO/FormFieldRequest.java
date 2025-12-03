@@ -7,26 +7,46 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.FieldTypeEnum;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.UserRoleEnum;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 public class FormFieldRequest {
 
-    @NotBlank(message = "Label không được để trống")
-    private String label;
+    private String id;
 
     @NotBlank(message = "Field key không được để trống")
     private String fieldKey;
 
-    @NotNull(message = "Field type không được để trống")
-    private FieldTypeEnum fieldType;
+    @NotBlank(message = "Field label không được để trống")
+    private String label;
 
-    @NotNull(message = "Trạng thái required không được để trống")
+    @NotNull(message = "Field type không được để trống")
+    private FieldTypeEnum type;
+
+    @NotNull(message = "Required status không được để trống")
     private Boolean required = false;
 
-    private String placeholder;
+    @NotNull(message = "Read only status không được để trống")
+    private Boolean isReadOnly = false;
+
+    private Boolean repeatable = false;
 
     private JsonNode tableConfig;
+
+    private JsonNode options;
+
+    private JsonNode referenceConfig;
+
+    private JsonNode children;
+
+    private JsonNode userDataConfig;
+
+    private JsonNode innovationDataConfig;
+
+    private JsonNode contributionConfig;
+
+    private UserRoleEnum signingRole;
 
 }
