@@ -47,6 +47,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.mapper.FormTemplateMapper;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.FormTemplateRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.InnovationRoundRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.InnovationRepository;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.FormFieldRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.ResultPaginationDTO;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.Utils;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.HtmlTemplateUtils;
@@ -76,6 +77,7 @@ public class FormTemplateService {
     private final InnovationService innovationService;
     private final CouncilRepository councilRepository;
     private final InnovationRepository innovationRepository;
+    private final FormFieldRepository formFieldRepository;
     private final ObjectMapper objectMapper;
 
     public FormTemplateService(FormTemplateRepository formTemplateRepository,
@@ -87,6 +89,7 @@ public class FormTemplateService {
             InnovationService innovationService,
             CouncilRepository councilRepository,
             InnovationRepository innovationRepository,
+            FormFieldRepository formFieldRepository,
             ObjectMapper objectMapper) {
         this.formTemplateRepository = formTemplateRepository;
         this.innovationRoundRepository = innovationRoundRepository;
@@ -97,6 +100,7 @@ public class FormTemplateService {
         this.innovationService = innovationService;
         this.councilRepository = councilRepository;
         this.innovationRepository = innovationRepository;
+        this.formFieldRepository = formFieldRepository;
         this.objectMapper = objectMapper;
     }
 
@@ -1255,24 +1259,22 @@ public class FormTemplateService {
 
             // Tìm template data tương ứng với sourceTemplateId
             Map<String, Object> sourceData = null;
-            List<TemplateFieldResponse> templateFields = null;
             for (var template : innovationFormData.getTemplates()) {
                 if (template.getTemplateId().equals(sourceTemplateId)) {
-                    // Convert fields sang Map<String, Object>
-                    sourceData = convertTemplateFieldsToMap(template.getFields());
-                    templateFields = template.getFields();
+                    // Convert fields sang Map<String, Object> với fieldKey làm key
+                    sourceData = convertTemplateFieldsToMap(template.getFields(), sourceTemplateId);
                     break;
                 }
             }
 
-            if (sourceData == null || templateFields == null) {
+            if (sourceData == null) {
                 return "[Không tìm thấy dữ liệu từ " + sourceTemplateId + "]";
             }
 
             // Lấy giá trị từ các field (hỗ trợ nested path cho TABLE)
             List<String> values = new ArrayList<>();
             for (String fieldKey : sourceFieldKeys) {
-                String value = getNestedFieldValue(sourceData, templateFields, fieldKey, multiRowSeparator);
+                String value = getNestedFieldValue(sourceData, fieldKey, multiRowSeparator);
                 values.add(value != null ? value : "");
             }
 
@@ -1307,47 +1309,24 @@ public class FormTemplateService {
 
     /**
      * Lấy giá trị từ sourceData, hỗ trợ nested path (tableKey.columnKey)
-     * @param sourceData Map từ convertTemplateFieldsToMap (key là label)
-     * @param templateFields List TemplateFieldResponse để tìm fieldKey -> label mapping
+     * @param sourceData Map từ convertTemplateFieldsToMap (key là fieldKey)
      * @param fieldKey Có thể là "fieldKey" hoặc "tableKey.columnKey" (fieldKey của TABLE field)
      * @param multiRowSeparator Separator để join các rows trong table (thường là "\n")
      */
-    private String getNestedFieldValue(Map<String, Object> sourceData, List<TemplateFieldResponse> templateFields, String fieldKey, String multiRowSeparator) {
+    private String getNestedFieldValue(Map<String, Object> sourceData, String fieldKey, String multiRowSeparator) {
         // Kiểm tra xem có phải nested path không (table.column)
         if (fieldKey.contains(".")) {
             String[] parts = fieldKey.split("\\.", 2);
             String tableKey = parts[0]; // fieldKey của TABLE field (ví dụ: "danh_sach_tac_gia")
             String columnKey = parts[1]; // column key trong table (ví dụ: "ho_va_ten")
             
-            // Tìm label của TABLE field từ fieldKey
-            // Vì TemplateFieldResponse không có fieldKey, tìm trong sourceData keys bằng fuzzy match
-            String tableLabel = null;
+            // Lấy table data (key là fieldKey)
+            Object tableData = sourceData.get(tableKey);
             
-            // Thử tìm trực tiếp bằng tableKey (nếu tableKey là label)
-            if (sourceData.containsKey(tableKey)) {
-                tableLabel = tableKey;
-            } else {
-                // Tìm bằng fuzzy match trong sourceData keys
-                // Tìm key có chứa tableKey hoặc ngược lại
-                tableLabel = sourceData.keySet().stream()
-                        .filter(k -> {
-                            String kLower = k.toLowerCase().replaceAll("[\\s_]", "");
-                            String tableKeyLower = tableKey.toLowerCase().replaceAll("[\\s_]", "");
-                            return kLower.contains(tableKeyLower) || tableKeyLower.contains(kLower) ||
-                                   k.toLowerCase().contains(tableKey.toLowerCase()) ||
-                                   tableKey.toLowerCase().contains(k.toLowerCase());
-                        })
-                        .findFirst()
-                        .orElse(null);
-            }
-            
-            if (tableLabel == null) {
-                log.warn("Không tìm thấy table field với key: " + tableKey);
+            if (tableData == null) {
+                log.warn("Không tìm thấy table data với fieldKey: " + tableKey);
                 return null;
             }
-            
-            // Lấy table data
-            Object tableData = sourceData.get(tableLabel);
             
             // Nếu tableData là List (TABLE field), extract column values
             if (tableData instanceof List) {
@@ -1377,16 +1356,16 @@ public class FormTemplateService {
                     }
                 }
                 
-                // Join các giá trị bằng multiRowSeparator (thường là "\n" cho table rows)
+                // Join các giá trị bằng multiRowSeparator
                 String separator = (multiRowSeparator != null && !multiRowSeparator.isEmpty()) ? multiRowSeparator : "\n";
                 return String.join(separator, columnValues);
             }
             
-            log.warn("Table field '" + tableLabel + "' không phải là List (TABLE field)");
+            log.warn("Table field '" + tableKey + "' không phải là List (TABLE field)");
             return null;
         }
         
-        // Nếu không phải nested path, lấy giá trị trực tiếp
+        // Nếu không phải nested path, lấy giá trị trực tiếp (key là fieldKey)
         Object value = sourceData.get(fieldKey);
         if (value == null) {
             // Tìm key tương tự (fuzzy match)
@@ -1423,8 +1402,8 @@ public class FormTemplateService {
             for (String targetTemplateId : targetTemplateIds) {
                 for (var template : innovationFormData.getTemplates()) {
                     if (template.getTemplateId().equals(targetTemplateId)) {
-                        // Convert fields sang Map
-                        Map<String, Object> formData = convertTemplateFieldsToMap(template.getFields());
+                        // Convert fields sang Map với fieldKey làm key
+                        Map<String, Object> formData = convertTemplateFieldsToMap(template.getFields(), targetTemplateId);
                         Object value = formData.get(fieldKey);
                                                    
                         // Nếu tìm thấy value, return ngay
@@ -1616,18 +1595,34 @@ public class FormTemplateService {
 
     /**
      * Convert TemplateFieldResponse list sang Map<String, Object>
-     * Key: label của field (hoặc fieldKey nếu có)
+     * Key: fieldKey (fetch từ FormField trong database)
      * Value: value của field (đã convert từ JsonNode)
      */
-    private Map<String, Object> convertTemplateFieldsToMap(List<TemplateFieldResponse> fields) {
+    private Map<String, Object> convertTemplateFieldsToMap(List<TemplateFieldResponse> fields, String templateId) {
         Map<String, Object> formDataMap = new HashMap<>();
         
-        if (fields == null) {
+        if (fields == null || templateId == null) {
             return formDataMap;
         }
         
+        // Fetch FormFields từ database để lấy fieldKey
+        List<FormField> formFields = formFieldRepository.findByTemplateId(templateId);
+        Map<String, String> labelToFieldKeyMap = new HashMap<>();
+        for (FormField formField : formFields) {
+            if (formField.getLabel() != null && formField.getFieldKey() != null) {
+                labelToFieldKeyMap.put(formField.getLabel(), formField.getFieldKey());
+            }
+        }
+        
         for (TemplateFieldResponse field : fields) {
-            String fieldKey = field.getLabel(); // Dùng label làm key
+            // Lấy fieldKey từ map (dựa trên label)
+            String fieldKey = labelToFieldKeyMap.get(field.getLabel());
+            if (fieldKey == null) {
+                // Fallback: dùng label nếu không tìm thấy fieldKey
+                fieldKey = field.getLabel();
+                log.warn("Không tìm thấy fieldKey cho label: " + field.getLabel() + " trong template: " + templateId);
+            }
+            
             JsonNode valueNode = field.getValue();
             
             // Convert JsonNode sang Object
