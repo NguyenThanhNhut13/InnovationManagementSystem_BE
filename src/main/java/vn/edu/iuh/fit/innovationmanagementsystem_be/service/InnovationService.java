@@ -655,12 +655,27 @@ public class InnovationService {
 
                 List<FormData> formDataList = formDataRepository.findByInnovationIdWithRelations(innovationId);
 
+                // Convert FormData → FormDataResponse
+                List<FormDataResponse> formDataResponses = new ArrayList<>();
+                for (FormData formData : formDataList) {
+                        FormDataResponse formDataResponse = formDataMapper.toFormDataResponse(formData);
+                        if (formData.getFormField() != null) {
+                                FormField formField = formData.getFormField();
+                                if (formField.getFormTemplate() == null) {
+                                        formField = formFieldRepository.findByIdWithTemplate(formField.getId())
+                                                        .orElse(formField);
+                                }
+                        } else {
+                                logger.warn("FormField is null for FormData ID: {}", formData.getId());
+                        }
+                        formDataResponses.add(formDataResponse);
+                }
+
                 InnovationFormDataResponse response = new InnovationFormDataResponse();
                 Long timeRemainingSeconds = getSubmissionTimeRemainingSeconds(innovation);
-                // Dùng buildTemplateFormDataResponsesWithTableConfig để trả về structure mới
-                // với fields array
+                // Dùng buildTemplateFormDataResponsesWithFormData để trả về formData object cho FE draft loading
                 response.setTemplates(
-                                innovationSignatureService.buildTemplateFormDataResponsesWithTableConfig(formDataList));
+                                innovationSignatureService.buildTemplateFormDataResponsesWithFormData(formDataResponses));
                 response.setTemplateSignatures(Collections.emptyList());
                 response.setSubmissionTimeRemainingSeconds(timeRemainingSeconds);
 

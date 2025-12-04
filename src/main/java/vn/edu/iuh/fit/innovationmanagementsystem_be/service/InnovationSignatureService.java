@@ -272,7 +272,7 @@ public class InnovationSignatureService {
 
         return groupedByTemplate.entrySet()
                 .stream()
-                .map(entry -> new TemplateFormDataResponse(entry.getKey(), null, entry.getValue()))
+                .map(entry -> new TemplateFormDataResponse(entry.getKey(), null, entry.getValue(), null))
                 .collect(Collectors.toList());
     }
 
@@ -286,6 +286,82 @@ public class InnovationSignatureService {
             return valueNode != null ? valueNode : objectMapper.nullNode();
         }
         return fieldValue;
+    }
+
+    /**
+     * Build template form data responses with formData object for FE draft loading.
+     * Returns templates with formData Map (key: fieldKey, value: field value).
+     */
+    public List<TemplateFormDataResponse> buildTemplateFormDataResponsesWithFormData(
+            List<FormDataResponse> formDataResponses) {
+        if (formDataResponses == null || formDataResponses.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        Map<String, Map<String, Object>> groupedByTemplate = new LinkedHashMap<>();
+
+        for (FormDataResponse formDataResponse : formDataResponses) {
+            String templateId = formDataResponse.getTemplateId();
+            if (templateId == null || templateId.isBlank()) {
+                continue;
+            }
+
+            String fieldKey = formDataResponse.getFormFieldKey();
+            if (fieldKey == null || fieldKey.isBlank()) {
+                continue;
+            }
+
+            com.fasterxml.jackson.databind.JsonNode valueNode = extractEffectiveFieldValue(formDataResponse);
+            Object value = convertJsonNodeToObject(valueNode);
+
+            groupedByTemplate
+                    .computeIfAbsent(templateId, id -> new LinkedHashMap<>())
+                    .put(fieldKey, value);
+        }
+
+        return groupedByTemplate.entrySet()
+                .stream()
+                .map(entry -> new TemplateFormDataResponse(entry.getKey(), null, null, entry.getValue()))
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Convert JsonNode to Object (String, Number, Boolean, Array, Object, null)
+     */
+    private Object convertJsonNodeToObject(com.fasterxml.jackson.databind.JsonNode node) {
+        if (node == null || node.isNull()) {
+            return null;
+        }
+        if (node.isTextual()) {
+            return node.asText();
+        }
+        if (node.isNumber()) {
+            if (node.isInt()) {
+                return node.asInt();
+            }
+            if (node.isLong()) {
+                return node.asLong();
+            }
+            return node.asDouble();
+        }
+        if (node.isBoolean()) {
+            return node.asBoolean();
+        }
+        if (node.isArray()) {
+            List<Object> list = new ArrayList<>();
+            for (com.fasterxml.jackson.databind.JsonNode item : node) {
+                list.add(convertJsonNodeToObject(item));
+            }
+            return list;
+        }
+        if (node.isObject()) {
+            Map<String, Object> map = new LinkedHashMap<>();
+            node.fieldNames().forEachRemaining(fieldName -> {
+                map.put(fieldName, convertJsonNodeToObject(node.get(fieldName)));
+            });
+            return map;
+        }
+        return null;
     }
 
     /**
@@ -352,7 +428,7 @@ public class InnovationSignatureService {
 
         return templateMap.entrySet()
                 .stream()
-                .map(entry -> new TemplateFormDataResponse(entry.getKey(), entry.getValue().getTemplateType(), entry.getValue().getFields()))
+                .map(entry -> new TemplateFormDataResponse(entry.getKey(), entry.getValue().getTemplateType(), entry.getValue().getFields(), null))
                 .collect(Collectors.toList());
     }
 
