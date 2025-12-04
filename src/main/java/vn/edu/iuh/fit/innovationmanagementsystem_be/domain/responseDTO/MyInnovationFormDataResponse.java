@@ -11,6 +11,8 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class MyInnovationFormDataResponse {
 
+    private InnovationBasicInfo innovation;
+    
     private List<MyTemplateFormDataResponse> templates = new ArrayList<>();
 
     private List<TemplateSignatureResponse> templateSignatures = new ArrayList<>();

@@ -124,7 +124,7 @@ public class InnovationController {
         @ApiMessage("Lấy thông tin sáng kiến của tôi bằng id thành công")
         @Operation(summary = "Get My Innovation by ID", description = "Get innovation details with all form data and form fields by innovation ID (only for current user's innovations)")
         @ApiResponses(value = {
-                        @ApiResponse(responseCode = "200", description = "Innovation with form data and form fields retrieved successfully", content = @Content(schema = @Schema(implementation = InnovationFormDataResponse.class))),
+                        @ApiResponse(responseCode = "200", description = "Innovation with form data and form fields retrieved successfully", content = @Content(schema = @Schema(implementation = MyInnovationFormDataResponse.class))),
                         @ApiResponse(responseCode = "404", description = "Innovation not found"),
                         @ApiResponse(responseCode = "403", description = "Forbidden - You can only view your own innovations"),
                         @ApiResponse(responseCode = "401", description = "Unauthorized")

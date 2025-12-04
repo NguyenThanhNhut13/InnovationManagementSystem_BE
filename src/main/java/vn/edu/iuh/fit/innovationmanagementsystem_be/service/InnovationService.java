@@ -32,6 +32,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.TemplateDa
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.FilterMyInnovationRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.FilterAdminInnovationRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.FormDataResponse;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationBasicInfo;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationFormDataResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.MyInnovationFormDataResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationResponse;
@@ -665,6 +666,17 @@ public class InnovationService {
 
                 MyInnovationFormDataResponse response = new MyInnovationFormDataResponse();
                 Long timeRemainingSeconds = getSubmissionTimeRemainingSeconds(innovation);
+                
+                // Populate innovation info
+                InnovationBasicInfo innovationInfo = new InnovationBasicInfo();
+                innovationInfo.setId(innovation.getId());
+                innovationInfo.setInnovationName(innovation.getInnovationName());
+                innovationInfo.setStatus(innovation.getStatus() != null ? innovation.getStatus().name() : null);
+                innovationInfo.setIsScore(innovation.getIsScore());
+                innovationInfo.setBasisText(innovation.getBasisText());
+                innovationInfo.setSubmissionTimeRemainingSeconds(timeRemainingSeconds);
+                response.setInnovation(innovationInfo);
+                
                 // Dùng buildMyTemplateFormDataResponses để trả về format formData object cho FE draft loading
                 response.setTemplates(
                                 innovationSignatureService.buildMyTemplateFormDataResponses(formDataResponses));
