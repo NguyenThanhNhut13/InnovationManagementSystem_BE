@@ -33,6 +33,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.FilterMyIn
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.FilterAdminInnovationRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.FormDataResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationFormDataResponse;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.MyInnovationFormDataResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.MyInnovationResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationStatisticsDTO;
@@ -638,7 +639,7 @@ public class InnovationService {
 
         // 6. Lấy Innovation & FormData theo ID của user hiện tại (chỉ cho phép xem sáng
         // kiến của chính mình)
-        public InnovationFormDataResponse getMyInnovationWithFormDataById(String innovationId) {
+        public MyInnovationFormDataResponse getMyInnovationWithFormDataById(String innovationId) {
                 String currentUserId = userService.getCurrentUserId();
 
                 Innovation innovation = innovationRepository.findById(innovationId)
@@ -659,23 +660,43 @@ public class InnovationService {
                 List<FormDataResponse> formDataResponses = new ArrayList<>();
                 for (FormData formData : formDataList) {
                         FormDataResponse formDataResponse = formDataMapper.toFormDataResponse(formData);
-                        if (formData.getFormField() != null) {
-                                FormField formField = formData.getFormField();
-                                if (formField.getFormTemplate() == null) {
-                                        formField = formFieldRepository.findByIdWithTemplate(formField.getId())
-                                                        .orElse(formField);
-                                }
-                        } else {
-                                logger.warn("FormField is null for FormData ID: {}", formData.getId());
-                        }
                         formDataResponses.add(formDataResponse);
                 }
 
+                MyInnovationFormDataResponse response = new MyInnovationFormDataResponse();
+                Long timeRemainingSeconds = getSubmissionTimeRemainingSeconds(innovation);
+                // Dùng buildMyTemplateFormDataResponses để trả về format formData object cho FE draft loading
+                response.setTemplates(
+                                innovationSignatureService.buildMyTemplateFormDataResponses(formDataResponses));
+                response.setTemplateSignatures(Collections.emptyList());
+                response.setSubmissionTimeRemainingSeconds(timeRemainingSeconds);
+
+                return response;
+        }
+
+        // 7. Lấy Innovation & FormData theo ID của user hiện tại cho detail page (với fields array)
+        public InnovationFormDataResponse getMyInnovationFormDataForDetail(String innovationId) {
+                String currentUserId = userService.getCurrentUserId();
+
+                Innovation innovation = innovationRepository.findById(innovationId)
+                                .orElseThrow(() -> {
+                                        logger.error("Không tìm thấy sáng kiến với ID: {}", innovationId);
+                                        return new IdInvalidException(
+                                                        "Không tìm thấy sáng kiến với ID: " + innovationId);
+                                });
+
+                if (innovation.getUser() == null || !innovation.getUser().getId().equals(currentUserId)) {
+                        logger.error("User {} không có quyền xem sáng kiến {}", currentUserId, innovationId);
+                        throw new IdInvalidException("Bạn không có quyền xem sáng kiến này");
+                }
+
+                List<FormData> formDataList = formDataRepository.findByInnovationIdWithRelations(innovationId);
+
                 InnovationFormDataResponse response = new InnovationFormDataResponse();
                 Long timeRemainingSeconds = getSubmissionTimeRemainingSeconds(innovation);
-                // Dùng buildTemplateFormDataResponsesWithFormData để trả về formData object cho FE draft loading
+                // Dùng buildTemplateFormDataResponsesWithTableConfig để trả về fields array cho detail page
                 response.setTemplates(
-                                innovationSignatureService.buildTemplateFormDataResponsesWithFormData(formDataResponses));
+                                innovationSignatureService.buildTemplateFormDataResponsesWithTableConfig(formDataList));
                 response.setTemplateSignatures(Collections.emptyList());
                 response.setSubmissionTimeRemainingSeconds(timeRemainingSeconds);
 

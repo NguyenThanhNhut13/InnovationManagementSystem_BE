@@ -41,7 +41,7 @@ public class InnovationDetailService {
                                 .overview(buildOverviewData(innovation))
                                 .coAuthors(buildCoAuthorsList(innovation))
                                 .statistics(buildStatistics(innovation))
-                                .formData(innovationService.getMyInnovationWithFormDataById(innovationId))
+                                .formData(innovationService.getMyInnovationFormDataForDetail(innovationId))
                                 .attachments(buildAttachmentsList(innovation))
                                 .reviewComments(buildReviewCommentsList(innovation))
                                 .workflowSteps(buildWorkflowSteps(innovation))

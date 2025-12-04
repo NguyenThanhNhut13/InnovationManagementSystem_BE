@@ -18,6 +18,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.CreateInno
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.DigitalSignatureRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.TemplateDataRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.FormDataResponse;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.MyTemplateFormDataResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.TemplateFieldResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.TemplateFormDataResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.TemplateSignatureResponse;
@@ -272,7 +273,7 @@ public class InnovationSignatureService {
 
         return groupedByTemplate.entrySet()
                 .stream()
-                .map(entry -> new TemplateFormDataResponse(entry.getKey(), null, entry.getValue(), null))
+                .map(entry -> new TemplateFormDataResponse(entry.getKey(), null, entry.getValue()))
                 .collect(Collectors.toList());
     }
 
@@ -289,10 +290,11 @@ public class InnovationSignatureService {
     }
 
     /**
-     * Build template form data responses with formData object for FE draft loading.
-     * Returns templates with formData Map (key: fieldKey, value: field value).
+     * Build template form data responses with formData Map for draft loading.
+     * This method converts FormDataResponse list to MyTemplateFormDataResponse list
+     * with formData Map (fieldKey -> value) for FE draft loading.
      */
-    public List<TemplateFormDataResponse> buildTemplateFormDataResponsesWithFormData(
+    public List<MyTemplateFormDataResponse> buildMyTemplateFormDataResponses(
             List<FormDataResponse> formDataResponses) {
         if (formDataResponses == null || formDataResponses.isEmpty()) {
             return new ArrayList<>();
@@ -321,45 +323,43 @@ public class InnovationSignatureService {
 
         return groupedByTemplate.entrySet()
                 .stream()
-                .map(entry -> new TemplateFormDataResponse(entry.getKey(), null, null, entry.getValue()))
+                .map(entry -> new MyTemplateFormDataResponse(entry.getKey(), entry.getValue()))
                 .collect(Collectors.toList());
     }
 
     /**
-     * Convert JsonNode to Object (String, Number, Boolean, Array, Object, null)
+     * Convert JsonNode to Object (String, Number, Boolean, List, Map)
      */
-    private Object convertJsonNodeToObject(com.fasterxml.jackson.databind.JsonNode node) {
-        if (node == null || node.isNull()) {
+    private Object convertJsonNodeToObject(com.fasterxml.jackson.databind.JsonNode valueNode) {
+        if (valueNode == null || valueNode.isNull()) {
             return null;
         }
-        if (node.isTextual()) {
-            return node.asText();
-        }
-        if (node.isNumber()) {
-            if (node.isInt()) {
-                return node.asInt();
+        if (valueNode.isTextual()) {
+            return valueNode.asText();
+        } else if (valueNode.isNumber()) {
+            if (valueNode.isInt()) {
+                return valueNode.asInt();
+            } else if (valueNode.isLong()) {
+                return valueNode.asLong();
+            } else {
+                return valueNode.asDouble();
             }
-            if (node.isLong()) {
-                return node.asLong();
-            }
-            return node.asDouble();
-        }
-        if (node.isBoolean()) {
-            return node.asBoolean();
-        }
-        if (node.isArray()) {
+        } else if (valueNode.isBoolean()) {
+            return valueNode.asBoolean();
+        } else if (valueNode.isArray()) {
+            // Array: convert to List
             List<Object> list = new ArrayList<>();
-            for (com.fasterxml.jackson.databind.JsonNode item : node) {
+            for (com.fasterxml.jackson.databind.JsonNode item : valueNode) {
                 list.add(convertJsonNodeToObject(item));
             }
             return list;
-        }
-        if (node.isObject()) {
-            Map<String, Object> map = new LinkedHashMap<>();
-            node.fieldNames().forEachRemaining(fieldName -> {
-                map.put(fieldName, convertJsonNodeToObject(node.get(fieldName)));
+        } else if (valueNode.isObject()) {
+            // Object: convert to Map
+            Map<String, Object> valueMap = new LinkedHashMap<>();
+            valueNode.fieldNames().forEachRemaining(fieldName -> {
+                valueMap.put(fieldName, convertJsonNodeToObject(valueNode.get(fieldName)));
             });
-            return map;
+            return valueMap;
         }
         return null;
     }
@@ -428,7 +428,7 @@ public class InnovationSignatureService {
 
         return templateMap.entrySet()
                 .stream()
-                .map(entry -> new TemplateFormDataResponse(entry.getKey(), entry.getValue().getTemplateType(), entry.getValue().getFields(), null))
+                .map(entry -> new TemplateFormDataResponse(entry.getKey(), entry.getValue().getTemplateType(), entry.getValue().getFields()))
                 .collect(Collectors.toList());
     }
 
