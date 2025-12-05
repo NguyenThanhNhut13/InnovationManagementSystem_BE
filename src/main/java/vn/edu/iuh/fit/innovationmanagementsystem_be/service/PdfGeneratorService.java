@@ -130,13 +130,15 @@ public class PdfGeneratorService {
         }
     }
 
-    // Helper method để inject font Times New Roman vào HTML
+    // Helper method để inject font Times New Roman vào HTML (giống văn bản hành
+    // chính)
     private String injectTimesNewRomanFont(String html) {
         String fontCss = "<style>" +
-                "* { font-family: 'Times New Roman', Times, serif !important; }" +
-                "body { font-family: 'Times New Roman', Times, serif !important; }" +
-                "table, th, td { font-family: 'Times New Roman', Times, serif !important; }" +
-                "p, div, span, h1, h2, h3, h4, h5, h6 { font-family: 'Times New Roman', Times, serif !important; }" +
+                "* { font-family: 'Times New Roman', Times, serif !important; font-size: 13pt; }" +
+                "body { font-family: 'Times New Roman', Times, serif !important; font-size: 13pt; }" +
+                "p, div, span { font-family: 'Times New Roman', Times, serif !important; font-size: 13pt; }" +
+                "table, th, td { font-family: 'Times New Roman', Times, serif !important; font-size: 13pt; }" +
+                "h1, h2, h3, h4, h5, h6 { font-family: 'Times New Roman', Times, serif !important; }" +
                 "</style>";
 
         // Chèn CSS vào trước thẻ </head> hoặc đầu <body>
