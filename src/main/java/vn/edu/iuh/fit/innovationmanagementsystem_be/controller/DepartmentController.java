@@ -10,13 +10,18 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 import com.turkraft.springfilter.boot.Filter;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.Department;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.DepartmentImportResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.DepartmentInnovationStatisticsResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.service.DepartmentService;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.ResultPaginationDTO;
@@ -63,6 +68,21 @@ public class DepartmentController {
                 List<DepartmentInnovationStatisticsResponse> statistics = departmentService
                                 .getDepartmentInnovationStatistics();
                 return ResponseEntity.ok(statistics);
+        }
+
+        // 3. Import departments từ file Excel
+        @PostMapping(value = "/departments/import", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+        @PreAuthorize("hasAnyRole('QUAN_TRI_VIEN_HE_THONG', 'QUAN_TRI_VIEN_QLKH_HTQT')")
+        @ApiMessage("Import phòng ban từ file Excel thành công")
+        @Operation(summary = "Import Departments from Excel", description = "Import departments from Excel file (.xlsx). File should have 2 columns: department_code, department_name. First row is header.")
+        @ApiResponses(value = {
+                        @ApiResponse(responseCode = "200", description = "Departments imported successfully", content = @Content(schema = @Schema(implementation = DepartmentImportResponse.class))),
+                        @ApiResponse(responseCode = "400", description = "Invalid file format or data")
+        })
+        public ResponseEntity<DepartmentImportResponse> importDepartments(
+                        @Parameter(description = "Excel file (.xlsx) with department_code and department_name columns") @RequestParam("file") MultipartFile file) {
+                DepartmentImportResponse response = departmentService.importDepartmentsFromExcel(file);
+                return ResponseEntity.ok(response);
         }
 
 }
