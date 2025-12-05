@@ -75,7 +75,6 @@ public class FormTemplateService {
     private final FormTemplateRepository formTemplateRepository;
     private final FormTemplateMapper formTemplateMapper;
     private final InnovationRoundRepository innovationRoundRepository;
-    private final HtmlTemplateUtils htmlTemplateUtils;
     private final UserService userService;
     private final CouncilService councilService;
     private final InnovationService innovationService;
@@ -102,7 +101,6 @@ public class FormTemplateService {
         this.formTemplateRepository = formTemplateRepository;
         this.innovationRoundRepository = innovationRoundRepository;
         this.formTemplateMapper = formTemplateMapper;
-        this.htmlTemplateUtils = htmlTemplateUtils;
         this.userService = userService;
         this.councilService = councilService;
         this.innovationService = innovationService;
@@ -198,9 +196,9 @@ public class FormTemplateService {
 
         FormTemplate updatedTemplate = formTemplateRepository.save(template);
 
-        // Cập nhật HTML template content với field IDs mới sau khi fields đã được save
-        updateHtmlTemplateContent(updatedTemplate);
-        updatedTemplate = formTemplateRepository.save(updatedTemplate);
+        // ✅ Không cần update HTML IDs nữa - chỉ dùng data-field-key
+        // updateHtmlTemplateContent(updatedTemplate);
+        // updatedTemplate = formTemplateRepository.save(updatedTemplate);
 
         return formTemplateMapper.toFormTemplateResponse(updatedTemplate);
     }
@@ -236,9 +234,9 @@ public class FormTemplateService {
 
         FormTemplate finalTemplate = formTemplateRepository.save(savedTemplate);
 
-        // Cập nhật HTML template content với field IDs mới sau khi fields đã được save
-        updateHtmlTemplateContent(finalTemplate);
-        finalTemplate = formTemplateRepository.save(finalTemplate);
+        // ✅ Không cần update HTML IDs nữa - chỉ dùng data-field-key
+        // updateHtmlTemplateContent(finalTemplate);
+        // finalTemplate = formTemplateRepository.save(finalTemplate);
 
         return formTemplateMapper.toCreateTemplateWithFieldsResponse(finalTemplate);
     }
@@ -370,25 +368,6 @@ public class FormTemplateService {
         template.getFormFields().addAll(orderedFields);
     }
 
-    private void updateHtmlTemplateContent(FormTemplate template) {
-        if (template == null) {
-            throw new IdInvalidException("Template không được null");
-        }
-
-        if (template.getTemplateContent() == null || template.getFormFields().isEmpty()) {
-            return;
-        }
-
-        try {
-            String htmlContent = Utils.decode(template.getTemplateContent());
-            String updatedHtmlContent = htmlTemplateUtils.updateFieldIdsInHtml(htmlContent, template.getFormFields());
-            String encodedContent = Utils.encode(updatedHtmlContent);
-            template.setTemplateContent(encodedContent);
-
-        } catch (Exception e) {
-            throw new IdInvalidException("Lỗi khi cập nhật HTML template content: " + e.getMessage());
-        }
-    }
 
     // 8. Lấy FormTemplate (InnovationRoundId = null) với pagination, filtering - OK
     @Transactional
@@ -424,9 +403,10 @@ public class FormTemplateService {
             FormTemplate finalTemplate = formTemplateRepository.save(savedTemplate);
             entityManager.flush();
 
-            updateHtmlTemplateContent(finalTemplate);
-            finalTemplate = formTemplateRepository.save(finalTemplate);
-            entityManager.flush();
+            // ✅ Không cần update HTML IDs nữa - chỉ dùng data-field-key
+            // updateHtmlTemplateContent(finalTemplate);
+            // finalTemplate = formTemplateRepository.save(finalTemplate);
+            // entityManager.flush();
 
             return formTemplateMapper.toCreateTemplateResponse(finalTemplate);
         } catch (Exception e) {
