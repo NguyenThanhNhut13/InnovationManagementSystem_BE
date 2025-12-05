@@ -7,7 +7,9 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -17,7 +19,9 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.DocumentTypeEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.UserRoleEnum;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.DepartmentDocumentSignRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.VerifyDigitalSignatureRequest;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.DepartmentDocumentSignResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.UserDocumentSignatureStatusResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.TemplatePdfResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.VerifyDigitalSignatureResponse;
@@ -98,6 +102,25 @@ public class DigitalSignatureController {
                         @RequestParam String innovationId) {
 
                 TemplatePdfResponse response = digitalSignatureService.getTemplatePdf(innovationId, templateId);
+                return ResponseEntity.ok(response);
+        }
+
+        // 4. Ký số tài liệu tổng hợp cấp khoa (Mẫu 4, Mẫu 5)
+        @PostMapping("/department-documents/sign")
+        @PreAuthorize("hasRole('TRUONG_KHOA')")
+        @ApiMessage("Ký số tài liệu cấp khoa thành công")
+        @Operation(summary = "Sign department summary document", description = "Ký số tài liệu tổng hợp cấp khoa (Mẫu 4 - Tổng hợp đề nghị, Mẫu 5 - Tổng hợp chấm điểm). Yêu cầu role TRUONG_KHOA của phòng ban tương ứng.")
+        @ApiResponses(value = {
+                        @ApiResponse(responseCode = "200", description = "Trả về thông tin chữ ký và URL PDF", content = @Content(schema = @Schema(implementation = DepartmentDocumentSignResponse.class))),
+                        @ApiResponse(responseCode = "400", description = "Document type không hợp lệ hoặc thiếu dữ liệu"),
+                        @ApiResponse(responseCode = "401", description = "Không được phép truy cập"),
+                        @ApiResponse(responseCode = "403", description = "Không có quyền ký (không phải trưởng khoa của phòng ban)"),
+                        @ApiResponse(responseCode = "404", description = "Không tìm thấy phòng ban")
+        })
+        public ResponseEntity<DepartmentDocumentSignResponse> signDepartmentDocument(
+                        @Valid @RequestBody DepartmentDocumentSignRequest request) {
+
+                DepartmentDocumentSignResponse response = digitalSignatureService.signDepartmentDocument(request);
                 return ResponseEntity.ok(response);
         }
 }

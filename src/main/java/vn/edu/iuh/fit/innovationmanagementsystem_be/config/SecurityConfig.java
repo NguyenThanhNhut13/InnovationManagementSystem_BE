@@ -23,13 +23,16 @@ import org.springframework.security.web.SecurityFilterChain;
 public class SecurityConfig {
 
         private final JwtBlacklistFilter jwtBlacklistFilter;
+        private final RateLimitFilter rateLimitFilter;
         private final JwtDecoder jwtDecoder;
         private final JwtAuthenticationConverter jwtAuthenticationConverter;
 
         public SecurityConfig(JwtBlacklistFilter jwtBlacklistFilter,
+                        RateLimitFilter rateLimitFilter,
                         JwtDecoder jwtDecoder,
                         JwtAuthenticationConverter jwtAuthenticationConverter) {
                 this.jwtBlacklistFilter = jwtBlacklistFilter;
+                this.rateLimitFilter = rateLimitFilter;
                 this.jwtDecoder = jwtDecoder;
                 this.jwtAuthenticationConverter = jwtAuthenticationConverter;
         }
@@ -54,8 +57,10 @@ public class SecurityConfig {
                                                 .authenticationEntryPoint(customAuthenticationEntryPoint)
                                                 .accessDeniedHandler(customAccessDeniedHandler))
                                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                                .addFilterBefore(rateLimitFilter,
+                                                org.springframework.security.oauth2.server.resource.web.authentication.BearerTokenAuthenticationFilter.class)
                                 .addFilterBefore(jwtBlacklistFilter,
-                                                org.springframework.security.oauth2.server.resource.web.authentication.BearerTokenAuthenticationFilter.class);
+                                                RateLimitFilter.class);
 
                 return http.build();
         }

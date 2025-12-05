@@ -59,9 +59,6 @@ public class Innovation extends Auditable {
     @JoinColumn(name = "user_id")
     private User user;
 
-    @OneToMany(mappedBy = "innovation", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
-    private List<ReportInnovationDetail> reportInnovationDetails = new ArrayList<>();
-
     @OneToMany(mappedBy = "innovation", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<DigitalSignature> digitalSignatures = new ArrayList<>();
 
