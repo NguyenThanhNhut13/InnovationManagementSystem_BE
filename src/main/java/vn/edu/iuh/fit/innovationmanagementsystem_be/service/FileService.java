@@ -390,4 +390,43 @@ public class FileService {
             throw new IdInvalidException("Failed to test MinIO connection: " + e.getMessage());
         }
     }
+
+    // 9. Upload file với tên cố định (không generate unique name) - dành cho backup
+    public String uploadBytesWithName(byte[] data, String fileName, String contentType) {
+        try {
+            log.info("Bắt đầu upload bytes với tên cố định: fileName={}, size={}, contentType={}",
+                    fileName, data != null ? data.length : 0, contentType);
+
+            ensureBucketExists();
+
+            if (data == null || data.length == 0) {
+                throw new IdInvalidException("File content rỗng");
+            }
+
+            ByteArrayInputStream inputStream = new ByteArrayInputStream(data);
+
+            log.info("Đang upload file lên MinIO: bucket={}, object={}", bucketName, fileName);
+            minioClient.putObject(
+                    PutObjectArgs.builder()
+                            .bucket(bucketName)
+                            .object(fileName)
+                            .stream(inputStream, data.length, -1)
+                            .contentType(contentType)
+                            .build());
+            log.info("Upload file thành công: {}", fileName);
+
+            // Verify file đã tồn tại trên MinIO
+            boolean exists = fileExists(fileName);
+            if (!exists) {
+                log.error("CẢNH BÁO: File vừa upload không tồn tại trên MinIO: {}", fileName);
+                throw new IdInvalidException("File upload thành công nhưng không tìm thấy trên MinIO");
+            }
+            log.info("Xác nhận file tồn tại trên MinIO: {}", fileName);
+
+            return fileName;
+        } catch (Exception e) {
+            log.error("Lỗi khi upload file với tên cố định: {}", e.getMessage(), e);
+            throw new IdInvalidException("Failed to upload file: " + e.getMessage());
+        }
+    }
 }

@@ -96,7 +96,7 @@ public class EmailService {
                             <body>
                                 <div class="container">
                                     <div class="header">
-                                        <img src="https://www.iuh.edu.vn/templates/2015/image/logo.png" alt="IUH Logo"/>
+                                        <img src="https://i.ibb.co/1GLQ9gM9/Logo-ch-nh-th-c.png" alt="IUH Logo"/>
                                     </div>
                                     <div class="title">Mã OTP xác thực đặt lại mật khẩu</div>
                                     <p>Xin chào <b>%s</b>,</p>
@@ -201,7 +201,7 @@ public class EmailService {
                             <body>
                                 <div class="container">
                                     <div class="header">
-                                        <img src="https://www.iuh.edu.vn/templates/2015/image/logo.png" alt="IUH Logo"/>
+                                        <img src="https://i.ibb.co/1GLQ9gM9/Logo-ch-nh-th-c.png" alt="IUH Logo"/>
                                     </div>
                                     <div class="title">Thông báo thay đổi mật khẩu</div>
 
@@ -230,6 +230,141 @@ public class EmailService {
         } catch (Exception e) {
             // Không throw exception vì đây chỉ là notification
         }
+    }
+
+    // 4. Gửi email backup với attachment
+    public void sendBackupEmail(String toEmail, String backupFileName, byte[] backupData,
+            vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.BackupType backupType) {
+        try {
+            MimeMessage mimeMessage = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(mimeMessage,
+                    MimeMessageHelper.MULTIPART_MODE_MIXED_RELATED, "UTF-8");
+
+            helper.setFrom(fromEmail, "Hệ Thống Quản Lý Sáng Kiến - IUH");
+            helper.setTo(toEmail);
+            helper.setSubject("📦 Backup dữ liệu hệ thống - " + backupType.name() + " - " + java.time.LocalDate.now());
+
+            String fileSizeFormatted = formatFileSize(backupData.length);
+
+            String emailContent = String.format(
+                    """
+                            <!DOCTYPE html>
+                            <html lang="vi">
+                            <head>
+                                <meta charset="UTF-8">
+                                <style>
+                                    body {
+                                        font-family: Arial, sans-serif;
+                                        background-color: #f4f6f9;
+                                        padding: 20px;
+                                        margin: 0;
+                                    }
+                                    .container {
+                                        background: #ffffff;
+                                        border-radius: 12px;
+                                        padding: 30px;
+                                        max-width: 620px;
+                                        margin: auto;
+                                        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+                                        border-top: 5px solid #28a745;
+                                    }
+                                    .header {
+                                        text-align: center;
+                                        margin-bottom: 20px;
+                                    }
+                                    .header img {
+                                        width: 120px;
+                                    }
+                                    .title {
+                                        font-size: 22px;
+                                        font-weight: bold;
+                                        color: #28a745;
+                                        margin: 20px 0 15px;
+                                        text-align: center;
+                                        text-transform: uppercase;
+                                    }
+                                    p {
+                                        font-size: 15px;
+                                        color: #333;
+                                        line-height: 1.6;
+                                    }
+                                    .info-box {
+                                        background: #e8f5e9;
+                                        padding: 15px 18px;
+                                        border-radius: 8px;
+                                        margin: 20px 0;
+                                    }
+                                    .info-box p {
+                                        margin: 5px 0;
+                                    }
+                                    .footer {
+                                        font-size: 12px;
+                                        color: #777;
+                                        text-align: center;
+                                        margin-top: 30px;
+                                    }
+                                </style>
+                            </head>
+                            <body>
+                                <div class="container">
+                                    <div class="header">
+                                        <img src="https://i.ibb.co/1GLQ9gM9/Logo-ch-nh-th-c.png" alt="IUH Logo"/>
+                                    </div>
+                                    <div class="title">Backup dữ liệu thành công</div>
+
+                                    <p>Xin chào <b>Quản trị viên</b>,</p>
+                                    <p>Hệ thống đã hoàn tất backup dữ liệu thành công. Thông tin chi tiết:</p>
+
+                                    <div class="info-box">
+                                        <p><strong>📁 Tên file:</strong> %s</p>
+                                        <p><strong>📊 Loại backup:</strong> %s</p>
+                                        <p><strong>💾 Kích thước:</strong> %s</p>
+                                        <p><strong>🕐 Thời gian:</strong> %s</p>
+                                    </div>
+
+                                    <p>File backup đã được đính kèm trong email này. Vui lòng lưu trữ cẩn thận.</p>
+
+                                    <div class="footer">
+                                        <p>Trân trọng,<br/>Đội ngũ Hệ Thống Quản Lý Sáng Kiến - IUH</p>
+                                    </div>
+                                </div>
+                            </body>
+                            </html>
+                            """,
+                    backupFileName,
+                    backupType.name(),
+                    fileSizeFormatted,
+                    java.time.LocalDateTime.now()
+                            .format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss")));
+
+            helper.setText(emailContent, true);
+
+            // Đính kèm file backup
+            helper.addAttachment(extractFileName(backupFileName),
+                    new jakarta.mail.util.ByteArrayDataSource(backupData, "application/octet-stream"));
+
+            mailSender.send(mimeMessage);
+
+        } catch (Exception e) {
+            throw new IdInvalidException("Không thể gửi email backup: " + e.getMessage());
+        }
+    }
+
+    private String formatFileSize(long bytes) {
+        if (bytes < 1024)
+            return bytes + " B";
+        if (bytes < 1024 * 1024)
+            return String.format("%.2f KB", bytes / 1024.0);
+        if (bytes < 1024 * 1024 * 1024)
+            return String.format("%.2f MB", bytes / (1024.0 * 1024));
+        return String.format("%.2f GB", bytes / (1024.0 * 1024 * 1024));
+    }
+
+    private String extractFileName(String path) {
+        if (path == null)
+            return "backup";
+        int lastSlash = path.lastIndexOf('/');
+        return lastSlash >= 0 ? path.substring(lastSlash + 1) : path;
     }
 
 }
