@@ -15,7 +15,7 @@ public class MyInnovationFormDataResponse {
     
     private List<MyTemplateFormDataResponse> templates = new ArrayList<>();
 
-    private List<TemplateSignatureResponse> templateSignatures = new ArrayList<>();
+    private List<FormSignatureResponse> templateSignatures = new ArrayList<>();
 
     private Long submissionTimeRemainingSeconds;
 

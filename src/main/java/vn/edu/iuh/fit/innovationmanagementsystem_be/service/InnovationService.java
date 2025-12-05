@@ -680,7 +680,9 @@ public class InnovationService {
                 // Dùng buildMyTemplateFormDataResponses để trả về format formData object cho FE draft loading
                 response.setTemplates(
                                 innovationSignatureService.buildMyTemplateFormDataResponses(formDataResponses));
-                response.setTemplateSignatures(Collections.emptyList());
+                // Build templateSignatures từ SIGNATURE fields trong formDataResponses
+                response.setTemplateSignatures(
+                                innovationSignatureService.buildFormSignatureResponses(formDataResponses));
                 response.setSubmissionTimeRemainingSeconds(timeRemainingSeconds);
 
                 return response;

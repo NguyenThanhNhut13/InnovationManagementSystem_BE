@@ -18,6 +18,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.CreateInno
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.DigitalSignatureRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.TemplateDataRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.FormDataResponse;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.FormSignatureResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.MyTemplateFormDataResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.TemplateFieldResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.TemplateFormDataResponse;
@@ -339,6 +340,63 @@ public class InnovationSignatureService {
                 .stream()
                 .map(entry -> new MyTemplateFormDataResponse(entry.getKey(), entry.getValue()))
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * Build form signature responses from FormDataResponse list.
+     * Extracts SIGNATURE fields and returns them in the format expected by FE.
+     */
+    public List<FormSignatureResponse> buildFormSignatureResponses(
+            List<FormDataResponse> formDataResponses) {
+        if (formDataResponses == null || formDataResponses.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        List<FormSignatureResponse> signatures = new ArrayList<>();
+
+        for (FormDataResponse formDataResponse : formDataResponses) {
+            // Check if this is a SIGNATURE field
+            if (formDataResponse.getFieldType() != FieldTypeEnum.SIGNATURE) {
+                continue;
+            }
+
+            String templateId = formDataResponse.getTemplateId();
+            if (templateId == null || templateId.isBlank()) {
+                continue;
+            }
+
+            com.fasterxml.jackson.databind.JsonNode fieldValueNode = formDataResponse.getFieldValue();
+            String fieldKey;
+            String signatureUrl;
+
+            // Check if fieldValue has structure {"fieldKey": "...", "value": ...}
+            // This is the case for child fields in sections/tables
+            if (fieldValueNode != null && fieldValueNode.isObject() && fieldValueNode.has("fieldKey")) {
+                // This is a child signature field in section/table
+                fieldKey = fieldValueNode.get("fieldKey").asText();
+                com.fasterxml.jackson.databind.JsonNode valueNode = fieldValueNode.has("value") 
+                    ? fieldValueNode.get("value") 
+                    : null;
+                signatureUrl = (valueNode != null && valueNode.isTextual()) 
+                    ? valueNode.asText() 
+                    : null;
+            } else {
+                // This is a regular signature field (root level)
+                fieldKey = formDataResponse.getFormFieldKey();
+                com.fasterxml.jackson.databind.JsonNode valueNode = extractEffectiveFieldValue(formDataResponse);
+                signatureUrl = (valueNode != null && valueNode.isTextual()) 
+                    ? valueNode.asText() 
+                    : null;
+            }
+
+            if (fieldKey == null || fieldKey.isBlank() || signatureUrl == null || signatureUrl.isBlank()) {
+                continue;
+            }
+
+            signatures.add(new FormSignatureResponse(templateId, fieldKey, signatureUrl));
+        }
+
+        return signatures;
     }
 
     /**
