@@ -9,9 +9,12 @@ RUN mvn clean package -DskipTests
 FROM eclipse-temurin:17-jre-jammy
 WORKDIR /app
 
-# Cài đặt PostgreSQL client cho backup/restore
+# Cài đặt PostgreSQL client và Microsoft Core Fonts (Times New Roman)
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends postgresql-client && \
+    apt-get install -y --no-install-recommends postgresql-client fontconfig && \
+    echo "ttf-mscorefonts-installer msttcorefonts/accepted-mscorefonts-eula select true" | debconf-set-selections && \
+    apt-get install -y --no-install-recommends ttf-mscorefonts-installer && \
+    fc-cache -f -v && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
