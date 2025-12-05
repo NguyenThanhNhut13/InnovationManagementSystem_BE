@@ -241,6 +241,12 @@
 			<version>5.2.5</version>
 		</dependency>
 
+		<!-- Spring WebFlux - For WebClient to call Gemini API -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-webflux</artifactId>
+		</dependency>
+
 	</dependencies>
 
 	<build>

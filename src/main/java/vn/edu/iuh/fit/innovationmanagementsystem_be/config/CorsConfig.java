@@ -26,9 +26,14 @@ public class CorsConfig {
                         "https://localhost:9000",
                         "http://localhost:9001",
                         "https://localhost:9001",
+                        "http://127.0.0.1:5500",
+                        "http://localhost:5500",
                         "http://innovation-management-system-fe.vercel.app",
                         "https://innovation-management-system-fe.vercel.app",
                         "https://api.silenthero.xyz"));
+
+        // Cho phép origin null (khi mở file HTML trực tiếp) - CHỈ DÙNG CHO DEV
+        configuration.setAllowedOriginPatterns(Arrays.asList("*"));
 
         // các method nào đc kết nối
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
