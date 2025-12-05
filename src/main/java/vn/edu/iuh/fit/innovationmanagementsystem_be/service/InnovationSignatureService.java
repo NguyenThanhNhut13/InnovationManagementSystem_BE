@@ -308,12 +308,26 @@ public class InnovationSignatureService {
                 continue;
             }
 
-            String fieldKey = formDataResponse.getFormFieldKey();
+            com.fasterxml.jackson.databind.JsonNode fieldValueNode = formDataResponse.getFieldValue();
+            String fieldKey;
+            com.fasterxml.jackson.databind.JsonNode valueNode;
+
+            // Check if fieldValue has structure {"fieldKey": "...", "value": ...}
+            // This is the case for child fields in sections/tables
+            if (fieldValueNode != null && fieldValueNode.isObject() && fieldValueNode.has("fieldKey")) {
+                // This is a child field in section/table
+                fieldKey = fieldValueNode.get("fieldKey").asText();
+                valueNode = fieldValueNode.has("value") ? fieldValueNode.get("value") : null;
+            } else {
+                // This is a regular field (root level)
+                fieldKey = formDataResponse.getFormFieldKey();
+                valueNode = extractEffectiveFieldValue(formDataResponse);
+            }
+
             if (fieldKey == null || fieldKey.isBlank()) {
                 continue;
             }
 
-            com.fasterxml.jackson.databind.JsonNode valueNode = extractEffectiveFieldValue(formDataResponse);
             Object value = convertJsonNodeToObject(valueNode);
 
             groupedByTemplate
