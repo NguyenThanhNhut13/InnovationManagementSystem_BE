@@ -163,8 +163,11 @@ public class DigitalSignatureService {
             }
 
             // Nếu signature_hash đã được dùng cho tài liệu khác thì không cho phép
+            // throw new IdInvalidException(
+            // "Chữ ký số này đã được sử dụng cho tài liệu khác. Vui lòng tạo lại tài liệu
+            // và ký lại.");
             throw new IdInvalidException(
-                    "Chữ ký số này đã được sử dụng cho tài liệu khác. Vui lòng tạo lại tài liệu và ký lại.");
+                    "Tài liệu này đã được ký số trước đó. Vui lòng kiểm tra lại.");
         }
 
         // 3. Tạo timestamp cho chữ ký (RFC 3161) - Disabled for academic project
