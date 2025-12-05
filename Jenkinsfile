@@ -64,8 +64,8 @@ pipeline {
                 script {
                     echo 'Building Docker image...'
                     // sh 'docker build -t ${DOCKER_IMAGE}:latest .'
-                    sh 'docker build --no-cache -t ${DOCKER_IMAGE}:latest .'
-                    // sh 'docker build --quiet --no-cache -t ${DOCKER_IMAGE}:latest .'
+                    // sh 'docker build --no-cache -t ${DOCKER_IMAGE}:latest .'
+                    sh 'docker build --quiet --no-cache -t ${DOCKER_IMAGE}:latest .'
 
                 }
             }
