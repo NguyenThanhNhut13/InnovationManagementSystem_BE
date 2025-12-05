@@ -174,7 +174,7 @@ pipeline {
                     </body>
                     </html>
                 """,
-                to: '${DEFAULT_RECIPIENTS}',
+                to: 'meloball.m4v@gmail.com',
                 mimeType: 'text/html'
             )
         }
@@ -241,7 +241,7 @@ pipeline {
                     </body>
                     </html>
                 """,
-                to: '${DEFAULT_RECIPIENTS}',
+                to: 'meloball.m4v@gmail.com',
                 mimeType: 'text/html'
             )
         }
@@ -295,7 +295,7 @@ pipeline {
                     </body>
                     </html>
                 """,
-                to: '${DEFAULT_RECIPIENTS}',
+                to: 'meloball.m4v@gmail.com',
                 mimeType: 'text/html'
             )
         }

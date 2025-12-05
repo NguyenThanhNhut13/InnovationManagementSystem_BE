@@ -84,6 +84,8 @@ public class DepartmentService {
 
         // 3. Import departments từ file Excel
         public DepartmentImportResponse importDepartmentsFromExcel(MultipartFile file) {
+                validateExcelFile(file);
+
                 List<DepartmentImportResponse.SkippedDepartment> skippedDepartments = new ArrayList<>();
                 List<Department> departmentsToSave = new ArrayList<>();
                 int totalRecords = 0;
@@ -164,6 +166,19 @@ public class DepartmentService {
                                 return String.valueOf(cell.getBooleanCellValue());
                         default:
                                 return "";
+                }
+        }
+
+        private void validateExcelFile(MultipartFile file) {
+                if (file == null || file.isEmpty()) {
+                        throw new IdInvalidException("File không được để trống");
+                }
+
+                String originalFilename = file.getOriginalFilename();
+                if (originalFilename == null ||
+                                (!originalFilename.toLowerCase().endsWith(".xlsx")
+                                                && !originalFilename.toLowerCase().endsWith(".xls"))) {
+                        throw new IdInvalidException("Chỉ chấp nhận file Excel (.xlsx hoặc .xls)");
                 }
         }
 }

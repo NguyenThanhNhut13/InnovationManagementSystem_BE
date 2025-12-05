@@ -1,12 +1,20 @@
 package vn.edu.iuh.fit.innovationmanagementsystem_be.service;
 
+import java.io.InputStream;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
+import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.lang.NonNull;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import jakarta.servlet.http.HttpServletRequest;
@@ -19,6 +27,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.UserReques
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.UserSignatureProfileRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.UpdateProfileRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.UserResponse;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.UserImportResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.UserRoleResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.UserRoleEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.exception.IdInvalidException;
@@ -408,6 +417,219 @@ public class UserService {
             certificateRevocationService.restoreCertificate(userId);
             org.slf4j.LoggerFactory.getLogger(UserService.class).info(
                     "User {} reactivated - Certificate restored", userId);
+        }
+    }
+
+    // 21. Import users từ file Excel
+    public UserImportResponse importUsersFromExcel(MultipartFile file) {
+        validateExcelFile(file);
+
+        List<UserImportResponse.SkippedUser> skippedUsers = new ArrayList<>();
+        List<User> usersToSave = new ArrayList<>();
+        Map<String, String> departmentTruongKhoa = new HashMap<>();
+        int totalRecords = 0;
+
+        try (InputStream inputStream = file.getInputStream();
+                Workbook workbook = new XSSFWorkbook(inputStream)) {
+
+            Sheet sheet = workbook.getSheetAt(0);
+            boolean isFirstRow = true;
+
+            // Tải danh sách các department đã có trưởng khoa
+            for (Department dept : departmentRepository.findAll()) {
+                if (userRoleRepository.existsByRoleRoleNameAndUserDepartmentId(UserRoleEnum.TRUONG_KHOA,
+                        dept.getId())) {
+                    departmentTruongKhoa.put(dept.getId(), "EXISTS");
+                }
+            }
+
+            for (Row row : sheet) {
+                if (isFirstRow) {
+                    isFirstRow = false;
+                    continue;
+                }
+
+                Cell personnelIdCell = row.getCell(0);
+                Cell fullNameCell = row.getCell(1);
+                Cell emailCell = row.getCell(2);
+                Cell dateOfBirthCell = row.getCell(3);
+                Cell qualificationCell = row.getCell(4);
+                Cell departmentCodeCell = row.getCell(5);
+                Cell roleCell = row.getCell(6);
+
+                if (personnelIdCell == null || fullNameCell == null || emailCell == null
+                        || departmentCodeCell == null) {
+                    continue;
+                }
+
+                String personnelId = getCellValueAsString(personnelIdCell).trim();
+                String fullName = getCellValueAsString(fullNameCell).trim();
+                String email = getCellValueAsString(emailCell).trim();
+                String departmentCode = getCellValueAsString(departmentCodeCell).trim();
+                String roleStr = roleCell != null ? getCellValueAsString(roleCell).trim().toUpperCase() : "GIANG_VIEN";
+
+                if (personnelId.isEmpty() || fullName.isEmpty() || email.isEmpty() || departmentCode.isEmpty()) {
+                    continue;
+                }
+
+                totalRecords++;
+
+                // Kiểm tra personnel_id đã tồn tại
+                if (userRepository.existsByPersonnelId(personnelId)) {
+                    skippedUsers.add(new UserImportResponse.SkippedUser(
+                            personnelId, fullName, email, "Mã nhân viên đã tồn tại"));
+                    continue;
+                }
+
+                // Kiểm tra email đã tồn tại
+                if (userRepository.existsByEmail(email)) {
+                    skippedUsers.add(new UserImportResponse.SkippedUser(
+                            personnelId, fullName, email, "Email đã tồn tại"));
+                    continue;
+                }
+
+                // Tìm department theo department_code
+                Optional<Department> deptOpt = departmentRepository.findByDepartmentCode(departmentCode);
+                if (deptOpt.isEmpty()) {
+                    skippedUsers.add(new UserImportResponse.SkippedUser(
+                            personnelId, fullName, email, "Mã phòng ban không tồn tại: " + departmentCode));
+                    continue;
+                }
+                Department department = deptOpt.get();
+
+                // Xử lý role và title
+                UserRoleEnum userRoleEnum = UserRoleEnum.GIANG_VIEN;
+                String title = "Giảng viên";
+                boolean shouldDowngradeToGiangVien = false;
+
+                if ("TRUONG_KHOA".equals(roleStr)) {
+                    // Kiểm tra xem khoa đã có trưởng khoa chưa
+                    if (departmentTruongKhoa.containsKey(department.getId())) {
+                        shouldDowngradeToGiangVien = true;
+                        skippedUsers.add(new UserImportResponse.SkippedUser(
+                                personnelId, fullName, email,
+                                "Khoa " + department.getDepartmentName()
+                                        + " đã có Trưởng khoa, đã chuyển thành Giảng viên"));
+                    } else {
+                        userRoleEnum = UserRoleEnum.TRUONG_KHOA;
+                        title = "Trưởng khoa";
+                        departmentTruongKhoa.put(department.getId(), personnelId);
+                    }
+                }
+
+                if (shouldDowngradeToGiangVien || "GIANG_VIEN".equals(roleStr)) {
+                    userRoleEnum = UserRoleEnum.GIANG_VIEN;
+                    title = "Giảng viên";
+                }
+
+                // Parse date_of_birth
+                LocalDate dateOfBirth = null;
+                if (dateOfBirthCell != null) {
+                    dateOfBirth = parseDateOfBirth(dateOfBirthCell);
+                }
+
+                // Parse qualification
+                String qualification = qualificationCell != null ? getCellValueAsString(qualificationCell).trim()
+                        : null;
+
+                // Tạo user
+                User user = new User();
+                user.setPersonnelId(personnelId);
+                user.setFullName(fullName);
+                user.setEmail(email);
+                user.setPassword(passwordEncoder.encode(personnelId));
+                user.setDepartment(department);
+                user.setDateOfBirth(dateOfBirth);
+                user.setQualification(qualification);
+                user.setTitle(title);
+
+                userRepository.save(user);
+
+                // Gán role
+                final UserRoleEnum finalRoleEnum = userRoleEnum;
+                Role role = roleRepository.findByRoleName(finalRoleEnum)
+                        .orElseThrow(() -> new IdInvalidException("Không tìm thấy role: " + finalRoleEnum));
+                UserRole userRole = new UserRole();
+                userRole.setUser(user);
+                userRole.setRole(role);
+                userRoleRepository.save(userRole);
+
+                // Tạo UserSignatureProfile
+                UserSignatureProfileRequest profileRequest = new UserSignatureProfileRequest();
+                profileRequest.setUserId(user.getId());
+                profileRequest.setPathUrl(null);
+                this.userSignatureProfileService.createUserSignatureProfile(profileRequest);
+
+                usersToSave.add(user);
+            }
+
+        } catch (Exception e) {
+            throw new IdInvalidException("Lỗi khi đọc file Excel: " + e.getMessage());
+        }
+
+        int importedCount = usersToSave.size();
+        int skippedCount = skippedUsers.size();
+
+        String message = String.format("Import thành công %d/%d nhân viên. Bỏ qua %d nhân viên.",
+                importedCount, totalRecords, skippedCount);
+
+        return new UserImportResponse(totalRecords, importedCount, skippedCount, skippedUsers, message);
+    }
+
+    private String getCellValueAsString(Cell cell) {
+        if (cell == null) {
+            return "";
+        }
+        switch (cell.getCellType()) {
+            case STRING:
+                return cell.getStringCellValue();
+            case NUMERIC:
+                if (DateUtil.isCellDateFormatted(cell)) {
+                    return cell.getLocalDateTimeCellValue().toLocalDate().toString();
+                }
+                return String.valueOf((long) cell.getNumericCellValue());
+            case BOOLEAN:
+                return String.valueOf(cell.getBooleanCellValue());
+            default:
+                return "";
+        }
+    }
+
+    private LocalDate parseDateOfBirth(Cell cell) {
+        try {
+            if (cell.getCellType() == CellType.NUMERIC && DateUtil.isCellDateFormatted(cell)) {
+                return cell.getLocalDateTimeCellValue().toLocalDate();
+            } else if (cell.getCellType() == CellType.STRING) {
+                String dateStr = cell.getStringCellValue().trim();
+                if (!dateStr.isEmpty()) {
+                    // Thử parse với định dạng dd/MM/yyyy hoặc yyyy-MM-dd
+                    try {
+                        return LocalDate.parse(dateStr, DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+                    } catch (Exception e1) {
+                        try {
+                            return LocalDate.parse(dateStr, DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+                        } catch (Exception e2) {
+                            return null;
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            return null;
+        }
+        return null;
+    }
+
+    private void validateExcelFile(MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            throw new IdInvalidException("File không được để trống");
+        }
+
+        String originalFilename = file.getOriginalFilename();
+        if (originalFilename == null ||
+                (!originalFilename.toLowerCase().endsWith(".xlsx")
+                        && !originalFilename.toLowerCase().endsWith(".xls"))) {
+            throw new IdInvalidException("Chỉ chấp nhận file Excel (.xlsx hoặc .xls)");
         }
     }
 }
