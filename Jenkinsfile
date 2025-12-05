@@ -174,7 +174,7 @@ pipeline {
                     </body>
                     </html>
                 """,
-                to: '${DEFAULT_RECIPIENTS}'
+                to: '${DEFAULT_RECIPIENTS}',
                 mimeType: 'text/html'
             )
         }
@@ -241,7 +241,7 @@ pipeline {
                     </body>
                     </html>
                 """,
-                to: '${DEFAULT_RECIPIENTS}'
+                to: '${DEFAULT_RECIPIENTS}',
                 mimeType: 'text/html'
             )
         }
