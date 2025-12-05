@@ -120,9 +120,9 @@ pipeline {
     
     post {
         success {
-            echo 'Deployment successful!'
+            echo 'Hệ Thống Quản Lý Sáng Kiến - IUH đã được deploy thành công!'
             emailext (
-                subject: "✅ Deployment SUCCESS: ${env.JOB_NAME} - Build #${env.BUILD_NUMBER}",
+                subject: "✅ Bản Build mới của hệ đã được deploy thành công - Build #${env.BUILD_NUMBER}",
                 body: """
                     <html>
                     <head>
@@ -174,14 +174,14 @@ pipeline {
                     </body>
                     </html>
                 """,
-                to: 'ntanhquan.slly@gmail.com',
+                to: '${DEFAULT_RECIPIENTS}'
                 mimeType: 'text/html'
             )
         }
         failure {
-            echo 'Deployment failed!'
+            echo 'Hệ Thống Quản Lý Sáng Kiến - IUH đã deploy thất bại!'
             emailext (
-                subject: "❌ Deployment FAILED: ${env.JOB_NAME} - Build #${env.BUILD_NUMBER}",
+                subject: "❌ Hệ Thống Quản Lý Sáng Kiến - IUH đã deploy thất bại! - Build #${env.BUILD_NUMBER}",
                 body: """
                     <html>
                     <head>
@@ -241,14 +241,14 @@ pipeline {
                     </body>
                     </html>
                 """,
-                to: 'ntanhquan.slly@gmail.com',
+                to: '${DEFAULT_RECIPIENTS}'
                 mimeType: 'text/html'
             )
         }
         unstable {
-            echo 'Deployment unstable!'
+            echo 'Hệ Thống Quản Lý Sáng Kiến - IUH đã deploy không ổn định!'
             emailext (
-                subject: "⚠️ Deployment UNSTABLE: ${env.JOB_NAME} - Build #${env.BUILD_NUMBER}",
+                subject: "⚠️ Hệ Thống Quản Lý Sáng Kiến - IUH đã deploy không ổn định! - Build #${env.BUILD_NUMBER}",
                 body: """
                     <html>
                     <head>
@@ -295,7 +295,7 @@ pipeline {
                     </body>
                     </html>
                 """,
-                to: 'ntanhquan.slly@gmail.com',
+                to: '${DEFAULT_RECIPIENTS}',
                 mimeType: 'text/html'
             )
         }
