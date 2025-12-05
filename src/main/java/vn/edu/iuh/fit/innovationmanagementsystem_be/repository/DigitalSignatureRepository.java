@@ -48,4 +48,15 @@ public interface DigitalSignatureRepository extends JpaRepository<DigitalSignatu
         @Modifying
         @Query("DELETE FROM DigitalSignature ds WHERE ds.innovation.id = :innovationId")
         void deleteByInnovationId(@Param("innovationId") String innovationId);
+
+        @Query("SELECT CASE WHEN COUNT(ds) > 0 THEN true ELSE false END FROM DigitalSignature ds " +
+                        "WHERE ds.report.departmentId = :departmentId " +
+                        "AND ds.documentType = :documentType " +
+                        "AND ds.user.id = :userId " +
+                        "AND ds.status = :status")
+        boolean existsByReportDepartmentIdAndDocumentTypeAndUserIdAndStatus(
+                        @Param("departmentId") String departmentId,
+                        @Param("documentType") DocumentTypeEnum documentType,
+                        @Param("userId") String userId,
+                        @Param("status") SignatureStatusEnum status);
 }

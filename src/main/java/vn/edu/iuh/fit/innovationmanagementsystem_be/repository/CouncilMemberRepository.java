@@ -6,6 +6,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.CouncilMember;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.CouncilMemberRoleEnum;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface CouncilMemberRepository extends JpaRepository<CouncilMember, String> {
@@ -17,4 +18,9 @@ public interface CouncilMemberRepository extends JpaRepository<CouncilMember, St
     Long countByCouncilIdAndRole(String councilId, CouncilMemberRoleEnum role);
 
     List<CouncilMember> findByUserId(String userId);
+
+    Optional<CouncilMember> findByCouncilIdAndUserIdAndRole(String councilId, String userId,
+            CouncilMemberRoleEnum role);
+
+    boolean existsByCouncilIdAndUserIdAndRole(String councilId, String userId, CouncilMemberRoleEnum role);
 }
