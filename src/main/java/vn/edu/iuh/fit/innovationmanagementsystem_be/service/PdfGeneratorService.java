@@ -137,7 +137,8 @@ public class PdfGeneratorService {
                 "* { font-family: 'Times New Roman', Times, serif !important; font-size: 13pt; }" +
                 "body { font-family: 'Times New Roman', Times, serif !important; font-size: 13pt; }" +
                 "p, div, span { font-family: 'Times New Roman', Times, serif !important; font-size: 13pt; }" +
-                "table, th, td { font-family: 'Times New Roman', Times, serif !important; font-size: 13pt; }" +
+                "table, th, td { font-family: 'Times New Roman', Times, serif !important; font-size: 12pt !important; }" +
+                "table *, table th, table td { font-size: 12pt !important; }" +
                 "h1, h2, h3, h4, h5, h6 { font-family: 'Times New Roman', Times, serif !important; }" +
                 "</style>";
 
