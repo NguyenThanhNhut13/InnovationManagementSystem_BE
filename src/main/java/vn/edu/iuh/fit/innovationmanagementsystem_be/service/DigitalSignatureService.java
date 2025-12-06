@@ -1093,8 +1093,14 @@ public class DigitalSignatureService {
         
         // Set status dựa trên isSign và document type
         if (!isSign) {
-            // Lưu nháp
-            report.setStatus(ReportStatusEnum.DRAFT);
+            // Lưu nháp hoặc nộp (tùy theo mẫu)
+            if (documentType == DocumentTypeEnum.REPORT_MAU_3) {
+                // Mẫu 3: Thư ký lưu nháp
+                report.setStatus(ReportStatusEnum.DRAFT);
+            } else {
+                // Mẫu 4, 5: Thư ký nộp cho trưởng khoa (chưa ký)
+                report.setStatus(ReportStatusEnum.SUBMITTED_TO_DEPARTMENT);
+            }
         } else {
             // Đã nộp/ký
             if (documentType == DocumentTypeEnum.REPORT_MAU_3) {
@@ -1106,7 +1112,7 @@ public class DigitalSignatureService {
                     // Trưởng khoa ký → nộp lên trường
                     report.setStatus(ReportStatusEnum.SUBMITTED_TO_SCHOOL);
                 } else {
-                    // Thư ký nộp cho trưởng khoa
+                    // Thư ký ký (trường hợp này không nên xảy ra vì đã check role ở trên)
                     report.setStatus(ReportStatusEnum.SUBMITTED_TO_DEPARTMENT);
                 }
             }
