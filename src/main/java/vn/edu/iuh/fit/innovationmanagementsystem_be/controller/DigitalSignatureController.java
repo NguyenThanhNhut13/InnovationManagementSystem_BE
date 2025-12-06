@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.DocumentTypeEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.UserRoleEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.DepartmentDocumentSignRequest;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.SignExistingReportRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.VerifyDigitalSignatureRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.DepartmentDocumentSignResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.UserDocumentSignatureStatusResponse;
@@ -107,8 +108,8 @@ public class DigitalSignatureController {
 
         // 4. Ký số tài liệu tổng hợp cấp khoa (Mẫu 4, Mẫu 5)
         @PostMapping("/department-documents/sign")
-        @PreAuthorize("hasRole('TRUONG_KHOA')")
-        @ApiMessage("Ký số tài liệu cấp khoa thành công")
+        @PreAuthorize("hasAnyRole('TRUONG_KHOA', 'TV_HOI_DONG_TRUONG', 'TV_HOI_DONG_KHOA')")
+        @ApiMessage("Xử lý tài liệu cấp khoa thành công")
         @Operation(summary = "Sign department summary document", description = "Ký số tài liệu tổng hợp cấp khoa (Mẫu 4 - Tổng hợp đề nghị, Mẫu 5 - Tổng hợp chấm điểm). Yêu cầu role TRUONG_KHOA của phòng ban tương ứng.")
         @ApiResponses(value = {
                         @ApiResponse(responseCode = "200", description = "Trả về thông tin chữ ký và URL PDF", content = @Content(schema = @Schema(implementation = DepartmentDocumentSignResponse.class))),
@@ -121,6 +122,25 @@ public class DigitalSignatureController {
                         @Valid @RequestBody DepartmentDocumentSignRequest request) {
 
                 DepartmentDocumentSignResponse response = digitalSignatureService.signDepartmentDocument(request);
+                return ResponseEntity.ok(response);
+        }
+
+        // 5. Ký số Report đã tồn tại (sau khi lưu với isSign = false)
+        @PostMapping("/department-documents/{reportId}/sign")
+        @PreAuthorize("hasAnyRole('TRUONG_KHOA', 'TV_HOI_DONG_TRUONG', 'TV_HOI_DONG_KHOA')")
+        @ApiMessage("Ký số báo cáo thành công")
+        @Operation(summary = "Sign existing report", description = "Ký số Report đã lưu trước đó (khi tạo với isSign = false)")
+        @ApiResponses(value = {
+                        @ApiResponse(responseCode = "200", description = "Ký số thành công", content = @Content(schema = @Schema(implementation = DepartmentDocumentSignResponse.class))),
+                        @ApiResponse(responseCode = "400", description = "Không thể ký"),
+                        @ApiResponse(responseCode = "403", description = "Không có quyền ký"),
+                        @ApiResponse(responseCode = "404", description = "Không tìm thấy Report")
+        })
+        public ResponseEntity<DepartmentDocumentSignResponse> signExistingReport(
+                        @PathVariable String reportId,
+                        @RequestBody(required = false) SignExistingReportRequest request) {
+
+                DepartmentDocumentSignResponse response = digitalSignatureService.signExistingReport(reportId, request);
                 return ResponseEntity.ok(response);
         }
 }

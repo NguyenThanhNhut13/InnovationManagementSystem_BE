@@ -7,10 +7,17 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.DocumentTypeEnum;
 
+import java.util.Map;
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 public class DepartmentDocumentSignRequest {
+
+    @NotBlank(message = "Template ID không được để trống")
+    private String templateId;
+
+    private Map<String, Object> reportData;
 
     @NotBlank(message = "HTML content không được để trống")
     private String htmlContentBase64;
@@ -20,4 +27,10 @@ public class DepartmentDocumentSignRequest {
 
     @NotBlank(message = "Department ID không được để trống")
     private String departmentId;
+
+    private String councilId;
+
+    // Nếu true: ký ngay và tạo DigitalSignature
+    // Nếu false: chỉ lưu Report, ký sau
+    private Boolean isSign = false;
 }

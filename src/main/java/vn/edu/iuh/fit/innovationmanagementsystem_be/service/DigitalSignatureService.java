@@ -28,9 +28,13 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.FormTemplateRepos
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.InnovationRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.DepartmentRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.ReportRepository;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.CouncilMemberRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.UserSignatureProfileRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.Report;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.CouncilMember;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.CouncilMemberRoleEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.DepartmentDocumentSignRequest;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.SignExistingReportRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.DepartmentDocumentSignResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.Utils;
 
@@ -65,6 +69,7 @@ public class DigitalSignatureService {
     private final PdfGeneratorService pdfGeneratorService;
     private final DepartmentRepository departmentRepository;
     private final ReportRepository reportRepository;
+    private final CouncilMemberRepository councilMemberRepository;
 
     public DigitalSignatureService(DigitalSignatureRepository digitalSignatureRepository,
             InnovationRepository innovationRepository,
@@ -81,7 +86,8 @@ public class DigitalSignatureService {
             CertificateRevocationService certificateRevocationService,
             PdfGeneratorService pdfGeneratorService,
             DepartmentRepository departmentRepository,
-            ReportRepository reportRepository) {
+            ReportRepository reportRepository,
+            CouncilMemberRepository councilMemberRepository) {
         this.digitalSignatureRepository = digitalSignatureRepository;
         this.innovationRepository = innovationRepository;
         this.userSignatureProfileRepository = userSignatureProfileRepository;
@@ -98,6 +104,7 @@ public class DigitalSignatureService {
         this.pdfGeneratorService = pdfGeneratorService;
         this.departmentRepository = departmentRepository;
         this.reportRepository = reportRepository;
+        this.councilMemberRepository = councilMemberRepository;
     }
 
     // 1. Tạo digital signature
@@ -1003,27 +1010,198 @@ public class DigitalSignatureService {
         return fields;
     }
 
-    // 7. Ký số tài liệu tổng hợp cấp khoa (Mẫu 4 - TONG_HOP_DE_NGHI, Mẫu 5 -
-    // TONG_HOP_CHAM_DIEM)
+    // 7. Ký số báo cáo cấp khoa (Mẫu 3, 4, 5)
     public DepartmentDocumentSignResponse signDepartmentDocument(DepartmentDocumentSignRequest request) {
         DocumentTypeEnum documentType = request.getDocumentType();
-        if (documentType != DocumentTypeEnum.REPORT_MAU_4 && documentType != DocumentTypeEnum.REPORT_MAU_5) {
+        boolean isSign = Boolean.TRUE.equals(request.getIsSign());
+
+        // 1. Validate document type
+        if (documentType != DocumentTypeEnum.REPORT_MAU_3
+                && documentType != DocumentTypeEnum.REPORT_MAU_4
+                && documentType != DocumentTypeEnum.REPORT_MAU_5) {
             throw new IdInvalidException(
-                    "Document type phải là REPORT_MAU_4 (Tổng hợp đề nghị) hoặc REPORT_MAU_5 (Tổng hợp chấm điểm)");
+                    "Document type phải là REPORT_MAU_3, REPORT_MAU_4 hoặc REPORT_MAU_5");
         }
 
-        // 2. Kiểm tra department tồn tại
+        // 2. Validate councilId bắt buộc cho Mẫu 3
+        if (documentType == DocumentTypeEnum.REPORT_MAU_3
+                && (request.getCouncilId() == null || request.getCouncilId().isBlank())) {
+            throw new IdInvalidException("Council ID là bắt buộc cho Mẫu 3 (Biên bản họp)");
+        }
+
+        // 3. Kiểm tra department tồn tại
         vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.Department department = departmentRepository
                 .findById(request.getDepartmentId())
                 .orElseThrow(() -> new IdInvalidException(
                         "Không tìm thấy phòng ban với ID: " + request.getDepartmentId()));
 
-        // 3. Validate user có role TRUONG_KHOA của departmentId đó
         User currentUser = userService.getCurrentUser();
-        if (!isDepartmentHeadOf(currentUser, request.getDepartmentId())) {
-            throw new IdInvalidException(
-                    "Bạn không có quyền ký tài liệu này. Chỉ trưởng khoa của phòng ban " +
-                            department.getDepartmentName() + " mới có thể ký.");
+        UserRoleEnum signedAsRole = null;
+
+        // 4. Validate quyền ký theo document type (chỉ khi isSign = true)
+        if (isSign) {
+            if (documentType == DocumentTypeEnum.REPORT_MAU_3) {
+                signedAsRole = validateAndGetRoleForMau3(currentUser, request.getDepartmentId(), request.getCouncilId(),
+                        department);
+            } else {
+                // Mẫu 4, 5: Chỉ TRUONG_KHOA được ký
+                if (!isDepartmentHeadOf(currentUser, request.getDepartmentId())) {
+                    throw new IdInvalidException(
+                            "Bạn không có quyền ký tài liệu này. Chỉ trưởng khoa của phòng ban " +
+                                    department.getDepartmentName() + " mới có thể ký.");
+                }
+                signedAsRole = UserRoleEnum.TRUONG_KHOA;
+            }
+        }
+
+        // 5. Decode Base64 HTML
+        String htmlContent = Utils.decode(request.getHtmlContentBase64());
+        if (htmlContent == null || htmlContent.isBlank()) {
+            throw new IdInvalidException("Nội dung HTML sau khi giải mã đang trống.");
+        }
+
+        // 6. Convert HTML to PDF và upload lên MinIO
+        byte[] pdfBytes = pdfGeneratorService.convertHtmlToPdf(htmlContent);
+        String fileName = "department_" + request.getDepartmentId() + "_" + documentType.name() + "_"
+                + System.currentTimeMillis() + ".pdf";
+        String pdfUrl = fileService.uploadBytes(pdfBytes, fileName, "application/pdf");
+
+        // 7. Tạo hoặc cập nhật Report
+        Report report = reportRepository
+                .findByDepartmentIdAndReportType(request.getDepartmentId(), documentType)
+                .orElseGet(() -> {
+                    Report newReport = new Report();
+                    newReport.setDepartmentId(request.getDepartmentId());
+                    newReport.setReportType(documentType);
+                    return newReport;
+                });
+
+        report.setGeneratedPdfPath(pdfUrl);
+        report.setCouncilId(request.getCouncilId());
+        report.setTemplateId(request.getTemplateId());
+        report.setReportData(request.getReportData());
+        Report savedReport = reportRepository.save(report);
+
+        // 8. Build response
+        DepartmentDocumentSignResponse response = new DepartmentDocumentSignResponse();
+        response.setReportId(savedReport.getId());
+        response.setIsSigned(isSign);
+        response.setDocumentType(documentType);
+        response.setDepartmentId(request.getDepartmentId());
+        response.setCouncilId(request.getCouncilId());
+        response.setPdfUrl(fileService.getPresignedUrl(pdfUrl, 3600));
+
+        // 9. Nếu isSign = true, thực hiện ký số
+        if (isSign) {
+            // Lấy signature profile và validate
+            UserSignatureProfile signatureProfile = userSignatureProfileRepository.findByUserId(currentUser.getId())
+                    .orElseThrow(() -> new IdInvalidException("Người dùng chưa có hồ sơ chữ ký số"));
+
+            validateUserCanSign(currentUser, signatureProfile);
+
+            // Validate certificate nếu có
+            if (signatureProfile.getCertificateData() != null) {
+                CertificateValidationService.CertificateValidationResult certValidation = certificateValidationService
+                        .validateX509Certificate(signatureProfile.getCertificateData());
+
+                if (!certValidation.isValid()) {
+                    throw new IdInvalidException("Certificate không hợp lệ: " +
+                            String.join(", ", certValidation.getErrors()));
+                }
+
+                CertificateValidationService.CertificateExpirationResult expirationResult = certificateValidationService
+                        .checkCertificateExpiration(signatureProfile.getCertificateData());
+
+                if (expirationResult.isExpired()) {
+                    throw new IdInvalidException("Certificate đã hết hạn");
+                }
+
+                validateInternalCA(signatureProfile);
+                validateAndSetupCertificateIfNeeded(signatureProfile, currentUser);
+            }
+
+            // Generate document hash
+            String documentHash = keyManagementService
+                    .generateDocumentHash(htmlContent.getBytes(StandardCharsets.UTF_8));
+
+            // Generate signature hash
+            String decryptedPrivateKey = hsmEncryptionService
+                    .decryptPrivateKey(signatureProfile.getEncryptedPrivateKey());
+            String signatureHash = keyManagementService.generateSignature(documentHash, decryptedPrivateKey);
+
+            // Verify signature trước khi lưu
+            boolean isValidSignature = keyManagementService.verifySignature(
+                    documentHash,
+                    signatureHash,
+                    signatureProfile.getPublicKey());
+
+            if (!isValidSignature) {
+                throw new IdInvalidException("Chữ ký không hợp lệ");
+            }
+
+            // Kiểm tra idempotent
+            Optional<DigitalSignature> existingByHashOpt = digitalSignatureRepository
+                    .findBySignatureHash(signatureHash);
+            if (existingByHashOpt.isPresent()) {
+                throw new IdInvalidException("Tài liệu này đã được ký số trước đó. Vui lòng kiểm tra lại.");
+            }
+
+            // Tạo và lưu DigitalSignature
+            DigitalSignature digitalSignature = new DigitalSignature();
+            digitalSignature.setDocumentType(documentType);
+            digitalSignature.setSignedAsRole(signedAsRole);
+            digitalSignature.setSignatureHash(signatureHash);
+            digitalSignature.setDocumentHash(documentHash);
+            digitalSignature.setStatus(SignatureStatusEnum.SIGNED);
+            digitalSignature.setInnovation(null);
+            digitalSignature.setUser(currentUser);
+            digitalSignature.setUserSignatureProfile(signatureProfile);
+            digitalSignature.setCertificateValidationStatus("VALID");
+            digitalSignature.setReport(savedReport);
+
+            DigitalSignature savedSignature = digitalSignatureRepository.save(digitalSignature);
+
+            // Update response với thông tin chữ ký
+            response.setSignatureId(savedSignature.getId());
+            response.setDocumentHash(documentHash);
+            response.setSignatureHash(signatureHash);
+            response.setSignedAsRole(signedAsRole);
+            response.setSignerName(currentUser.getFullName());
+            response.setSignedAt(savedSignature.getSignAt());
+        }
+
+        return response;
+    }
+
+    // 8. Ký số Report đã tồn tại
+    public DepartmentDocumentSignResponse signExistingReport(String reportId, SignExistingReportRequest request) {
+        // 1. Tìm Report
+        Report report = reportRepository.findById(reportId)
+                .orElseThrow(() -> new IdInvalidException("Không tìm thấy Report với ID: " + reportId));
+
+        DocumentTypeEnum documentType = report.getReportType();
+        String departmentId = report.getDepartmentId();
+
+        // 2. Kiểm tra department tồn tại
+        vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.Department department = departmentRepository
+                .findById(departmentId)
+                .orElseThrow(() -> new IdInvalidException(
+                        "Không tìm thấy phòng ban với ID: " + departmentId));
+
+        User currentUser = userService.getCurrentUser();
+        UserRoleEnum signedAsRole;
+
+        // 3. Validate quyền ký theo document type
+        if (documentType == DocumentTypeEnum.REPORT_MAU_3) {
+            signedAsRole = validateAndGetRoleForMau3(currentUser, departmentId, report.getCouncilId(), department);
+        } else {
+            // Mẫu 4, 5: Chỉ TRUONG_KHOA được ký
+            if (!isDepartmentHeadOf(currentUser, departmentId)) {
+                throw new IdInvalidException(
+                        "Bạn không có quyền ký tài liệu này. Chỉ trưởng khoa của phòng ban " +
+                                department.getDepartmentName() + " mới có thể ký.");
+            }
+            signedAsRole = UserRoleEnum.TRUONG_KHOA;
         }
 
         // 4. Lấy signature profile và validate
@@ -1053,26 +1231,47 @@ public class DigitalSignatureService {
             validateAndSetupCertificateIfNeeded(signatureProfile, currentUser);
         }
 
-        // 6. Decode Base64 HTML
-        String htmlContent = Utils.decode(request.getHtmlContentBase64());
-        if (htmlContent == null || htmlContent.isBlank()) {
-            throw new IdInvalidException("Nội dung HTML sau khi giải mã đang trống.");
+        // 6. Update reportData nếu có trong request
+        if (request != null && request.getReportData() != null) {
+            report.setReportData(request.getReportData());
         }
 
-        // 7. Convert HTML to PDF và upload lên MinIO
-        byte[] pdfBytes = pdfGeneratorService.convertHtmlToPdf(htmlContent);
-        String fileName = "department_" + request.getDepartmentId() + "_" + documentType.name() + "_"
-                + System.currentTimeMillis() + ".pdf";
-        String pdfUrl = fileService.uploadBytes(pdfBytes, fileName, "application/pdf");
+        // 7. Xử lý PDF - Nếu có htmlContent mới thì tạo PDF mới, không thì dùng PDF cũ
+        byte[] pdfBytes;
+        String pdfUrl = report.getGeneratedPdfPath();
 
-        // 8. Generate document hash
-        String documentHash = keyManagementService.generateDocumentHash(htmlContent.getBytes(StandardCharsets.UTF_8));
+        if (request != null && request.getHtmlContentBase64() != null && !request.getHtmlContentBase64().isBlank()) {
+            // Có HTML mới -> tạo PDF mới
+            String htmlContent = Utils.decode(request.getHtmlContentBase64());
+            if (htmlContent == null || htmlContent.isBlank()) {
+                throw new IdInvalidException("Nội dung HTML sau khi giải mã đang trống.");
+            }
 
-        // 9. Generate signature hash
+            pdfBytes = pdfGeneratorService.convertHtmlToPdf(htmlContent);
+            String fileName = "department_" + departmentId + "_" + documentType.name() + "_"
+                    + System.currentTimeMillis() + ".pdf";
+            pdfUrl = fileService.uploadBytes(pdfBytes, fileName, "application/pdf");
+            report.setGeneratedPdfPath(pdfUrl);
+        } else {
+            // Dùng PDF cũ
+            try {
+                pdfBytes = fileService.downloadFile(report.getGeneratedPdfPath()).readAllBytes();
+            } catch (Exception e) {
+                throw new IdInvalidException("Không thể đọc file PDF: " + e.getMessage());
+            }
+        }
+
+        // 8. Lưu Report cập nhật
+        Report savedReport = reportRepository.save(report);
+
+        // 9. Generate document hash từ PDF
+        String documentHash = keyManagementService.generateDocumentHash(pdfBytes);
+
+        // 10. Generate signature hash
         String decryptedPrivateKey = hsmEncryptionService.decryptPrivateKey(signatureProfile.getEncryptedPrivateKey());
         String signatureHash = keyManagementService.generateSignature(documentHash, decryptedPrivateKey);
 
-        // 10. Verify signature trước khi lưu
+        // 11. Verify signature trước khi lưu
         boolean isValidSignature = keyManagementService.verifySignature(
                 documentHash,
                 signatureHash,
@@ -1082,16 +1281,16 @@ public class DigitalSignatureService {
             throw new IdInvalidException("Chữ ký không hợp lệ");
         }
 
-        // 11. Kiểm tra idempotent
+        // 12. Kiểm tra idempotent
         Optional<DigitalSignature> existingByHashOpt = digitalSignatureRepository.findBySignatureHash(signatureHash);
         if (existingByHashOpt.isPresent()) {
             throw new IdInvalidException("Tài liệu này đã được ký số trước đó. Vui lòng kiểm tra lại.");
         }
 
-        // 12. Tạo và lưu DigitalSignature (không liên kết với Innovation cụ thể)
+        // 13. Tạo và lưu DigitalSignature
         DigitalSignature digitalSignature = new DigitalSignature();
         digitalSignature.setDocumentType(documentType);
-        digitalSignature.setSignedAsRole(UserRoleEnum.TRUONG_KHOA);
+        digitalSignature.setSignedAsRole(signedAsRole);
         digitalSignature.setSignatureHash(signatureHash);
         digitalSignature.setDocumentHash(documentHash);
         digitalSignature.setStatus(SignatureStatusEnum.SIGNED);
@@ -1099,38 +1298,85 @@ public class DigitalSignatureService {
         digitalSignature.setUser(currentUser);
         digitalSignature.setUserSignatureProfile(signatureProfile);
         digitalSignature.setCertificateValidationStatus("VALID");
+        digitalSignature.setReport(savedReport);
 
         DigitalSignature savedSignature = digitalSignatureRepository.save(digitalSignature);
 
-        // 13. Tạo hoặc cập nhật Report và lưu đường dẫn PDF
-        Report report = reportRepository
-                .findByDepartmentIdAndReportType(request.getDepartmentId(), documentType)
-                .orElseGet(() -> {
-                    Report newReport = new Report();
-                    newReport.setDepartmentId(request.getDepartmentId());
-                    newReport.setReportType(documentType);
-                    return newReport;
-                });
-
-        report.setGeneratedPdfPath(pdfUrl);
-        report.getDigitalSignatures().add(savedSignature);
-        Report savedReport = reportRepository.save(report);
-
-        // Link DigitalSignature với Report
-        savedSignature.setReport(savedReport);
-        digitalSignatureRepository.save(savedSignature);
-
         // 14. Build response
         DepartmentDocumentSignResponse response = new DepartmentDocumentSignResponse();
+        response.setReportId(savedReport.getId());
+        response.setIsSigned(true);
         response.setSignatureId(savedSignature.getId());
         response.setDocumentHash(documentHash);
         response.setSignatureHash(signatureHash);
         response.setDocumentType(documentType);
-        response.setDepartmentId(request.getDepartmentId());
+        response.setDepartmentId(departmentId);
+        response.setCouncilId(savedReport.getCouncilId());
+        response.setSignedAsRole(signedAsRole);
         response.setSignerName(currentUser.getFullName());
         response.setSignedAt(savedSignature.getSignAt());
         response.setPdfUrl(fileService.getPresignedUrl(pdfUrl, 3600));
 
         return response;
+    }
+
+    // Helper: Validate và xác định role ký cho Mẫu 3 (THU_KY trước, TRUONG_KHOA
+    // sau)
+    private UserRoleEnum validateAndGetRoleForMau3(User currentUser, String departmentId, String councilId,
+            vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.Department department) {
+
+        boolean isSecretary = councilMemberRepository.existsByCouncilIdAndUserIdAndRole(
+                councilId, currentUser.getId(), CouncilMemberRoleEnum.THU_KY);
+        boolean isDeptHead = isDepartmentHeadOf(currentUser, departmentId);
+
+        if (!isSecretary && !isDeptHead) {
+            throw new IdInvalidException(
+                    "Bạn không có quyền ký tài liệu này. Chỉ thư ký hội đồng hoặc trưởng khoa mới có thể ký.");
+        }
+
+        // Kiểm tra user đã ký tài liệu này chưa
+        boolean currentUserAlreadySigned = digitalSignatureRepository
+                .existsByReportDepartmentIdAndDocumentTypeAndUserIdAndStatus(
+                        departmentId, DocumentTypeEnum.REPORT_MAU_3, currentUser.getId(), SignatureStatusEnum.SIGNED);
+
+        if (currentUserAlreadySigned) {
+            throw new IdInvalidException("Bạn đã ký tài liệu này rồi.");
+        }
+
+        if (isSecretary) {
+            return UserRoleEnum.TV_HOI_DONG_KHOA; // Thư ký ký với role hội đồng
+        }
+
+        // TRUONG_KHOA muốn ký - kiểm tra THU_KY đã ký chưa
+        boolean anySecretarySigned = checkIfSecretarySignedMau3(departmentId, councilId);
+        if (!anySecretarySigned) {
+            throw new IdInvalidException("Thư ký hội đồng phải ký trước, sau đó trưởng khoa mới được ký.");
+        }
+
+        return UserRoleEnum.TRUONG_KHOA;
+    }
+
+    // Helper: Kiểm tra thư ký đã ký Mẫu 3 chưa
+    private boolean checkIfSecretarySignedMau3(String departmentId, String councilId) {
+        // Lấy tất cả thư ký của council
+        List<CouncilMember> secretaries = councilMemberRepository.findByCouncilId(councilId).stream()
+                .filter(m -> m.getRole() == CouncilMemberRoleEnum.THU_KY)
+                .collect(Collectors.toList());
+
+        if (secretaries.isEmpty()) {
+            return false;
+        }
+
+        // Kiểm tra xem có thư ký nào đã ký chưa
+        for (CouncilMember secretary : secretaries) {
+            boolean signed = digitalSignatureRepository
+                    .existsByReportDepartmentIdAndDocumentTypeAndUserIdAndStatus(
+                            departmentId, DocumentTypeEnum.REPORT_MAU_3,
+                            secretary.getUser().getId(), SignatureStatusEnum.SIGNED);
+            if (signed) {
+                return true;
+            }
+        }
+        return false;
     }
 }
