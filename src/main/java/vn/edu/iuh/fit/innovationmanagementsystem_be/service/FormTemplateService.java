@@ -26,8 +26,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.FieldType
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.TargetRoleCode;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.TemplateTypeEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.DocumentTypeEnum;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.UserRoleEnum;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.SignatureStatusEnum;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.ReportStatusEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.Report;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.ReportRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.DigitalSignatureRepository;
@@ -950,19 +949,17 @@ public class FormTemplateService {
 
             Report report = draftReportOpt.get();
 
-            // 4. Check xem có DigitalSignature của thư ký chưa
-            // Nếu có signature của TV_HOI_DONG_KHOA với status SIGNED → đã ký, không merge
-            boolean hasSecretarySignature = digitalSignatureRepository
-                    .existsByReportIdAndSignedAsRoleAndStatus(
-                            report.getId(),
-                            UserRoleEnum.TV_HOI_DONG_KHOA,
-                            SignatureStatusEnum.SIGNED);
-
-            if (hasSecretarySignature) {
-                return; // Đã ký rồi, không merge draft
+            // 4. Check status - chỉ merge nếu status == DRAFT
+            ReportStatusEnum reportStatus = report.getStatus();
+            if (reportStatus == null) {
+                reportStatus = ReportStatusEnum.DRAFT; // Default nếu null
             }
 
-            // 5. Nếu chưa ký và có reportData → merge vào fieldDataMap
+            if (reportStatus != ReportStatusEnum.DRAFT) {
+                return; // Đã nộp rồi, không merge draft
+            }
+
+            // 5. Nếu status == DRAFT và có reportData → merge vào fieldDataMap
             if (report.getReportData() != null && !report.getReportData().isEmpty()) {
                 Map<String, Object> draftData = report.getReportData();
                 // Merge: draft data override council results data

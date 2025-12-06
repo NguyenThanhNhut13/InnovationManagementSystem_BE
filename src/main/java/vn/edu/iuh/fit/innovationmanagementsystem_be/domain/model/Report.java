@@ -8,6 +8,7 @@ import lombok.Setter;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.DocumentTypeEnum;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.ReportStatusEnum;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -41,6 +42,10 @@ public class Report extends Auditable {
     @Enumerated(EnumType.STRING)
     @Column(name = "report_type", columnDefinition = "VARCHAR(50)")
     private DocumentTypeEnum reportType;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", columnDefinition = "VARCHAR(50)")
+    private ReportStatusEnum status;
 
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "report_data", columnDefinition = "JSON")

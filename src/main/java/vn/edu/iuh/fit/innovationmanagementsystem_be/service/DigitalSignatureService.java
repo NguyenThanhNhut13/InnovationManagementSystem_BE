@@ -10,6 +10,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.Innovation;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.User;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.UserSignatureProfile;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.DocumentTypeEnum;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.ReportStatusEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.SignatureStatusEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.TemplateTypeEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.UserRoleEnum;
@@ -29,7 +30,6 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.InnovationReposit
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.DepartmentRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.ReportRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.CouncilMemberRepository;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.service.CouncilService;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.UserSignatureProfileRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.Report;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.CouncilMember;
@@ -1082,6 +1082,7 @@ public class DigitalSignatureService {
                     Report newReport = new Report();
                     newReport.setDepartmentId(departmentId);
                     newReport.setReportType(documentType);
+                    newReport.setStatus(ReportStatusEnum.DRAFT);
                     return newReport;
                 });
 
@@ -1089,6 +1090,28 @@ public class DigitalSignatureService {
         report.setCouncilId(councilId);
         report.setTemplateId(request.getTemplateId());
         report.setReportData(request.getReportData());
+        
+        // Set status dựa trên isSign và document type
+        if (!isSign) {
+            // Lưu nháp
+            report.setStatus(ReportStatusEnum.DRAFT);
+        } else {
+            // Đã nộp/ký
+            if (documentType == DocumentTypeEnum.REPORT_MAU_3) {
+                // Mẫu 3: Thư ký nộp
+                report.setStatus(ReportStatusEnum.SUBMITTED_TO_DEPARTMENT);
+            } else {
+                // Mẫu 4, 5: Xác định role của currentUser
+                if (signedAsRole == UserRoleEnum.TRUONG_KHOA) {
+                    // Trưởng khoa ký → nộp lên trường
+                    report.setStatus(ReportStatusEnum.SUBMITTED_TO_SCHOOL);
+                } else {
+                    // Thư ký nộp cho trưởng khoa
+                    report.setStatus(ReportStatusEnum.SUBMITTED_TO_DEPARTMENT);
+                }
+            }
+        }
+        
         Report savedReport = reportRepository.save(report);
 
         // 8. Build response
@@ -1243,6 +1266,17 @@ public class DigitalSignatureService {
             report.setReportData(request.getReportData());
         }
 
+        // 6.5. Update status khi ký
+        if (documentType == DocumentTypeEnum.REPORT_MAU_3) {
+            // Mẫu 3: Thư ký ký → SUBMITTED_TO_DEPARTMENT
+            report.setStatus(ReportStatusEnum.SUBMITTED_TO_DEPARTMENT);
+        } else {
+            // Mẫu 4, 5: Trưởng khoa ký → SUBMITTED_TO_SCHOOL
+            if (signedAsRole == UserRoleEnum.TRUONG_KHOA) {
+                report.setStatus(ReportStatusEnum.SUBMITTED_TO_SCHOOL);
+            }
+        }
+
         // 7. Xử lý PDF - Nếu có htmlContent mới thì tạo PDF mới, không thì dùng PDF cũ
         byte[] pdfBytes;
         String pdfUrl = report.getGeneratedPdfPath();
@@ -1384,4 +1418,5 @@ public class DigitalSignatureService {
         }
         return false;
     }
+
 }

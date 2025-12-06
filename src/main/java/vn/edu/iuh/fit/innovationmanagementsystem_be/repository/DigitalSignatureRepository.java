@@ -68,4 +68,16 @@ public interface DigitalSignatureRepository extends JpaRepository<DigitalSignatu
                         @Param("reportId") String reportId,
                         @Param("signedAsRole") UserRoleEnum signedAsRole,
                         @Param("status") SignatureStatusEnum status);
+
+        @Query("SELECT ds FROM DigitalSignature ds " +
+                        "LEFT JOIN FETCH ds.user u " +
+                        "LEFT JOIN FETCH ds.userSignatureProfile usp " +
+                        "WHERE ds.report.id = :reportId " +
+                        "AND ds.signedAsRole = :signedAsRole " +
+                        "AND ds.status = :status " +
+                        "ORDER BY ds.signAt DESC")
+        List<DigitalSignature> findByReportIdAndSignedAsRoleAndStatusWithRelations(
+                        @Param("reportId") String reportId,
+                        @Param("signedAsRole") UserRoleEnum signedAsRole,
+                        @Param("status") SignatureStatusEnum status);
 }
