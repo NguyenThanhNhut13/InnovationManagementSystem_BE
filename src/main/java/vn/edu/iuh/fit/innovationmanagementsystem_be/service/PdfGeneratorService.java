@@ -140,6 +140,7 @@ public class PdfGeneratorService {
                 "table, th, td { font-family: 'Times New Roman', Times, serif !important; font-size: 12pt !important; }" +
                 "table *, table th, table td { font-size: 12pt !important; }" +
                 "h1, h2, h3, h4, h5, h6 { font-family: 'Times New Roman', Times, serif !important; }" +
+                ".location-date-field { font-style: italic !important; }" +
                 "</style>";
 
         // Chèn CSS vào trước thẻ </head> hoặc đầu <body>
