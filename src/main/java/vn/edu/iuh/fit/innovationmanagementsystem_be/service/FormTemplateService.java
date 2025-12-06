@@ -1412,19 +1412,106 @@ public class FormTemplateService {
                 return "[Không tìm thấy dữ liệu từ " + sourceTemplateId + "]";
             }
 
-            // Lấy giá trị từ các field (hỗ trợ nested path cho TABLE)
-            List<String> values = new ArrayList<>();
-            for (String fieldKey : sourceFieldKeys) {
-                String value = getNestedFieldValue(sourceData, fieldKey, multiRowSeparator);
-                values.add(value != null ? value : "");
-            }
-
             // Format dữ liệu
-            if (values.stream().allMatch(v -> v.trim().isEmpty())) {
-                return "";
-            }
-
             if (displayFormat != null && !displayFormat.isEmpty()) {
+                // Kiểm tra xem có field nào từ table không (có chứa ".")
+                boolean hasTableFields = sourceFieldKeys.stream().anyMatch(key -> key.contains("."));
+                
+                if (hasTableFields) {
+                    // Lấy table data từ field đầu tiên có table
+                    String firstTableField = sourceFieldKeys.stream()
+                        .filter(key -> key.contains("."))
+                        .findFirst()
+                        .orElse(null);
+                    
+                    if (firstTableField != null) {
+                        String[] parts = firstTableField.split("\\.", 2);
+                        String tableKey = parts[0];
+                        Object tableData = sourceData.get(tableKey);
+                        
+                        if (tableData instanceof List) {
+                            @SuppressWarnings("unchecked")
+                            List<Map<String, Object>> tableRows = (List<Map<String, Object>>) tableData;
+                            
+                            // Format từng row
+                            List<String> formattedRows = new ArrayList<>();
+                            for (Map<String, Object> row : tableRows) {
+                                String formattedRow = displayFormat;
+                                for (String fieldKey : sourceFieldKeys) {
+                                    String value = "";
+                                    
+                                    if (fieldKey.contains(".")) {
+                                        // Lấy từ row hiện tại (table column)
+                                        String[] fieldParts = fieldKey.split("\\.", 2);
+                                        String columnKey = fieldParts[1];
+                                        Object columnValue = row.get(columnKey);
+                                        
+                                        // Nếu không tìm thấy bằng columnKey, thử fuzzy match
+                                        if (columnValue == null) {
+                                            String similarColKey = row.keySet().stream()
+                                                .filter(k -> {
+                                                    String kLower = k.toLowerCase().replaceAll("[\\s_]", "");
+                                                    String colKeyLower = columnKey.toLowerCase().replaceAll("[\\s_]", "");
+                                                    return kLower.contains(colKeyLower) || colKeyLower.contains(kLower) ||
+                                                            k.toLowerCase().contains(columnKey.toLowerCase()) ||
+                                                            columnKey.toLowerCase().contains(k.toLowerCase());
+                                                })
+                                                .findFirst()
+                                                .orElse(null);
+                                            columnValue = similarColKey != null ? row.get(similarColKey) : null;
+                                        }
+                                        
+                                        value = columnValue != null ? columnValue.toString() : "";
+                                    } else {
+                                        // Lấy từ sourceData (field thường, không phải table)
+                                        Object fieldValue = sourceData.get(fieldKey);
+                                        if (fieldValue == null) {
+                                            // Tìm key tương tự (fuzzy match)
+                                            String similarKey = sourceData.keySet().stream()
+                                                .filter(k -> {
+                                                    String kLower = k.toLowerCase().replaceAll("[\\s_]", "");
+                                                    String fieldKeyLower = fieldKey.toLowerCase().replaceAll("[\\s_]", "");
+                                                    return kLower.contains(fieldKeyLower) || fieldKeyLower.contains(kLower) ||
+                                                            k.toLowerCase().contains(fieldKey.toLowerCase()) ||
+                                                            fieldKey.toLowerCase().contains(k.toLowerCase());
+                                                })
+                                                .findFirst()
+                                                .orElse(null);
+                                            fieldValue = similarKey != null ? sourceData.get(similarKey) : null;
+                                        }
+                                        value = fieldValue != null ? fieldValue.toString() : "";
+                                    }
+                                    
+                                    // Thay thế trong format
+                                    String keyForFormat = fieldKey.contains(".") 
+                                        ? fieldKey.substring(fieldKey.lastIndexOf(".") + 1)
+                                        : fieldKey;
+                                    formattedRow = formattedRow.replace("{" + keyForFormat + "}", value);
+                                    formattedRow = formattedRow.replace("{" + fieldKey + "}", value);
+                                }
+                                formattedRows.add(formattedRow);
+                            }
+                            
+                            // Join các rows bằng multiRowSeparator
+                            String separator = (multiRowSeparator != null && !multiRowSeparator.isEmpty()) 
+                                ? multiRowSeparator : "\n";
+                            return String.join(separator, formattedRows);
+                        }
+                    }
+                }
+                
+                // Fallback về logic cũ nếu không phải table fields hoặc không có displayFormat
+                // Lấy giá trị từ các field (hỗ trợ nested path cho TABLE)
+                List<String> values = new ArrayList<>();
+                for (String fieldKey : sourceFieldKeys) {
+                    String value = getNestedFieldValue(sourceData, fieldKey, multiRowSeparator);
+                    values.add(value != null ? value : "");
+                }
+                
+                if (values.stream().allMatch(v -> v.trim().isEmpty())) {
+                    return "";
+                }
+                
                 String result = displayFormat;
                 for (int i = 0; i < sourceFieldKeys.size(); i++) {
                     // Trong displayFormat, có thể dùng {ho_va_ten} thay vì
@@ -1439,6 +1526,17 @@ public class FormTemplateService {
                     result = result.replace("{" + sourceFieldKeys.get(i) + "}", values.get(i));
                 }
                 return result;
+            }
+
+            // Không có displayFormat, join các values bằng multiRowSeparator
+            List<String> values = new ArrayList<>();
+            for (String fieldKey : sourceFieldKeys) {
+                String value = getNestedFieldValue(sourceData, fieldKey, multiRowSeparator);
+                values.add(value != null ? value : "");
+            }
+            
+            if (values.stream().allMatch(v -> v.trim().isEmpty())) {
+                return "";
             }
 
             return String.join(multiRowSeparator, values);
