@@ -25,6 +25,12 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.Innovatio
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.FieldTypeEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.TargetRoleCode;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.TemplateTypeEnum;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.DocumentTypeEnum;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.UserRoleEnum;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.SignatureStatusEnum;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.Report;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.ReportRepository;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.DigitalSignatureRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.CreateTemplateRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.CreateTemplateWithFieldsRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.UpdateFormTemplateRequest;
@@ -58,6 +64,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.HtmlTemplateUtils;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.HashMap;
 import java.util.UUID;
 import java.time.LocalDate;
@@ -83,6 +90,8 @@ public class FormTemplateService {
     private final FormFieldRepository formFieldRepository;
     private final FormDataRepository formDataRepository;
     private final ReviewScoreRepository reviewScoreRepository;
+    private final ReportRepository reportRepository;
+    private final DigitalSignatureRepository digitalSignatureRepository;
     private final ObjectMapper objectMapper;
 
     public FormTemplateService(FormTemplateRepository formTemplateRepository,
@@ -97,6 +106,8 @@ public class FormTemplateService {
             FormFieldRepository formFieldRepository,
             FormDataRepository formDataRepository,
             ReviewScoreRepository reviewScoreRepository,
+            ReportRepository reportRepository,
+            DigitalSignatureRepository digitalSignatureRepository,
             ObjectMapper objectMapper) {
         this.formTemplateRepository = formTemplateRepository;
         this.innovationRoundRepository = innovationRoundRepository;
@@ -109,6 +120,8 @@ public class FormTemplateService {
         this.formFieldRepository = formFieldRepository;
         this.formDataRepository = formDataRepository;
         this.reviewScoreRepository = reviewScoreRepository;
+        this.reportRepository = reportRepository;
+        this.digitalSignatureRepository = digitalSignatureRepository;
         this.objectMapper = objectMapper;
     }
 
@@ -882,6 +895,9 @@ public class FormTemplateService {
         // 7. Build field data map động
         Map<String, Object> fieldDataMap = buildFieldDataMapDynamic(template, councilId, isScoreFilter);
 
+        // 7.5. Check và merge Report draft nếu có (chưa ký)
+        mergeDraftReportData(fieldDataMap, templateType, councilId);
+
         // 8. Tạo response
         SecretarySummaryTemplateResponse response = new SecretarySummaryTemplateResponse();
         // Copy tất cả fields từ templateResponse
@@ -901,6 +917,86 @@ public class FormTemplateService {
         response.setFieldDataMap(fieldDataMap);
 
         return response;
+    }
+
+    /**
+     * Merge draft Report data vào fieldDataMap nếu có (chưa ký)
+     */
+    private void mergeDraftReportData(
+            Map<String, Object> fieldDataMap,
+            TemplateTypeEnum templateType,
+            String councilId) {
+        try {
+            // 1. Map TemplateTypeEnum -> DocumentTypeEnum
+            DocumentTypeEnum documentType = mapTemplateTypeToDocumentType(templateType);
+            if (documentType == null) {
+                return; // Không phải template type cần check
+            }
+
+            // 2. Lấy current user và departmentId
+            User currentUser = userService.getCurrentUser();
+            if (currentUser == null || currentUser.getDepartment() == null) {
+                return;
+            }
+            String departmentId = currentUser.getDepartment().getId();
+
+            // 3. Tìm Report draft (chưa có DigitalSignature của thư ký)
+            Optional<Report> draftReportOpt = reportRepository
+                    .findByDepartmentIdAndReportType(departmentId, documentType);
+
+            if (draftReportOpt.isEmpty()) {
+                return; // Không có draft
+            }
+
+            Report report = draftReportOpt.get();
+
+            // 4. Check xem có DigitalSignature của thư ký chưa
+            // Nếu có signature của TV_HOI_DONG_KHOA với status SIGNED → đã ký, không merge
+            boolean hasSecretarySignature = digitalSignatureRepository
+                    .existsByReportIdAndSignedAsRoleAndStatus(
+                            report.getId(),
+                            UserRoleEnum.TV_HOI_DONG_KHOA,
+                            SignatureStatusEnum.SIGNED);
+
+            if (hasSecretarySignature) {
+                return; // Đã ký rồi, không merge draft
+            }
+
+            // 5. Nếu chưa ký và có reportData → merge vào fieldDataMap
+            if (report.getReportData() != null && !report.getReportData().isEmpty()) {
+                Map<String, Object> draftData = report.getReportData();
+                // Merge: draft data override council results data
+                draftData.forEach((key, value) -> {
+                    if (value != null) {
+                        fieldDataMap.put(key, value);
+                    }
+                });
+                log.info("Đã merge draft Report data cho template type: {}, departmentId: {}", 
+                        templateType, departmentId);
+            }
+        } catch (Exception e) {
+            // Log lỗi nhưng không throw để không ảnh hưởng đến flow chính
+            log.warn("Lỗi khi merge draft Report data: {}", e.getMessage());
+        }
+    }
+
+    /**
+     * Map TemplateTypeEnum sang DocumentTypeEnum
+     */
+    private DocumentTypeEnum mapTemplateTypeToDocumentType(TemplateTypeEnum templateType) {
+        if (templateType == null) {
+            return null;
+        }
+        switch (templateType) {
+            case BIEN_BAN_HOP:
+                return DocumentTypeEnum.REPORT_MAU_3;
+            case TONG_HOP_DE_NGHI:
+                return DocumentTypeEnum.REPORT_MAU_4;
+            case TONG_HOP_CHAM_DIEM:
+                return DocumentTypeEnum.REPORT_MAU_5;
+            default:
+                return null;
+        }
     }
 
     /**

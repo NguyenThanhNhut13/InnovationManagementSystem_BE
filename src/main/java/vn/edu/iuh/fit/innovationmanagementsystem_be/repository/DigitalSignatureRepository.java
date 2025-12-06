@@ -59,4 +59,13 @@ public interface DigitalSignatureRepository extends JpaRepository<DigitalSignatu
                         @Param("documentType") DocumentTypeEnum documentType,
                         @Param("userId") String userId,
                         @Param("status") SignatureStatusEnum status);
+
+        @Query("SELECT CASE WHEN COUNT(ds) > 0 THEN true ELSE false END FROM DigitalSignature ds " +
+                        "WHERE ds.report.id = :reportId " +
+                        "AND ds.signedAsRole = :signedAsRole " +
+                        "AND ds.status = :status")
+        boolean existsByReportIdAndSignedAsRoleAndStatus(
+                        @Param("reportId") String reportId,
+                        @Param("signedAsRole") UserRoleEnum signedAsRole,
+                        @Param("status") SignatureStatusEnum status);
 }
