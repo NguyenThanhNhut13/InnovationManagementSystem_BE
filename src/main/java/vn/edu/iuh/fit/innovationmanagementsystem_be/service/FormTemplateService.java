@@ -949,17 +949,7 @@ public class FormTemplateService {
 
             Report report = draftReportOpt.get();
 
-            // 4. Check status - chỉ merge nếu status == DRAFT
-            ReportStatusEnum reportStatus = report.getStatus();
-            if (reportStatus == null) {
-                reportStatus = ReportStatusEnum.DRAFT; // Default nếu null
-            }
-
-            if (reportStatus != ReportStatusEnum.DRAFT) {
-                return; // Đã nộp rồi, không merge draft
-            }
-
-            // 5. Nếu status == DRAFT và có reportData → merge vào fieldDataMap
+            // 4. Merge reportData vào fieldDataMap (không phân biệt status - để hiển thị)
             if (report.getReportData() != null && !report.getReportData().isEmpty()) {
                 Map<String, Object> draftData = report.getReportData();
                 // Merge: draft data override council results data
@@ -968,8 +958,12 @@ public class FormTemplateService {
                         fieldDataMap.put(key, value);
                     }
                 });
-                log.info("Đã merge draft Report data cho template type: {}, departmentId: {}", 
-                        templateType, departmentId);
+                ReportStatusEnum reportStatus = report.getStatus();
+                if (reportStatus == null) {
+                    reportStatus = ReportStatusEnum.DRAFT; // Default nếu null
+                }
+                log.info("Đã merge Report data cho template type: {}, departmentId: {}, status: {}", 
+                        templateType, departmentId, reportStatus);
             }
         } catch (Exception e) {
             // Log lỗi nhưng không throw để không ảnh hưởng đến flow chính
