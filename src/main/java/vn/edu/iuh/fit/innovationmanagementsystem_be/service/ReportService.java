@@ -45,15 +45,15 @@ public class ReportService {
         String departmentId = currentUser.getDepartment().getId();
 
         // 2. Check từng report type
-        ReportStatusResponse mau3 = getReportStatus(departmentId, DocumentTypeEnum.REPORT_MAU_3, UserRoleEnum.TV_HOI_DONG_KHOA);
-        ReportStatusResponse mau4 = getReportStatus(departmentId, DocumentTypeEnum.REPORT_MAU_4, UserRoleEnum.TRUONG_KHOA);
-        ReportStatusResponse mau5 = getReportStatus(departmentId, DocumentTypeEnum.REPORT_MAU_5, UserRoleEnum.TRUONG_KHOA);
+        ReportStatusResponse meetingMinutes = getReportStatus(departmentId, DocumentTypeEnum.REPORT_MAU_3, UserRoleEnum.TV_HOI_DONG_KHOA);
+        ReportStatusResponse proposalSummary = getReportStatus(departmentId, DocumentTypeEnum.REPORT_MAU_4, UserRoleEnum.TRUONG_KHOA);
+        ReportStatusResponse scoringSummary = getReportStatus(departmentId, DocumentTypeEnum.REPORT_MAU_5, UserRoleEnum.TRUONG_KHOA);
 
         // 3. Tạo response
         DepartmentReportsStatusResponse response = new DepartmentReportsStatusResponse();
-        response.setMau3(mau3);
-        response.setMau4(mau4);
-        response.setMau5(mau5);
+        response.setMeetingMinutes(meetingMinutes);
+        response.setProposalSummary(proposalSummary);
+        response.setScoringSummary(scoringSummary);
         return response;
     }
 
@@ -83,8 +83,8 @@ public class ReportService {
 
             status.setSigned(isSigned);
         } else {
-            // Không có report → status = DRAFT, isSigned = false
-            status.setStatus(ReportStatusEnum.DRAFT);
+            // Không có report → status = null, isSigned = false
+            status.setStatus(null);
             status.setSigned(false);
         }
 

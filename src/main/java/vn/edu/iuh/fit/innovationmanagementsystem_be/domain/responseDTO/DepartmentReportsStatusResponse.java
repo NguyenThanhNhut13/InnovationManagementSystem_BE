@@ -11,16 +11,16 @@ public class DepartmentReportsStatusResponse {
     /**
      * Trạng thái của Mẫu 3: Biên bản họp đơn vị đánh giá sáng kiến
      */
-    private ReportStatusResponse mau3;
+    private ReportStatusResponse meetingMinutes;
     
     /**
      * Trạng thái của Mẫu 4: Tổng hợp đề nghị công nhận sáng kiến (không chấm điểm)
      */
-    private ReportStatusResponse mau4;
+    private ReportStatusResponse proposalSummary;
     
     /**
      * Trạng thái của Mẫu 5: Tổng hợp đề nghị công nhận sáng kiến (có chấm điểm)
      */
-    private ReportStatusResponse mau5;
+    private ReportStatusResponse scoringSummary;
 }
 
