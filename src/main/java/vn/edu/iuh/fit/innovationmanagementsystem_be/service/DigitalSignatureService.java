@@ -29,6 +29,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.InnovationReposit
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.DepartmentRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.ReportRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.CouncilMemberRepository;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.service.CouncilService;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.UserSignatureProfileRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.Report;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.CouncilMember;
@@ -70,6 +71,7 @@ public class DigitalSignatureService {
     private final DepartmentRepository departmentRepository;
     private final ReportRepository reportRepository;
     private final CouncilMemberRepository councilMemberRepository;
+    private final CouncilService councilService;
 
     public DigitalSignatureService(DigitalSignatureRepository digitalSignatureRepository,
             InnovationRepository innovationRepository,
@@ -87,7 +89,8 @@ public class DigitalSignatureService {
             PdfGeneratorService pdfGeneratorService,
             DepartmentRepository departmentRepository,
             ReportRepository reportRepository,
-            CouncilMemberRepository councilMemberRepository) {
+            CouncilMemberRepository councilMemberRepository,
+            CouncilService councilService) {
         this.digitalSignatureRepository = digitalSignatureRepository;
         this.innovationRepository = innovationRepository;
         this.userSignatureProfileRepository = userSignatureProfileRepository;
@@ -105,6 +108,7 @@ public class DigitalSignatureService {
         this.departmentRepository = departmentRepository;
         this.reportRepository = reportRepository;
         this.councilMemberRepository = councilMemberRepository;
+        this.councilService = councilService;
     }
 
     // 1. Tạo digital signature
@@ -1023,29 +1027,34 @@ public class DigitalSignatureService {
                     "Document type phải là REPORT_MAU_3, REPORT_MAU_4 hoặc REPORT_MAU_5");
         }
 
-        // 2. Validate councilId bắt buộc cho Mẫu 3
-        if (documentType == DocumentTypeEnum.REPORT_MAU_3
-                && (request.getCouncilId() == null || request.getCouncilId().isBlank())) {
-            throw new IdInvalidException("Council ID là bắt buộc cho Mẫu 3 (Biên bản họp)");
+        // 2. Lấy current user và departmentId từ user
+        User currentUser = userService.getCurrentUser();
+        if (currentUser.getDepartment() == null) {
+            throw new IdInvalidException("Người dùng hiện tại chưa được gán vào khoa nào.");
+        }
+        String departmentId = currentUser.getDepartment().getId();
+        vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.Department department = currentUser.getDepartment();
+
+        // 3. Lấy councilId cho Mẫu 3 (tự động từ current council)
+        String councilId = null;
+        if (documentType == DocumentTypeEnum.REPORT_MAU_3) {
+            try {
+                councilId = councilService.getCurrentCouncil().getId();
+            } catch (Exception e) {
+                throw new IdInvalidException(
+                        "Không tìm thấy hội đồng hiện tại. Vui lòng đảm bảo có hội đồng đang hoạt động cho đợt sáng kiến hiện tại.");
+            }
         }
 
-        // 3. Kiểm tra department tồn tại
-        vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.Department department = departmentRepository
-                .findById(request.getDepartmentId())
-                .orElseThrow(() -> new IdInvalidException(
-                        "Không tìm thấy phòng ban với ID: " + request.getDepartmentId()));
-
-        User currentUser = userService.getCurrentUser();
         UserRoleEnum signedAsRole = null;
 
         // 4. Validate quyền ký theo document type (chỉ khi isSign = true)
         if (isSign) {
             if (documentType == DocumentTypeEnum.REPORT_MAU_3) {
-                signedAsRole = validateAndGetRoleForMau3(currentUser, request.getDepartmentId(), request.getCouncilId(),
-                        department);
+                signedAsRole = validateAndGetRoleForMau3(currentUser, departmentId, councilId, department);
             } else {
                 // Mẫu 4, 5: Chỉ TRUONG_KHOA được ký
-                if (!isDepartmentHeadOf(currentUser, request.getDepartmentId())) {
+                if (!isDepartmentHeadOf(currentUser, departmentId)) {
                     throw new IdInvalidException(
                             "Bạn không có quyền ký tài liệu này. Chỉ trưởng khoa của phòng ban " +
                                     department.getDepartmentName() + " mới có thể ký.");
@@ -1062,22 +1071,22 @@ public class DigitalSignatureService {
 
         // 6. Convert HTML to PDF và upload lên MinIO
         byte[] pdfBytes = pdfGeneratorService.convertHtmlToPdf(htmlContent);
-        String fileName = "department_" + request.getDepartmentId() + "_" + documentType.name() + "_"
+        String fileName = "department_" + departmentId + "_" + documentType.name() + "_"
                 + System.currentTimeMillis() + ".pdf";
         String pdfUrl = fileService.uploadBytes(pdfBytes, fileName, "application/pdf");
 
         // 7. Tạo hoặc cập nhật Report
         Report report = reportRepository
-                .findByDepartmentIdAndReportType(request.getDepartmentId(), documentType)
+                .findByDepartmentIdAndReportType(departmentId, documentType)
                 .orElseGet(() -> {
                     Report newReport = new Report();
-                    newReport.setDepartmentId(request.getDepartmentId());
+                    newReport.setDepartmentId(departmentId);
                     newReport.setReportType(documentType);
                     return newReport;
                 });
 
         report.setGeneratedPdfPath(pdfUrl);
-        report.setCouncilId(request.getCouncilId());
+        report.setCouncilId(councilId);
         report.setTemplateId(request.getTemplateId());
         report.setReportData(request.getReportData());
         Report savedReport = reportRepository.save(report);
@@ -1087,8 +1096,6 @@ public class DigitalSignatureService {
         response.setReportId(savedReport.getId());
         response.setIsSigned(isSign);
         response.setDocumentType(documentType);
-        response.setDepartmentId(request.getDepartmentId());
-        response.setCouncilId(request.getCouncilId());
         response.setPdfUrl(fileService.getPresignedUrl(pdfUrl, 3600));
 
         // 9. Nếu isSign = true, thực hiện ký số
@@ -1310,8 +1317,6 @@ public class DigitalSignatureService {
         response.setDocumentHash(documentHash);
         response.setSignatureHash(signatureHash);
         response.setDocumentType(documentType);
-        response.setDepartmentId(departmentId);
-        response.setCouncilId(savedReport.getCouncilId());
         response.setSignedAsRole(signedAsRole);
         response.setSignerName(currentUser.getFullName());
         response.setSignedAt(savedSignature.getSignAt());

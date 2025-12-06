@@ -25,7 +25,7 @@ public class DepartmentDocumentSignRequest {
     @NotNull(message = "Document type không được để trống")
     private DocumentTypeEnum documentType;
 
-    @NotBlank(message = "Department ID không được để trống")
+    // departmentId và councilId sẽ được tự động lấy từ current user và current council
     private String departmentId;
 
     private String councilId;

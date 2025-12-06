@@ -19,8 +19,6 @@ public class DepartmentDocumentSignResponse {
     private String documentHash;
     private String signatureHash;
     private DocumentTypeEnum documentType;
-    private String departmentId;
-    private String councilId;
     private UserRoleEnum signedAsRole;
     private String signerName;
     private LocalDateTime signedAt;
