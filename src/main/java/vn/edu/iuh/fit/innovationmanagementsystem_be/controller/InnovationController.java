@@ -220,14 +220,14 @@ public class InnovationController {
         @GetMapping("/department-innovations/{innovationId}/detail")
         @PreAuthorize("hasAnyRole('TRUONG_KHOA')")
         @ApiMessage("Lấy chi tiết sáng kiến thành công")
-        @Operation(summary = "Get Department Innovation Detail", description = "Get full detail of innovation with templates and formData for TRUONG_KHOA to sign template 2 (Mẫu 2)")
+        @Operation(summary = "Get Department Innovation Form Data Detail", description = "Get full detail of innovation with templates and formData for TRUONG_KHOA to sign template 2 (Mẫu 2)")
         @ApiResponses(value = {
                         @ApiResponse(responseCode = "200", description = "Innovation detail retrieved successfully", content = @Content(schema = @Schema(implementation = MyInnovationFormDataResponse.class))),
                         @ApiResponse(responseCode = "403", description = "Forbidden - Only TRUONG_KHOA can access"),
                         @ApiResponse(responseCode = "401", description = "Unauthorized")
         })
-        public ResponseEntity<MyInnovationFormDataResponse> getDepartmentInnovationDetail(@PathVariable String innovationId) {
-                return ResponseEntity.ok(innovationService.getInnovationFormDataById(innovationId));
+        public ResponseEntity<MyInnovationFormDataResponse> getDepartmentInnovationFormDataDetail(@PathVariable String innovationId) {
+                return ResponseEntity.ok(innovationService.getDepartmentInnovationWithFormDataById(innovationId));
         }
 
         // 9. Xóa sáng kiến trạng thái DRAFT của user hiện tại
