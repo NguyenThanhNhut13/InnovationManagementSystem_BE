@@ -1010,28 +1010,27 @@ public class InnovationService {
                                                 .findByInnovationId(innovation.getId());
                                 Boolean isCoAuthor = coInnovations != null && !coInnovations.isEmpty();
 
-                                // Tìm template 2 ID và check signature status
-                                String template2Id = null;
-                                Boolean hasSignature = false;
+                                // Check signature trước (không phụ thuộc vào việc tìm thấy template2Id)
+                                Boolean hasSignature = digitalSignatureRepository
+                                                .existsByInnovationIdAndDocumentTypeAndSignedAsRoleAndStatus(
+                                                                innovation.getId(),
+                                                                DocumentTypeEnum.FORM_2,
+                                                                UserRoleEnum.TRUONG_KHOA,
+                                                                SignatureStatusEnum.SIGNED);
 
-                                // Lấy formData chỉ để tìm template 2 và check signature (không cần đầy đủ)
+                                // Tìm template 2 ID
+                                String template2Id = null;
                                 List<FormData> formDataList = formDataRepository
                                                 .findByInnovationIdWithRelations(innovation.getId());
                                 for (FormData formData : formDataList) {
                                         if (formData.getFormField() != null
                                                         && formData.getFormField().getFormTemplate() != null) {
-                                                String templateId = formData.getFormField().getFormTemplate().getId();
-                                                // Check nếu là template 2 (BAO_CAO_MO_TA)
-                                                if (templateId != null && templateId.contains("template2")) {
-                                                        template2Id = templateId;
-
-                                                        // Check xem đã có signature của TRUONG_KHOA chưa cho FORM_2
-                                                        hasSignature = digitalSignatureRepository
-                                                                        .existsByInnovationIdAndDocumentTypeAndSignedAsRoleAndStatus(
-                                                                                        innovation.getId(),
-                                                                                        DocumentTypeEnum.FORM_2,
-                                                                                        UserRoleEnum.TRUONG_KHOA,
-                                                                                        SignatureStatusEnum.SIGNED);
+                                                FormTemplate template = formData.getFormField().getFormTemplate();
+                                                TemplateTypeEnum templateType = template.getTemplateType();
+                                                
+                                                // Check nếu là template 2 (BAO_CAO_MO_TA) - dùng templateType thay vì contains
+                                                if (templateType == TemplateTypeEnum.BAO_CAO_MO_TA) {
+                                                        template2Id = template.getId();
                                                         break;
                                                 }
                                         }
