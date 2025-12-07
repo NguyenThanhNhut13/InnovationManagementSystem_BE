@@ -1232,4 +1232,65 @@ public class NotificationService {
                                         authorId, innovationId, e.getMessage(), e);
                 }
         }
+
+        /**
+         * Thông báo cho TRUONG_KHOA khi thư ký đã tổng hợp xong báo cáo
+         * (REPORT_MAU_3/4/5)
+         * và report chuyển sang status SUBMITTED_TO_DEPARTMENT
+         * 
+         * @param departmentId   ID của khoa
+         * @param departmentName Tên khoa
+         * @param reportType     Loại báo cáo (REPORT_MAU_3, REPORT_MAU_4, REPORT_MAU_5)
+         * @param secretaryName  Tên thư ký đã tổng hợp
+         */
+        @Transactional
+        public void notifyDepartmentHeadReportsReady(String departmentId, String departmentName,
+                        String reportType, String secretaryName) {
+                try {
+                        String reportTypeName = getReportTypeName(reportType);
+
+                        String title = "Báo cáo cần ký số";
+                        String message = String.format(
+                                        "Thư ký %s đã hoàn thành tổng hợp %s cho khoa %s. " +
+                                                        "Vui lòng kiểm tra và ký số để nộp lên cấp trường.",
+                                        secretaryName, reportTypeName, departmentName);
+
+                        Map<String, Object> data = new HashMap<>();
+                        data.put("departmentId", departmentId);
+                        data.put("departmentName", departmentName);
+                        data.put("reportType", reportType);
+                        data.put("secretaryName", secretaryName);
+                        data.put("action", "SIGN_REPORT");
+
+                        notifyUsersByDepartmentAndRoles(
+                                        departmentId,
+                                        List.of(UserRoleEnum.TRUONG_KHOA),
+                                        title,
+                                        message,
+                                        NotificationTypeEnum.SYSTEM_ANNOUNCEMENT,
+                                        data);
+
+                        log.info("Đã gửi thông báo cho TRUONG_KHOA của khoa {} về báo cáo {} cần ký",
+                                        departmentName, reportType);
+                } catch (Exception e) {
+                        log.error("Lỗi khi gửi thông báo cho TRUONG_KHOA của khoa {} về báo cáo {}: {}",
+                                        departmentId, reportType, e.getMessage(), e);
+                }
+        }
+
+        /**
+         * Helper method để convert reportType thành tên hiển thị
+         */
+        private String getReportTypeName(String reportType) {
+                switch (reportType) {
+                        case "REPORT_MAU_3":
+                                return "Biên bản họp (Mẫu 3)";
+                        case "REPORT_MAU_4":
+                                return "Tổng hợp đề nghị (Mẫu 4)";
+                        case "REPORT_MAU_5":
+                                return "Tổng hợp chấm điểm (Mẫu 5)";
+                        default:
+                                return reportType;
+                }
+        }
 }
