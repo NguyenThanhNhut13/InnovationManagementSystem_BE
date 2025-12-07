@@ -14,6 +14,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
+import java.util.List;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationStatusEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.CreateInnovationWithTemplatesRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.FilterMyInnovationRequest;
@@ -198,6 +199,20 @@ public class InnovationController {
                 return ResponseEntity.ok(
                                 innovationService.getAllDepartmentInnovationsWithDetailedFilter(filterRequest,
                                                 pageable));
+        }
+
+        // 8.1. Lấy danh sách innovations đã được gán vào council (để TRUONG_KHOA ký Mẫu 2)
+        @GetMapping("/department-innovations/pending-signature")
+        @PreAuthorize("hasAnyRole('TRUONG_KHOA')")
+        @ApiMessage("Lấy danh sách sáng kiến chờ ký thành công")
+        @Operation(summary = "Get Department Innovations Pending Signature", description = "Get list of innovations assigned to council for TRUONG_KHOA to sign template 2 (Mẫu 2)")
+        @ApiResponses(value = {
+                        @ApiResponse(responseCode = "200", description = "Innovations retrieved successfully", content = @Content(schema = @Schema(implementation = MyInnovationFormDataResponse.class))),
+                        @ApiResponse(responseCode = "403", description = "Forbidden - Only TRUONG_KHOA can access"),
+                        @ApiResponse(responseCode = "401", description = "Unauthorized")
+        })
+        public ResponseEntity<List<MyInnovationFormDataResponse>> getDepartmentInnovationsPendingSignature() {
+                return ResponseEntity.ok(innovationService.getDepartmentInnovationsPendingSignature());
         }
 
         // 9. Xóa sáng kiến trạng thái DRAFT của user hiện tại

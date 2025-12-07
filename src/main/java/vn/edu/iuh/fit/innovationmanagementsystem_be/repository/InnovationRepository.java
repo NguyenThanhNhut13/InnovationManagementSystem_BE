@@ -79,4 +79,15 @@ public interface InnovationRepository extends JpaRepository<Innovation, String>,
                         @Param("departmentId") String departmentId,
                         @Param("roundId") String roundId,
                         @Param("status") InnovationStatusEnum status);
+
+        /**
+         * Lấy innovations của department đã được gán vào council
+         * (để TRUONG_KHOA ký Mẫu 2)
+         */
+        @Query("SELECT DISTINCT i FROM Innovation i " +
+                        "LEFT JOIN FETCH i.user " +
+                        "LEFT JOIN FETCH i.department " +
+                        "JOIN i.councils c " +
+                        "WHERE i.department.id = :departmentId")
+        List<Innovation> findByDepartmentIdWithCouncils(@Param("departmentId") String departmentId);
 }

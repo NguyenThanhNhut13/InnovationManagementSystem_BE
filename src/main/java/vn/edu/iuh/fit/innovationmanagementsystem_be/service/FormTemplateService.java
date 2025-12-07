@@ -27,9 +27,9 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.TargetRol
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.TemplateTypeEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.DocumentTypeEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.ReportStatusEnum;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.UserRoleEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.Report;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.ReportRepository;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.DigitalSignatureRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.CreateTemplateRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.CreateTemplateWithFieldsRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.UpdateFormTemplateRequest;
@@ -90,7 +90,6 @@ public class FormTemplateService {
     private final FormDataRepository formDataRepository;
     private final ReviewScoreRepository reviewScoreRepository;
     private final ReportRepository reportRepository;
-    private final DigitalSignatureRepository digitalSignatureRepository;
     private final ObjectMapper objectMapper;
 
     public FormTemplateService(FormTemplateRepository formTemplateRepository,
@@ -106,7 +105,6 @@ public class FormTemplateService {
             FormDataRepository formDataRepository,
             ReviewScoreRepository reviewScoreRepository,
             ReportRepository reportRepository,
-            DigitalSignatureRepository digitalSignatureRepository,
             ObjectMapper objectMapper) {
         this.formTemplateRepository = formTemplateRepository;
         this.innovationRoundRepository = innovationRoundRepository;
@@ -120,7 +118,6 @@ public class FormTemplateService {
         this.formDataRepository = formDataRepository;
         this.reviewScoreRepository = reviewScoreRepository;
         this.reportRepository = reportRepository;
-        this.digitalSignatureRepository = digitalSignatureRepository;
         this.objectMapper = objectMapper;
     }
 
@@ -840,6 +837,20 @@ public class FormTemplateService {
     }
 
     /**
+     * Check xem current user có phải là trưởng khoa không
+     */
+    private boolean isCurrentUserTruongKhoa() {
+        User currentUser = userService.getCurrentUser();
+        if (currentUser == null || currentUser.getDepartment() == null) {
+            return false;
+        }
+
+        // Check xem user có role TRUONG_KHOA không
+        return currentUser.getUserRoles().stream()
+                .anyMatch(userRole -> userRole.getRole().getRoleName() == UserRoleEnum.TRUONG_KHOA);
+    }
+
+    /**
      * Lấy template tổng hợp cho thư ký (Mẫu 3, 4, 5) với data đã được build động
      */
     public SecretarySummaryTemplateResponse getSecretarySummaryTemplate(
@@ -854,9 +865,12 @@ public class FormTemplateService {
                     "Template type phải là BIEN_BAN_HOP, TONG_HOP_DE_NGHI, hoặc TONG_HOP_CHAM_DIEM");
         }
 
-        // 2. Validate user là thư ký
-        if (!isCurrentUserSecretary(councilId)) {
-            throw new IdInvalidException("Bạn không phải thư ký của hội đồng này");
+        // 2. Validate user là thư ký hoặc trưởng khoa
+        boolean isSecretary = isCurrentUserSecretary(councilId);
+        boolean isTruongKhoa = isCurrentUserTruongKhoa();
+        
+        if (!isSecretary && !isTruongKhoa) {
+            throw new IdInvalidException("Bạn không phải thư ký hoặc trưởng khoa");
         }
 
         // 3. Lấy council và roundId

@@ -952,6 +952,84 @@ public class InnovationService {
                 return innovationQueryService.getAllDepartmentInnovationsWithDetailedFilter(filterRequest, pageable);
         }
 
+        // 7.1. Lấy danh sách innovations đã được gán vào council (để TRUONG_KHOA ký Mẫu 2)
+        public List<MyInnovationFormDataResponse> getDepartmentInnovationsPendingSignature() {
+                User currentUser = userService.getCurrentUser();
+
+                // Validate user là TRUONG_KHOA
+                boolean hasTruongKhoaRole = currentUser.getUserRoles().stream()
+                                .anyMatch(userRole -> userRole.getRole().getRoleName() == UserRoleEnum.TRUONG_KHOA);
+
+                if (!hasTruongKhoaRole) {
+                        logger.error("User {} không có quyền TRUONG_KHOA", currentUser.getId());
+                        throw new IdInvalidException("Chỉ TRUONG_KHOA mới có quyền xem danh sách sáng kiến chờ ký");
+                }
+
+                // Validate user có department
+                if (currentUser.getDepartment() == null) {
+                        throw new IdInvalidException("Người dùng hiện tại chưa được gán vào khoa nào.");
+                }
+
+                String departmentId = currentUser.getDepartment().getId();
+
+                // Lấy innovations của department đã được gán vào council
+                List<Innovation> innovations = innovationRepository.findByDepartmentIdWithCouncils(departmentId);
+
+                // Filter: chỉ lấy innovations đã được gán vào council (councils không rỗng)
+                List<Innovation> innovationsWithCouncils = innovations.stream()
+                                .filter(innovation -> innovation.getCouncils() != null
+                                                && !innovation.getCouncils().isEmpty())
+                                .collect(Collectors.toList());
+
+                // Build response cho từng innovation
+                List<MyInnovationFormDataResponse> responses = new ArrayList<>();
+
+                for (Innovation innovation : innovationsWithCouncils) {
+                        try {
+                                List<FormData> formDataList = formDataRepository
+                                                .findByInnovationIdWithRelations(innovation.getId());
+
+                                // Convert FormData → FormDataResponse
+                                List<FormDataResponse> formDataResponses = new ArrayList<>();
+                                for (FormData formData : formDataList) {
+                                        FormDataResponse formDataResponse = formDataMapper.toFormDataResponse(formData);
+                                        formDataResponses.add(formDataResponse);
+                                }
+
+                                MyInnovationFormDataResponse response = new MyInnovationFormDataResponse();
+                                Long timeRemainingSeconds = getSubmissionTimeRemainingSeconds(innovation);
+
+                                // Populate innovation info
+                                InnovationBasicInfo innovationInfo = new InnovationBasicInfo();
+                                innovationInfo.setId(innovation.getId());
+                                innovationInfo.setInnovationName(innovation.getInnovationName());
+                                innovationInfo.setStatus(
+                                                innovation.getStatus() != null ? innovation.getStatus().name() : null);
+                                innovationInfo.setIsScore(innovation.getIsScore());
+                                innovationInfo.setBasisText(innovation.getBasisText());
+                                innovationInfo.setSubmissionTimeRemainingSeconds(timeRemainingSeconds);
+                                response.setInnovation(innovationInfo);
+
+                                // Dùng buildMyTemplateFormDataResponses để trả về format formData object cho FE
+                                response.setTemplates(
+                                                innovationSignatureService
+                                                                .buildMyTemplateFormDataResponses(formDataResponses));
+                                // Build templateSignatures từ SIGNATURE fields trong formDataResponses
+                                response.setTemplateSignatures(
+                                                innovationSignatureService.buildFormSignatureResponses(formDataResponses));
+                                response.setSubmissionTimeRemainingSeconds(timeRemainingSeconds);
+
+                                responses.add(response);
+                        } catch (Exception e) {
+                                logger.error("Error building response for innovation {}: {}", innovation.getId(),
+                                                e.getMessage());
+                                // Skip innovation này nếu có lỗi
+                        }
+                }
+
+                return responses;
+        }
+
         // 7. Lấy Innovation & FormData theo ID cho QUAN_TRI_VIEN_KHOA và TRUONG_KHOA
         // (chỉ cho phép xem sáng kiến của phòng ban mình)
         public InnovationFormDataResponse getDepartmentInnovationWithFormDataById(String innovationId) {
