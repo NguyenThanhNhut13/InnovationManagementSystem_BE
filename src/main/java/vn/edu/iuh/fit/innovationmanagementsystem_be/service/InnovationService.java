@@ -973,13 +973,8 @@ public class InnovationService {
                 return innovationQueryService.getAllDepartmentInnovationsWithDetailedFilter(filterRequest, pageable);
         }
 
-<<<<<<< HEAD
         // 7.1. Lấy danh sách innovations cho TRUONG_KHOA ký - Lightweight version cho table
         // (bao gồm cả đã ký và chưa ký để có thể filter theo trạng thái)
-=======
-        // 7.1. Lấy danh sách innovations pending signature - Lightweight version cho
-        // table
->>>>>>> 8573266ebb62bc9c8fb407f1991c55b3e457bbd6
         public List<DepartmentInnovationPendingSignatureResponse> getDepartmentInnovationsPendingSignatureList() {
                 User currentUser = userService.getCurrentUser();
 
