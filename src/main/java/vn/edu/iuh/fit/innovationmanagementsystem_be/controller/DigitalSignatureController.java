@@ -108,7 +108,7 @@ public class DigitalSignatureController {
                 return ResponseEntity.ok(response);
         }
 
-        // 4. Ký số tài liệu tổng hợp cấp khoa (Mẫu 4, Mẫu 5)
+        // 4. Ký số tài liệu tổng hợp cấp khoa (Mẫu 3, Mẫu 4, Mẫu 5)
         @PostMapping("/department-documents/sign")
         @PreAuthorize("hasAnyRole('TRUONG_KHOA', 'TV_HOI_DONG_TRUONG', 'TV_HOI_DONG_KHOA')")
         @ApiMessage("Xử lý tài liệu cấp khoa thành công")
@@ -128,6 +128,7 @@ public class DigitalSignatureController {
         }
 
         // 5. Ký số Report đã tồn tại (sau khi lưu với isSign = false)
+        // - lúc đầu tạo report nhưng chưa ký
         @PostMapping("/department-documents/{reportId}/sign")
         @PreAuthorize("hasAnyRole('TRUONG_KHOA', 'TV_HOI_DONG_TRUONG', 'TV_HOI_DONG_KHOA')")
         @ApiMessage("Ký số báo cáo thành công")
