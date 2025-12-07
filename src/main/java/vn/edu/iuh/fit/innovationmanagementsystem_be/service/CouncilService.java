@@ -55,6 +55,9 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.Innovatio
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.MemberEvaluationDetail;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.InnovationPhaseRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.DepartmentPhaseRepository;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.DigitalSignatureRepository;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.DocumentTypeEnum;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.SignatureStatusEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.ResultPaginationDTO;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.Utils;
 import lombok.extern.slf4j.Slf4j;
@@ -87,6 +90,7 @@ public class CouncilService {
     private final InnovationPhaseRepository innovationPhaseRepository;
     private final DepartmentPhaseRepository departmentPhaseRepository;
     private final NotificationService notificationService;
+    private final DigitalSignatureRepository digitalSignatureRepository;
 
     public CouncilService(CouncilRepository councilRepository,
             CouncilMemberRepository councilMemberRepository,
@@ -101,7 +105,8 @@ public class CouncilService {
             ReviewScoreRepository reviewScoreRepository,
             InnovationPhaseRepository innovationPhaseRepository,
             DepartmentPhaseRepository departmentPhaseRepository,
-            NotificationService notificationService) {
+            NotificationService notificationService,
+            DigitalSignatureRepository digitalSignatureRepository) {
         this.councilRepository = councilRepository;
         this.councilMemberRepository = councilMemberRepository;
         this.userRepository = userRepository;
@@ -116,6 +121,7 @@ public class CouncilService {
         this.innovationPhaseRepository = innovationPhaseRepository;
         this.departmentPhaseRepository = departmentPhaseRepository;
         this.notificationService = notificationService;
+        this.digitalSignatureRepository = digitalSignatureRepository;
     }
 
     // 1. Tạo Hội đồng mới
@@ -434,19 +440,35 @@ public class CouncilService {
         List<Innovation> allSubmitted = innovationRepository.findByRoundIdAndStatus(roundId,
                 InnovationStatusEnum.SUBMITTED);
 
+        // Filter theo department (nếu là council cấp khoa)
+        List<Innovation> filteredByDepartment;
         if (councilLevel == ReviewLevelEnum.KHOA) {
             // Faculty level: chỉ lấy innovations của khoa
             if (department == null) {
                 return new ArrayList<>();
             }
             String departmentId = department.getId();
-            return allSubmitted.stream()
+            filteredByDepartment = allSubmitted.stream()
                     .filter(i -> i.getDepartment() != null && i.getDepartment().getId().equals(departmentId))
                     .collect(Collectors.toList());
         } else {
             // School level: lấy tất cả
-            return allSubmitted;
+            filteredByDepartment = allSubmitted;
         }
+
+        // Filter: chỉ lấy innovations đã được TRUONG_KHOA ký mẫu 2
+        return filteredByDepartment.stream()
+                .filter(innovation -> {
+                    // Kiểm tra xem đã có chữ ký của TRUONG_KHOA cho mẫu 2 chưa
+                    boolean hasTruongKhoaSignature = digitalSignatureRepository
+                            .existsByInnovationIdAndDocumentTypeAndSignedAsRoleAndStatus(
+                                    innovation.getId(),
+                                    DocumentTypeEnum.FORM_2,
+                                    UserRoleEnum.TRUONG_KHOA,
+                                    SignatureStatusEnum.SIGNED);
+                    return hasTruongKhoaSignature;
+                })
+                .collect(Collectors.toList());
     }
 
     // 2. Lấy thông tin hội đồng hiện tại (dựa trên round hiện tại và department của user)
