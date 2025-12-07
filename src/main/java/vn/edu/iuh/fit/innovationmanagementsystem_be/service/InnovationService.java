@@ -972,19 +972,14 @@ public class InnovationService {
 
                 String departmentId = currentUser.getDepartment().getId();
 
-                // Lấy innovations của department đã được gán vào council
-                List<Innovation> innovations = innovationRepository.findByDepartmentIdWithCouncils(departmentId);
-
-                // Filter: chỉ lấy innovations đã được gán vào council (councils không rỗng)
-                List<Innovation> innovationsWithCouncils = innovations.stream()
-                                .filter(innovation -> innovation.getCouncils() != null
-                                                && !innovation.getCouncils().isEmpty())
-                                .collect(Collectors.toList());
+                // Lấy innovations của department: status = SUBMITTED, đã được GIANG_VIEN ký mẫu 2, chưa được TRUONG_KHOA ký mẫu 2
+                // (không yêu cầu đã gán vào council)
+                List<Innovation> innovations = innovationRepository.findInnovationsPendingDepartmentHeadSignature(departmentId);
 
                 // Build response cho từng innovation
                 List<MyInnovationFormDataResponse> responses = new ArrayList<>();
 
-                for (Innovation innovation : innovationsWithCouncils) {
+                for (Innovation innovation : innovations) {
                         try {
                                 List<FormData> formDataList = formDataRepository
                                                 .findByInnovationIdWithRelations(innovation.getId());
