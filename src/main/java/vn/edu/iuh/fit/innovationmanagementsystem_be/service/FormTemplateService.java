@@ -906,7 +906,7 @@ public class FormTemplateService {
                 .toCreateTemplateWithFieldsResponse(template);
 
         // 7. Build field data map động
-        Map<String, Object> fieldDataMap = buildFieldDataMapDynamic(template, councilId, isScoreFilter);
+        Map<String, Object> fieldDataMap = buildFieldDataMapDynamic(template, councilId, isScoreFilter, templateType);
 
         // 7.5. Check và merge Report draft nếu có (chưa ký)
         mergeDraftReportData(fieldDataMap, templateType, councilId);
@@ -1010,15 +1010,31 @@ public class FormTemplateService {
     private Map<String, Object> buildFieldDataMapDynamic(
             FormTemplate template,
             String councilId,
-            Boolean isScoreFilter) {
+            Boolean isScoreFilter,
+            TemplateTypeEnum templateType) {
 
         Map<String, Object> fieldDataMap = new HashMap<>();
 
         try {
             // Lấy council results
             CouncilResultsResponse councilResults = councilService.getCouncilResults(councilId);
+            List<InnovationResultDetail> innovationResults = councilResults.getInnovationResults();
+            
+            // Filter theo finalDecision (chỉ cho mẫu 4, 5)
+            List<InnovationResultDetail> filteredByApproval = innovationResults.stream()
+                    .filter(result -> {
+                        // Mẫu 3: lấy tất cả (không filter theo finalDecision)
+                        if (templateType == TemplateTypeEnum.BIEN_BAN_HOP) {
+                            return true;
+                        }
+                        // Mẫu 4, 5: chỉ lấy innovations đã được thông qua (finalDecision == true)
+                        return result.getFinalDecision() != null && result.getFinalDecision() == true;
+                    })
+                    .collect(Collectors.toList());
+            
+            // Filter theo score (giữ nguyên logic cũ)
             List<InnovationResultDetail> filteredResults = filterInnovationsByScore(
-                    councilResults.getInnovationResults(),
+                    filteredByApproval,
                     isScoreFilter);
 
             // Tìm TẤT CẢ fields cần data (recursive)
