@@ -75,6 +75,7 @@ public class DigitalSignatureService {
     private final ReportRepository reportRepository;
     private final CouncilMemberRepository councilMemberRepository;
     private final CouncilService councilService;
+    private final NotificationService notificationService;
 
     public DigitalSignatureService(DigitalSignatureRepository digitalSignatureRepository,
             InnovationRepository innovationRepository,
@@ -93,7 +94,8 @@ public class DigitalSignatureService {
             DepartmentRepository departmentRepository,
             ReportRepository reportRepository,
             CouncilMemberRepository councilMemberRepository,
-            CouncilService councilService) {
+            CouncilService councilService,
+            @org.springframework.context.annotation.Lazy NotificationService notificationService) {
         this.digitalSignatureRepository = digitalSignatureRepository;
         this.innovationRepository = innovationRepository;
         this.userSignatureProfileRepository = userSignatureProfileRepository;
@@ -112,6 +114,7 @@ public class DigitalSignatureService {
         this.reportRepository = reportRepository;
         this.councilMemberRepository = councilMemberRepository;
         this.councilService = councilService;
+        this.notificationService = notificationService;
     }
 
     // 1. Tạo digital signature
@@ -1128,6 +1131,31 @@ public class DigitalSignatureService {
         }
 
         Report savedReport = reportRepository.save(report);
+
+        // Gửi thông báo cho TRUONG_KHOA nếu TẤT CẢ 3 mẫu (MAU_3, MAU_4, MAU_5) đều có
+        // status SUBMITTED_TO_DEPARTMENT
+        if (savedReport.getStatus() == ReportStatusEnum.SUBMITTED_TO_DEPARTMENT) {
+            // Đếm số report có status SUBMITTED_TO_DEPARTMENT
+            // (Mỗi department chỉ có 1 bộ report active, được cập nhật thay vì tạo mới)
+            List<DocumentTypeEnum> requiredReportTypes = List.of(
+                    DocumentTypeEnum.REPORT_MAU_3,
+                    DocumentTypeEnum.REPORT_MAU_4,
+                    DocumentTypeEnum.REPORT_MAU_5);
+
+            long submittedCount = reportRepository.countByDepartmentIdAndStatusAndReportTypeIn(
+                    departmentId,
+                    ReportStatusEnum.SUBMITTED_TO_DEPARTMENT,
+                    requiredReportTypes);
+
+            // Chỉ gửi thông báo nếu cả 3 mẫu đều có status SUBMITTED_TO_DEPARTMENT
+            if (submittedCount == 3) {
+                notificationService.notifyDepartmentHeadReportsReady(
+                        departmentId,
+                        department.getDepartmentName(),
+                        "Tất cả báo cáo (Mẫu 3, 4, 5)",
+                        currentUser.getFullName());
+            }
+        }
 
         // 8. Build response
         DepartmentDocumentSignResponse response = new DepartmentDocumentSignResponse();
