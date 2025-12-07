@@ -1039,6 +1039,78 @@ public class NotificationService {
                                 department.getDepartmentName());
         }
 
+        /**
+         * Thông báo cho TRUONG_KHOA khi giai đoạn SUBMISSION sắp kết thúc hoặc kết thúc
+         * 
+         * @param submissionPhase Phase SUBMISSION
+         * @param isOneDayBefore  true = thông báo trước 1 ngày, false = thông báo vào
+         *                        ngày kết thúc
+         */
+        public void notifySubmissionPhaseEnding(DepartmentPhase submissionPhase, boolean isOneDayBefore) {
+                Department department = submissionPhase.getDepartment();
+                if (department == null) {
+                        log.warn("DepartmentPhase '{}' không có khoa, bỏ qua thông báo", submissionPhase.getName());
+                        return;
+                }
+
+                if (submissionPhase.getInnovationRound() == null) {
+                        log.warn("DepartmentPhase '{}' không có innovation round, bỏ qua thông báo",
+                                        submissionPhase.getName());
+                        return;
+                }
+
+                String roundName = submissionPhase.getInnovationRound().getName() != null
+                                ? submissionPhase.getInnovationRound().getName()
+                                : "đợt sáng kiến";
+                LocalDate submissionEndDate = submissionPhase.getPhaseEndDate();
+
+                String title;
+                String message;
+
+                if (isOneDayBefore) {
+                        title = "Giai đoạn nộp hồ sơ sắp kết thúc";
+                        message = String.format(
+                                        "Giai đoạn nộp hồ sơ \"%s\" của đợt \"%s\" sẽ kết thúc vào ngày mai (%s). "
+                                                        + "Vui lòng kiểm tra và nhắc nhở giảng viên hoàn tất hồ sơ.",
+                                        submissionPhase.getName(),
+                                        roundName,
+                                        submissionEndDate != null ? submissionEndDate.toString() : "N/A");
+                } else {
+                        title = "Giai đoạn nộp hồ sơ đã kết thúc";
+                        message = String.format(
+                                        "Giai đoạn nộp hồ sơ \"%s\" của đợt \"%s\" đã kết thúc hôm nay (%s). "
+                                                        + "Vui lòng rà soát danh sách hồ sơ đã nộp và chuẩn bị cho giai đoạn chấm điểm.",
+                                        submissionPhase.getName(),
+                                        roundName,
+                                        submissionEndDate != null ? submissionEndDate.toString() : "N/A");
+                }
+
+                Map<String, Object> data = new HashMap<>();
+                data.put("departmentId", department.getId());
+                data.put("departmentName", department.getDepartmentName());
+                data.put("submissionPhaseId", submissionPhase.getId());
+                data.put("submissionPhaseName", submissionPhase.getName());
+                data.put("submissionPhaseEndDate", submissionEndDate != null ? submissionEndDate.toString() : null);
+                data.put("roundId", submissionPhase.getInnovationRound().getId());
+                data.put("roundName", roundName);
+                data.put("action", isOneDayBefore ? "submission_ending_soon" : "submission_ended");
+                data.put("url", "/department-phases?departmentId=" + department.getId());
+                data.put("audience", "DEPARTMENT_MANAGERS");
+                data.put("isOneDayBefore", isOneDayBefore);
+
+                notifyUsersByDepartmentAndRoles(
+                                department.getId(),
+                                List.of(UserRoleEnum.TRUONG_KHOA),
+                                title,
+                                message,
+                                NotificationTypeEnum.SYSTEM_ANNOUNCEMENT,
+                                data);
+
+                log.info("Đã gửi thông báo {} giai đoạn nộp hồ sơ cho TRUONG_KHOA của khoa {}",
+                                isOneDayBefore ? "sắp kết thúc" : "đã kết thúc",
+                                department.getDepartmentName());
+        }
+
         @Transactional
         public void notifyUserOnInnovationCreated(String userId, String innovationId, String innovationName,
                         InnovationStatusEnum status) {
@@ -1115,7 +1187,8 @@ public class NotificationService {
                         String authorId, ReviewLevelEnum councilLevel, Boolean isApproved, String councilName) {
                 try {
                         User author = userRepository.findById(authorId)
-                                        .orElseThrow(() -> new IdInvalidException("Không tìm thấy tác giả với ID: " + authorId));
+                                        .orElseThrow(() -> new IdInvalidException(
+                                                        "Không tìm thấy tác giả với ID: " + authorId));
 
                         String councilLevelName = councilLevel == ReviewLevelEnum.KHOA ? "Khoa" : "Trường";
                         String statusText = isApproved ? "thông qua" : "không thông qua";
@@ -1133,10 +1206,10 @@ public class NotificationService {
                         data.put("isApproved", isApproved);
                         data.put("statusText", statusText);
 
-                        NotificationTypeEnum notificationType = isApproved 
-                                        ? NotificationTypeEnum.INNOVATION_APPROVED 
+                        NotificationTypeEnum notificationType = isApproved
+                                        ? NotificationTypeEnum.INNOVATION_APPROVED
                                         : NotificationTypeEnum.INNOVATION_REJECTED;
-                        
+
                         Notification notification = createNotification(title, message, notificationType,
                                         data, null, null);
 
@@ -1152,10 +1225,72 @@ public class NotificationService {
                         String userDestination = "/queue/notifications/" + author.getId();
                         messagingTemplate.convertAndSend(userDestination, wsNotification);
 
-                        log.info("Đã gửi thông báo kết quả đánh giá cho tác giả {} về sáng kiến {}", authorId, innovationId);
+                        log.info("Đã gửi thông báo kết quả đánh giá cho tác giả {} về sáng kiến {}", authorId,
+                                        innovationId);
                 } catch (Exception e) {
                         log.error("Lỗi khi gửi thông báo kết quả đánh giá cho tác giả {} về sáng kiến {}: {}",
                                         authorId, innovationId, e.getMessage(), e);
+                }
+        }
+
+        /**
+         * Thông báo cho TRUONG_KHOA khi thư ký đã tổng hợp xong báo cáo
+         * (REPORT_MAU_3/4/5)
+         * và report chuyển sang status SUBMITTED_TO_DEPARTMENT
+         * 
+         * @param departmentId   ID của khoa
+         * @param departmentName Tên khoa
+         * @param reportType     Loại báo cáo (REPORT_MAU_3, REPORT_MAU_4, REPORT_MAU_5)
+         * @param secretaryName  Tên thư ký đã tổng hợp
+         */
+        @Transactional
+        public void notifyDepartmentHeadReportsReady(String departmentId, String departmentName,
+                        String reportType, String secretaryName) {
+                try {
+                        String reportTypeName = getReportTypeName(reportType);
+
+                        String title = "Báo cáo cần ký số";
+                        String message = String.format(
+                                        "Thư ký %s đã hoàn thành tổng hợp %s cho khoa %s. " +
+                                                        "Vui lòng kiểm tra và ký số để nộp lên cấp trường.",
+                                        secretaryName, reportTypeName, departmentName);
+
+                        Map<String, Object> data = new HashMap<>();
+                        data.put("departmentId", departmentId);
+                        data.put("departmentName", departmentName);
+                        data.put("reportType", reportType);
+                        data.put("secretaryName", secretaryName);
+                        data.put("action", "SIGN_REPORT");
+
+                        notifyUsersByDepartmentAndRoles(
+                                        departmentId,
+                                        List.of(UserRoleEnum.TRUONG_KHOA),
+                                        title,
+                                        message,
+                                        NotificationTypeEnum.SYSTEM_ANNOUNCEMENT,
+                                        data);
+
+                        log.info("Đã gửi thông báo cho TRUONG_KHOA của khoa {} về báo cáo {} cần ký",
+                                        departmentName, reportType);
+                } catch (Exception e) {
+                        log.error("Lỗi khi gửi thông báo cho TRUONG_KHOA của khoa {} về báo cáo {}: {}",
+                                        departmentId, reportType, e.getMessage(), e);
+                }
+        }
+
+        /**
+         * Helper method để convert reportType thành tên hiển thị
+         */
+        private String getReportTypeName(String reportType) {
+                switch (reportType) {
+                        case "REPORT_MAU_3":
+                                return "Biên bản họp (Mẫu 3)";
+                        case "REPORT_MAU_4":
+                                return "Tổng hợp đề nghị (Mẫu 4)";
+                        case "REPORT_MAU_5":
+                                return "Tổng hợp chấm điểm (Mẫu 5)";
+                        default:
+                                return reportType;
                 }
         }
 }

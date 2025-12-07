@@ -187,10 +187,10 @@ public class FormTemplateController {
 
         // 11. Lấy template tổng hợp cho thư ký (Mẫu 3, 4, 5)
         @GetMapping("/form-templates/council/{councilId}/secretary/{templateType}")
-        @PreAuthorize("hasAnyRole('TV_HOI_DONG_KHOA', 'TV_HOI_DONG_TRUONG')")
+        @PreAuthorize("hasAnyRole('TV_HOI_DONG_KHOA', 'TV_HOI_DONG_TRUONG', 'TRUONG_KHOA')")
         @ApiMessage("Lấy mẫu tổng hợp cho thư ký thành công")
         @Operation(summary = "Get Secretary Summary Template", 
-                   description = "Get template 3, 4, or 5 with data for secretary. templateType: BIEN_BAN_HOP, TONG_HOP_DE_NGHI, TONG_HOP_CHAM_DIEM")
+                   description = "Get template 3, 4, or 5 with data for secretary or department head. templateType: BIEN_BAN_HOP, TONG_HOP_DE_NGHI, TONG_HOP_CHAM_DIEM")
         @ApiResponses(value = {
                 @ApiResponse(responseCode = "200", description = "Template retrieved successfully"),
                 @ApiResponse(responseCode = "404", description = "Template or council not found"),

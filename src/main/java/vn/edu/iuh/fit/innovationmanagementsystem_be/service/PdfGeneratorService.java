@@ -85,6 +85,8 @@ public class PdfGeneratorService {
         String sanitizedHtml;
         try {
             sanitizedHtml = sanitizeHtmlToXhtml(htmlContent);
+            // Thêm CSS font Times New Roman vào HTML
+            sanitizedHtml = injectTimesNewRomanFont(sanitizedHtml);
         } catch (Exception e) {
             String errorMessage = e.getMessage();
             if (errorMessage == null || errorMessage.isBlank()) {
@@ -102,14 +104,13 @@ public class PdfGeneratorService {
             pdfDocument.setDefaultPageSize(com.itextpdf.kernel.geom.PageSize.A4);
 
             ConverterProperties converterProperties = new ConverterProperties();
-            DefaultFontProvider fontProvider = new DefaultFontProvider(true, true, true);
+            DefaultFontProvider fontProvider = new DefaultFontProvider(false, false, false);
 
-            // Thêm font hệ thống hỗ trợ Unicode và tiếng Việt
-            // iText 7 tự động sử dụng font hệ thống hỗ trợ Unicode
+            // Thêm font hệ thống để có Times New Roman
             try {
                 fontProvider.addSystemFonts();
             } catch (Exception e) {
-                // Ignore nếu không load được system fonts, sẽ dùng font mặc định
+                // Ignore nếu không load được system fonts
             }
 
             converterProperties.setFontProvider(fontProvider);
@@ -127,6 +128,35 @@ public class PdfGeneratorService {
             }
             throw new IdInvalidException("Không thể chuyển HTML sang PDF: " + errorMessage);
         }
+    }
+
+    // Helper method để inject font Times New Roman vào HTML (giống văn bản hành
+    // chính)
+    private String injectTimesNewRomanFont(String html) {
+        String fontCss = "<style>" +
+                "* { font-family: 'Times New Roman', Times, serif !important; font-size: 13pt; }" +
+                "body { font-family: 'Times New Roman', Times, serif !important; font-size: 13pt; }" +
+                "p, div, span { font-family: 'Times New Roman', Times, serif !important; font-size: 13pt; }" +
+                "table, th, td { font-family: 'Times New Roman', Times, serif !important; font-size: 12pt !important; }" +
+                "table *, table th, table td { font-size: 12pt !important; }" +
+                "h1, h2, h3, h4, h5, h6 { font-family: 'Times New Roman', Times, serif !important; }" +
+                ".location-date-field { font-style: italic !important; }" +
+                "</style>";
+
+        // Chèn CSS vào trước thẻ </head> hoặc đầu <body>
+        if (html.contains("</head>")) {
+            html = html.replace("</head>", fontCss + "</head>");
+        } else if (html.contains("<body")) {
+            int bodyIndex = html.indexOf("<body");
+            int bodyEndIndex = html.indexOf(">", bodyIndex);
+            if (bodyEndIndex != -1) {
+                html = html.substring(0, bodyEndIndex + 1) + fontCss + html.substring(bodyEndIndex + 1);
+            }
+        } else {
+            html = fontCss + html;
+        }
+
+        return html;
     }
 
     // 4. Chuyển HTML sang PDF sử dụng openhtmltopdf (phương pháp cũ - giữ lại để

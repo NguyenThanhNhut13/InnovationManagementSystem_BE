@@ -25,6 +25,11 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.Innovatio
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.FieldTypeEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.TargetRoleCode;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.TemplateTypeEnum;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.DocumentTypeEnum;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.ReportStatusEnum;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.UserRoleEnum;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.Report;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.ReportRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.CreateTemplateRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.CreateTemplateWithFieldsRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.UpdateFormTemplateRequest;
@@ -58,6 +63,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.HtmlTemplateUtils;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.HashMap;
 import java.util.UUID;
 import java.time.LocalDate;
@@ -75,7 +81,6 @@ public class FormTemplateService {
     private final FormTemplateRepository formTemplateRepository;
     private final FormTemplateMapper formTemplateMapper;
     private final InnovationRoundRepository innovationRoundRepository;
-    private final HtmlTemplateUtils htmlTemplateUtils;
     private final UserService userService;
     private final CouncilService councilService;
     private final InnovationService innovationService;
@@ -84,6 +89,7 @@ public class FormTemplateService {
     private final FormFieldRepository formFieldRepository;
     private final FormDataRepository formDataRepository;
     private final ReviewScoreRepository reviewScoreRepository;
+    private final ReportRepository reportRepository;
     private final ObjectMapper objectMapper;
 
     public FormTemplateService(FormTemplateRepository formTemplateRepository,
@@ -98,11 +104,11 @@ public class FormTemplateService {
             FormFieldRepository formFieldRepository,
             FormDataRepository formDataRepository,
             ReviewScoreRepository reviewScoreRepository,
+            ReportRepository reportRepository,
             ObjectMapper objectMapper) {
         this.formTemplateRepository = formTemplateRepository;
         this.innovationRoundRepository = innovationRoundRepository;
         this.formTemplateMapper = formTemplateMapper;
-        this.htmlTemplateUtils = htmlTemplateUtils;
         this.userService = userService;
         this.councilService = councilService;
         this.innovationService = innovationService;
@@ -111,6 +117,7 @@ public class FormTemplateService {
         this.formFieldRepository = formFieldRepository;
         this.formDataRepository = formDataRepository;
         this.reviewScoreRepository = reviewScoreRepository;
+        this.reportRepository = reportRepository;
         this.objectMapper = objectMapper;
     }
 
@@ -198,9 +205,9 @@ public class FormTemplateService {
 
         FormTemplate updatedTemplate = formTemplateRepository.save(template);
 
-        // Cập nhật HTML template content với field IDs mới sau khi fields đã được save
-        updateHtmlTemplateContent(updatedTemplate);
-        updatedTemplate = formTemplateRepository.save(updatedTemplate);
+        // ✅ Không cần update HTML IDs nữa - chỉ dùng data-field-key
+        // updateHtmlTemplateContent(updatedTemplate);
+        // updatedTemplate = formTemplateRepository.save(updatedTemplate);
 
         return formTemplateMapper.toFormTemplateResponse(updatedTemplate);
     }
@@ -236,9 +243,9 @@ public class FormTemplateService {
 
         FormTemplate finalTemplate = formTemplateRepository.save(savedTemplate);
 
-        // Cập nhật HTML template content với field IDs mới sau khi fields đã được save
-        updateHtmlTemplateContent(finalTemplate);
-        finalTemplate = formTemplateRepository.save(finalTemplate);
+        // ✅ Không cần update HTML IDs nữa - chỉ dùng data-field-key
+        // updateHtmlTemplateContent(finalTemplate);
+        // finalTemplate = formTemplateRepository.save(finalTemplate);
 
         return formTemplateMapper.toCreateTemplateWithFieldsResponse(finalTemplate);
     }
@@ -370,25 +377,6 @@ public class FormTemplateService {
         template.getFormFields().addAll(orderedFields);
     }
 
-    private void updateHtmlTemplateContent(FormTemplate template) {
-        if (template == null) {
-            throw new IdInvalidException("Template không được null");
-        }
-
-        if (template.getTemplateContent() == null || template.getFormFields().isEmpty()) {
-            return;
-        }
-
-        try {
-            String htmlContent = Utils.decode(template.getTemplateContent());
-            String updatedHtmlContent = htmlTemplateUtils.updateFieldIdsInHtml(htmlContent, template.getFormFields());
-            String encodedContent = Utils.encode(updatedHtmlContent);
-            template.setTemplateContent(encodedContent);
-
-        } catch (Exception e) {
-            throw new IdInvalidException("Lỗi khi cập nhật HTML template content: " + e.getMessage());
-        }
-    }
 
     // 8. Lấy FormTemplate (InnovationRoundId = null) với pagination, filtering - OK
     @Transactional
@@ -424,9 +412,10 @@ public class FormTemplateService {
             FormTemplate finalTemplate = formTemplateRepository.save(savedTemplate);
             entityManager.flush();
 
-            updateHtmlTemplateContent(finalTemplate);
-            finalTemplate = formTemplateRepository.save(finalTemplate);
-            entityManager.flush();
+            // ✅ Không cần update HTML IDs nữa - chỉ dùng data-field-key
+            // updateHtmlTemplateContent(finalTemplate);
+            // finalTemplate = formTemplateRepository.save(finalTemplate);
+            // entityManager.flush();
 
             return formTemplateMapper.toCreateTemplateResponse(finalTemplate);
         } catch (Exception e) {
@@ -848,6 +837,20 @@ public class FormTemplateService {
     }
 
     /**
+     * Check xem current user có phải là trưởng khoa không
+     */
+    private boolean isCurrentUserTruongKhoa() {
+        User currentUser = userService.getCurrentUser();
+        if (currentUser == null || currentUser.getDepartment() == null) {
+            return false;
+        }
+
+        // Check xem user có role TRUONG_KHOA không
+        return currentUser.getUserRoles().stream()
+                .anyMatch(userRole -> userRole.getRole().getRoleName() == UserRoleEnum.TRUONG_KHOA);
+    }
+
+    /**
      * Lấy template tổng hợp cho thư ký (Mẫu 3, 4, 5) với data đã được build động
      */
     public SecretarySummaryTemplateResponse getSecretarySummaryTemplate(
@@ -862,9 +865,12 @@ public class FormTemplateService {
                     "Template type phải là BIEN_BAN_HOP, TONG_HOP_DE_NGHI, hoặc TONG_HOP_CHAM_DIEM");
         }
 
-        // 2. Validate user là thư ký
-        if (!isCurrentUserSecretary(councilId)) {
-            throw new IdInvalidException("Bạn không phải thư ký của hội đồng này");
+        // 2. Validate user là thư ký hoặc trưởng khoa
+        boolean isSecretary = isCurrentUserSecretary(councilId);
+        boolean isTruongKhoa = isCurrentUserTruongKhoa();
+        
+        if (!isSecretary && !isTruongKhoa) {
+            throw new IdInvalidException("Bạn không phải thư ký hoặc trưởng khoa");
         }
 
         // 3. Lấy council và roundId
@@ -900,7 +906,10 @@ public class FormTemplateService {
                 .toCreateTemplateWithFieldsResponse(template);
 
         // 7. Build field data map động
-        Map<String, Object> fieldDataMap = buildFieldDataMapDynamic(template, councilId, isScoreFilter);
+        Map<String, Object> fieldDataMap = buildFieldDataMapDynamic(template, councilId, isScoreFilter, templateType);
+
+        // 7.5. Check và merge Report draft nếu có (chưa ký)
+        mergeDraftReportData(fieldDataMap, templateType, councilId);
 
         // 8. Tạo response
         SecretarySummaryTemplateResponse response = new SecretarySummaryTemplateResponse();
@@ -924,20 +933,108 @@ public class FormTemplateService {
     }
 
     /**
+     * Merge draft Report data vào fieldDataMap nếu có (chưa ký)
+     */
+    private void mergeDraftReportData(
+            Map<String, Object> fieldDataMap,
+            TemplateTypeEnum templateType,
+            String councilId) {
+        try {
+            // 1. Map TemplateTypeEnum -> DocumentTypeEnum
+            DocumentTypeEnum documentType = mapTemplateTypeToDocumentType(templateType);
+            if (documentType == null) {
+                return; // Không phải template type cần check
+            }
+
+            // 2. Lấy current user và departmentId
+            User currentUser = userService.getCurrentUser();
+            if (currentUser == null || currentUser.getDepartment() == null) {
+                return;
+            }
+            String departmentId = currentUser.getDepartment().getId();
+
+            // 3. Tìm Report draft (chưa có DigitalSignature của thư ký)
+            Optional<Report> draftReportOpt = reportRepository
+                    .findByDepartmentIdAndReportType(departmentId, documentType);
+
+            if (draftReportOpt.isEmpty()) {
+                return; // Không có draft
+            }
+
+            Report report = draftReportOpt.get();
+
+            // 4. Merge reportData vào fieldDataMap (không phân biệt status - để hiển thị)
+            if (report.getReportData() != null && !report.getReportData().isEmpty()) {
+                Map<String, Object> draftData = report.getReportData();
+                // Merge: draft data override council results data
+                draftData.forEach((key, value) -> {
+                    if (value != null) {
+                        fieldDataMap.put(key, value);
+                    }
+                });
+                ReportStatusEnum reportStatus = report.getStatus();
+                if (reportStatus == null) {
+                    reportStatus = ReportStatusEnum.DRAFT; // Default nếu null
+                }
+                log.info("Đã merge Report data cho template type: {}, departmentId: {}, status: {}", 
+                        templateType, departmentId, reportStatus);
+            }
+        } catch (Exception e) {
+            // Log lỗi nhưng không throw để không ảnh hưởng đến flow chính
+            log.warn("Lỗi khi merge draft Report data: {}", e.getMessage());
+        }
+    }
+
+    /**
+     * Map TemplateTypeEnum sang DocumentTypeEnum
+     */
+    private DocumentTypeEnum mapTemplateTypeToDocumentType(TemplateTypeEnum templateType) {
+        if (templateType == null) {
+            return null;
+        }
+        switch (templateType) {
+            case BIEN_BAN_HOP:
+                return DocumentTypeEnum.REPORT_MAU_3;
+            case TONG_HOP_DE_NGHI:
+                return DocumentTypeEnum.REPORT_MAU_4;
+            case TONG_HOP_CHAM_DIEM:
+                return DocumentTypeEnum.REPORT_MAU_5;
+            default:
+                return null;
+        }
+    }
+
+    /**
      * Build field data map động - xử lý tất cả field types
      */
     private Map<String, Object> buildFieldDataMapDynamic(
             FormTemplate template,
             String councilId,
-            Boolean isScoreFilter) {
+            Boolean isScoreFilter,
+            TemplateTypeEnum templateType) {
 
         Map<String, Object> fieldDataMap = new HashMap<>();
 
         try {
             // Lấy council results
             CouncilResultsResponse councilResults = councilService.getCouncilResults(councilId);
+            List<InnovationResultDetail> innovationResults = councilResults.getInnovationResults();
+            
+            // Filter theo finalDecision (chỉ cho mẫu 4, 5)
+            List<InnovationResultDetail> filteredByApproval = innovationResults.stream()
+                    .filter(result -> {
+                        // Mẫu 3: lấy tất cả (không filter theo finalDecision)
+                        if (templateType == TemplateTypeEnum.BIEN_BAN_HOP) {
+                            return true;
+                        }
+                        // Mẫu 4, 5: chỉ lấy innovations đã được thông qua (finalDecision == true)
+                        return result.getFinalDecision() != null && result.getFinalDecision() == true;
+                    })
+                    .collect(Collectors.toList());
+            
+            // Filter theo score (giữ nguyên logic cũ)
             List<InnovationResultDetail> filteredResults = filterInnovationsByScore(
-                    councilResults.getInnovationResults(),
+                    filteredByApproval,
                     isScoreFilter);
 
             // Tìm TẤT CẢ fields cần data (recursive)
@@ -1432,19 +1529,106 @@ public class FormTemplateService {
                 return "[Không tìm thấy dữ liệu từ " + sourceTemplateId + "]";
             }
 
-            // Lấy giá trị từ các field (hỗ trợ nested path cho TABLE)
-            List<String> values = new ArrayList<>();
-            for (String fieldKey : sourceFieldKeys) {
-                String value = getNestedFieldValue(sourceData, fieldKey, multiRowSeparator);
-                values.add(value != null ? value : "");
-            }
-
             // Format dữ liệu
-            if (values.stream().allMatch(v -> v.trim().isEmpty())) {
-                return "";
-            }
-
             if (displayFormat != null && !displayFormat.isEmpty()) {
+                // Kiểm tra xem có field nào từ table không (có chứa ".")
+                boolean hasTableFields = sourceFieldKeys.stream().anyMatch(key -> key.contains("."));
+                
+                if (hasTableFields) {
+                    // Lấy table data từ field đầu tiên có table
+                    String firstTableField = sourceFieldKeys.stream()
+                        .filter(key -> key.contains("."))
+                        .findFirst()
+                        .orElse(null);
+                    
+                    if (firstTableField != null) {
+                        String[] parts = firstTableField.split("\\.", 2);
+                        String tableKey = parts[0];
+                        Object tableData = sourceData.get(tableKey);
+                        
+                        if (tableData instanceof List) {
+                            @SuppressWarnings("unchecked")
+                            List<Map<String, Object>> tableRows = (List<Map<String, Object>>) tableData;
+                            
+                            // Format từng row
+                            List<String> formattedRows = new ArrayList<>();
+                            for (Map<String, Object> row : tableRows) {
+                                String formattedRow = displayFormat;
+                                for (String fieldKey : sourceFieldKeys) {
+                                    String value = "";
+                                    
+                                    if (fieldKey.contains(".")) {
+                                        // Lấy từ row hiện tại (table column)
+                                        String[] fieldParts = fieldKey.split("\\.", 2);
+                                        String columnKey = fieldParts[1];
+                                        Object columnValue = row.get(columnKey);
+                                        
+                                        // Nếu không tìm thấy bằng columnKey, thử fuzzy match
+                                        if (columnValue == null) {
+                                            String similarColKey = row.keySet().stream()
+                                                .filter(k -> {
+                                                    String kLower = k.toLowerCase().replaceAll("[\\s_]", "");
+                                                    String colKeyLower = columnKey.toLowerCase().replaceAll("[\\s_]", "");
+                                                    return kLower.contains(colKeyLower) || colKeyLower.contains(kLower) ||
+                                                            k.toLowerCase().contains(columnKey.toLowerCase()) ||
+                                                            columnKey.toLowerCase().contains(k.toLowerCase());
+                                                })
+                                                .findFirst()
+                                                .orElse(null);
+                                            columnValue = similarColKey != null ? row.get(similarColKey) : null;
+                                        }
+                                        
+                                        value = columnValue != null ? columnValue.toString() : "";
+                                    } else {
+                                        // Lấy từ sourceData (field thường, không phải table)
+                                        Object fieldValue = sourceData.get(fieldKey);
+                                        if (fieldValue == null) {
+                                            // Tìm key tương tự (fuzzy match)
+                                            String similarKey = sourceData.keySet().stream()
+                                                .filter(k -> {
+                                                    String kLower = k.toLowerCase().replaceAll("[\\s_]", "");
+                                                    String fieldKeyLower = fieldKey.toLowerCase().replaceAll("[\\s_]", "");
+                                                    return kLower.contains(fieldKeyLower) || fieldKeyLower.contains(kLower) ||
+                                                            k.toLowerCase().contains(fieldKey.toLowerCase()) ||
+                                                            fieldKey.toLowerCase().contains(k.toLowerCase());
+                                                })
+                                                .findFirst()
+                                                .orElse(null);
+                                            fieldValue = similarKey != null ? sourceData.get(similarKey) : null;
+                                        }
+                                        value = fieldValue != null ? fieldValue.toString() : "";
+                                    }
+                                    
+                                    // Thay thế trong format
+                                    String keyForFormat = fieldKey.contains(".") 
+                                        ? fieldKey.substring(fieldKey.lastIndexOf(".") + 1)
+                                        : fieldKey;
+                                    formattedRow = formattedRow.replace("{" + keyForFormat + "}", value);
+                                    formattedRow = formattedRow.replace("{" + fieldKey + "}", value);
+                                }
+                                formattedRows.add(formattedRow);
+                            }
+                            
+                            // Join các rows bằng multiRowSeparator
+                            String separator = (multiRowSeparator != null && !multiRowSeparator.isEmpty()) 
+                                ? multiRowSeparator : "\n";
+                            return String.join(separator, formattedRows);
+                        }
+                    }
+                }
+                
+                // Fallback về logic cũ nếu không phải table fields hoặc không có displayFormat
+                // Lấy giá trị từ các field (hỗ trợ nested path cho TABLE)
+                List<String> values = new ArrayList<>();
+                for (String fieldKey : sourceFieldKeys) {
+                    String value = getNestedFieldValue(sourceData, fieldKey, multiRowSeparator);
+                    values.add(value != null ? value : "");
+                }
+                
+                if (values.stream().allMatch(v -> v.trim().isEmpty())) {
+                    return "";
+                }
+                
                 String result = displayFormat;
                 for (int i = 0; i < sourceFieldKeys.size(); i++) {
                     // Trong displayFormat, có thể dùng {ho_va_ten} thay vì
@@ -1459,6 +1643,17 @@ public class FormTemplateService {
                     result = result.replace("{" + sourceFieldKeys.get(i) + "}", values.get(i));
                 }
                 return result;
+            }
+
+            // Không có displayFormat, join các values bằng multiRowSeparator
+            List<String> values = new ArrayList<>();
+            for (String fieldKey : sourceFieldKeys) {
+                String value = getNestedFieldValue(sourceData, fieldKey, multiRowSeparator);
+                values.add(value != null ? value : "");
+            }
+            
+            if (values.stream().allMatch(v -> v.trim().isEmpty())) {
+                return "";
             }
 
             return String.join(multiRowSeparator, values);

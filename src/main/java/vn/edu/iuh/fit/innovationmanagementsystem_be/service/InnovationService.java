@@ -32,7 +32,9 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.TemplateDa
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.FilterMyInnovationRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.FilterAdminInnovationRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.FormDataResponse;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationBasicInfo;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationFormDataResponse;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.MyInnovationFormDataResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.MyInnovationResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationStatisticsDTO;
@@ -43,10 +45,17 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.Departmen
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationScoringDetailResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.AttachmentInfo;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.CoAuthorResponse;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.DepartmentInnovationPendingSignatureResponse;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationTemplateDetailResponse;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationTemplatesForSigningResponse;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.CreateTemplateWithFieldsResponse;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.MyTemplateFormDataResponse;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.FormSignatureResponse;
 import java.util.stream.Collectors;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.exception.IdInvalidException;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.mapper.InnovationMapper;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.mapper.FormDataMapper;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.mapper.FormTemplateMapper;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.AttachmentRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.InnovationRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.FormDataRepository;
@@ -76,6 +85,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.HashSet;
+import java.util.HashMap;
 import java.util.Optional;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -114,6 +124,7 @@ public class InnovationService {
         private final InnovationCoAuthorService innovationCoAuthorService;
         private final InnovationSignatureService innovationSignatureService;
         private final DigitalSignatureService digitalSignatureService;
+        private final FormTemplateMapper formTemplateMapper;
 
         public InnovationService(InnovationRepository innovationRepository,
                         InnovationPhaseRepository innovationPhaseRepository,
@@ -139,7 +150,8 @@ public class InnovationService {
                         InnovationFormService innovationFormService,
                         InnovationCoAuthorService innovationCoAuthorService,
                         InnovationSignatureService innovationSignatureService,
-                        DigitalSignatureService digitalSignatureService) {
+                        DigitalSignatureService digitalSignatureService,
+                        FormTemplateMapper formTemplateMapper) {
                 this.innovationRepository = innovationRepository;
                 this.innovationPhaseRepository = innovationPhaseRepository;
                 this.formDataService = formDataService;
@@ -165,6 +177,7 @@ public class InnovationService {
                 this.innovationCoAuthorService = innovationCoAuthorService;
                 this.innovationSignatureService = innovationSignatureService;
                 this.digitalSignatureService = digitalSignatureService;
+                this.formTemplateMapper = formTemplateMapper;
         }
 
         // 1. Lấy tất cả sáng kiến của user hiện tại với filter chi tiết
@@ -192,6 +205,13 @@ public class InnovationService {
         // 4. Lấy hạn chót sắp tới từ round hiện tại
         public UpcomingDeadlinesResponse getUpcomingDeadlines() {
                 return innovationStatisticsService.getUpcomingDeadlines();
+        }
+
+        // 5. Lấy sáng kiến từ các khoa đã được TRUONG_KHOA ký đủ báo cáo
+        public ResultPaginationDTO getInnovationsApprovedByDepartmentWithSignedReports(
+                        FilterAdminInnovationRequest filterRequest, Pageable pageable) {
+                return innovationQueryService.getInnovationsApprovedByDepartmentWithSignedReports(
+                                filterRequest, pageable);
         }
 
         // 4. Tạo Innovation & Submit FormData theo nhiều Template
@@ -638,7 +658,58 @@ public class InnovationService {
 
         // 6. Lấy Innovation & FormData theo ID của user hiện tại (chỉ cho phép xem sáng
         // kiến của chính mình)
-        public InnovationFormDataResponse getMyInnovationWithFormDataById(String innovationId) {
+        public MyInnovationFormDataResponse getMyInnovationWithFormDataById(String innovationId) {
+                String currentUserId = userService.getCurrentUserId();
+
+                Innovation innovation = innovationRepository.findById(innovationId)
+                                .orElseThrow(() -> {
+                                        logger.error("Không tìm thấy sáng kiến với ID: {}", innovationId);
+                                        return new IdInvalidException(
+                                                        "Không tìm thấy sáng kiến với ID: " + innovationId);
+                                });
+
+                if (innovation.getUser() == null || !innovation.getUser().getId().equals(currentUserId)) {
+                        logger.error("User {} không có quyền xem sáng kiến {}", currentUserId, innovationId);
+                        throw new IdInvalidException("Bạn không có quyền xem sáng kiến này");
+                }
+
+                List<FormData> formDataList = formDataRepository.findByInnovationIdWithRelations(innovationId);
+
+                // Convert FormData → FormDataResponse
+                List<FormDataResponse> formDataResponses = new ArrayList<>();
+                for (FormData formData : formDataList) {
+                        FormDataResponse formDataResponse = formDataMapper.toFormDataResponse(formData);
+                        formDataResponses.add(formDataResponse);
+                }
+
+                MyInnovationFormDataResponse response = new MyInnovationFormDataResponse();
+                Long timeRemainingSeconds = getSubmissionTimeRemainingSeconds(innovation);
+
+                // Populate innovation info
+                InnovationBasicInfo innovationInfo = new InnovationBasicInfo();
+                innovationInfo.setId(innovation.getId());
+                innovationInfo.setInnovationName(innovation.getInnovationName());
+                innovationInfo.setStatus(innovation.getStatus() != null ? innovation.getStatus().name() : null);
+                innovationInfo.setIsScore(innovation.getIsScore());
+                innovationInfo.setBasisText(innovation.getBasisText());
+                innovationInfo.setSubmissionTimeRemainingSeconds(timeRemainingSeconds);
+                response.setInnovation(innovationInfo);
+
+                // Dùng buildMyTemplateFormDataResponses để trả về format formData object cho FE
+                // draft loading
+                response.setTemplates(
+                                innovationSignatureService.buildMyTemplateFormDataResponses(formDataResponses));
+                // Build templateSignatures từ SIGNATURE fields trong formDataResponses
+                response.setTemplateSignatures(
+                                innovationSignatureService.buildFormSignatureResponses(formDataResponses, null));
+                response.setSubmissionTimeRemainingSeconds(timeRemainingSeconds);
+
+                return response;
+        }
+
+        // 7. Lấy Innovation & FormData theo ID của user hiện tại cho detail page (với
+        // fields array)
+        public InnovationFormDataResponse getMyInnovationFormDataForDetail(String innovationId) {
                 String currentUserId = userService.getCurrentUserId();
 
                 Innovation innovation = innovationRepository.findById(innovationId)
@@ -657,8 +728,8 @@ public class InnovationService {
 
                 InnovationFormDataResponse response = new InnovationFormDataResponse();
                 Long timeRemainingSeconds = getSubmissionTimeRemainingSeconds(innovation);
-                // Dùng buildTemplateFormDataResponsesWithTableConfig để trả về structure mới
-                // với fields array
+                // Dùng buildTemplateFormDataResponsesWithTableConfig để trả về fields array cho
+                // detail page
                 response.setTemplates(
                                 innovationSignatureService.buildTemplateFormDataResponsesWithTableConfig(formDataList));
                 response.setTemplateSignatures(Collections.emptyList());
@@ -698,14 +769,14 @@ public class InnovationService {
                 // TRUONG_KHOA
                 // Thành viên hội đồng có thể xem sáng kiến của mọi khoa
                 if (hasQuanTriVienKhoaRole || hasTruongKhoaRole) {
-                if (innovation.getDepartment() == null || currentUser.getDepartment() == null) {
+                        if (innovation.getDepartment() == null || currentUser.getDepartment() == null) {
                                 throw new IdInvalidException(
                                                 "Không thể xác định phòng ban của sáng kiến hoặc người dùng");
-                }
+                        }
 
-                // Kiểm tra department matching
-                if (!innovation.getDepartment().getId().equals(currentUser.getDepartment().getId())) {
-                        throw new IdInvalidException("Bạn chỉ có thể xem sáng kiến của khoa mình");
+                        // Kiểm tra department matching
+                        if (!innovation.getDepartment().getId().equals(currentUser.getDepartment().getId())) {
+                                throw new IdInvalidException("Bạn chỉ có thể xem sáng kiến của khoa mình");
                         }
                 }
 
@@ -902,6 +973,97 @@ public class InnovationService {
                 return innovationQueryService.getAllDepartmentInnovationsWithDetailedFilter(filterRequest, pageable);
         }
 
+        // 7.1. Lấy danh sách innovations cho TRUONG_KHOA ký - Lightweight version cho table
+        // (bao gồm cả đã ký và chưa ký để có thể filter theo trạng thái)
+        public List<DepartmentInnovationPendingSignatureResponse> getDepartmentInnovationsPendingSignatureList() {
+                User currentUser = userService.getCurrentUser();
+
+                // Validate user là TRUONG_KHOA
+                boolean hasTruongKhoaRole = currentUser.getUserRoles().stream()
+                                .anyMatch(userRole -> userRole.getRole().getRoleName() == UserRoleEnum.TRUONG_KHOA);
+
+                if (!hasTruongKhoaRole) {
+                        logger.error("User {} không có quyền TRUONG_KHOA", currentUser.getId());
+                        throw new IdInvalidException("Chỉ TRUONG_KHOA mới có quyền xem danh sách sáng kiến chờ ký");
+                }
+
+                // Validate user có department
+                if (currentUser.getDepartment() == null) {
+                        throw new IdInvalidException("Người dùng hiện tại chưa được gán vào khoa nào.");
+                }
+
+                String departmentId = currentUser.getDepartment().getId();
+
+                // Lấy innovations của department: status = SUBMITTED, đã được GIANG_VIEN ký mẫu 2
+                // (bao gồm cả đã được TRUONG_KHOA ký và chưa được TRUONG_KHOA ký để có thể filter)
+                List<Innovation> innovations = innovationRepository.findInnovationsPendingDepartmentHeadSignature(departmentId);
+
+                // Build lightweight response cho từng innovation
+                List<DepartmentInnovationPendingSignatureResponse> responses = new ArrayList<>();
+
+                for (Innovation innovation : innovations) {
+                        try {
+                                Long timeRemainingSeconds = getSubmissionTimeRemainingSeconds(innovation);
+
+                                // Check if innovation has co-authors
+                                List<CoInnovation> coInnovations = coInnovationRepository
+                                                .findByInnovationId(innovation.getId());
+                                Boolean isCoAuthor = coInnovations != null && !coInnovations.isEmpty();
+
+                                // Check signature trước (không phụ thuộc vào việc tìm thấy template2Id)
+                                Boolean hasSignature = digitalSignatureRepository
+                                                .existsByInnovationIdAndDocumentTypeAndSignedAsRoleAndStatus(
+                                                                innovation.getId(),
+                                                                DocumentTypeEnum.FORM_2,
+                                                                UserRoleEnum.TRUONG_KHOA,
+                                                                SignatureStatusEnum.SIGNED);
+
+                                // Tìm template 2 ID
+                                String template2Id = null;
+                                List<FormData> formDataList = formDataRepository
+                                                .findByInnovationIdWithRelations(innovation.getId());
+                                for (FormData formData : formDataList) {
+                                        if (formData.getFormField() != null
+                                                        && formData.getFormField().getFormTemplate() != null) {
+                                                FormTemplate template = formData.getFormField().getFormTemplate();
+                                                TemplateTypeEnum templateType = template.getTemplateType();
+                                                
+                                                // Check nếu là template 2 (BAO_CAO_MO_TA) - dùng templateType thay vì contains
+                                                if (templateType == TemplateTypeEnum.BAO_CAO_MO_TA) {
+                                                        template2Id = template.getId();
+                                                        break;
+                                                }
+                                        }
+                                }
+
+                                DepartmentInnovationPendingSignatureResponse response = new DepartmentInnovationPendingSignatureResponse();
+                                response.setInnovationId(innovation.getId());
+                                response.setInnovationName(innovation.getInnovationName());
+                                response.setAuthorName(
+                                                innovation.getUser() != null ? innovation.getUser().getFullName()
+                                                                : null);
+                                response.setStatus(
+                                                innovation.getStatus() != null ? innovation.getStatus().name() : null);
+                                response.setIsScore(innovation.getIsScore());
+                                response.setIsCoAuthor(isCoAuthor);
+                                response.setUpdatedAt(innovation.getUpdatedAt());
+                                response.setSubmissionTimeRemainingSeconds(timeRemainingSeconds);
+                                response.setHasSignature(hasSignature);
+                                response.setTemplate2Id(template2Id);
+                                response.setRoundId(
+                                                innovation.getInnovationRound() != null ? innovation.getInnovationRound().getId() : null);
+
+                                responses.add(response);
+                        } catch (Exception e) {
+                                logger.error("Error building response for innovation {}: {}", innovation.getId(),
+                                                e.getMessage());
+                                // Skip innovation này nếu có lỗi
+                        }
+                }
+
+                return responses;
+        }
+
         // 7. Lấy Innovation & FormData theo ID cho QUAN_TRI_VIEN_KHOA và TRUONG_KHOA
         // (chỉ cho phép xem sáng kiến của phòng ban mình)
         public InnovationFormDataResponse getDepartmentInnovationWithFormDataById(String innovationId) {
@@ -967,6 +1129,227 @@ public class InnovationService {
                 Long timeRemainingSeconds = getSubmissionTimeRemainingSeconds(innovation);
                 response.setTemplates(innovationSignatureService.buildTemplateFormDataResponses(formDataResponses));
                 response.setTemplateSignatures(Collections.emptyList());
+                response.setSubmissionTimeRemainingSeconds(timeRemainingSeconds);
+
+                return response;
+        }
+
+        // 7.2. Lấy chi tiết cả 2 templates (Mẫu 1 và Mẫu 2) với đầy đủ template content và formData (để TRUONG_KHOA ký Mẫu 2)
+        public InnovationTemplatesForSigningResponse getInnovationTemplatesForSigning(String innovationId) {
+                User currentUser = userService.getCurrentUser();
+
+                // Validate user là TRUONG_KHOA
+                boolean hasTruongKhoaRole = currentUser.getUserRoles().stream()
+                                .anyMatch(userRole -> userRole.getRole().getRoleName() == UserRoleEnum.TRUONG_KHOA);
+
+                if (!hasTruongKhoaRole) {
+                        logger.error("User {} không có quyền TRUONG_KHOA", currentUser.getId());
+                        throw new IdInvalidException("Chỉ TRUONG_KHOA mới có quyền xem chi tiết sáng kiến để ký");
+                }
+
+                // Validate user có department
+                if (currentUser.getDepartment() == null) {
+                        throw new IdInvalidException("Người dùng hiện tại chưa được gán vào khoa nào.");
+                }
+
+                // Lấy innovation
+                Innovation innovation = innovationRepository.findById(innovationId)
+                                .orElseThrow(() -> {
+                                        logger.error("Không tìm thấy sáng kiến với ID: {}", innovationId);
+                                        return new IdInvalidException(
+                                                        "Không tìm thấy sáng kiến với ID: " + innovationId);
+                                });
+
+                // Validate department matching
+                if (innovation.getDepartment() == null || currentUser.getDepartment() == null) {
+                        logger.error("Innovation hoặc User không có phòng ban");
+                        throw new IdInvalidException("Không thể xác định phòng ban của sáng kiến hoặc người dùng");
+                }
+
+                if (!innovation.getDepartment().getId().equals(currentUser.getDepartment().getId())) {
+                        logger.error("User {} không có quyền xem sáng kiến {} của phòng ban khác", currentUser.getId(),
+                                        innovationId);
+                        throw new IdInvalidException(
+                                        "Bạn chỉ có thể xem sáng kiến của phòng ban mình. Phòng ban của sáng kiến: "
+                                                        + innovation.getDepartment().getDepartmentName()
+                                                        + ", Phòng ban của bạn: "
+                                                        + currentUser.getDepartment().getDepartmentName());
+                }
+
+                // Lấy formData
+                List<FormData> formDataList = formDataRepository.findByInnovationIdWithRelations(innovationId);
+
+                // Tìm template 1 (DON_DE_NGHI) và template 2 (BAO_CAO_MO_TA)
+                String template1Id = null;
+                String template2Id = null;
+
+                for (FormData formData : formDataList) {
+                        if (formData.getFormField() != null && formData.getFormField().getFormTemplate() != null) {
+                                FormTemplate template = formData.getFormField().getFormTemplate();
+                                if (template.getTemplateType() == TemplateTypeEnum.DON_DE_NGHI && template1Id == null) {
+                                        template1Id = template.getId();
+                                } else if (template.getTemplateType() == TemplateTypeEnum.BAO_CAO_MO_TA && template2Id == null) {
+                                        template2Id = template.getId();
+                                }
+                                
+                                // Nếu đã tìm thấy cả 2 templates thì break
+                                if (template1Id != null && template2Id != null) {
+                                        break;
+                                }
+                        }
+                }
+
+                if (template1Id == null) {
+                        throw new IdInvalidException("Không tìm thấy Mẫu 1 (Đơn đề nghị) cho sáng kiến này");
+                }
+
+                if (template2Id == null) {
+                        throw new IdInvalidException("Không tìm thấy Mẫu 2 (Báo cáo mô tả) cho sáng kiến này");
+                }
+
+                // Lấy template 1 detail (readonly, không cần signatures)
+                InnovationTemplateDetailResponse template1Response = getInnovationTemplateDetailForSigningInternal(
+                                innovationId, template1Id, innovation, formDataList, false);
+
+                // Lấy template 2 detail (có signatures để ký)
+                InnovationTemplateDetailResponse template2Response = getInnovationTemplateDetailForSigningInternal(
+                                innovationId, template2Id, innovation, formDataList, true);
+
+                // Build InnovationBasicInfo
+                InnovationBasicInfo innovationInfo = new InnovationBasicInfo();
+                innovationInfo.setId(innovation.getId());
+                innovationInfo.setInnovationName(innovation.getInnovationName());
+                innovationInfo.setStatus(innovation.getStatus() != null ? innovation.getStatus().name() : null);
+                innovationInfo.setIsScore(innovation.getIsScore());
+                innovationInfo.setBasisText(innovation.getBasisText());
+                
+                // Check if innovation has co-authors
+                List<CoInnovation> coInnovations = coInnovationRepository.findByInnovationId(innovation.getId());
+                innovationInfo.setIsCoAuthor(coInnovations != null && !coInnovations.isEmpty());
+                
+                // Set author name
+                if (innovation.getUser() != null) {
+                        innovationInfo.setAuthorName(innovation.getUser().getFullName());
+                }
+                
+                innovationInfo.setUpdatedAt(innovation.getUpdatedAt());
+
+                // Tính submissionTimeRemainingSeconds
+                Long timeRemainingSeconds = getSubmissionTimeRemainingSeconds(innovation);
+                innovationInfo.setSubmissionTimeRemainingSeconds(timeRemainingSeconds);
+
+                // Build response
+                InnovationTemplatesForSigningResponse response = new InnovationTemplatesForSigningResponse();
+                response.setInnovation(innovationInfo);
+                response.setTemplate1(template1Response);
+                response.setTemplate2(template2Response);
+                response.setSubmissionTimeRemainingSeconds(timeRemainingSeconds);
+
+                return response;
+        }
+
+        // Helper method để tái sử dụng logic getInnovationTemplateDetailForSigning
+        private InnovationTemplateDetailResponse getInnovationTemplateDetailForSigningInternal(
+                        String innovationId, String templateId, Innovation innovation, List<FormData> formDataList,
+                        boolean includeSignatures) {
+                // Lấy template với content (dùng repository + mapper trực tiếp để tránh circular dependency)
+                FormTemplate template = formTemplateRepository.findById(templateId)
+                                .orElseThrow(() -> new IdInvalidException("Form template không tồn tại với ID: " + templateId));
+                CreateTemplateWithFieldsResponse templateResponse = formTemplateMapper.toCreateTemplateWithFieldsResponse(template);
+
+                // Filter formData theo templateId
+                List<FormData> templateFormDataList = formDataList.stream()
+                                .filter(formData -> {
+                                        if (formData.getFormField() == null || formData.getFormField().getFormTemplate() == null) {
+                                                return false;
+                                        }
+                                        return templateId.equals(formData.getFormField().getFormTemplate().getId());
+                                })
+                                .collect(Collectors.toList());
+
+                // Convert FormData → FormDataResponse
+                List<FormDataResponse> formDataResponses = new ArrayList<>();
+                for (FormData formData : templateFormDataList) {
+                        FormDataResponse formDataResponse = formDataMapper.toFormDataResponse(formData);
+                        formDataResponses.add(formDataResponse);
+                }
+
+                // Build fieldDataMap từ formData (tận dụng buildMyTemplateFormDataResponses)
+                Map<String, Object> fieldDataMap = new HashMap<>();
+                List<MyTemplateFormDataResponse> myTemplateResponses = innovationSignatureService
+                                .buildMyTemplateFormDataResponses(formDataResponses);
+                for (MyTemplateFormDataResponse myTemplateResponse : myTemplateResponses) {
+                        if (templateId.equals(myTemplateResponse.getTemplateId())) {
+                                fieldDataMap = myTemplateResponse.getFormData();
+                                break;
+                        }
+                }
+
+                // Build templateSignatures (chỉ nếu includeSignatures = true)
+                // Lấy signerNames từ DigitalSignature
+                Map<String, String> signerNames = new HashMap<>();
+                if (includeSignatures) {
+                        // Lấy documentType từ templateType
+                        DocumentTypeEnum documentType = null;
+                        if (templateResponse.getTemplateType() == TemplateTypeEnum.DON_DE_NGHI) {
+                                documentType = DocumentTypeEnum.FORM_1;
+                        } else if (templateResponse.getTemplateType() == TemplateTypeEnum.BAO_CAO_MO_TA) {
+                                documentType = DocumentTypeEnum.FORM_2;
+                        }
+                        
+                        if (documentType != null) {
+                                // Query DigitalSignature để lấy signerName
+                                List<DigitalSignature> digitalSignatures = digitalSignatureRepository
+                                                .findByInnovationIdAndDocumentTypeWithRelations(innovationId, documentType);
+                                
+                                // Map signedAsRole -> signerName
+                                Map<UserRoleEnum, String> roleToSignerName = new HashMap<>();
+                                for (DigitalSignature sig : digitalSignatures) {
+                                        if (sig.getStatus() == SignatureStatusEnum.SIGNED && sig.getUser() != null) {
+                                                roleToSignerName.put(sig.getSignedAsRole(), sig.getUser().getFullName());
+                                        }
+                                }
+                                
+                                // Map fieldKey -> signerName bằng cách match signingRole với signedAsRole
+                                if (templateResponse.getFields() != null) {
+                                        for (var field : templateResponse.getFields()) {
+                                                if (field.getType() == FieldTypeEnum.SIGNATURE && field.getSigningRole() != null) {
+                                                        UserRoleEnum signingRole = field.getSigningRole();
+                                                        String signerName = roleToSignerName.get(signingRole);
+                                                        if (signerName != null) {
+                                                                signerNames.put(field.getFieldKey(), signerName);
+                                                        }
+                                                }
+                                        }
+                                }
+                        }
+                }
+                
+                List<FormSignatureResponse> templateSignatures = includeSignatures
+                                ? innovationSignatureService.buildFormSignatureResponses(formDataResponses, signerNames)
+                                : Collections.emptyList();
+
+                // Tính submissionTimeRemainingSeconds
+                Long timeRemainingSeconds = getSubmissionTimeRemainingSeconds(innovation);
+
+                // Build response
+                InnovationTemplateDetailResponse response = new InnovationTemplateDetailResponse();
+                // Copy tất cả fields từ templateResponse
+                response.setId(templateResponse.getId());
+                response.setTemplateContent(templateResponse.getTemplateContent());
+                response.setTemplateType(templateResponse.getTemplateType());
+                response.setTargetRole(templateResponse.getTargetRole());
+                response.setIsLibrary(templateResponse.getIsLibrary());
+                response.setRoundId(templateResponse.getRoundId());
+                response.setFields(templateResponse.getFields());
+                response.setCreatedAt(templateResponse.getCreatedAt());
+                response.setUpdatedAt(templateResponse.getUpdatedAt());
+                response.setCreatedBy(templateResponse.getCreatedBy());
+                response.setUpdatedBy(templateResponse.getUpdatedBy());
+
+                // Set fieldDataMap, templateSignatures, và submissionTimeRemainingSeconds
+                response.setFieldDataMap(fieldDataMap);
+                response.setTemplateSignatures(templateSignatures);
                 response.setSubmissionTimeRemainingSeconds(timeRemainingSeconds);
 
                 return response;

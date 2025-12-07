@@ -18,6 +18,8 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.CreateInno
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.DigitalSignatureRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.TemplateDataRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.FormDataResponse;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.FormSignatureResponse;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.MyTemplateFormDataResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.TemplateFieldResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.TemplateFormDataResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.TemplateSignatureResponse;
@@ -286,6 +288,156 @@ public class InnovationSignatureService {
             return valueNode != null ? valueNode : objectMapper.nullNode();
         }
         return fieldValue;
+    }
+
+    /**
+     * Build template form data responses with formData Map for draft loading.
+     * This method converts FormDataResponse list to MyTemplateFormDataResponse list
+     * with formData Map (fieldKey -> value) for FE draft loading.
+     */
+    public List<MyTemplateFormDataResponse> buildMyTemplateFormDataResponses(
+            List<FormDataResponse> formDataResponses) {
+        if (formDataResponses == null || formDataResponses.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        Map<String, Map<String, Object>> groupedByTemplate = new LinkedHashMap<>();
+
+        for (FormDataResponse formDataResponse : formDataResponses) {
+            String templateId = formDataResponse.getTemplateId();
+            if (templateId == null || templateId.isBlank()) {
+                continue;
+            }
+
+            com.fasterxml.jackson.databind.JsonNode fieldValueNode = formDataResponse.getFieldValue();
+            String fieldKey;
+            com.fasterxml.jackson.databind.JsonNode valueNode;
+
+            // Check if fieldValue has structure {"fieldKey": "...", "value": ...}
+            // This is the case for child fields in sections/tables
+            if (fieldValueNode != null && fieldValueNode.isObject() && fieldValueNode.has("fieldKey")) {
+                // This is a child field in section/table
+                fieldKey = fieldValueNode.get("fieldKey").asText();
+                valueNode = fieldValueNode.has("value") ? fieldValueNode.get("value") : null;
+            } else {
+                // This is a regular field (root level)
+                fieldKey = formDataResponse.getFormFieldKey();
+                valueNode = extractEffectiveFieldValue(formDataResponse);
+            }
+
+            if (fieldKey == null || fieldKey.isBlank()) {
+                continue;
+            }
+
+            Object value = convertJsonNodeToObject(valueNode);
+
+            groupedByTemplate
+                    .computeIfAbsent(templateId, id -> new LinkedHashMap<>())
+                    .put(fieldKey, value);
+        }
+
+        return groupedByTemplate.entrySet()
+                .stream()
+                .map(entry -> new MyTemplateFormDataResponse(entry.getKey(), entry.getValue()))
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Build form signature responses from FormDataResponse list.
+     * Extracts SIGNATURE fields and returns them in the format expected by FE.
+     */
+    public List<FormSignatureResponse> buildFormSignatureResponses(
+            List<FormDataResponse> formDataResponses,
+            Map<String, String> signerNames) { // Map: fieldKey -> signerName (có thể null)
+        if (formDataResponses == null || formDataResponses.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        List<FormSignatureResponse> signatures = new ArrayList<>();
+
+        for (FormDataResponse formDataResponse : formDataResponses) {
+            // Check if this is a SIGNATURE field
+            if (formDataResponse.getFieldType() != FieldTypeEnum.SIGNATURE) {
+                continue;
+            }
+
+            String templateId = formDataResponse.getTemplateId();
+            if (templateId == null || templateId.isBlank()) {
+                continue;
+            }
+
+            com.fasterxml.jackson.databind.JsonNode fieldValueNode = formDataResponse.getFieldValue();
+            String fieldKey;
+            String signatureUrl;
+
+            // Check if fieldValue has structure {"fieldKey": "...", "value": ...}
+            // This is the case for child fields in sections/tables
+            if (fieldValueNode != null && fieldValueNode.isObject() && fieldValueNode.has("fieldKey")) {
+                // This is a child signature field in section/table
+                fieldKey = fieldValueNode.get("fieldKey").asText();
+                com.fasterxml.jackson.databind.JsonNode valueNode = fieldValueNode.has("value") 
+                    ? fieldValueNode.get("value") 
+                    : null;
+                signatureUrl = (valueNode != null && valueNode.isTextual()) 
+                    ? valueNode.asText() 
+                    : null;
+            } else {
+                // This is a regular signature field (root level)
+                fieldKey = formDataResponse.getFormFieldKey();
+                com.fasterxml.jackson.databind.JsonNode valueNode = extractEffectiveFieldValue(formDataResponse);
+                signatureUrl = (valueNode != null && valueNode.isTextual()) 
+                    ? valueNode.asText() 
+                    : null;
+            }
+
+            if (fieldKey == null || fieldKey.isBlank() || signatureUrl == null || signatureUrl.isBlank()) {
+                continue;
+            }
+
+            // Lấy signerName từ map nếu có
+            String signerName = signerNames != null ? signerNames.get(fieldKey) : null;
+
+            signatures.add(new FormSignatureResponse(templateId, fieldKey, signatureUrl, signerName));
+        }
+
+        return signatures;
+    }
+
+    /**
+     * Convert JsonNode to Object (String, Number, Boolean, List, Map)
+     */
+    private Object convertJsonNodeToObject(com.fasterxml.jackson.databind.JsonNode valueNode) {
+        if (valueNode == null || valueNode.isNull()) {
+            return null;
+        }
+        if (valueNode.isTextual()) {
+            return valueNode.asText();
+        } else if (valueNode.isNumber()) {
+            if (valueNode.isInt()) {
+                return valueNode.asInt();
+            } else if (valueNode.isLong()) {
+                return valueNode.asLong();
+            } else {
+                return valueNode.asDouble();
+            }
+        } else if (valueNode.isBoolean()) {
+            return valueNode.asBoolean();
+        } else if (valueNode.isArray()) {
+            // Array: convert to List
+            List<Object> list = new ArrayList<>();
+            for (com.fasterxml.jackson.databind.JsonNode item : valueNode) {
+                list.add(convertJsonNodeToObject(item));
+            }
+            return list;
+        } else if (valueNode.isObject()) {
+            // Object: convert to Map
+            Map<String, Object> valueMap = new LinkedHashMap<>();
+            valueNode.fieldNames().forEachRemaining(fieldName -> {
+                valueMap.put(fieldName, convertJsonNodeToObject(valueNode.get(fieldName)));
+            });
+            return valueMap;
+        }
+        return null;
     }
 
     /**

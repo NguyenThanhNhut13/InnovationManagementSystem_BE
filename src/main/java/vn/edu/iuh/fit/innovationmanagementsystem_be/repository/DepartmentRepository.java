@@ -14,6 +14,10 @@ public interface DepartmentRepository extends JpaRepository<Department, String>,
 
     Optional<Department> findByDepartmentCode(String departmentCode);
 
+    boolean existsByDepartmentCode(String departmentCode);
+
+    boolean existsByDepartmentName(String departmentName);
+
     // Innovation statistics methods
     @Query("SELECT COUNT(i) FROM Innovation i WHERE i.department.id = :departmentId")
     Long countInnovationsByDepartmentId(@Param("departmentId") String departmentId);

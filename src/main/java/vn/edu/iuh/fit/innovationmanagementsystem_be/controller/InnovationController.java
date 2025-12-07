@@ -14,16 +14,20 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
+import java.util.List;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationStatusEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.CreateInnovationWithTemplatesRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.FilterMyInnovationRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.FilterAdminInnovationRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationFormDataResponse;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.MyInnovationFormDataResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationScoreResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.DepartmentInnovationDetailResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationStatisticsDTO;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationAcademicYearStatisticsDTO;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationDetailForGiangVienResponse;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.DepartmentInnovationPendingSignatureResponse;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationTemplatesForSigningResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.service.InnovationService;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.service.InnovationDetailService;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.service.ReviewScoreService;
@@ -123,12 +127,12 @@ public class InnovationController {
         @ApiMessage("Lấy thông tin sáng kiến của tôi bằng id thành công")
         @Operation(summary = "Get My Innovation by ID", description = "Get innovation details with all form data and form fields by innovation ID (only for current user's innovations)")
         @ApiResponses(value = {
-                        @ApiResponse(responseCode = "200", description = "Innovation with form data and form fields retrieved successfully", content = @Content(schema = @Schema(implementation = InnovationFormDataResponse.class))),
+                        @ApiResponse(responseCode = "200", description = "Innovation with form data and form fields retrieved successfully", content = @Content(schema = @Schema(implementation = MyInnovationFormDataResponse.class))),
                         @ApiResponse(responseCode = "404", description = "Innovation not found"),
                         @ApiResponse(responseCode = "403", description = "Forbidden - You can only view your own innovations"),
                         @ApiResponse(responseCode = "401", description = "Unauthorized")
         })
-        public ResponseEntity<InnovationFormDataResponse> getMyInnovationById(
+        public ResponseEntity<MyInnovationFormDataResponse> getMyInnovationById(
                         @Parameter(description = "Innovation ID", required = true) @PathVariable String id) {
                 return ResponseEntity.ok(innovationService.getMyInnovationWithFormDataById(id));
         }
@@ -197,6 +201,37 @@ public class InnovationController {
                 return ResponseEntity.ok(
                                 innovationService.getAllDepartmentInnovationsWithDetailedFilter(filterRequest,
                                                 pageable));
+        }
+
+        // 8.1. Lấy danh sách innovations (để TRUONG_KHOA ký Mẫu 2) - Lightweight
+        // version cho table
+        @GetMapping("/department-innovations/pending-signature")
+        @PreAuthorize("hasAnyRole('TRUONG_KHOA')")
+        @ApiMessage("Lấy danh sách sáng kiến chờ ký thành công")
+        @Operation(summary = "Get Department Innovations Pending Signature List", description = "Get lightweight list of innovations for TRUONG_KHOA to sign template 2 (Mẫu 2) - for table display")
+        @ApiResponses(value = {
+                        @ApiResponse(responseCode = "200", description = "Innovations retrieved successfully", content = @Content(schema = @Schema(implementation = DepartmentInnovationPendingSignatureResponse.class))),
+                        @ApiResponse(responseCode = "403", description = "Forbidden - Only TRUONG_KHOA can access"),
+                        @ApiResponse(responseCode = "401", description = "Unauthorized")
+        })
+        public ResponseEntity<List<DepartmentInnovationPendingSignatureResponse>> getDepartmentInnovationsPendingSignature() {
+                return ResponseEntity.ok(innovationService.getDepartmentInnovationsPendingSignatureList());
+        }
+
+        // 8.1.1. Lấy chi tiết cả 2 templates (Mẫu 1 và Mẫu 2) với đầy đủ template
+        // content và formData (để TRUONG_KHOA ký Mẫu 2)
+        @GetMapping("/department-innovations/{innovationId}/templates-for-signing")
+        @PreAuthorize("hasAnyRole('TRUONG_KHOA')")
+        @ApiMessage("Lấy chi tiết sáng kiến thành công")
+        @Operation(summary = "Get Innovation Templates for Signing", description = "Get full detail of both templates (Mẫu 1 and Mẫu 2) with template content and formData for TRUONG_KHOA to sign template 2 (Mẫu 2)")
+        @ApiResponses(value = {
+                        @ApiResponse(responseCode = "200", description = "Innovation templates detail retrieved successfully", content = @Content(schema = @Schema(implementation = InnovationTemplatesForSigningResponse.class))),
+                        @ApiResponse(responseCode = "403", description = "Forbidden - Only TRUONG_KHOA can access"),
+                        @ApiResponse(responseCode = "401", description = "Unauthorized")
+        })
+        public ResponseEntity<InnovationTemplatesForSigningResponse> getInnovationTemplatesForSigning(
+                        @PathVariable String innovationId) {
+                return ResponseEntity.ok(innovationService.getInnovationTemplatesForSigning(innovationId));
         }
 
         // 9. Xóa sáng kiến trạng thái DRAFT của user hiện tại
@@ -323,6 +358,27 @@ public class InnovationController {
         public ResponseEntity<InnovationDetailForGiangVienResponse> getMyInnovationFullDetail(
                         @Parameter(description = "Innovation ID", required = true) @PathVariable String id) {
                 return ResponseEntity.ok(innovationDetailService.getMyInnovationDetailForGiangVien(id));
+        }
+
+        // 15. Lấy sáng kiến từ các khoa đã được TRUONG_KHOA ký đủ báo cáo (Mẫu 3, 4, 5)
+        @GetMapping("/innovations/approved-by-department")
+        @PreAuthorize("hasAnyRole('QUAN_TRI_VIEN_QLKH_HTQT')")
+        @ApiMessage("Lấy danh sách sáng kiến đã được khoa phê duyệt thành công")
+        @Operation(summary = "Get Innovations Approved by Department", description = "Get paginated list of innovations from departments where TRUONG_KHOA has signed all reports (REPORT_MAU_3, REPORT_MAU_4, REPORT_MAU_5). Only returns innovations from the current OPEN round with status KHOA_APPROVED.")
+        @ApiResponses(value = {
+                        @ApiResponse(responseCode = "200", description = "Innovations retrieved successfully", content = @Content(schema = @Schema(implementation = ResultPaginationDTO.class))),
+                        @ApiResponse(responseCode = "403", description = "Forbidden - Only QUAN_TRI_VIEN_QLKH_HTQT can access"),
+                        @ApiResponse(responseCode = "401", description = "Unauthorized")
+        })
+        public ResponseEntity<ResultPaginationDTO> getInnovationsApprovedByDepartment(
+                        @Parameter(description = "Search text for innovation name or author name") @RequestParam(required = false) String searchText,
+                        @Parameter(description = "Department ID") @RequestParam(required = false) String departmentId,
+                        @Parameter(description = "Pagination parameters") Pageable pageable) {
+                FilterAdminInnovationRequest filterRequest = new FilterAdminInnovationRequest(
+                                searchText, null, null, departmentId);
+                return ResponseEntity.ok(
+                                innovationService.getInnovationsApprovedByDepartmentWithSignedReports(
+                                                filterRequest, pageable));
         }
 
 }

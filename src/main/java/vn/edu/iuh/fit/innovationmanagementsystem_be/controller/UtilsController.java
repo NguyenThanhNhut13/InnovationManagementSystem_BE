@@ -402,7 +402,23 @@ public class UtilsController {
             tempFile = File.createTempFile("convert-", "-" + file.getOriginalFilename());
             file.transferTo(tempFile);
 
-            String url = "https://v2.convertapi.com/convert/docx/to/html";
+            // Xác định URL dựa trên extension của file
+            String originalFilename = file.getOriginalFilename();
+            String fileExtension = getFileExtension(originalFilename);
+            String url;
+            
+            if (fileExtension != null) {
+                String ext = fileExtension.toLowerCase();
+                if (ext.equals(".docx")) {
+                    url = "https://v2.convertapi.com/convert/docx/to/html";
+                } else if (ext.equals(".doc")) {
+                    url = "https://v2.convertapi.com/convert/doc/to/html";
+                } else {
+                    throw new IdInvalidException("File không phải định dạng DOC hoặc DOCX. Định dạng hiện tại: " + fileExtension);
+                }
+            } else {
+                throw new IdInvalidException("Không thể xác định định dạng file từ tên file: " + originalFilename);
+            }
 
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.MULTIPART_FORM_DATA);
@@ -489,6 +505,20 @@ public class UtilsController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(errorResponse);
         }
+    }
+
+    /**
+     * Get file extension from filename
+     */
+    private String getFileExtension(String filename) {
+        if (filename == null || filename.isEmpty()) {
+            return null;
+        }
+        int lastDotIndex = filename.lastIndexOf('.');
+        if (lastDotIndex == -1 || lastDotIndex == filename.length() - 1) {
+            return null;
+        }
+        return filename.substring(lastDotIndex);
     }
 
 }

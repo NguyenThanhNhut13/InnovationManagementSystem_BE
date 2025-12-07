@@ -79,4 +79,58 @@ public interface InnovationRepository extends JpaRepository<Innovation, String>,
                         @Param("departmentId") String departmentId,
                         @Param("roundId") String roundId,
                         @Param("status") InnovationStatusEnum status);
+
+        /**
+         * Lấy innovations của department đã được gán vào council
+         * (để TRUONG_KHOA ký Mẫu 2)
+         */
+        @Query("SELECT DISTINCT i FROM Innovation i " +
+                        "LEFT JOIN FETCH i.user " +
+                        "LEFT JOIN FETCH i.department " +
+                        "JOIN i.councils c " +
+                        "WHERE i.department.id = :departmentId")
+        List<Innovation> findByDepartmentIdWithCouncils(@Param("departmentId") String departmentId);
+
+        /**
+         * Lấy danh sách sáng kiến SUBMITTED của department đã được GIANG_VIEN ký mẫu 2
+         * (bao gồm cả đã được TRUONG_KHOA ký và chưa được TRUONG_KHOA ký)
+         * (cho API list của TRUONG_KHOA để filter theo trạng thái ký)
+         */
+        @Query("SELECT DISTINCT i FROM Innovation i " +
+                        "LEFT JOIN FETCH i.user " +
+                        "LEFT JOIN FETCH i.department " +
+                        "LEFT JOIN FETCH i.innovationRound " +
+                        "WHERE i.department.id = :departmentId " +
+                        "AND i.status = vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationStatusEnum.SUBMITTED "
+                        +
+                        "AND EXISTS (" +
+                        "    SELECT 1 FROM DigitalSignature ds " +
+                        "    WHERE ds.innovation = i " +
+                        "    AND ds.documentType = vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.DocumentTypeEnum.FORM_2 "
+                        +
+                        "    AND ds.signedAsRole = vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.UserRoleEnum.GIANG_VIEN "
+                        +
+                        "    AND ds.status = vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.SignatureStatusEnum.SIGNED"
+                        +
+                        ")")
+        List<Innovation> findInnovationsPendingDepartmentHeadSignature(@Param("departmentId") String departmentId);
+
+        /**
+         * Tìm innovations KHOA_APPROVED theo danh sách departmentIds và roundId
+         * (để lấy sáng kiến từ các khoa đã hoàn tất quy trình cấp khoa)
+         * 
+         * @param departmentIds Danh sách departmentId đã hoàn tất ký báo cáo
+         * @param roundId       ID của innovation round hiện tại
+         * @param pageable      Thông tin phân trang
+         * @return Page chứa innovations đã được khoa phê duyệt
+         */
+        @Query("SELECT i FROM Innovation i " +
+                        "LEFT JOIN FETCH i.user u " +
+                        "LEFT JOIN FETCH i.department d " +
+                        "WHERE i.department.id IN :departmentIds " +
+                        "AND i.innovationRound.id = :roundId " +
+                        "AND i.status = 'KHOA_APPROVED'")
+        List<Innovation> findByDepartmentIdsAndRoundIdAndStatusKhoaApproved(
+                        @Param("departmentIds") List<String> departmentIds,
+                        @Param("roundId") String roundId);
 }
