@@ -953,86 +953,7 @@ public class InnovationService {
                 return innovationQueryService.getAllDepartmentInnovationsWithDetailedFilter(filterRequest, pageable);
         }
 
-        // 7.1. Lấy danh sách innovations đã được gán vào council (để TRUONG_KHOA ký Mẫu 2) - Lightweight version cho table
-        public List<DepartmentInnovationPendingSignatureResponse> getDepartmentInnovationsPendingSignatureList() {
-                User currentUser = userService.getCurrentUser();
-
-                // Validate user là TRUONG_KHOA
-                boolean hasTruongKhoaRole = currentUser.getUserRoles().stream()
-                                .anyMatch(userRole -> userRole.getRole().getRoleName() == UserRoleEnum.TRUONG_KHOA);
-
-                if (!hasTruongKhoaRole) {
-                        logger.error("User {} không có quyền TRUONG_KHOA", currentUser.getId());
-                        throw new IdInvalidException("Chỉ TRUONG_KHOA mới có quyền xem danh sách sáng kiến chờ ký");
-                }
-
-                // Validate user có department
-                if (currentUser.getDepartment() == null) {
-                        throw new IdInvalidException("Người dùng hiện tại chưa được gán vào khoa nào.");
-                }
-
-                String departmentId = currentUser.getDepartment().getId();
-
-                // Lấy innovations của department: status = SUBMITTED, đã được GIANG_VIEN ký mẫu 2, chưa được TRUONG_KHOA ký mẫu 2
-                // (không yêu cầu đã gán vào council)
-                List<Innovation> innovations = innovationRepository.findInnovationsPendingDepartmentHeadSignature(departmentId);
-
-                // Build response cho từng innovation
-                List<MyInnovationFormDataResponse> responses = new ArrayList<>();
-
-                for (Innovation innovation : innovations) {
-                        try {
-                                List<FormData> formDataList = formDataRepository
-                                                .findByInnovationIdWithRelations(innovation.getId());
-
-                                // Convert FormData → FormDataResponse
-                                List<FormDataResponse> formDataResponses = new ArrayList<>();
-                                for (FormData formData : formDataList) {
-                                        FormDataResponse formDataResponse = formDataMapper.toFormDataResponse(formData);
-                                        formDataResponses.add(formDataResponse);
-                                }
-
-                                MyInnovationFormDataResponse response = new MyInnovationFormDataResponse();
-                                Long timeRemainingSeconds = getSubmissionTimeRemainingSeconds(innovation);
-
-                                // Populate innovation info
-                                InnovationBasicInfo innovationInfo = new InnovationBasicInfo();
-                                innovationInfo.setId(innovation.getId());
-                                innovationInfo.setInnovationName(innovation.getInnovationName());
-                                innovationInfo.setStatus(
-                                                innovation.getStatus() != null ? innovation.getStatus().name() : null);
-                                innovationInfo.setIsScore(innovation.getIsScore());
-                                innovationInfo.setBasisText(innovation.getBasisText());
-                                innovationInfo.setSubmissionTimeRemainingSeconds(timeRemainingSeconds);
-                                innovationInfo.setAuthorName(
-                                                innovation.getUser() != null ? innovation.getUser().getFullName() : null);
-                                innovationInfo.setUpdatedAt(innovation.getUpdatedAt());
-                                // Check if innovation has co-authors
-                                List<CoInnovation> coInnovations = coInnovationRepository.findByInnovationId(innovation.getId());
-                                innovationInfo.setIsCoAuthor(coInnovations != null && !coInnovations.isEmpty());
-                                response.setInnovation(innovationInfo);
-
-                                // Dùng buildMyTemplateFormDataResponses để trả về format formData object cho FE
-                                response.setTemplates(
-                                                innovationSignatureService
-                                                                .buildMyTemplateFormDataResponses(formDataResponses));
-                                // Build templateSignatures từ SIGNATURE fields trong formDataResponses
-                                response.setTemplateSignatures(
-                                                innovationSignatureService.buildFormSignatureResponses(formDataResponses));
-                                response.setSubmissionTimeRemainingSeconds(timeRemainingSeconds);
-
-                                responses.add(response);
-                        } catch (Exception e) {
-                                logger.error("Error building response for innovation {}: {}", innovation.getId(),
-                                                e.getMessage());
-                                // Skip innovation này nếu có lỗi
-                        }
-                }
-
-                return responses;
-        }
-
-        // 7.1.1. Lấy danh sách innovations pending signature - Lightweight version cho table
+        // 7.1. Lấy danh sách innovations pending signature - Lightweight version cho table
         public List<DepartmentInnovationPendingSignatureResponse> getDepartmentInnovationsPendingSignatureList() {
                 User currentUser = userService.getCurrentUser();
 
@@ -1071,10 +992,10 @@ public class InnovationService {
                                 Boolean hasSignature = false;
                                 
                                 // Lấy formData chỉ để tìm template 2 và check signature (không cần đầy đủ)
-                                List<FormData> formDataList = formDataRepository.findByInnovationId(innovation.getId());
+                                List<FormData> formDataList = formDataRepository.findByInnovationIdWithRelations(innovation.getId());
                                 for (FormData formData : formDataList) {
-                                        if (formData.getFormTemplate() != null) {
-                                                String templateId = formData.getFormTemplate().getId();
+                                        if (formData.getFormField() != null && formData.getFormField().getFormTemplate() != null) {
+                                                String templateId = formData.getFormField().getFormTemplate().getId();
                                                 // Check nếu là template 2 (BAO_CAO_MO_TA)
                                                 if (templateId != null && templateId.contains("template2")) {
                                                         template2Id = templateId;

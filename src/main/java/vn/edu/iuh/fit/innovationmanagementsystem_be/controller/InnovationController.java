@@ -202,7 +202,7 @@ public class InnovationController {
                                                 pageable));
         }
 
-        // 8.1. Lấy danh sách innovations đã được gán vào council (để TRUONG_KHOA ký Mẫu 2) - Lightweight version cho table
+        // 8.1. Lấy danh sách innovations (để TRUONG_KHOA ký Mẫu 2) - Lightweight version cho table
         @GetMapping("/department-innovations/pending-signature")
         @PreAuthorize("hasAnyRole('TRUONG_KHOA')")
         @ApiMessage("Lấy danh sách sáng kiến chờ ký thành công")
