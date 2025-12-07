@@ -55,6 +55,7 @@ import java.util.stream.Collectors;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.exception.IdInvalidException;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.mapper.InnovationMapper;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.mapper.FormDataMapper;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.mapper.FormTemplateMapper;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.AttachmentRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.InnovationRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.FormDataRepository;
@@ -123,7 +124,7 @@ public class InnovationService {
         private final InnovationCoAuthorService innovationCoAuthorService;
         private final InnovationSignatureService innovationSignatureService;
         private final DigitalSignatureService digitalSignatureService;
-        private final FormTemplateService formTemplateService;
+        private final FormTemplateMapper formTemplateMapper;
 
         public InnovationService(InnovationRepository innovationRepository,
                         InnovationPhaseRepository innovationPhaseRepository,
@@ -150,7 +151,7 @@ public class InnovationService {
                         InnovationCoAuthorService innovationCoAuthorService,
                         InnovationSignatureService innovationSignatureService,
                         DigitalSignatureService digitalSignatureService,
-                        FormTemplateService formTemplateService) {
+                        FormTemplateMapper formTemplateMapper) {
                 this.innovationRepository = innovationRepository;
                 this.innovationPhaseRepository = innovationPhaseRepository;
                 this.formDataService = formDataService;
@@ -176,7 +177,7 @@ public class InnovationService {
                 this.innovationCoAuthorService = innovationCoAuthorService;
                 this.innovationSignatureService = innovationSignatureService;
                 this.digitalSignatureService = digitalSignatureService;
-                this.formTemplateService = formTemplateService;
+                this.formTemplateMapper = formTemplateMapper;
         }
 
         // 1. Lấy tất cả sáng kiến của user hiện tại với filter chi tiết
@@ -1234,8 +1235,10 @@ public class InnovationService {
         private InnovationTemplateDetailResponse getInnovationTemplateDetailForSigningInternal(
                         String innovationId, String templateId, Innovation innovation, List<FormData> formDataList,
                         boolean includeSignatures) {
-                // Lấy template với content (tận dụng FormTemplateService)
-                CreateTemplateWithFieldsResponse templateResponse = formTemplateService.getFormTemplateById(templateId);
+                // Lấy template với content (dùng repository + mapper trực tiếp để tránh circular dependency)
+                FormTemplate template = formTemplateRepository.findById(templateId)
+                                .orElseThrow(() -> new IdInvalidException("Form template không tồn tại với ID: " + templateId));
+                CreateTemplateWithFieldsResponse templateResponse = formTemplateMapper.toCreateTemplateWithFieldsResponse(template);
 
                 // Filter formData theo templateId
                 List<FormData> templateFormDataList = formDataList.stream()
