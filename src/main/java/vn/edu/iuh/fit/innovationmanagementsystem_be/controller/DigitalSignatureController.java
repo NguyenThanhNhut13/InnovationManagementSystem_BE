@@ -26,6 +26,8 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.Departmen
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.UserDocumentSignatureStatusResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.TemplatePdfResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.VerifyDigitalSignatureResponse;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.BatchSignInnovationsRequest;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.BatchSignInnovationsResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.service.DigitalSignatureService;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.annotation.ApiMessage;
 
@@ -141,6 +143,25 @@ public class DigitalSignatureController {
                         @RequestBody(required = false) SignExistingReportRequest request) {
 
                 DepartmentDocumentSignResponse response = digitalSignatureService.signExistingReport(reportId, request);
+                return ResponseEntity.ok(response);
+        }
+
+        // 6. Ký nhiều sáng kiến cùng lúc (cho TRUONG_KHOA)
+        @PostMapping("/digital-signatures/batch-sign-innovations")
+        @PreAuthorize("hasRole('TRUONG_KHOA')")
+        @ApiMessage("Ký số nhiều sáng kiến thành công")
+        @Operation(summary = "Batch sign innovations as department head", description = "Cho phép TRUONG_KHOA ký nhiều sáng kiến cùng lúc trên mẫu 2 (Báo cáo mô tả). Chỉ xử lý sáng kiến ở trạng thái SUBMITTED và đã được tác giả ký.")
+        @ApiResponses(value = {
+                        @ApiResponse(responseCode = "200", description = "Trả về kết quả ký cho từng sáng kiến", content = @Content(schema = @Schema(implementation = BatchSignInnovationsResponse.class))),
+                        @ApiResponse(responseCode = "400", description = "Danh sách sáng kiến trống"),
+                        @ApiResponse(responseCode = "401", description = "Không được phép truy cập"),
+                        @ApiResponse(responseCode = "403", description = "Không có quyền ký (không phải TRUONG_KHOA)")
+        })
+        public ResponseEntity<BatchSignInnovationsResponse> batchSignInnovations(
+                        @Valid @RequestBody BatchSignInnovationsRequest request) {
+
+                BatchSignInnovationsResponse response = digitalSignatureService
+                                .batchSignInnovationsAsDepartmentHead(request);
                 return ResponseEntity.ok(response);
         }
 }
