@@ -11,5 +11,6 @@ public class FormSignatureResponse {
     private String templateId;
     private String fieldKey;
     private String signatureUrl;
+    private String signerName; // Tên người ký
 }
 

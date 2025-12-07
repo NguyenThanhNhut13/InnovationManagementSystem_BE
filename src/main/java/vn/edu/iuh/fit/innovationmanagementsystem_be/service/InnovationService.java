@@ -701,7 +701,7 @@ public class InnovationService {
                                 innovationSignatureService.buildMyTemplateFormDataResponses(formDataResponses));
                 // Build templateSignatures từ SIGNATURE fields trong formDataResponses
                 response.setTemplateSignatures(
-                                innovationSignatureService.buildFormSignatureResponses(formDataResponses));
+                                innovationSignatureService.buildFormSignatureResponses(formDataResponses, null));
                 response.setSubmissionTimeRemainingSeconds(timeRemainingSeconds);
 
                 return response;
@@ -1287,8 +1287,47 @@ public class InnovationService {
                 }
 
                 // Build templateSignatures (chỉ nếu includeSignatures = true)
+                // Lấy signerNames từ DigitalSignature
+                Map<String, String> signerNames = new HashMap<>();
+                if (includeSignatures) {
+                        // Lấy documentType từ templateType
+                        DocumentTypeEnum documentType = null;
+                        if (templateResponse.getTemplateType() == TemplateTypeEnum.DON_DE_NGHI) {
+                                documentType = DocumentTypeEnum.FORM_1;
+                        } else if (templateResponse.getTemplateType() == TemplateTypeEnum.BAO_CAO_MO_TA) {
+                                documentType = DocumentTypeEnum.FORM_2;
+                        }
+                        
+                        if (documentType != null) {
+                                // Query DigitalSignature để lấy signerName
+                                List<DigitalSignature> digitalSignatures = digitalSignatureRepository
+                                                .findByInnovationIdAndDocumentTypeWithRelations(innovationId, documentType);
+                                
+                                // Map signedAsRole -> signerName
+                                Map<UserRoleEnum, String> roleToSignerName = new HashMap<>();
+                                for (DigitalSignature sig : digitalSignatures) {
+                                        if (sig.getStatus() == SignatureStatusEnum.SIGNED && sig.getUser() != null) {
+                                                roleToSignerName.put(sig.getSignedAsRole(), sig.getUser().getFullName());
+                                        }
+                                }
+                                
+                                // Map fieldKey -> signerName bằng cách match signingRole với signedAsRole
+                                if (templateResponse.getFields() != null) {
+                                        for (var field : templateResponse.getFields()) {
+                                                if (field.getType() == FieldTypeEnum.SIGNATURE && field.getSigningRole() != null) {
+                                                        UserRoleEnum signingRole = field.getSigningRole();
+                                                        String signerName = roleToSignerName.get(signingRole);
+                                                        if (signerName != null) {
+                                                                signerNames.put(field.getFieldKey(), signerName);
+                                                        }
+                                                }
+                                        }
+                                }
+                        }
+                }
+                
                 List<FormSignatureResponse> templateSignatures = includeSignatures
-                                ? innovationSignatureService.buildFormSignatureResponses(formDataResponses)
+                                ? innovationSignatureService.buildFormSignatureResponses(formDataResponses, signerNames)
                                 : Collections.emptyList();
 
                 // Tính submissionTimeRemainingSeconds

@@ -347,7 +347,8 @@ public class InnovationSignatureService {
      * Extracts SIGNATURE fields and returns them in the format expected by FE.
      */
     public List<FormSignatureResponse> buildFormSignatureResponses(
-            List<FormDataResponse> formDataResponses) {
+            List<FormDataResponse> formDataResponses,
+            Map<String, String> signerNames) { // Map: fieldKey -> signerName (có thể null)
         if (formDataResponses == null || formDataResponses.isEmpty()) {
             return new ArrayList<>();
         }
@@ -393,7 +394,10 @@ public class InnovationSignatureService {
                 continue;
             }
 
-            signatures.add(new FormSignatureResponse(templateId, fieldKey, signatureUrl));
+            // Lấy signerName từ map nếu có
+            String signerName = signerNames != null ? signerNames.get(fieldKey) : null;
+
+            signatures.add(new FormSignatureResponse(templateId, fieldKey, signatureUrl, signerName));
         }
 
         return signatures;
