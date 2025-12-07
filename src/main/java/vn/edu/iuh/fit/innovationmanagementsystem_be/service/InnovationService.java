@@ -963,7 +963,8 @@ public class InnovationService {
                 return innovationQueryService.getAllDepartmentInnovationsWithDetailedFilter(filterRequest, pageable);
         }
 
-        // 7.1. Lấy danh sách innovations pending signature - Lightweight version cho table
+        // 7.1. Lấy danh sách innovations cho TRUONG_KHOA ký - Lightweight version cho table
+        // (bao gồm cả đã ký và chưa ký để có thể filter theo trạng thái)
         public List<DepartmentInnovationPendingSignatureResponse> getDepartmentInnovationsPendingSignatureList() {
                 User currentUser = userService.getCurrentUser();
 
@@ -983,7 +984,8 @@ public class InnovationService {
 
                 String departmentId = currentUser.getDepartment().getId();
 
-                // Lấy innovations của department: status = SUBMITTED, đã được GIANG_VIEN ký mẫu 2, chưa được TRUONG_KHOA ký mẫu 2
+                // Lấy innovations của department: status = SUBMITTED, đã được GIANG_VIEN ký mẫu 2
+                // (bao gồm cả đã được TRUONG_KHOA ký và chưa được TRUONG_KHOA ký để có thể filter)
                 List<Innovation> innovations = innovationRepository.findInnovationsPendingDepartmentHeadSignature(departmentId);
 
                 // Build lightweight response cho từng innovation
@@ -1035,6 +1037,8 @@ public class InnovationService {
                                 response.setSubmissionTimeRemainingSeconds(timeRemainingSeconds);
                                 response.setHasSignature(hasSignature);
                                 response.setTemplate2Id(template2Id);
+                                response.setRoundId(
+                                                innovation.getInnovationRound() != null ? innovation.getInnovationRound().getId() : null);
 
                                 responses.add(response);
                         } catch (Exception e) {

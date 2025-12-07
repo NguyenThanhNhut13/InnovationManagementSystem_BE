@@ -25,5 +25,8 @@ public class DepartmentInnovationPendingSignatureResponse {
     // Thông tin về signature status cho template 2
     private Boolean hasSignature; // true nếu đã được TRUONG_KHOA ký template 2
     private String template2Id; // ID của template 2 để navigate
+    
+    // Thông tin về đợt sáng kiến
+    private String roundId; // ID của đợt sáng kiến
 }
 
