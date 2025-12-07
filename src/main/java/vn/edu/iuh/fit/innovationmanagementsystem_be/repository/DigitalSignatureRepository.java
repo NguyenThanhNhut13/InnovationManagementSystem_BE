@@ -80,4 +80,27 @@ public interface DigitalSignatureRepository extends JpaRepository<DigitalSignatu
                         @Param("reportId") String reportId,
                         @Param("signedAsRole") UserRoleEnum signedAsRole,
                         @Param("status") SignatureStatusEnum status);
+
+        /**
+         * Tìm các departmentId có TRUONG_KHOA đã ký đủ 3 loại report (MAU_3, MAU_4,
+         * MAU_5)
+         * Chỉ chấp nhận TRUONG_KHOA ký (không phải TV_HOI_DONG_KHOA)
+         * 
+         * @return Danh sách departmentId đã hoàn tất ký báo cáo cấp khoa
+         */
+        @Query("SELECT r.departmentId FROM DigitalSignature ds " +
+                        "JOIN ds.report r " +
+                        "WHERE ds.signedAsRole = vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.UserRoleEnum.TRUONG_KHOA "
+                        +
+                        "AND ds.status = vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.SignatureStatusEnum.SIGNED "
+                        +
+                        "AND r.reportType IN (vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.DocumentTypeEnum.REPORT_MAU_3, "
+                        +
+                        "vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.DocumentTypeEnum.REPORT_MAU_4, "
+                        +
+                        "vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.DocumentTypeEnum.REPORT_MAU_5) "
+                        +
+                        "GROUP BY r.departmentId " +
+                        "HAVING COUNT(DISTINCT r.reportType) = 3")
+        List<String> findDepartmentIdsWithAllReportsSigned();
 }

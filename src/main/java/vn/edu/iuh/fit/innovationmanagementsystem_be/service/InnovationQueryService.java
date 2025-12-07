@@ -24,10 +24,14 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.FilterMyIn
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.FilterAdminInnovationRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.MyInnovationResponse;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.mapper.InnovationMapper;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationRoundStatusEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.InnovationRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.FormDataRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.DepartmentPhaseRepository;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.InnovationRoundRepository;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.DigitalSignatureRepository;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.mapper.InnovationMapper;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.InnovationRound;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.ResultPaginationDTO;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.Utils;
 
@@ -50,6 +54,8 @@ public class InnovationQueryService {
         private final InnovationRepository innovationRepository;
         private final FormDataRepository formDataRepository;
         private final DepartmentPhaseRepository departmentPhaseRepository;
+        private final InnovationRoundRepository innovationRoundRepository;
+        private final DigitalSignatureRepository digitalSignatureRepository;
         private final UserService userService;
         private final InnovationMapper innovationMapper;
 
@@ -57,11 +63,15 @@ public class InnovationQueryService {
                         InnovationRepository innovationRepository,
                         FormDataRepository formDataRepository,
                         DepartmentPhaseRepository departmentPhaseRepository,
+                        InnovationRoundRepository innovationRoundRepository,
+                        DigitalSignatureRepository digitalSignatureRepository,
                         UserService userService,
                         InnovationMapper innovationMapper) {
                 this.innovationRepository = innovationRepository;
                 this.formDataRepository = formDataRepository;
                 this.departmentPhaseRepository = departmentPhaseRepository;
+                this.innovationRoundRepository = innovationRoundRepository;
+                this.digitalSignatureRepository = digitalSignatureRepository;
                 this.userService = userService;
                 this.innovationMapper = innovationMapper;
         }
@@ -467,5 +477,109 @@ public class InnovationQueryService {
                 response.setUpdatedAt(innovation.getUpdatedAt());
 
                 return response;
+        }
+
+        /**
+         * Lấy danh sách sáng kiến từ các khoa đã được TRUONG_KHOA ký đủ
+         * REPORT_MAU_3/4/5
+         * Chỉ lấy sáng kiến của round hiện tại (status = PUBLISHED)
+         * Dành cho QUAN_TRI_VIEN_QLKH_HTQT xem và xử lý cấp trường
+         */
+        public ResultPaginationDTO getInnovationsApprovedByDepartmentWithSignedReports(
+                        FilterAdminInnovationRequest filterRequest, Pageable pageable) {
+                if (pageable.getSort().isUnsorted()) {
+                        pageable = PageRequest.of(
+                                        pageable.getPageNumber(),
+                                        pageable.getPageSize(),
+                                        Sort.by("createdAt").descending());
+                }
+
+                User currentUser = userService.getCurrentUser();
+
+                boolean hasQuanTriVienQlkhHtqtRole = currentUser.getUserRoles().stream()
+                                .anyMatch(userRole -> userRole.getRole()
+                                                .getRoleName() == UserRoleEnum.QUAN_TRI_VIEN_QLKH_HTQT);
+
+                if (!hasQuanTriVienQlkhHtqtRole) {
+                        throw new vn.edu.iuh.fit.innovationmanagementsystem_be.exception.IdInvalidException(
+                                        "Chỉ QUAN_TRI_VIEN_QLKH_HTQT mới có quyền truy cập");
+                }
+
+                // Lấy round hiện tại (status = OPEN, mới nhất)
+                Optional<InnovationRound> currentRoundOpt = innovationRoundRepository
+                                .findByStatusOrderByCreatedAtDesc(InnovationRoundStatusEnum.OPEN);
+
+                if (currentRoundOpt.isEmpty()) {
+                        logger.info("Không tìm thấy round PUBLISHED nào");
+                        return Utils.toResultPaginationDTO(
+                                        org.springframework.data.domain.Page.empty(pageable), pageable);
+                }
+
+                String currentRoundId = currentRoundOpt.get().getId();
+                logger.info("Đang lấy sáng kiến từ round hiện tại: {} ({})",
+                                currentRoundOpt.get().getName(), currentRoundId);
+
+                // Tìm các department đã có TRUONG_KHOA ký đủ 3 loại report
+                // Không filter theo round ở bước này (vì Report có thể không có councilId)
+                List<String> approvedDepartmentIds = digitalSignatureRepository
+                                .findDepartmentIdsWithAllReportsSigned();
+
+                if (approvedDepartmentIds.isEmpty()) {
+                        logger.info("Không có khoa nào đã ký đủ báo cáo");
+                        return Utils.toResultPaginationDTO(
+                                        org.springframework.data.domain.Page.empty(pageable), pageable);
+                }
+
+                logger.info("Tìm thấy {} khoa đã ký đủ báo cáo: {}",
+                                approvedDepartmentIds.size(), approvedDepartmentIds);
+
+                // Lấy innovations KHOA_APPROVED từ các department đó
+                List<Innovation> innovations = innovationRepository
+                                .findByDepartmentIdsAndRoundIdAndStatusKhoaApproved(
+                                                approvedDepartmentIds, currentRoundId);
+
+                // Apply filter nếu có
+                if (filterRequest != null) {
+                        if (filterRequest.getSearchText() != null
+                                        && !filterRequest.getSearchText().trim().isEmpty()) {
+                                String searchText = filterRequest.getSearchText().trim().toLowerCase();
+                                innovations = innovations.stream()
+                                                .filter(i -> i.getInnovationName().toLowerCase().contains(searchText)
+                                                                || (i.getUser() != null && i.getUser().getFullName()
+                                                                                .toLowerCase().contains(searchText)))
+                                                .collect(Collectors.toList());
+                        }
+
+                        if (filterRequest.getDepartmentId() != null
+                                        && !filterRequest.getDepartmentId().trim().isEmpty()) {
+                                String deptId = filterRequest.getDepartmentId().trim();
+                                innovations = innovations.stream()
+                                                .filter(i -> i.getDepartment() != null
+                                                                && deptId.equals(i.getDepartment().getId()))
+                                                .collect(Collectors.toList());
+                        }
+                }
+
+                // Manual pagination
+                int start = (int) pageable.getOffset();
+                int end = Math.min((start + pageable.getPageSize()), innovations.size());
+
+                List<Innovation> paginatedList = start >= innovations.size()
+                                ? new ArrayList<>()
+                                : innovations.subList(start, end);
+
+                List<InnovationResponse> responses = paginatedList.stream()
+                                .map(innovation -> {
+                                        InnovationResponse response = innovationMapper.toInnovationResponse(innovation);
+                                        response.setSubmissionTimeRemainingSeconds(
+                                                        getSubmissionTimeRemainingSeconds(innovation));
+                                        return response;
+                                })
+                                .collect(Collectors.toList());
+
+                Page<InnovationResponse> responsePage = new org.springframework.data.domain.PageImpl<>(
+                                responses, pageable, innovations.size());
+
+                return Utils.toResultPaginationDTO(responsePage, pageable);
         }
 }

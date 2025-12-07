@@ -207,6 +207,13 @@ public class InnovationService {
                 return innovationStatisticsService.getUpcomingDeadlines();
         }
 
+        // 5. Lấy sáng kiến từ các khoa đã được TRUONG_KHOA ký đủ báo cáo
+        public ResultPaginationDTO getInnovationsApprovedByDepartmentWithSignedReports(
+                        FilterAdminInnovationRequest filterRequest, Pageable pageable) {
+                return innovationQueryService.getInnovationsApprovedByDepartmentWithSignedReports(
+                                filterRequest, pageable);
+        }
+
         // 4. Tạo Innovation & Submit FormData theo nhiều Template
         public InnovationFormDataResponse createInnovationWithMultipleTemplates(
                         CreateInnovationWithTemplatesRequest request) {
@@ -677,7 +684,7 @@ public class InnovationService {
 
                 MyInnovationFormDataResponse response = new MyInnovationFormDataResponse();
                 Long timeRemainingSeconds = getSubmissionTimeRemainingSeconds(innovation);
-                
+
                 // Populate innovation info
                 InnovationBasicInfo innovationInfo = new InnovationBasicInfo();
                 innovationInfo.setId(innovation.getId());
@@ -687,8 +694,9 @@ public class InnovationService {
                 innovationInfo.setBasisText(innovation.getBasisText());
                 innovationInfo.setSubmissionTimeRemainingSeconds(timeRemainingSeconds);
                 response.setInnovation(innovationInfo);
-                
-                // Dùng buildMyTemplateFormDataResponses để trả về format formData object cho FE draft loading
+
+                // Dùng buildMyTemplateFormDataResponses để trả về format formData object cho FE
+                // draft loading
                 response.setTemplates(
                                 innovationSignatureService.buildMyTemplateFormDataResponses(formDataResponses));
                 // Build templateSignatures từ SIGNATURE fields trong formDataResponses
@@ -699,7 +707,8 @@ public class InnovationService {
                 return response;
         }
 
-        // 7. Lấy Innovation & FormData theo ID của user hiện tại cho detail page (với fields array)
+        // 7. Lấy Innovation & FormData theo ID của user hiện tại cho detail page (với
+        // fields array)
         public InnovationFormDataResponse getMyInnovationFormDataForDetail(String innovationId) {
                 String currentUserId = userService.getCurrentUserId();
 
@@ -719,7 +728,8 @@ public class InnovationService {
 
                 InnovationFormDataResponse response = new InnovationFormDataResponse();
                 Long timeRemainingSeconds = getSubmissionTimeRemainingSeconds(innovation);
-                // Dùng buildTemplateFormDataResponsesWithTableConfig để trả về fields array cho detail page
+                // Dùng buildTemplateFormDataResponsesWithTableConfig để trả về fields array cho
+                // detail page
                 response.setTemplates(
                                 innovationSignatureService.buildTemplateFormDataResponsesWithTableConfig(formDataList));
                 response.setTemplateSignatures(Collections.emptyList());
@@ -759,14 +769,14 @@ public class InnovationService {
                 // TRUONG_KHOA
                 // Thành viên hội đồng có thể xem sáng kiến của mọi khoa
                 if (hasQuanTriVienKhoaRole || hasTruongKhoaRole) {
-                if (innovation.getDepartment() == null || currentUser.getDepartment() == null) {
+                        if (innovation.getDepartment() == null || currentUser.getDepartment() == null) {
                                 throw new IdInvalidException(
                                                 "Không thể xác định phòng ban của sáng kiến hoặc người dùng");
-                }
+                        }
 
-                // Kiểm tra department matching
-                if (!innovation.getDepartment().getId().equals(currentUser.getDepartment().getId())) {
-                        throw new IdInvalidException("Bạn chỉ có thể xem sáng kiến của khoa mình");
+                        // Kiểm tra department matching
+                        if (!innovation.getDepartment().getId().equals(currentUser.getDepartment().getId())) {
+                                throw new IdInvalidException("Bạn chỉ có thể xem sáng kiến của khoa mình");
                         }
                 }
 
@@ -963,7 +973,8 @@ public class InnovationService {
                 return innovationQueryService.getAllDepartmentInnovationsWithDetailedFilter(filterRequest, pageable);
         }
 
-        // 7.1. Lấy danh sách innovations pending signature - Lightweight version cho table
+        // 7.1. Lấy danh sách innovations pending signature - Lightweight version cho
+        // table
         public List<DepartmentInnovationPendingSignatureResponse> getDepartmentInnovationsPendingSignatureList() {
                 User currentUser = userService.getCurrentUser();
 
@@ -983,8 +994,10 @@ public class InnovationService {
 
                 String departmentId = currentUser.getDepartment().getId();
 
-                // Lấy innovations của department: status = SUBMITTED, đã được GIANG_VIEN ký mẫu 2, chưa được TRUONG_KHOA ký mẫu 2
-                List<Innovation> innovations = innovationRepository.findInnovationsPendingDepartmentHeadSignature(departmentId);
+                // Lấy innovations của department: status = SUBMITTED, đã được GIANG_VIEN ký mẫu
+                // 2, chưa được TRUONG_KHOA ký mẫu 2
+                List<Innovation> innovations = innovationRepository
+                                .findInnovationsPendingDepartmentHeadSignature(departmentId);
 
                 // Build lightweight response cho từng innovation
                 List<DepartmentInnovationPendingSignatureResponse> responses = new ArrayList<>();
@@ -992,24 +1005,27 @@ public class InnovationService {
                 for (Innovation innovation : innovations) {
                         try {
                                 Long timeRemainingSeconds = getSubmissionTimeRemainingSeconds(innovation);
-                                
+
                                 // Check if innovation has co-authors
-                                List<CoInnovation> coInnovations = coInnovationRepository.findByInnovationId(innovation.getId());
+                                List<CoInnovation> coInnovations = coInnovationRepository
+                                                .findByInnovationId(innovation.getId());
                                 Boolean isCoAuthor = coInnovations != null && !coInnovations.isEmpty();
 
                                 // Tìm template 2 ID và check signature status
                                 String template2Id = null;
                                 Boolean hasSignature = false;
-                                
+
                                 // Lấy formData chỉ để tìm template 2 và check signature (không cần đầy đủ)
-                                List<FormData> formDataList = formDataRepository.findByInnovationIdWithRelations(innovation.getId());
+                                List<FormData> formDataList = formDataRepository
+                                                .findByInnovationIdWithRelations(innovation.getId());
                                 for (FormData formData : formDataList) {
-                                        if (formData.getFormField() != null && formData.getFormField().getFormTemplate() != null) {
+                                        if (formData.getFormField() != null
+                                                        && formData.getFormField().getFormTemplate() != null) {
                                                 String templateId = formData.getFormField().getFormTemplate().getId();
                                                 // Check nếu là template 2 (BAO_CAO_MO_TA)
                                                 if (templateId != null && templateId.contains("template2")) {
                                                         template2Id = templateId;
-                                                        
+
                                                         // Check xem đã có signature của TRUONG_KHOA chưa cho FORM_2
                                                         hasSignature = digitalSignatureRepository
                                                                         .existsByInnovationIdAndDocumentTypeAndSignedAsRoleAndStatus(
@@ -1026,7 +1042,8 @@ public class InnovationService {
                                 response.setInnovationId(innovation.getId());
                                 response.setInnovationName(innovation.getInnovationName());
                                 response.setAuthorName(
-                                                innovation.getUser() != null ? innovation.getUser().getFullName() : null);
+                                                innovation.getUser() != null ? innovation.getUser().getFullName()
+                                                                : null);
                                 response.setStatus(
                                                 innovation.getStatus() != null ? innovation.getStatus().name() : null);
                                 response.setIsScore(innovation.getIsScore());

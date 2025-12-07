@@ -203,7 +203,8 @@ public class InnovationController {
                                                 pageable));
         }
 
-        // 8.1. Lấy danh sách innovations (để TRUONG_KHOA ký Mẫu 2) - Lightweight version cho table
+        // 8.1. Lấy danh sách innovations (để TRUONG_KHOA ký Mẫu 2) - Lightweight
+        // version cho table
         @GetMapping("/department-innovations/pending-signature")
         @PreAuthorize("hasAnyRole('TRUONG_KHOA')")
         @ApiMessage("Lấy danh sách sáng kiến chờ ký thành công")
@@ -217,7 +218,8 @@ public class InnovationController {
                 return ResponseEntity.ok(innovationService.getDepartmentInnovationsPendingSignatureList());
         }
 
-        // 8.1.1. Lấy chi tiết cả 2 templates (Mẫu 1 và Mẫu 2) với đầy đủ template content và formData (để TRUONG_KHOA ký Mẫu 2)
+        // 8.1.1. Lấy chi tiết cả 2 templates (Mẫu 1 và Mẫu 2) với đầy đủ template
+        // content và formData (để TRUONG_KHOA ký Mẫu 2)
         @GetMapping("/department-innovations/{innovationId}/templates-for-signing")
         @PreAuthorize("hasAnyRole('TRUONG_KHOA')")
         @ApiMessage("Lấy chi tiết sáng kiến thành công")
@@ -356,6 +358,27 @@ public class InnovationController {
         public ResponseEntity<InnovationDetailForGiangVienResponse> getMyInnovationFullDetail(
                         @Parameter(description = "Innovation ID", required = true) @PathVariable String id) {
                 return ResponseEntity.ok(innovationDetailService.getMyInnovationDetailForGiangVien(id));
+        }
+
+        // 15. Lấy sáng kiến từ các khoa đã được TRUONG_KHOA ký đủ báo cáo (Mẫu 3, 4, 5)
+        @GetMapping("/innovations/approved-by-department")
+        @PreAuthorize("hasAnyRole('QUAN_TRI_VIEN_QLKH_HTQT')")
+        @ApiMessage("Lấy danh sách sáng kiến đã được khoa phê duyệt thành công")
+        @Operation(summary = "Get Innovations Approved by Department", description = "Get paginated list of innovations from departments where TRUONG_KHOA has signed all reports (REPORT_MAU_3, REPORT_MAU_4, REPORT_MAU_5). Only returns innovations from the current OPEN round with status KHOA_APPROVED.")
+        @ApiResponses(value = {
+                        @ApiResponse(responseCode = "200", description = "Innovations retrieved successfully", content = @Content(schema = @Schema(implementation = ResultPaginationDTO.class))),
+                        @ApiResponse(responseCode = "403", description = "Forbidden - Only QUAN_TRI_VIEN_QLKH_HTQT can access"),
+                        @ApiResponse(responseCode = "401", description = "Unauthorized")
+        })
+        public ResponseEntity<ResultPaginationDTO> getInnovationsApprovedByDepartment(
+                        @Parameter(description = "Search text for innovation name or author name") @RequestParam(required = false) String searchText,
+                        @Parameter(description = "Department ID") @RequestParam(required = false) String departmentId,
+                        @Parameter(description = "Pagination parameters") Pageable pageable) {
+                FilterAdminInnovationRequest filterRequest = new FilterAdminInnovationRequest(
+                                searchText, null, null, departmentId);
+                return ResponseEntity.ok(
+                                innovationService.getInnovationsApprovedByDepartmentWithSignedReports(
+                                                filterRequest, pageable));
         }
 
 }

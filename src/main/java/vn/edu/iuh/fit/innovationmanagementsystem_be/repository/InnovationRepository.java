@@ -123,4 +123,23 @@ public interface InnovationRepository extends JpaRepository<Innovation, String>,
                         +
                         ")")
         List<Innovation> findInnovationsPendingDepartmentHeadSignature(@Param("departmentId") String departmentId);
+
+        /**
+         * Tìm innovations KHOA_APPROVED theo danh sách departmentIds và roundId
+         * (để lấy sáng kiến từ các khoa đã hoàn tất quy trình cấp khoa)
+         * 
+         * @param departmentIds Danh sách departmentId đã hoàn tất ký báo cáo
+         * @param roundId       ID của innovation round hiện tại
+         * @param pageable      Thông tin phân trang
+         * @return Page chứa innovations đã được khoa phê duyệt
+         */
+        @Query("SELECT i FROM Innovation i " +
+                        "LEFT JOIN FETCH i.user u " +
+                        "LEFT JOIN FETCH i.department d " +
+                        "WHERE i.department.id IN :departmentIds " +
+                        "AND i.innovationRound.id = :roundId " +
+                        "AND i.status = 'KHOA_APPROVED'")
+        List<Innovation> findByDepartmentIdsAndRoundIdAndStatusKhoaApproved(
+                        @Param("departmentIds") List<String> departmentIds,
+                        @Param("roundId") String roundId);
 }
