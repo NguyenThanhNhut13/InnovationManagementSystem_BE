@@ -27,6 +27,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.Innovatio
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationAcademicYearStatisticsDTO;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationDetailForGiangVienResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.DepartmentInnovationPendingSignatureResponse;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationTemplatesForSigningResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.service.InnovationService;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.service.InnovationDetailService;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.service.ReviewScoreService;
@@ -216,18 +217,19 @@ public class InnovationController {
                 return ResponseEntity.ok(innovationService.getDepartmentInnovationsPendingSignatureList());
         }
 
-        // 8.1.1. Lấy chi tiết innovation với đầy đủ templates và formData (để TRUONG_KHOA ký Mẫu 2)
-        @GetMapping("/department-innovations/{innovationId}/detail")
+        // 8.1.1. Lấy chi tiết cả 2 templates (Mẫu 1 và Mẫu 2) với đầy đủ template content và formData (để TRUONG_KHOA ký Mẫu 2)
+        @GetMapping("/department-innovations/{innovationId}/templates-for-signing")
         @PreAuthorize("hasAnyRole('TRUONG_KHOA')")
         @ApiMessage("Lấy chi tiết sáng kiến thành công")
-        @Operation(summary = "Get Department Innovation Form Data Detail", description = "Get full detail of innovation with templates and formData for TRUONG_KHOA to sign template 2 (Mẫu 2)")
+        @Operation(summary = "Get Innovation Templates for Signing", description = "Get full detail of both templates (Mẫu 1 and Mẫu 2) with template content and formData for TRUONG_KHOA to sign template 2 (Mẫu 2)")
         @ApiResponses(value = {
-                        @ApiResponse(responseCode = "200", description = "Innovation detail retrieved successfully", content = @Content(schema = @Schema(implementation = InnovationFormDataResponse.class))),
+                        @ApiResponse(responseCode = "200", description = "Innovation templates detail retrieved successfully", content = @Content(schema = @Schema(implementation = InnovationTemplatesForSigningResponse.class))),
                         @ApiResponse(responseCode = "403", description = "Forbidden - Only TRUONG_KHOA can access"),
                         @ApiResponse(responseCode = "401", description = "Unauthorized")
         })
-        public ResponseEntity<InnovationFormDataResponse> getDepartmentInnovationFormDataDetail(@PathVariable String innovationId) {
-                return ResponseEntity.ok(innovationService.getDepartmentInnovationWithFormDataById(innovationId));
+        public ResponseEntity<InnovationTemplatesForSigningResponse> getInnovationTemplatesForSigning(
+                        @PathVariable String innovationId) {
+                return ResponseEntity.ok(innovationService.getInnovationTemplatesForSigning(innovationId));
         }
 
         // 9. Xóa sáng kiến trạng thái DRAFT của user hiện tại
