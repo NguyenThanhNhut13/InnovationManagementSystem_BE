@@ -1003,6 +1003,9 @@ public class InnovationService {
                                 innovationInfo.setIsScore(innovation.getIsScore());
                                 innovationInfo.setBasisText(innovation.getBasisText());
                                 innovationInfo.setSubmissionTimeRemainingSeconds(timeRemainingSeconds);
+                                innovationInfo.setAuthorName(
+                                                innovation.getUser() != null ? innovation.getUser().getFullName() : null);
+                                innovationInfo.setUpdatedAt(innovation.getUpdatedAt());
                                 response.setInnovation(innovationInfo);
 
                                 // Dùng buildMyTemplateFormDataResponses để trả về format formData object cho FE
