@@ -1104,8 +1104,14 @@ public class DigitalSignatureService {
         } else {
             // Đã nộp/ký
             if (documentType == DocumentTypeEnum.REPORT_MAU_3) {
-                // Mẫu 3: Thư ký nộp
-                report.setStatus(ReportStatusEnum.SUBMITTED_TO_DEPARTMENT);
+                // Mẫu 3: Xác định role của currentUser
+                if (signedAsRole == UserRoleEnum.TRUONG_KHOA) {
+                    // Trưởng khoa ký → nộp lên trường
+                    report.setStatus(ReportStatusEnum.SUBMITTED_TO_SCHOOL);
+                } else {
+                    // Thư ký ký → nộp cho trưởng khoa
+                    report.setStatus(ReportStatusEnum.SUBMITTED_TO_DEPARTMENT);
+                }
             } else {
                 // Mẫu 4, 5: Xác định role của currentUser
                 if (signedAsRole == UserRoleEnum.TRUONG_KHOA) {
@@ -1274,8 +1280,14 @@ public class DigitalSignatureService {
 
         // 6.5. Update status khi ký
         if (documentType == DocumentTypeEnum.REPORT_MAU_3) {
-            // Mẫu 3: Thư ký ký → SUBMITTED_TO_DEPARTMENT
-            report.setStatus(ReportStatusEnum.SUBMITTED_TO_DEPARTMENT);
+            // Mẫu 3: Xác định role của currentUser
+            if (signedAsRole == UserRoleEnum.TRUONG_KHOA) {
+                // Trưởng khoa ký → nộp lên trường
+                report.setStatus(ReportStatusEnum.SUBMITTED_TO_SCHOOL);
+            } else {
+                // Thư ký ký → nộp cho trưởng khoa
+                report.setStatus(ReportStatusEnum.SUBMITTED_TO_DEPARTMENT);
+            }
         } else {
             // Mẫu 4, 5: Trưởng khoa ký → SUBMITTED_TO_SCHOOL
             if (signedAsRole == UserRoleEnum.TRUONG_KHOA) {
