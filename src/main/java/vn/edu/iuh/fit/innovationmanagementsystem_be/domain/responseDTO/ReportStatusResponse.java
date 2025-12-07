@@ -11,5 +11,6 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.ReportSta
 public class ReportStatusResponse {
     private ReportStatusEnum status; // DRAFT, SUBMITTED_TO_DEPARTMENT, SUBMITTED_TO_SCHOOL
     private boolean isSigned; // Đã có DigitalSignature với status SIGNED
+    private String roundId; // ID của đợt sáng kiến (lấy từ template)
 }
 

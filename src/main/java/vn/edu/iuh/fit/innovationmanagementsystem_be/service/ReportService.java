@@ -12,6 +12,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.Departmen
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.ReportStatusResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.exception.IdInvalidException;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.DigitalSignatureRepository;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.FormTemplateRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.ReportRepository;
 
 import java.util.Optional;
@@ -22,14 +23,17 @@ public class ReportService {
 
     private final ReportRepository reportRepository;
     private final DigitalSignatureRepository digitalSignatureRepository;
+    private final FormTemplateRepository formTemplateRepository;
     private final UserService userService;
 
     public ReportService(
             ReportRepository reportRepository,
             DigitalSignatureRepository digitalSignatureRepository,
+            FormTemplateRepository formTemplateRepository,
             UserService userService) {
         this.reportRepository = reportRepository;
         this.digitalSignatureRepository = digitalSignatureRepository;
+        this.formTemplateRepository = formTemplateRepository;
         this.userService = userService;
     }
 
@@ -82,10 +86,21 @@ public class ReportService {
                     report.getId(), checkRole, SignatureStatusEnum.SIGNED);
 
             status.setSigned(isSigned);
+
+            // Lấy roundId từ template
+            if (report.getTemplateId() != null) {
+                formTemplateRepository.findById(report.getTemplateId())
+                        .ifPresent(template -> {
+                            if (template.getInnovationRound() != null) {
+                                status.setRoundId(template.getInnovationRound().getId());
+                            }
+                        });
+            }
         } else {
-            // Không có report → status = null, isSigned = false
+            // Không có report → status = null, isSigned = false, roundId = null
             status.setStatus(null);
             status.setSigned(false);
+            status.setRoundId(null);
         }
 
         return status;
