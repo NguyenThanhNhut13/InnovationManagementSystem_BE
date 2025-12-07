@@ -45,6 +45,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.Departmen
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationScoringDetailResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.AttachmentInfo;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.CoAuthorResponse;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.DepartmentInnovationPendingSignatureResponse;
 import java.util.stream.Collectors;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.exception.IdInvalidException;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.mapper.InnovationMapper;
@@ -952,8 +953,8 @@ public class InnovationService {
                 return innovationQueryService.getAllDepartmentInnovationsWithDetailedFilter(filterRequest, pageable);
         }
 
-        // 7.1. Lấy danh sách innovations đã được gán vào council (để TRUONG_KHOA ký Mẫu 2)
-        public List<MyInnovationFormDataResponse> getDepartmentInnovationsPendingSignature() {
+        // 7.1. Lấy danh sách innovations đã được gán vào council (để TRUONG_KHOA ký Mẫu 2) - Lightweight version cho table
+        public List<DepartmentInnovationPendingSignatureResponse> getDepartmentInnovationsPendingSignatureList() {
                 User currentUser = userService.getCurrentUser();
 
                 // Validate user là TRUONG_KHOA
@@ -1006,6 +1007,9 @@ public class InnovationService {
                                 innovationInfo.setAuthorName(
                                                 innovation.getUser() != null ? innovation.getUser().getFullName() : null);
                                 innovationInfo.setUpdatedAt(innovation.getUpdatedAt());
+                                // Check if innovation has co-authors
+                                List<CoInnovation> coInnovations = coInnovationRepository.findByInnovationId(innovation.getId());
+                                innovationInfo.setIsCoAuthor(coInnovations != null && !coInnovations.isEmpty());
                                 response.setInnovation(innovationInfo);
 
                                 // Dùng buildMyTemplateFormDataResponses để trả về format formData object cho FE
@@ -1016,6 +1020,90 @@ public class InnovationService {
                                 response.setTemplateSignatures(
                                                 innovationSignatureService.buildFormSignatureResponses(formDataResponses));
                                 response.setSubmissionTimeRemainingSeconds(timeRemainingSeconds);
+
+                                responses.add(response);
+                        } catch (Exception e) {
+                                logger.error("Error building response for innovation {}: {}", innovation.getId(),
+                                                e.getMessage());
+                                // Skip innovation này nếu có lỗi
+                        }
+                }
+
+                return responses;
+        }
+
+        // 7.1.1. Lấy danh sách innovations pending signature - Lightweight version cho table
+        public List<DepartmentInnovationPendingSignatureResponse> getDepartmentInnovationsPendingSignatureList() {
+                User currentUser = userService.getCurrentUser();
+
+                // Validate user là TRUONG_KHOA
+                boolean hasTruongKhoaRole = currentUser.getUserRoles().stream()
+                                .anyMatch(userRole -> userRole.getRole().getRoleName() == UserRoleEnum.TRUONG_KHOA);
+
+                if (!hasTruongKhoaRole) {
+                        logger.error("User {} không có quyền TRUONG_KHOA", currentUser.getId());
+                        throw new IdInvalidException("Chỉ TRUONG_KHOA mới có quyền xem danh sách sáng kiến chờ ký");
+                }
+
+                // Validate user có department
+                if (currentUser.getDepartment() == null) {
+                        throw new IdInvalidException("Người dùng hiện tại chưa được gán vào khoa nào.");
+                }
+
+                String departmentId = currentUser.getDepartment().getId();
+
+                // Lấy innovations của department: status = SUBMITTED, đã được GIANG_VIEN ký mẫu 2, chưa được TRUONG_KHOA ký mẫu 2
+                List<Innovation> innovations = innovationRepository.findInnovationsPendingDepartmentHeadSignature(departmentId);
+
+                // Build lightweight response cho từng innovation
+                List<DepartmentInnovationPendingSignatureResponse> responses = new ArrayList<>();
+
+                for (Innovation innovation : innovations) {
+                        try {
+                                Long timeRemainingSeconds = getSubmissionTimeRemainingSeconds(innovation);
+                                
+                                // Check if innovation has co-authors
+                                List<CoInnovation> coInnovations = coInnovationRepository.findByInnovationId(innovation.getId());
+                                Boolean isCoAuthor = coInnovations != null && !coInnovations.isEmpty();
+
+                                // Tìm template 2 ID và check signature status
+                                String template2Id = null;
+                                Boolean hasSignature = false;
+                                
+                                // Lấy formData chỉ để tìm template 2 và check signature (không cần đầy đủ)
+                                List<FormData> formDataList = formDataRepository.findByInnovationId(innovation.getId());
+                                for (FormData formData : formDataList) {
+                                        if (formData.getFormTemplate() != null) {
+                                                String templateId = formData.getFormTemplate().getId();
+                                                // Check nếu là template 2 (BAO_CAO_MO_TA)
+                                                if (templateId != null && templateId.contains("template2")) {
+                                                        template2Id = templateId;
+                                                        
+                                                        // Check xem đã có signature của TRUONG_KHOA chưa cho FORM_2
+                                                        hasSignature = digitalSignatureRepository
+                                                                        .existsByInnovationIdAndDocumentTypeAndSignedAsRoleAndStatus(
+                                                                                        innovation.getId(),
+                                                                                        DocumentTypeEnum.FORM_2,
+                                                                                        UserRoleEnum.TRUONG_KHOA,
+                                                                                        SignatureStatusEnum.SIGNED);
+                                                        break;
+                                                }
+                                        }
+                                }
+
+                                DepartmentInnovationPendingSignatureResponse response = new DepartmentInnovationPendingSignatureResponse();
+                                response.setInnovationId(innovation.getId());
+                                response.setInnovationName(innovation.getInnovationName());
+                                response.setAuthorName(
+                                                innovation.getUser() != null ? innovation.getUser().getFullName() : null);
+                                response.setStatus(
+                                                innovation.getStatus() != null ? innovation.getStatus().name() : null);
+                                response.setIsScore(innovation.getIsScore());
+                                response.setIsCoAuthor(isCoAuthor);
+                                response.setUpdatedAt(innovation.getUpdatedAt());
+                                response.setSubmissionTimeRemainingSeconds(timeRemainingSeconds);
+                                response.setHasSignature(hasSignature);
+                                response.setTemplate2Id(template2Id);
 
                                 responses.add(response);
                         } catch (Exception e) {

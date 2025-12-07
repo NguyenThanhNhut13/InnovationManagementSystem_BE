@@ -26,6 +26,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.Departmen
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationStatisticsDTO;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationAcademicYearStatisticsDTO;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationDetailForGiangVienResponse;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.DepartmentInnovationPendingSignatureResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.service.InnovationService;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.service.InnovationDetailService;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.service.ReviewScoreService;
@@ -201,18 +202,32 @@ public class InnovationController {
                                                 pageable));
         }
 
-        // 8.1. Lấy danh sách innovations đã được gán vào council (để TRUONG_KHOA ký Mẫu 2)
+        // 8.1. Lấy danh sách innovations đã được gán vào council (để TRUONG_KHOA ký Mẫu 2) - Lightweight version cho table
         @GetMapping("/department-innovations/pending-signature")
         @PreAuthorize("hasAnyRole('TRUONG_KHOA')")
         @ApiMessage("Lấy danh sách sáng kiến chờ ký thành công")
-        @Operation(summary = "Get Department Innovations Pending Signature", description = "Get list of innovations assigned to council for TRUONG_KHOA to sign template 2 (Mẫu 2)")
+        @Operation(summary = "Get Department Innovations Pending Signature List", description = "Get lightweight list of innovations for TRUONG_KHOA to sign template 2 (Mẫu 2) - for table display")
         @ApiResponses(value = {
-                        @ApiResponse(responseCode = "200", description = "Innovations retrieved successfully", content = @Content(schema = @Schema(implementation = MyInnovationFormDataResponse.class))),
+                        @ApiResponse(responseCode = "200", description = "Innovations retrieved successfully", content = @Content(schema = @Schema(implementation = DepartmentInnovationPendingSignatureResponse.class))),
                         @ApiResponse(responseCode = "403", description = "Forbidden - Only TRUONG_KHOA can access"),
                         @ApiResponse(responseCode = "401", description = "Unauthorized")
         })
-        public ResponseEntity<List<MyInnovationFormDataResponse>> getDepartmentInnovationsPendingSignature() {
-                return ResponseEntity.ok(innovationService.getDepartmentInnovationsPendingSignature());
+        public ResponseEntity<List<DepartmentInnovationPendingSignatureResponse>> getDepartmentInnovationsPendingSignature() {
+                return ResponseEntity.ok(innovationService.getDepartmentInnovationsPendingSignatureList());
+        }
+
+        // 8.1.1. Lấy chi tiết innovation với đầy đủ templates và formData (để TRUONG_KHOA ký Mẫu 2)
+        @GetMapping("/department-innovations/{innovationId}/detail")
+        @PreAuthorize("hasAnyRole('TRUONG_KHOA')")
+        @ApiMessage("Lấy chi tiết sáng kiến thành công")
+        @Operation(summary = "Get Department Innovation Detail", description = "Get full detail of innovation with templates and formData for TRUONG_KHOA to sign template 2 (Mẫu 2)")
+        @ApiResponses(value = {
+                        @ApiResponse(responseCode = "200", description = "Innovation detail retrieved successfully", content = @Content(schema = @Schema(implementation = MyInnovationFormDataResponse.class))),
+                        @ApiResponse(responseCode = "403", description = "Forbidden - Only TRUONG_KHOA can access"),
+                        @ApiResponse(responseCode = "401", description = "Unauthorized")
+        })
+        public ResponseEntity<MyInnovationFormDataResponse> getDepartmentInnovationDetail(@PathVariable String innovationId) {
+                return ResponseEntity.ok(innovationService.getInnovationFormDataById(innovationId));
         }
 
         // 9. Xóa sáng kiến trạng thái DRAFT của user hiện tại

@@ -17,5 +17,6 @@ public class InnovationBasicInfo {
     private Long submissionTimeRemainingSeconds;
     private String authorName;
     private LocalDateTime updatedAt;
+    private Boolean isCoAuthor;
 }
 
