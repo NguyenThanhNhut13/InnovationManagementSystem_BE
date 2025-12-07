@@ -104,7 +104,8 @@ public class DepartmentPhaseStatusSchedulerService {
                     if (councilOpt.isPresent()) {
                         Council council = councilOpt.get();
                         councilService.updateInnovationStatusesForCouncil(council);
-                        log.info("Đã tự động cập nhật trạng thái sáng kiến cho council cấp Khoa '{}' (ID: {}) sau khi phase SCORING kết thúc",
+                        log.info(
+                                "Đã tự động cập nhật trạng thái sáng kiến cho council cấp Khoa '{}' (ID: {}) sau khi phase SCORING kết thúc",
                                 council.getName(), council.getId());
                     }
                 } catch (Exception e) {
@@ -229,6 +230,67 @@ public class DepartmentPhaseStatusSchedulerService {
         log.info(
                 "Hoàn thành thông báo. Đã gửi thông báo cho {} phase SCORING bắt đầu vào ngày {} (thông báo trước 1 ngày)",
                 notificationCount, scoringStartDate);
+    }
+
+    /**
+     * Chạy mỗi ngày lúc 00:06 để thông báo cho TRUONG_KHOA khi:
+     * - Phase SUBMISSION kết thúc trong 1 ngày (thông báo trước 1 ngày)
+     * - Phase SUBMISSION kết thúc hôm nay (thông báo vào ngày kết thúc)
+     * Chạy sau task thông báo chuẩn bị chấm điểm (00:05)
+     * Cron format: giây phút giờ ngày tháng thứ
+     */
+    @Scheduled(cron = "0 6 0 * * ?")
+    @Transactional
+    public void notifySubmissionPhaseEnding() {
+        log.info("Bắt đầu kiểm tra và thông báo cho TRUONG_KHOA về giai đoạn nộp hồ sơ sắp/đã kết thúc...");
+
+        LocalDate today = LocalDate.now();
+        LocalDate tomorrow = today.plusDays(1);
+
+        int notificationCount = 0;
+
+        // 1. Thông báo trước 1 ngày (phase kết thúc vào ngày mai)
+        List<DepartmentPhase> phasesEndingTomorrow = departmentPhaseRepository
+                .findActiveSubmissionPhasesEndingOn(tomorrow);
+
+        if (!phasesEndingTomorrow.isEmpty()) {
+            log.info("Tìm thấy {} phase SUBMISSION kết thúc vào ngày mai ({})",
+                    phasesEndingTomorrow.size(), tomorrow);
+            for (DepartmentPhase phase : phasesEndingTomorrow) {
+                try {
+                    notificationService.notifySubmissionPhaseEnding(phase, true);
+                    notificationCount++;
+                } catch (Exception e) {
+                    log.error("Lỗi khi gửi thông báo sắp kết thúc cho phase '{}' (ID: {}): {}",
+                            phase.getName(), phase.getId(), e.getMessage(), e);
+                }
+            }
+        } else {
+            log.info("Không có phase SUBMISSION nào kết thúc vào ngày mai ({})", tomorrow);
+        }
+
+        // 2. Thông báo vào ngày kết thúc (phase kết thúc hôm nay)
+        List<DepartmentPhase> phasesEndingToday = departmentPhaseRepository
+                .findActiveSubmissionPhasesEndingOn(today);
+
+        if (!phasesEndingToday.isEmpty()) {
+            log.info("Tìm thấy {} phase SUBMISSION kết thúc hôm nay ({})",
+                    phasesEndingToday.size(), today);
+            for (DepartmentPhase phase : phasesEndingToday) {
+                try {
+                    notificationService.notifySubmissionPhaseEnding(phase, false);
+                    notificationCount++;
+                } catch (Exception e) {
+                    log.error("Lỗi khi gửi thông báo đã kết thúc cho phase '{}' (ID: {}): {}",
+                            phase.getName(), phase.getId(), e.getMessage(), e);
+                }
+            }
+        } else {
+            log.info("Không có phase SUBMISSION nào kết thúc hôm nay ({})", today);
+        }
+
+        log.info("Hoàn thành thông báo. Đã gửi {} thông báo về giai đoạn nộp hồ sơ sắp/đã kết thúc",
+                notificationCount);
     }
 
 }

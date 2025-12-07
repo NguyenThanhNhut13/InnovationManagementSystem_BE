@@ -127,4 +127,21 @@ public interface DepartmentPhaseRepository
                         "AND dp.phaseEndDate < :currentDate")
         List<DepartmentPhase> findScoringPhasesEnded(
                         @org.springframework.data.repository.query.Param("currentDate") java.time.LocalDate currentDate);
+
+        /**
+         * Tìm các department phase SUBMISSION có trạng thái ACTIVE và kết thúc vào ngày
+         * targetDate
+         * (để thông báo cho TRUONG_KHOA trước 1 ngày và vào ngày kết thúc)
+         * Fetch join department và innovationRound để tránh LazyInitializationException
+         *
+         * @param targetDate Ngày kết thúc phase SUBMISSION
+         */
+        @org.springframework.data.jpa.repository.Query("SELECT dp FROM DepartmentPhase dp " +
+                        "LEFT JOIN FETCH dp.department " +
+                        "LEFT JOIN FETCH dp.innovationRound " +
+                        "WHERE dp.phaseType = 'SUBMISSION' " +
+                        "AND dp.phaseStatus = 'ACTIVE' " +
+                        "AND dp.phaseEndDate = :targetDate")
+        List<DepartmentPhase> findActiveSubmissionPhasesEndingOn(
+                        @org.springframework.data.repository.query.Param("targetDate") java.time.LocalDate targetDate);
 }
