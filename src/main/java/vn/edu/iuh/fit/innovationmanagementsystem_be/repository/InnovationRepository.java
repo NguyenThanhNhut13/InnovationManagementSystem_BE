@@ -90,4 +90,37 @@ public interface InnovationRepository extends JpaRepository<Innovation, String>,
                         "JOIN i.councils c " +
                         "WHERE i.department.id = :departmentId")
         List<Innovation> findByDepartmentIdWithCouncils(@Param("departmentId") String departmentId);
+
+        /**
+         * Lấy danh sách sáng kiến SUBMITTED của department đã được GIANG_VIEN ký mẫu 2
+         * nhưng chưa được TRUONG_KHOA ký mẫu 2
+         * (cho API batch signing của TRUONG_KHOA)
+         */
+        @Query("SELECT DISTINCT i FROM Innovation i " +
+                        "LEFT JOIN FETCH i.user " +
+                        "LEFT JOIN FETCH i.department " +
+                        "WHERE i.department.id = :departmentId " +
+                        "AND i.status = vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationStatusEnum.SUBMITTED "
+                        +
+                        "AND EXISTS (" +
+                        "    SELECT 1 FROM DigitalSignature ds " +
+                        "    WHERE ds.innovation = i " +
+                        "    AND ds.documentType = vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.DocumentTypeEnum.FORM_2 "
+                        +
+                        "    AND ds.signedAsRole = vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.UserRoleEnum.GIANG_VIEN "
+                        +
+                        "    AND ds.status = vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.SignatureStatusEnum.SIGNED"
+                        +
+                        ") " +
+                        "AND NOT EXISTS (" +
+                        "    SELECT 1 FROM DigitalSignature ds2 " +
+                        "    WHERE ds2.innovation = i " +
+                        "    AND ds2.documentType = vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.DocumentTypeEnum.FORM_2 "
+                        +
+                        "    AND ds2.signedAsRole = vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.UserRoleEnum.TRUONG_KHOA "
+                        +
+                        "    AND ds2.status = vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.SignatureStatusEnum.SIGNED"
+                        +
+                        ")")
+        List<Innovation> findInnovationsPendingDepartmentHeadSignature(@Param("departmentId") String departmentId);
 }
