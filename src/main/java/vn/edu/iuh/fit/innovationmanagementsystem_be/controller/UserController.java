@@ -149,4 +149,21 @@ public class UserController {
                 return ResponseEntity.ok(response);
         }
 
+        // 9. Lấy danh sách tất cả Users (chỉ cho admin hệ thống)
+        @GetMapping("/users")
+        @PreAuthorize("hasRole('QUAN_TRI_VIEN_HE_THONG')")
+        @ApiMessage("Lấy danh sách người dùng thành công")
+        @Operation(summary = "Get All Users", description = "Get paginated list of all users. Only accessible by system administrators. Supports optional search by full name or personnel ID.")
+        @ApiResponses(value = {
+                        @ApiResponse(responseCode = "200", description = "Users retrieved successfully", content = @Content(schema = @Schema(implementation = ResultPaginationDTO.class))),
+                        @ApiResponse(responseCode = "401", description = "Unauthorized"),
+                        @ApiResponse(responseCode = "403", description = "Forbidden - Only system administrators can access")
+        })
+        public ResponseEntity<ResultPaginationDTO> getAllUsers(
+                        @Parameter(description = "Search term (optional) - search by full name or personnel ID") @RequestParam(required = false) String searchTerm,
+                        Pageable pageable) {
+                ResultPaginationDTO result = userService.getAllUsers(pageable, searchTerm);
+                return ResponseEntity.ok(result);
+        }
+
 }
