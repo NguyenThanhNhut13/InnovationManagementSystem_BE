@@ -358,6 +358,22 @@ public class UserService {
         return Utils.toResultPaginationDTO(userResponsePage, pageable);
     }
 
+    // 19. Lấy danh sách tất cả Users (chỉ cho admin hệ thống)
+    public ResultPaginationDTO getAllUsers(Pageable pageable, String searchTerm) {
+        Page<User> userPage;
+        
+        if (searchTerm != null && !searchTerm.trim().isEmpty()) {
+            // Nếu có search term, dùng search method
+            userPage = userRepository.searchUsersByFullNameOrPersonnelId(searchTerm.trim(), pageable);
+        } else {
+            // Nếu không có search term, lấy tất cả
+            userPage = userRepository.findAll(pageable);
+        }
+        
+        Page<UserResponse> userResponsePage = userPage.map(userMapper::toUserResponse);
+        return Utils.toResultPaginationDTO(userResponsePage, pageable);
+    }
+
     // 18. Lấy danh sách Users theo khoa hiện tại và vai trò
     public List<UserResponse> getUsersByCurrentDepartmentAndRole(@NonNull UserRoleEnum roleName) {
         User currentUser = getCurrentUser();

@@ -19,7 +19,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.annotation.ApiMessage;
 @RequestMapping("/api/v1/ai")
 @Tag(name = "AI Services", description = "AI-powered innovation analysis APIs")
 @SecurityRequirement(name = "Bearer Authentication")
-@PreAuthorize("hasAnyRole('QUAN_TRI_VIEN_HE_THONG')")
+@PreAuthorize("hasAnyRole('QUAN_TRI_VIEN_HE_THONG', 'TV_HOI_DONG_KHOA', 'TV_HOI_DONG_TRUONG', 'CHU_TICH_HD_TRUONG')")
 public class AiController {
 
     private final AiService aiService;
@@ -30,12 +30,13 @@ public class AiController {
 
     @PostMapping("/analyze/{innovationId}")
     @ApiMessage("Phân tích sáng kiến thành công")
-    @Operation(summary = "Analyze Innovation with AI", description = "Use AI to summarize and analyze an innovation with scores for creativity, feasibility, impact, strengths, weaknesses, and suggestions")
+    @Operation(summary = "Analyze Innovation with AI", description = "Use AI to summarize and analyze an innovation with scores for creativity, feasibility, impact, strengths, weaknesses, and suggestions. Available for system administrators and council members (department/school level)")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Analysis completed successfully", content = @Content(schema = @Schema(implementation = AiAnalysisResponse.class))),
             @ApiResponse(responseCode = "404", description = "Innovation not found"),
             @ApiResponse(responseCode = "400", description = "Innovation has no content to analyze"),
             @ApiResponse(responseCode = "401", description = "Unauthorized"),
+            @ApiResponse(responseCode = "403", description = "Forbidden - Only system administrators and council members can access"),
             @ApiResponse(responseCode = "429", description = "Rate limit exceeded - please try again later")
     })
     public ResponseEntity<AiAnalysisResponse> analyzeInnovation(
