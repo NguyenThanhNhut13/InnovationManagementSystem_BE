@@ -72,11 +72,15 @@ public class OllamaProvider implements AiProvider {
             requestBody.put("stream", false);
 
             Map<String, Object> options = new HashMap<>();
-            options.put("temperature", 0.7);
-            options.put("top_p", 0.9);
+            options.put("temperature", 0.5);
+            options.put("top_p", 0.8);
+            options.put("num_ctx", 2048);
+            options.put("num_thread", 7);
+            options.put("num_predict", 500);
             requestBody.put("options", options);
 
             logger.info("Calling Ollama API with model: {}", model);
+            long startTime = System.currentTimeMillis();
 
             String response = webClient.post()
                     .uri(apiUrl)
@@ -84,8 +88,11 @@ public class OllamaProvider implements AiProvider {
                     .bodyValue(requestBody)
                     .retrieve()
                     .bodyToMono(String.class)
-                    .timeout(Duration.ofMinutes(5))
+                    .timeout(Duration.ofMinutes(3))
                     .block();
+
+            long duration = System.currentTimeMillis() - startTime;
+            logger.info("Ollama API responded in {} ms", duration);
 
             JsonNode jsonResponse = objectMapper.readTree(response);
             JsonNode responseNode = jsonResponse.get("response");
@@ -121,12 +128,12 @@ public class OllamaProvider implements AiProvider {
                 YÊU CẦU:
                 Tóm tắt và đánh giá sáng kiến, trả về kết quả theo định dạng JSON sau (KHÔNG thêm markdown code block):
                 {
-                    "summary": "Đoạn tóm tắt ngắn gọn khoảng 100-150 từ về nội dung và mục tiêu của sáng kiến",
+                    "summary": "Đoạn tóm tắt ngắn gọn khoảng 100 từ về nội dung và mục tiêu của sáng kiến",
                     "keyPoints": ["Điểm chính 1", "Điểm chính 2", "Điểm chính 3", "Điểm chính 4", "Điểm chính 5"],
                     "strengths": ["Điểm mạnh 1", "Điểm mạnh 2", "Điểm mạnh 3"],
                     "weaknesses": ["Điểm yếu 1", "Điểm yếu 2"],
                     "suggestions": ["Gợi ý cải thiện 1", "Gợi ý cải thiện 2", "Gợi ý cải thiện 3"],
-                    "analysis": "Phân tích chi tiết về sáng kiến khoảng 150-200 từ"
+                    "analysis": "Phân tích chi tiết về sáng kiến khoảng 100 từ"
                 }
 
                 Chỉ trả về JSON, không thêm bất kỳ text nào khác.
