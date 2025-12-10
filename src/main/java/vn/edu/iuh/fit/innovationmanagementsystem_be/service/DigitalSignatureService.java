@@ -10,6 +10,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.Innovation;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.User;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.UserSignatureProfile;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.DocumentTypeEnum;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.CAStatusEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.ReportStatusEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.SignatureStatusEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.TemplateTypeEnum;
@@ -608,15 +609,23 @@ public class DigitalSignatureService {
         signerResponse.setSignAt(signature.getSignAt());
 
         boolean verified = false;
+        boolean isCertificateValid = false;
         UserSignatureProfile profile = signature.getUserSignatureProfile();
         if (profile != null && profile.getPublicKey() != null) {
             verified = keyManagementService.verifySignature(
                     signature.getDocumentHash(),
                     signature.getSignatureHash(),
                     profile.getPublicKey());
+
+            // Kiểm tra chứng thư số của người ký có còn hiệu lực không
+            // Chứng thư số hợp lệ khi: status = VERIFIED và chưa hết hạn
+            isCertificateValid = profile.getCertificateStatus() == CAStatusEnum.VERIFIED
+                    && profile.getCertificateExpiryDate() != null
+                    && profile.getCertificateExpiryDate().isAfter(LocalDateTime.now());
         }
 
         signerResponse.setVerified(verified);
+        signerResponse.setCertificateValid(isCertificateValid);
         return signerResponse;
     }
 
@@ -705,7 +714,7 @@ public class DigitalSignatureService {
         response.setOriginalFileName(resolveAttachmentOriginalFileName(attachment, formTemplate));
         response.setPdfUrl(pdfUrl);
 
-        // Kiểm tra CA hợp lệ của user hiện tại
+        // Kiểm tra CA (tổ chức cấp chứng thư số) có còn hiệu lực không
         boolean isCAValid = checkCAValidForCurrentUser();
         response.setIsCAValid(isCAValid);
 
@@ -728,7 +737,8 @@ public class DigitalSignatureService {
     }
 
     /*
-     * Method để kiểm tra CA hợp lệ của user hiện tại
+     * Method để kiểm tra CA (tổ chức cấp chứng thư số) của user hiện tại có còn
+     * hiệu lực không
      */
     private boolean checkCAValidForCurrentUser() {
         try {
