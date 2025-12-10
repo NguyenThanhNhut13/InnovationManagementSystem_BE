@@ -19,5 +19,5 @@ public class TemplatePdfResponse {
     private DocumentTypeEnum documentType;
     private String pdfUrl;
     private List<TemplatePdfSignerResponse> signers = new ArrayList<>();
-    private Boolean isCAValid;
+    private Boolean isCAValid; // Tổ chức cấp chứng thư số (CA) có còn hiệu lực không
 }

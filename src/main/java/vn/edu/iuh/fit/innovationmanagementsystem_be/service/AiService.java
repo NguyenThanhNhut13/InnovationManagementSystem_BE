@@ -9,6 +9,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.Innovation;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.AiAnalysisResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.exception.IdInvalidException;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.InnovationRepository;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.service.ai.AiProvider;
 
 import java.util.Iterator;
 import java.util.List;
@@ -18,12 +19,13 @@ public class AiService {
 
     private static final Logger logger = LoggerFactory.getLogger(AiService.class);
 
-    private final GeminiService geminiService;
+    private final AiProvider aiProvider;
     private final InnovationRepository innovationRepository;
 
-    public AiService(GeminiService geminiService, InnovationRepository innovationRepository) {
-        this.geminiService = geminiService;
+    public AiService(AiProvider aiProvider, InnovationRepository innovationRepository) {
+        this.aiProvider = aiProvider;
         this.innovationRepository = innovationRepository;
+        logger.info("AiService initialized with provider: {}", aiProvider.getProviderName());
     }
 
     public AiAnalysisResponse analyzeInnovation(String innovationId) {
@@ -34,8 +36,9 @@ public class AiService {
             throw new IdInvalidException("Sáng kiến không có nội dung để phân tích");
         }
 
-        logger.info("Analyzing innovation: {}", innovation.getInnovationName());
-        return geminiService.analyze(innovationId, innovation.getInnovationName(), content);
+        logger.info("Analyzing innovation: {} using provider: {}", innovation.getInnovationName(),
+                aiProvider.getProviderName());
+        return aiProvider.analyze(innovationId, innovation.getInnovationName(), content);
     }
 
     private Innovation findInnovationById(String innovationId) {
