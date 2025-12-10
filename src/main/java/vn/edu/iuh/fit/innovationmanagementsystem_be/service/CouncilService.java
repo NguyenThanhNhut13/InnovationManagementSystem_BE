@@ -73,7 +73,6 @@ import java.util.stream.Collectors;
 
 @Service
 @Slf4j
-@Transactional
 public class CouncilService {
 
     private final CouncilRepository councilRepository;
@@ -1167,7 +1166,6 @@ public class CouncilService {
     }
 
     // 7. Lấy kết quả chấm điểm của hội đồng
-    @Transactional
     public CouncilResultsResponse getCouncilResults(String councilId) {
         // Tìm và validate council
         Council council = findAndValidateCouncil(councilId);
