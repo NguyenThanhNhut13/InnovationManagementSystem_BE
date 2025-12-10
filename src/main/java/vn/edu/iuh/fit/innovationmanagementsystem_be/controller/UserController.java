@@ -77,21 +77,26 @@ public class UserController {
                 return ResponseEntity.ok(userService.updateCurrentUserProfile(updateProfileRequest));
         }
 
-        // 3. Gán Role To User
-        @PostMapping("/users/{userId}/roles/{roleId}")
+        // 3. Gán Role To User bằng roleName
+        @PostMapping("/users/{userId}/roles/by-name/{roleName}")
         @PreAuthorize("hasAnyRole('QUAN_TRI_VIEN_QLKH_HTQT', 'QUAN_TRI_VIEN_HE_THONG', 'TRUONG_KHOA', 'QUAN_TRI_VIEN_KHOA')")
         @ApiMessage("Gán vai trò cho người dùng thành công")
-        public ResponseEntity<UserRoleResponse> assignRoleToUser(@PathVariable String userId,
-                        @PathVariable String roleId) {
-                return ResponseEntity.ok(userService.assignRoleToUser(userId, roleId));
+        @Operation(summary = "Assign Role to User by Role Name", description = "Assign a role to a user using role name instead of role ID")
+        public ResponseEntity<UserRoleResponse> assignRoleToUserByRoleName(
+                        @PathVariable String userId,
+                        @PathVariable UserRoleEnum roleName) {
+                return ResponseEntity.ok(userService.assignRoleToUserByRoleName(userId, roleName));
         }
 
-        // 4. Xóa Role From User
-        @DeleteMapping("/users/{userId}/roles/{roleId}")
+        // 4. Xóa Role From User bằng roleName
+        @DeleteMapping("/users/{userId}/roles/by-name/{roleName}")
         @PreAuthorize("hasAnyRole('QUAN_TRI_VIEN_QLKH_HTQT', 'QUAN_TRI_VIEN_HE_THONG', 'TRUONG_KHOA', 'QUAN_TRI_VIEN_KHOA')")
         @ApiMessage("Xóa vai trò khỏi người dùng thành công")
-        public ResponseEntity<Void> removeRoleFromUser(@PathVariable String userId, @PathVariable String roleId) {
-                userService.removeRoleFromUser(userId, roleId);
+        @Operation(summary = "Remove Role from User by Role Name", description = "Remove a role from a user using role name instead of role ID")
+        public ResponseEntity<Void> removeRoleFromUserByRoleName(
+                        @PathVariable String userId,
+                        @PathVariable UserRoleEnum roleName) {
+                userService.removeRoleFromUserByRoleName(userId, roleName);
                 return ResponseEntity.ok().build();
         }
 
