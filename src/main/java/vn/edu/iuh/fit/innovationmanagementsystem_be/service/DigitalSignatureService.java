@@ -595,7 +595,13 @@ public class DigitalSignatureService {
                         && user.getDepartment().getId().equals(departmentId));
     }
 
+    // Helper method cũ (giữ lại để backward compatibility)
     private TemplatePdfSignerResponse toTemplatePdfSignerResponse(DigitalSignature signature) {
+        return toTemplatePdfSignerResponse(signature, null);
+    }
+
+    // Helper method mới với actualPdfHash để verify PDF integrity
+    private TemplatePdfSignerResponse toTemplatePdfSignerResponse(DigitalSignature signature, String actualPdfHash) {
         TemplatePdfSignerResponse signerResponse = new TemplatePdfSignerResponse();
 
         User signer = signature.getUser();
@@ -612,10 +618,17 @@ public class DigitalSignatureService {
         boolean isCertificateValid = false;
         UserSignatureProfile profile = signature.getUserSignatureProfile();
         if (profile != null && profile.getPublicKey() != null) {
-            verified = keyManagementService.verifySignature(
+            // Verify signature với public key
+            boolean signatureValid = keyManagementService.verifySignature(
                     signature.getDocumentHash(),
                     signature.getSignatureHash(),
                     profile.getPublicKey());
+
+            // Verify PDF integrity: so sánh actualPdfHash với documentHash trong DB
+            boolean pdfIntact = (actualPdfHash != null && actualPdfHash.equals(signature.getDocumentHash()));
+
+            // verified = true chỉ khi CẢ signature hợp lệ VÀ PDF không bị thay đổi
+            verified = signatureValid && pdfIntact;
 
             // Kiểm tra chứng thư số của người ký có còn hiệu lực không
             // Chứng thư số hợp lệ khi: status = VERIFIED và chưa hết hạn
@@ -718,14 +731,24 @@ public class DigitalSignatureService {
         boolean isCAValid = checkCAValidForCurrentUser();
         response.setIsCAValid(isCAValid);
 
+        // Download PDF từ MinIO và hash lại để verify tính toàn vẹn
+        String actualPdfHash = null;
+        try {
+            byte[] pdfBytes = fileService.downloadFile(attachment.getPathUrl()).readAllBytes();
+            actualPdfHash = keyManagementService.generateDocumentHash(pdfBytes);
+        } catch (Exception e) {
+            // Nếu không download được PDF, actualPdfHash = null, verified sẽ là false
+        }
+
         if (documentType != null) {
             List<DigitalSignature> signatures = digitalSignatureRepository
                     .findByInnovationIdAndDocumentTypeWithRelations(innovationId, documentType);
 
+            final String pdfHashForLambda = actualPdfHash;
             List<TemplatePdfSignerResponse> signerResponses = signatures.stream()
                     .filter(sig -> sig.getStatus() == SignatureStatusEnum.SIGNED)
                     .sorted(Comparator.comparing(DigitalSignature::getSignAt))
-                    .map(this::toTemplatePdfSignerResponse)
+                    .map(sig -> toTemplatePdfSignerResponse(sig, pdfHashForLambda))
                     .collect(Collectors.toList());
 
             response.setSigners(signerResponses);
@@ -1203,9 +1226,11 @@ public class DigitalSignatureService {
                 validateAndSetupCertificateIfNeeded(signatureProfile, currentUser);
             }
 
+            // Đã di chuyển logic hash xuống sau khi tạo PDF (dòng 1089)
+
             // Generate document hash
             String documentHash = keyManagementService
-                    .generateDocumentHash(htmlContent.getBytes(StandardCharsets.UTF_8));
+                    .generateDocumentHash(pdfBytes); // Hash từ PDF bytes
 
             // Generate signature hash
             String decryptedPrivateKey = hsmEncryptionService
@@ -1590,7 +1615,11 @@ public class DigitalSignatureService {
             throw new IdInvalidException("Nội dung HTML không hợp lệ sau khi giải mã");
         }
 
-        String documentHash = generateDocumentHash(htmlContent.getBytes(StandardCharsets.UTF_8));
+        // Tạo PDF mới và lấy pdfBytes để hash
+        byte[] pdfBytes = updateForm2PdfWithNewContent(innovation, htmlContent);
+
+        // Hash PDF bytes thay vì HTML content
+        String documentHash = generateDocumentHash(pdfBytes);
         String decryptedPrivateKey = hsmEncryptionService.decryptPrivateKey(signatureProfile.getEncryptedPrivateKey());
         String signatureHash = keyManagementService.generateSignature(documentHash, decryptedPrivateKey);
 
@@ -1599,8 +1628,6 @@ public class DigitalSignatureService {
         if (!isValidSignature) {
             throw new IdInvalidException("Chữ ký không hợp lệ");
         }
-
-        updateForm2PdfWithNewContent(innovation, htmlContent);
 
         DigitalSignature digitalSignature = new DigitalSignature();
         digitalSignature.setDocumentType(DocumentTypeEnum.FORM_2);
@@ -1620,7 +1647,8 @@ public class DigitalSignatureService {
     }
 
     // Helper: Cập nhật PDF mẫu 2 với nội dung mới (xóa PDF cũ, tạo PDF mới)
-    private void updateForm2PdfWithNewContent(Innovation innovation, String htmlContent) {
+    // Return pdfBytes để có thể hash PDF thay vì HTML
+    private byte[] updateForm2PdfWithNewContent(Innovation innovation, String htmlContent) {
         String innovationId = innovation.getId();
 
         List<Attachment> existingAttachments = attachmentRepository.findByInnovationId(innovationId);
@@ -1652,6 +1680,9 @@ public class DigitalSignatureService {
             form2Attachment.setPathUrl(objectName);
             form2Attachment.setFileSize((long) pdfBytes.length);
             attachmentRepository.save(form2Attachment);
+
+            // Return pdfBytes để hash
+            return pdfBytes;
         } catch (Exception e) {
             throw new IdInvalidException("Không thể tạo PDF mới cho mẫu 2: " + e.getMessage());
         }
