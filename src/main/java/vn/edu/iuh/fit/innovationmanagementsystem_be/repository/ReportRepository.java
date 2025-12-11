@@ -19,6 +19,13 @@ public interface ReportRepository extends JpaRepository<Report, String> {
             DocumentTypeEnum reportType);
 
     /**
+     * Tìm report theo councilId và reportType (cho cấp trường)
+     */
+    Optional<Report> findByCouncilIdAndReportType(
+            String councilId,
+            DocumentTypeEnum reportType);
+
+    /**
      * Đếm số report có status cụ thể theo departmentId và danh sách reportType
      */
     long countByDepartmentIdAndStatusAndReportTypeIn(
