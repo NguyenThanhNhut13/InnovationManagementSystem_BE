@@ -718,9 +718,12 @@ public class DigitalSignatureService {
         FormTemplate formTemplate = formTemplateRepository.findById(templateId)
                 .orElseThrow(() -> new IdInvalidException("Không tìm thấy template với ID: " + templateId));
 
-        // Tìm attachment
+        // Tìm attachment PDF hệ thống tạo (fileName format:
+        // {innovationId}_{templateId}.pdf)
+        // Không lấy các file user upload (có thể là bất kỳ extension nào kể cả .pdf)
         Attachment attachment = attachmentRepository
-                .findTopByInnovationIdAndTemplateIdOrderByCreatedAtDesc(innovationId, templateId)
+                .findTopByInnovationIdAndTemplateIdAndFileNameContainingOrderByCreatedAtDesc(
+                        innovationId, templateId, templateId)
                 .orElseThrow(() -> new IdInvalidException(
                         String.format("Không tìm thấy file PDF cho template đã yêu cầu. " +
                                 "InnovationId: %s, TemplateId: %s, Template Name: %s. " +
