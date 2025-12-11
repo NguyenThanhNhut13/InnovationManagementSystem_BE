@@ -63,6 +63,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.Utils;
 import lombok.extern.slf4j.Slf4j;
 
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -178,6 +179,9 @@ public class CouncilService {
 
         // Validate danh sách thành viên
         validateMembers(request.getMembers());
+
+        // Validate điều kiện thành lập hội đồng (phải trước giai đoạn chấm điểm)
+        validateCouncilFormationTiming(round, councilLevel, department);
 
         // Tạo Council entity
         Council council = new Council();
@@ -357,6 +361,58 @@ public class CouncilService {
             if (!userRepository.existsById(userId)) {
                 throw new IdInvalidException("Không tìm thấy user với ID: " + userId);
             }
+        }
+    }
+
+    // Helper method: Validate điều kiện thành lập hội đồng (phải trước giai đoạn chấm điểm)
+    private void validateCouncilFormationTiming(InnovationRound round, ReviewLevelEnum councilLevel,
+            Department department) {
+        LocalDate currentDate = LocalDate.now();
+        LocalDate scoringStartDate = null;
+
+        if (councilLevel == ReviewLevelEnum.KHOA) {
+            // Cấp Khoa: Lấy SCORING phase từ DepartmentPhase
+            if (department == null) {
+                throw new IllegalArgumentException("Không thể xác định khoa để kiểm tra giai đoạn chấm điểm");
+            }
+
+            Optional<DepartmentPhase> scoringPhase = departmentPhaseRepository
+                    .findByDepartmentIdAndInnovationRoundIdAndPhaseType(
+                            department.getId(),
+                            round.getId(),
+                            InnovationPhaseTypeEnum.SCORING);
+
+            if (scoringPhase.isEmpty()) {
+                throw new IllegalArgumentException(
+                        "Chưa có giai đoạn chấm điểm. Vui lòng cấu hình giai đoạn chấm điểm trước.");
+            }
+
+            scoringStartDate = scoringPhase.get().getPhaseStartDate();
+        } else {
+            // Cấp Trường: Lấy SCORING phase từ InnovationPhase (level = SCHOOL)
+            Optional<InnovationPhase> scoringPhase = innovationPhaseRepository
+                    .findByInnovationRoundIdAndPhaseType(round.getId(), InnovationPhaseTypeEnum.SCORING);
+
+            if (scoringPhase.isEmpty()) {
+                throw new IllegalArgumentException(
+                        "Chưa có giai đoạn chấm điểm. Vui lòng cấu hình giai đoạn chấm điểm trước.");
+            }
+
+            InnovationPhase phase = scoringPhase.get();
+            if (phase.getLevel() != InnovationPhaseLevelEnum.SCHOOL) {
+                throw new IllegalArgumentException(
+                        "Giai đoạn chấm điểm cấp trường chưa được cấu hình. Vui lòng cấu hình giai đoạn chấm điểm trước.");
+            }
+
+            scoringStartDate = phase.getPhaseStartDate();
+        }
+
+        // Kiểm tra thời gian hiện tại phải trước thời gian bắt đầu của giai đoạn chấm điểm
+        if (currentDate.isAfter(scoringStartDate) || currentDate.isEqual(scoringStartDate)) {
+            throw new IllegalArgumentException(
+                    String.format(
+                            "Không thể thành lập hội đồng. Giai đoạn chấm điểm đã bắt đầu từ %s. Vui lòng thành lập hội đồng trước khi giai đoạn chấm điểm bắt đầu.",
+                            scoringStartDate.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))));
         }
     }
 
