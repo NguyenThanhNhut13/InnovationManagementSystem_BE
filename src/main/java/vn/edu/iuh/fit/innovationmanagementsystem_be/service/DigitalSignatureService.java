@@ -625,9 +625,19 @@ public class DigitalSignatureService {
                     profile.getPublicKey());
 
             // Verify PDF integrity: so sánh actualPdfHash với documentHash trong DB
-            boolean pdfIntact = (actualPdfHash != null && actualPdfHash.equals(signature.getDocumentHash()));
+            // Nếu actualPdfHash = null, nghĩa là đây là signature cũ hơn, chỉ verify
+            // signature
+            boolean pdfIntact;
+            if (actualPdfHash == null) {
+                // Signature cũ hơn: không verify PDF, chỉ verify signature
+                pdfIntact = true; // Giả định PDF intact để chỉ dựa vào signatureValid
+            } else {
+                // Signature mới nhất: verify cả PDF integrity
+                pdfIntact = actualPdfHash.equals(signature.getDocumentHash());
+            }
 
-            // verified = true chỉ khi CẢ signature hợp lệ VÀ PDF không bị thay đổi
+            // verified = true khi signature hợp lệ VÀ (PDF intact HOẶC không cần verify
+            // PDF)
             verified = signatureValid && pdfIntact;
 
             // Kiểm tra chứng thư số của người ký có còn hiệu lực không
@@ -744,11 +754,24 @@ public class DigitalSignatureService {
             List<DigitalSignature> signatures = digitalSignatureRepository
                     .findByInnovationIdAndDocumentTypeWithRelations(innovationId, documentType);
 
+            // Tìm signature mới nhất (theo thời gian ký)
+            Optional<DigitalSignature> latestSignatureOpt = signatures.stream()
+                    .filter(sig -> sig.getStatus() == SignatureStatusEnum.SIGNED)
+                    .max(Comparator.comparing(DigitalSignature::getSignAt));
+
             final String pdfHashForLambda = actualPdfHash;
+            final String latestSignatureId = latestSignatureOpt.map(DigitalSignature::getId).orElse(null);
+
             List<TemplatePdfSignerResponse> signerResponses = signatures.stream()
                     .filter(sig -> sig.getStatus() == SignatureStatusEnum.SIGNED)
                     .sorted(Comparator.comparing(DigitalSignature::getSignAt))
-                    .map(sig -> toTemplatePdfSignerResponse(sig, pdfHashForLambda))
+                    .map(sig -> {
+                        // Chỉ verify PDF integrity cho signature mới nhất
+                        // Các signature cũ hơn chỉ verify signature, không verify PDF
+                        boolean isLatest = sig.getId().equals(latestSignatureId);
+                        String hashToVerify = isLatest ? pdfHashForLambda : null;
+                        return toTemplatePdfSignerResponse(sig, hashToVerify);
+                    })
                     .collect(Collectors.toList());
 
             response.setSigners(signerResponses);
