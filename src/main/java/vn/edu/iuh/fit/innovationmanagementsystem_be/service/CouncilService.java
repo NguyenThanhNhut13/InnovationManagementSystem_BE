@@ -252,9 +252,14 @@ public class CouncilService {
             return ReviewLevelEnum.TRUONG;
         }
 
+        // CHU_TICH_HD_TRUONG → TRUONG
+        if (userRoles.contains(UserRoleEnum.CHU_TICH_HD_TRUONG)) {
+            return ReviewLevelEnum.TRUONG;
+        }
+
         // Nếu không có role phù hợp, throw exception
         throw new IllegalArgumentException(
-                "Không xác định được cấp độ hội đồng. Chỉ TRUONG_KHOA, QUAN_TRI_VIEN_KHOA, QUAN_TRI_VIEN_HE_THONG, QUAN_TRI_VIEN_QLKH_HTQT, TV_HOI_DONG_KHOA, TV_HOI_DONG_TRUONG mới có quyền truy cập hội đồng");
+                "Không xác định được cấp độ hội đồng. Chỉ TRUONG_KHOA, QUAN_TRI_VIEN_KHOA, QUAN_TRI_VIEN_HE_THONG, QUAN_TRI_VIEN_QLKH_HTQT, TV_HOI_DONG_KHOA, TV_HOI_DONG_TRUONG, CHU_TICH_HD_TRUONG mới có quyền truy cập hội đồng");
     }
 
     // Helper method: Validate quyền tạo Hội đồng theo cấp độ

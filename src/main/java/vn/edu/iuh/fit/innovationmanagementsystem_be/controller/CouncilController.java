@@ -58,7 +58,7 @@ public class CouncilController {
 
     // 2. Lấy thông tin hội đồng hiện tại
     @GetMapping("/councils/current")
-    @PreAuthorize("hasAnyRole('TRUONG_KHOA','QUAN_TRI_VIEN_KHOA','QUAN_TRI_VIEN_HE_THONG', 'QUAN_TRI_VIEN_QLKH_HTQT', 'TV_HOI_DONG_KHOA', 'TV_HOI_DONG_TRUONG')")
+    @PreAuthorize("hasAnyRole('TRUONG_KHOA','QUAN_TRI_VIEN_KHOA','QUAN_TRI_VIEN_HE_THONG', 'QUAN_TRI_VIEN_QLKH_HTQT', 'TV_HOI_DONG_KHOA', 'TV_HOI_DONG_TRUONG', 'CHU_TICH_HD_TRUONG')")
     @Operation(summary = "Get Current Council", description = "Get the current council for the active round and user's department (for faculty level) or school level")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Council found successfully", content = @Content(schema = @Schema(implementation = CouncilResponse.class))),
@@ -72,7 +72,7 @@ public class CouncilController {
 
     // 3. Lấy thông tin chi tiết hội đồng theo ID
     @GetMapping("/councils/{id}")
-    @PreAuthorize("hasAnyRole('TRUONG_KHOA','QUAN_TRI_VIEN_KHOA','QUAN_TRI_VIEN_HE_THONG', 'QUAN_TRI_VIEN_QLKH_HTQT', 'TV_HOI_DONG_KHOA', 'TV_HOI_DONG_TRUONG')")
+    @PreAuthorize("hasAnyRole('TRUONG_KHOA','QUAN_TRI_VIEN_KHOA','QUAN_TRI_VIEN_HE_THONG', 'QUAN_TRI_VIEN_QLKH_HTQT', 'TV_HOI_DONG_KHOA', 'TV_HOI_DONG_TRUONG', 'CHU_TICH_HD_TRUONG')")
     @Operation(summary = "Get Council by ID", description = "Get detailed information of a council by ID. Access is restricted based on user's role and department.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Council found successfully", content = @Content(schema = @Schema(implementation = CouncilResponse.class))),
@@ -88,7 +88,7 @@ public class CouncilController {
 
     // 4. Lấy danh sách sáng kiến của hội đồng với pagination và scoring progress
     @GetMapping("/councils/{id}/innovations")
-    @PreAuthorize("hasAnyRole('TRUONG_KHOA','QUAN_TRI_VIEN_KHOA','QUAN_TRI_VIEN_HE_THONG', 'QUAN_TRI_VIEN_QLKH_HTQT', 'TV_HOI_DONG_KHOA', 'TV_HOI_DONG_TRUONG')")
+    @PreAuthorize("hasAnyRole('TRUONG_KHOA','QUAN_TRI_VIEN_KHOA','QUAN_TRI_VIEN_HE_THONG', 'QUAN_TRI_VIEN_QLKH_HTQT', 'TV_HOI_DONG_KHOA', 'TV_HOI_DONG_TRUONG', 'CHU_TICH_HD_TRUONG')")
     @ApiMessage("Lấy danh sách sáng kiến của hội đồng thành công")
     @Operation(summary = "Get Council Innovations", description = "Get paginated list of innovations in a council with scoring progress. Access is restricted based on user's role and department.")
     @ApiResponses(value = {
@@ -105,7 +105,7 @@ public class CouncilController {
 
     // 5. Lấy danh sách hội đồng với pagination và filtering
     @GetMapping("/councils")
-    @PreAuthorize("hasAnyRole('TRUONG_KHOA','QUAN_TRI_VIEN_KHOA','QUAN_TRI_VIEN_HE_THONG', 'QUAN_TRI_VIEN_QLKH_HTQT', 'TV_HOI_DONG_KHOA', 'TV_HOI_DONG_TRUONG', 'CHU_TICH', 'THU_KY', 'THANH_VIEN')")
+    @PreAuthorize("hasAnyRole('TRUONG_KHOA','QUAN_TRI_VIEN_KHOA','QUAN_TRI_VIEN_HE_THONG', 'QUAN_TRI_VIEN_QLKH_HTQT', 'TV_HOI_DONG_KHOA', 'TV_HOI_DONG_TRUONG', 'CHU_TICH_HD_TRUONG', 'CHU_TICH', 'THU_KY', 'THANH_VIEN')")
     @ApiMessage("Lấy danh sách hội đồng thành công")
     @Operation(summary = "Get All Councils", description = "Get paginated list of all councils with filtering. Results are filtered based on user's role (faculty vs school level)")
     @ApiResponses(value = {
@@ -156,7 +156,7 @@ public class CouncilController {
 
     // 8. Lấy kết quả chấm điểm của hội đồng
     @GetMapping("/councils/{id}/results")
-    @PreAuthorize("hasAnyRole('TRUONG_KHOA','QUAN_TRI_VIEN_KHOA','QUAN_TRI_VIEN_HE_THONG', 'QUAN_TRI_VIEN_QLKH_HTQT', 'TV_HOI_DONG_KHOA', 'TV_HOI_DONG_TRUONG')")
+    @PreAuthorize("hasAnyRole('TRUONG_KHOA','QUAN_TRI_VIEN_KHOA','QUAN_TRI_VIEN_HE_THONG', 'QUAN_TRI_VIEN_QLKH_HTQT', 'TV_HOI_DONG_KHOA', 'TV_HOI_DONG_TRUONG', 'CHU_TICH_HD_TRUONG')")
     @ApiMessage("Lấy kết quả chấm điểm thành công")
     @Operation(summary = "Get Council Results", description = "Get detailed scoring results for all innovations in a council. Only available after scoring period has ended.")
     @ApiResponses(value = {
