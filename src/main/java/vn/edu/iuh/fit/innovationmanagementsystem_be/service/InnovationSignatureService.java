@@ -171,13 +171,9 @@ public class InnovationSignatureService {
                 try {
                     byte[] existingPdfBytes = fileService.downloadFile(existingAttachment.getPathUrl())
                             .readAllBytes();
-                    System.out.println("=== REUSING EXISTING PDF ===");
-                    System.out.println("Template: " + formTemplate.getTemplateType());
-                    System.out.println("===========================");
                     return existingPdfBytes;
                 } catch (Exception e) {
                     // Nếu không download được PDF cũ, tạo mới
-                    System.out.println("Cannot download existing PDF, creating new: " + e.getMessage());
                 }
             }
 

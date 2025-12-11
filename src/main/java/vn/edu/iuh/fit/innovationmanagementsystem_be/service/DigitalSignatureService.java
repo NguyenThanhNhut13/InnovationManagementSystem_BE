@@ -634,17 +634,6 @@ public class DigitalSignatureService {
             } else {
                 // Signature mới nhất: verify cả PDF integrity
                 pdfIntact = actualPdfHash.equals(signature.getDocumentHash());
-
-                // DEBUG: Log để kiểm tra
-                if (!pdfIntact) {
-                    System.out.println("=== PDF INTEGRITY CHECK FAILED ===");
-                    System.out.println("Document Type: " + signature.getDocumentType());
-                    System.out.println(
-                            "Signer: " + (signature.getUser() != null ? signature.getUser().getFullName() : "N/A"));
-                    System.out.println("Expected documentHash: " + signature.getDocumentHash());
-                    System.out.println("Actual PDF hash:       " + actualPdfHash);
-                    System.out.println("===================================");
-                }
             }
 
             // verified = true khi signature hợp lệ VÀ (PDF intact HOẶC không cần verify
