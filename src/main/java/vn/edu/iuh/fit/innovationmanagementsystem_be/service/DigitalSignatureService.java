@@ -595,7 +595,13 @@ public class DigitalSignatureService {
                         && user.getDepartment().getId().equals(departmentId));
     }
 
+    // Helper method cũ (giữ lại để backward compatibility)
     private TemplatePdfSignerResponse toTemplatePdfSignerResponse(DigitalSignature signature) {
+        return toTemplatePdfSignerResponse(signature, null);
+    }
+
+    // Helper method mới với actualPdfHash để verify PDF integrity
+    private TemplatePdfSignerResponse toTemplatePdfSignerResponse(DigitalSignature signature, String actualPdfHash) {
         TemplatePdfSignerResponse signerResponse = new TemplatePdfSignerResponse();
 
         User signer = signature.getUser();
@@ -612,10 +618,17 @@ public class DigitalSignatureService {
         boolean isCertificateValid = false;
         UserSignatureProfile profile = signature.getUserSignatureProfile();
         if (profile != null && profile.getPublicKey() != null) {
-            verified = keyManagementService.verifySignature(
+            // Verify signature với public key
+            boolean signatureValid = keyManagementService.verifySignature(
                     signature.getDocumentHash(),
                     signature.getSignatureHash(),
                     profile.getPublicKey());
+
+            // Verify PDF integrity: so sánh actualPdfHash với documentHash trong DB
+            boolean pdfIntact = (actualPdfHash != null && actualPdfHash.equals(signature.getDocumentHash()));
+
+            // verified = true chỉ khi CẢ signature hợp lệ VÀ PDF không bị thay đổi
+            verified = signatureValid && pdfIntact;
 
             // Kiểm tra chứng thư số của người ký có còn hiệu lực không
             // Chứng thư số hợp lệ khi: status = VERIFIED và chưa hết hạn
@@ -718,14 +731,24 @@ public class DigitalSignatureService {
         boolean isCAValid = checkCAValidForCurrentUser();
         response.setIsCAValid(isCAValid);
 
+        // Download PDF từ MinIO và hash lại để verify tính toàn vẹn
+        String actualPdfHash = null;
+        try {
+            byte[] pdfBytes = fileService.downloadFile(attachment.getPathUrl()).readAllBytes();
+            actualPdfHash = keyManagementService.generateDocumentHash(pdfBytes);
+        } catch (Exception e) {
+            // Nếu không download được PDF, actualPdfHash = null, verified sẽ là false
+        }
+
         if (documentType != null) {
             List<DigitalSignature> signatures = digitalSignatureRepository
                     .findByInnovationIdAndDocumentTypeWithRelations(innovationId, documentType);
 
+            final String pdfHashForLambda = actualPdfHash;
             List<TemplatePdfSignerResponse> signerResponses = signatures.stream()
                     .filter(sig -> sig.getStatus() == SignatureStatusEnum.SIGNED)
                     .sorted(Comparator.comparing(DigitalSignature::getSignAt))
-                    .map(this::toTemplatePdfSignerResponse)
+                    .map(sig -> toTemplatePdfSignerResponse(sig, pdfHashForLambda))
                     .collect(Collectors.toList());
 
             response.setSigners(signerResponses);
