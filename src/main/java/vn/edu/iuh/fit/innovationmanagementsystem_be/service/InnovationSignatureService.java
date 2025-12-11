@@ -164,7 +164,7 @@ public class InnovationSignatureService {
                             innovation.getId(),
                             formTemplate.getId());
 
-            // Nếu đã có attachment, download PDF cũ và return để tránh tạo lại (hash sẽ
+            // Nếu đã có attachment, download PDF và return (không tạo lại để tránh hash
             // khác)
             if (existingAttachmentOpt.isPresent()) {
                 Attachment existingAttachment = existingAttachmentOpt.get();
@@ -173,17 +173,17 @@ public class InnovationSignatureService {
                             .readAllBytes();
                     return existingPdfBytes;
                 } catch (Exception e) {
-                    // Nếu không download được PDF cũ, tạo mới
+                    // Nếu không download được PDF cũ, xóa attachment cũ và tạo mới
+                    attachmentRepository.deleteByInnovationIdAndTemplateId(
+                            innovation.getId(),
+                            formTemplate.getId());
                 }
             }
 
+            // Tạo PDF mới (chỉ khi chưa có attachment hoặc không download được PDF cũ)
             byte[] pdfBytes = pdfGeneratorService.convertHtmlToPdf(htmlContent);
             String fileName = buildTemplatePdfFileName(innovation.getId(), formTemplate.getId());
             String objectName = fileService.uploadBytes(pdfBytes, fileName, "application/pdf");
-
-            attachmentRepository.deleteByInnovationIdAndTemplateId(
-                    innovation.getId(),
-                    formTemplate.getId());
 
             Attachment attachment = new Attachment();
             attachment.setInnovation(innovation);
