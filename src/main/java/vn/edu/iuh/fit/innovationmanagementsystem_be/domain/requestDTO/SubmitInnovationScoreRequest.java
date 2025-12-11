@@ -19,7 +19,7 @@ public class SubmitInnovationScoreRequest {
 
     // Optional - chỉ bắt buộc nếu isScore = true
     @Min(value = 0, message = "Tổng điểm phải >= 0")
-    @Max(value = 100, message = "Tổng điểm phải <= 100")
+    // Note: Max validation được thực hiện trong service dựa trên maxTotalScore từ scoring criteria
     private Integer totalScore;
 
     @NotNull(message = "Quyết định đánh giá không được để trống")

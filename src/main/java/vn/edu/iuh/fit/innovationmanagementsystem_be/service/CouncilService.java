@@ -43,6 +43,8 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.Department;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.ReviewScore;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.InnovationPhase;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.DepartmentPhase;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.InnovationDecision;
+import com.fasterxml.jackson.databind.JsonNode;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationRoundStatusEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationPhaseTypeEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationPhaseLevelEnum;
@@ -1540,6 +1542,7 @@ public class CouncilService {
 
         // Tính finalDecision với logic tie-breaking
         Boolean finalDecision = calculateFinalDecision(
+                innovation,
                 innovation.getIsScore(),
                 approvedCount,
                 rejectedCount,
@@ -1551,6 +1554,7 @@ public class CouncilService {
 
         // Tạo decision reason
         String decisionReason = generateDecisionReason(
+                innovation,
                 innovation.getIsScore(),
                 approvedCount,
                 rejectedCount,
@@ -1580,8 +1584,31 @@ public class CouncilService {
         return result;
     }
 
+    // Helper: Tính maxTotalScore từ scoring criteria
+    private int calculateMaxTotalScore(JsonNode scoringCriteria) {
+        if (scoringCriteria == null || !scoringCriteria.isArray()) {
+            return 100; // Default fallback
+        }
+        
+        int maxTotal = 0;
+        for (JsonNode criterion : scoringCriteria) {
+            JsonNode subCriteria = criterion.get("subCriteria");
+            if (subCriteria != null && subCriteria.isArray()) {
+                int maxScoreForCriterion = 0;
+                for (JsonNode subCriterion : subCriteria) {
+                    if (subCriterion.has("maxScore")) {
+                        maxScoreForCriterion = Math.max(maxScoreForCriterion, 
+                            subCriterion.get("maxScore").asInt());
+                    }
+                }
+                maxTotal += maxScoreForCriterion;
+            }
+        }
+        return maxTotal > 0 ? maxTotal : 100; // Default fallback
+    }
+
     // Helper method: Tính finalDecision với logic tie-breaking
-    private Boolean calculateFinalDecision(Boolean isScore, int approvedCount, int rejectedCount, int scoredMembers,
+    private Boolean calculateFinalDecision(Innovation innovation, Boolean isScore, int approvedCount, int rejectedCount, int scoredMembers,
             int totalMembers, Double averageScore, Boolean chairmanDecision, Double chairmanScore) {
         // Nếu chưa có ai chấm điểm (kể cả Chủ tịch)
         if (scoredMembers == 0) {
@@ -1605,12 +1632,19 @@ public class CouncilService {
 
         // Tie-breaking 1: Nếu sáng kiến có chấm điểm, dùng điểm trung bình
         if (isScore != null && isScore && averageScore != null) {
-            if (averageScore >= 70.0) {
+            // Lấy maxTotalScore từ innovation decision
+            InnovationDecision decision = innovation.getInnovationRound() != null 
+                ? innovation.getInnovationRound().getInnovationDecision() : null;
+            JsonNode scoringCriteria = decision != null ? decision.getScoringCriteria() : null;
+            int maxTotalScore = calculateMaxTotalScore(scoringCriteria);
+            double passingThreshold = maxTotalScore * 0.7; // 70%
+
+            if (averageScore >= passingThreshold) {
                 return true;
-            } else if (averageScore < 70.0) {
+            } else if (averageScore < passingThreshold) {
                 return false;
             }
-            // Nếu averageScore == 70.0 (rất hiếm), tiếp tục tie-breaking 2
+            // Nếu averageScore == passingThreshold (rất hiếm), tiếp tục tie-breaking 2
         }
 
         // Tie-breaking 2: Dùng quyết định của Chủ tịch
@@ -1623,7 +1657,7 @@ public class CouncilService {
     }
 
     // Helper method: Tạo decision reason
-    private String generateDecisionReason(Boolean isScore, int approvedCount, int rejectedCount, int scoredMembers,
+    private String generateDecisionReason(Innovation innovation, Boolean isScore, int approvedCount, int rejectedCount, int scoredMembers,
             int totalMembers, Double averageScore, Boolean chairmanDecision) {
         if (scoredMembers == 0) {
             return "Chưa có thành viên nào chấm điểm";
@@ -1640,12 +1674,19 @@ public class CouncilService {
 
         // Bằng nhau → cần Chủ tịch
         if (isScore != null && isScore && averageScore != null) {
-            if (averageScore >= 70.0) {
-                return String.format("Bằng nhau (%d/%d) - Dựa vào điểm trung bình (%.2f >= 70)",
-                        approvedCount, scoredMembers, averageScore);
+            // Lấy maxTotalScore từ innovation decision
+            InnovationDecision decision = innovation.getInnovationRound() != null 
+                ? innovation.getInnovationRound().getInnovationDecision() : null;
+            JsonNode scoringCriteria = decision != null ? decision.getScoringCriteria() : null;
+            int maxTotalScore = calculateMaxTotalScore(scoringCriteria);
+            double passingThreshold = maxTotalScore * 0.7; // 70%
+
+            if (averageScore >= passingThreshold) {
+                return String.format("Bằng nhau (%d/%d) - Dựa vào điểm trung bình (%.2f >= %.2f - 70%% của %d)",
+                        approvedCount, scoredMembers, averageScore, passingThreshold, maxTotalScore);
             } else {
-                return String.format("Bằng nhau (%d/%d) - Dựa vào điểm trung bình (%.2f < 70)",
-                        approvedCount, scoredMembers, averageScore);
+                return String.format("Bằng nhau (%d/%d) - Dựa vào điểm trung bình (%.2f < %.2f - 70%% của %d)",
+                        approvedCount, scoredMembers, averageScore, passingThreshold, maxTotalScore);
             }
         }
 
