@@ -5,6 +5,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Optional;
+
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.Attachment;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.FormData;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.FormField;
@@ -156,6 +158,29 @@ public class InnovationSignatureService {
             String htmlContent) {
 
         try {
+            // Kiểm tra xem attachment đã tồn tại chưa
+            Optional<Attachment> existingAttachmentOpt = attachmentRepository
+                    .findTopByInnovationIdAndTemplateIdOrderByCreatedAtDesc(
+                            innovation.getId(),
+                            formTemplate.getId());
+
+            // Nếu đã có attachment, download PDF cũ và return để tránh tạo lại (hash sẽ
+            // khác)
+            if (existingAttachmentOpt.isPresent()) {
+                Attachment existingAttachment = existingAttachmentOpt.get();
+                try {
+                    byte[] existingPdfBytes = fileService.downloadFile(existingAttachment.getPathUrl())
+                            .readAllBytes();
+                    System.out.println("=== REUSING EXISTING PDF ===");
+                    System.out.println("Template: " + formTemplate.getTemplateType());
+                    System.out.println("===========================");
+                    return existingPdfBytes;
+                } catch (Exception e) {
+                    // Nếu không download được PDF cũ, tạo mới
+                    System.out.println("Cannot download existing PDF, creating new: " + e.getMessage());
+                }
+            }
+
             byte[] pdfBytes = pdfGeneratorService.convertHtmlToPdf(htmlContent);
             String fileName = buildTemplatePdfFileName(innovation.getId(), formTemplate.getId());
             String objectName = fileService.uploadBytes(pdfBytes, fileName, "application/pdf");
