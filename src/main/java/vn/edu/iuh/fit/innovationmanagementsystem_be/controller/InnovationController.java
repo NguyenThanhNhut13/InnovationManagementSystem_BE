@@ -28,7 +28,10 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.Innovatio
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationDetailForGiangVienResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.DepartmentInnovationPendingSignatureResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationTemplatesForSigningResponse;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.CheckSimilarityRequest;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.CheckSimilarityResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.service.InnovationService;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.service.InnovationSimilarityService;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.service.InnovationDetailService;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.service.ReviewScoreService;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.ResultPaginationDTO;
@@ -43,13 +46,16 @@ public class InnovationController {
         private final InnovationService innovationService;
         private final InnovationDetailService innovationDetailService;
         private final ReviewScoreService reviewScoreService;
+        private final InnovationSimilarityService innovationSimilarityService;
 
         public InnovationController(InnovationService innovationService,
                         InnovationDetailService innovationDetailService,
-                        ReviewScoreService reviewScoreService) {
+                        ReviewScoreService reviewScoreService,
+                        InnovationSimilarityService innovationSimilarityService) {
                 this.innovationService = innovationService;
                 this.innovationDetailService = innovationDetailService;
                 this.reviewScoreService = reviewScoreService;
+                this.innovationSimilarityService = innovationSimilarityService;
         }
 
         // 1. Lấy tất cả sáng kiến của user hiện tại với filter chi tiết
@@ -163,7 +169,8 @@ public class InnovationController {
         // ResponseEntity.ok(innovationService.getDepartmentInnovationWithFormDataById(id));
         // }
 
-        // 7. Lấy chi tiết sáng kiến của phòng ban cho QUAN_TRI_VIEN_KHOA, TRUONG_KHOA và các role trường
+        // 7. Lấy chi tiết sáng kiến của phòng ban cho QUAN_TRI_VIEN_KHOA, TRUONG_KHOA
+        // và các role trường
         @GetMapping("/innovations/department/{id}/detail")
         @PreAuthorize("hasAnyRole('TRUONG_KHOA', 'QUAN_TRI_VIEN_KHOA', 'QUAN_TRI_VIEN_QLKH_HTQT', 'QUAN_TRI_VIEN_HE_THONG', 'TV_HOI_DONG_TRUONG', 'CHU_TICH_HD_TRUONG')")
         @ApiMessage("Lấy chi tiết sáng kiến của phòng ban bằng id thành công")
@@ -379,6 +386,20 @@ public class InnovationController {
                 return ResponseEntity.ok(
                                 innovationService.getInnovationsApprovedByDepartmentWithSignedReports(
                                                 filterRequest, pageable));
+        }
+
+        // 16. Kiểm tra sáng kiến tương đồng trước khi tạo
+        @PostMapping("/innovations/check-similarity")
+        @ApiMessage("Kiểm tra sáng kiến tương đồng thành công")
+        @Operation(summary = "Check Innovation Similarity", description = "Check for similar existing innovations before creating a new one. Returns list of similar innovations with similarity scores.")
+        @ApiResponses(value = {
+                        @ApiResponse(responseCode = "200", description = "Similarity check completed successfully", content = @Content(schema = @Schema(implementation = CheckSimilarityResponse.class))),
+                        @ApiResponse(responseCode = "400", description = "Invalid request data"),
+                        @ApiResponse(responseCode = "401", description = "Unauthorized")
+        })
+        public ResponseEntity<CheckSimilarityResponse> checkSimilarity(
+                        @Parameter(description = "Innovation data to check for similarity", required = true) @Valid @RequestBody CheckSimilarityRequest request) {
+                return ResponseEntity.ok(innovationSimilarityService.checkSimilarity(request));
         }
 
 }

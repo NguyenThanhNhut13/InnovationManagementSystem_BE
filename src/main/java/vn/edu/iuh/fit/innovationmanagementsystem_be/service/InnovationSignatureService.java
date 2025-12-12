@@ -5,6 +5,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Optional;
+
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.Attachment;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.FormData;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.FormField;
@@ -155,13 +157,32 @@ public class InnovationSignatureService {
             String htmlContent) {
 
         try {
+            // Kiểm tra xem attachment đã tồn tại chưa
+            Optional<Attachment> existingAttachmentOpt = attachmentRepository
+                    .findTopByInnovationIdAndTemplateIdOrderByCreatedAtDesc(
+                            innovation.getId(),
+                            formTemplate.getId());
+
+            // Nếu đã có attachment, download PDF và return (không tạo lại để tránh hash
+            // khác)
+            if (existingAttachmentOpt.isPresent()) {
+                Attachment existingAttachment = existingAttachmentOpt.get();
+                try {
+                    byte[] existingPdfBytes = fileService.downloadFile(existingAttachment.getPathUrl())
+                            .readAllBytes();
+                    return existingPdfBytes;
+                } catch (Exception e) {
+                    // Nếu không download được PDF cũ, xóa attachment cũ và tạo mới
+                    attachmentRepository.deleteByInnovationIdAndTemplateId(
+                            innovation.getId(),
+                            formTemplate.getId());
+                }
+            }
+
+            // Tạo PDF mới (chỉ khi chưa có attachment hoặc không download được PDF cũ)
             byte[] pdfBytes = pdfGeneratorService.convertHtmlToPdf(htmlContent);
             String fileName = buildTemplatePdfFileName(innovation.getId(), formTemplate.getId());
             String objectName = fileService.uploadBytes(pdfBytes, fileName, "application/pdf");
-
-            attachmentRepository.deleteByInnovationIdAndTemplateId(
-                    innovation.getId(),
-                    formTemplate.getId());
 
             Attachment attachment = new Attachment();
             attachment.setInnovation(innovation);

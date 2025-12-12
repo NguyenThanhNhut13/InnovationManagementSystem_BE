@@ -19,4 +19,9 @@ public interface AttachmentRepository extends JpaRepository<Attachment, String> 
     void deleteByInnovationId(String innovationId);
 
     void deleteByInnovationIdAndTemplateId(String innovationId, String templateId);
+
+    // Lấy attachment PDF hệ thống tạo (fileName format:
+    // {innovationId}_{templateId}.pdf)
+    Optional<Attachment> findTopByInnovationIdAndTemplateIdAndFileNameContainingOrderByCreatedAtDesc(
+            String innovationId, String templateId, String fileNamePart);
 }
