@@ -43,3 +43,33 @@ src/main/resources/keys/*
 md/
 postman/
 daigram/
+
+### Python (AI Embedding Service) ###
+# Virtual Environment
+ai-embedding-service/venv/
+ai-embedding-service/env/
+ai-embedding-service/ENV/
+ai-embedding-service/.venv/
+
+# Python lib directories (nếu có)
+ai-embedding-service/lib/
+lib/
+
+# Python cache
+ai-embedding-service/__pycache__/
+ai-embedding-service/**/*.py[cod]
+ai-embedding-service/**/*$py.class
+ai-embedding-service/**/*.so
+
+# Model cache (nếu lưu local)
+ai-embedding-service/models/
+ai-embedding-service/*.bin
+ai-embedding-service/*.safetensors
+
+# Python logs
+ai-embedding-service/*.log
+
+# Testing
+ai-embedding-service/.pytest_cache/
+ai-embedding-service/.coverage
+ai-embedding-service/htmlcov/

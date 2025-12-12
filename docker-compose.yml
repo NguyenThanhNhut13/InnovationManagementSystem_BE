@@ -1,9 +1,9 @@
 version: '3.8'
 
 services:
-  # PostgreSQL Database
+  # PostgreSQL Database với pgvector support
   postgres:
-    image: postgres:15-alpine
+    image: pgvector/pgvector:pg15
     container_name: postgres
     ports:
       - "5432:5432"
@@ -112,6 +112,30 @@ services:
       retries: 5
       start_period: 60s
 
+  # Python AI Embedding Service
+  ai-embedding-service:
+    build:
+      context: ./ai-embedding-service
+      dockerfile: Dockerfile
+    container_name: innovation-ai-embedding-service
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    networks:
+      - innovation-network
+    environment:
+      - PYTHONUNBUFFERED=1
+    volumes:
+      - ai-model-cache:/root/.cache
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
+
   # Spring Boot Application
   app:
     build:
@@ -132,6 +156,7 @@ services:
       - MINIO_ENDPOINT=http://minio:9000
       - MINIO_ACCESS_KEY=${MINIO_ACCESS_KEY}
       - MINIO_SECRET_KEY=${MINIO_SECRET_KEY}
+      - AI_SERVICE_URL=${AI_SERVICE_URL:http://ai-embedding-service:8000}
       - PORT=8081
       - SPRING_MAIL_HOST=${SPRING_MAIL_HOST}
       - SPRING_MAIL_PORT=${SPRING_MAIL_PORT}
@@ -157,6 +182,8 @@ volumes:
   jenkins_home:
     driver: local
   ollama_data:
+    driver: local
+  ai-model-cache:
     driver: local
 
 networks:

@@ -6,6 +6,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Modifying; 
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -133,4 +134,22 @@ public interface InnovationRepository extends JpaRepository<Innovation, String>,
         List<Innovation> findByDepartmentIdsAndRoundIdAndStatusKhoaApproved(
                         @Param("departmentIds") List<String> departmentIds,
                         @Param("roundId") String roundId);
+
+        // Embedding methods for semantic search
+        @Modifying
+        @Query(value = "UPDATE innovations SET embedding = CAST(:embedding AS vector) WHERE id = :id", nativeQuery = true)
+        void updateEmbedding(@Param("id") String id, @Param("embedding") String embedding);
+
+        @Query(value = "SELECT i.*, 1 - (i.embedding <=> CAST(:queryEmbedding AS vector)) as similarity " +
+                "FROM innovations i " +
+                "WHERE i.id != :excludeId " +
+                "AND i.embedding IS NOT NULL " +
+                "AND 1 - (i.embedding <=> CAST(:queryEmbedding AS vector)) > :threshold " +
+                "ORDER BY similarity DESC " +
+                "LIMIT :limit", nativeQuery = true)
+        List<Object[]> findSimilarInnovationsByEmbedding(
+                @Param("queryEmbedding") String queryEmbedding,
+                @Param("excludeId") String excludeId,
+                @Param("threshold") double threshold,
+                @Param("limit") int limit);
 }

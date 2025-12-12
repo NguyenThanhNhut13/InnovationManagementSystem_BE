@@ -45,6 +45,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.Departmen
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationScoringDetailResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.AttachmentInfo;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.CoAuthorResponse;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.SimilarInnovationWarning;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.DepartmentInnovationPendingSignatureResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationTemplateDetailResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationTemplatesForSigningResponse;
@@ -125,6 +126,7 @@ public class InnovationService {
         private final InnovationSignatureService innovationSignatureService;
         private final DigitalSignatureService digitalSignatureService;
         private final FormTemplateMapper formTemplateMapper;
+        private final InnovationEmbeddingService innovationEmbeddingService;
 
         public InnovationService(InnovationRepository innovationRepository,
                         InnovationPhaseRepository innovationPhaseRepository,
@@ -151,7 +153,8 @@ public class InnovationService {
                         InnovationCoAuthorService innovationCoAuthorService,
                         InnovationSignatureService innovationSignatureService,
                         DigitalSignatureService digitalSignatureService,
-                        FormTemplateMapper formTemplateMapper) {
+                        FormTemplateMapper formTemplateMapper,
+                        InnovationEmbeddingService innovationEmbeddingService) {
                 this.innovationRepository = innovationRepository;
                 this.innovationPhaseRepository = innovationPhaseRepository;
                 this.formDataService = formDataService;
@@ -178,6 +181,7 @@ public class InnovationService {
                 this.innovationSignatureService = innovationSignatureService;
                 this.digitalSignatureService = digitalSignatureService;
                 this.formTemplateMapper = formTemplateMapper;
+                this.innovationEmbeddingService = innovationEmbeddingService;
         }
 
         // 1. Lấy tất cả sáng kiến của user hiện tại với filter chi tiết
@@ -586,6 +590,18 @@ public class InnovationService {
                 // Gọi sau khi tạo PDF để tránh file đính kèm bị xóa khi generate PDF
                 createAttachmentsFromFormData(savedInnovation.getId());
 
+                // Lưu embedding async khi SUBMITTED
+                if (request.getStatus() == InnovationStatusEnum.SUBMITTED) {
+                        try {
+                                innovationEmbeddingService.saveEmbeddingAsync(savedInnovation.getId());
+                                logger.info("Đã queue embedding generation cho innovation: {}", savedInnovation.getId());
+                        } catch (Exception e) {
+                                logger.error("Lỗi khi queue embedding generation cho innovation {}: {}", 
+                                        savedInnovation.getId(), e.getMessage(), e);
+                                // Không throw exception để không ảnh hưởng đến flow chính
+                        }
+                }
+
                 // Gửi thông báo cho user khi nộp sáng kiến thành công (chỉ khi status là
                 // SUBMITTED)
                 if (request.getStatus() == InnovationStatusEnum.SUBMITTED) {
@@ -972,6 +988,23 @@ public class InnovationService {
                 // Tính maxTotalScore từ scoring criteria
                 int maxTotalScore = calculateMaxTotalScore(scoringCriteria);
                 response.setMaxTotalScore(maxTotalScore);
+
+                // Lấy similarity warnings
+                try {
+                        List<SimilarInnovationWarning> warnings = 
+                                innovationEmbeddingService.findSimilarInnovations(innovationId);
+                        response.setSimilarityWarnings(warnings);
+                        response.setHasSimilarityWarning(!warnings.isEmpty());
+                        
+                        if (!warnings.isEmpty()) {
+                                logger.info("Phát hiện {} sáng kiến tương tự cho innovation {}", 
+                                        warnings.size(), innovationId);
+                        }
+                } catch (Exception e) {
+                        logger.error("Lỗi khi lấy similarity warnings: {}", e.getMessage(), e);
+                        response.setSimilarityWarnings(new ArrayList<>());
+                        response.setHasSimilarityWarning(false);
+                }
 
                 // Note: Scoring period information đã được di chuyển sang CouncilResponse
                 // Frontend nên lấy từ getCurrentCouncil() thay vì từ innovation detail response

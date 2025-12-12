@@ -147,6 +147,13 @@ else
     print_error "Jenkins is not responding yet (may need more time)"
 fi
 
+# Check Python AI Embedding Service (internal service - check via docker exec)
+if docker exec innovation-ai-embedding-service curl -f http://localhost:8000/health >/dev/null 2>&1; then
+    print_success "Python AI Embedding Service is healthy"
+else
+    print_error "Python AI Embedding Service is not responding yet (may need more time - model download on first start)"
+fi
+
 # Step 10: Display status
 print_info "Deployment completed!"
 echo ""

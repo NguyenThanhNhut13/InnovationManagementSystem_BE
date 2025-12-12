@@ -10,6 +10,8 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.Innovatio
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.ArrayList;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 @Entity
 @Table(name = "innovations")
@@ -39,6 +41,10 @@ public class Innovation extends Auditable {
 
     @Column(name = "submitted_at")
     private LocalDateTime submittedAt;
+
+    @Column(name = "embedding", columnDefinition = "vector(384)")
+    @JdbcTypeCode(SqlTypes.OTHER)
+    private String embedding;
 
     // Relationships
 
