@@ -156,7 +156,7 @@ services:
       - MINIO_ENDPOINT=http://minio:9000
       - MINIO_ACCESS_KEY=${MINIO_ACCESS_KEY}
       - MINIO_SECRET_KEY=${MINIO_SECRET_KEY}
-      - AI_SERVICE_URL=${AI_SERVICE_URL:http://ai-embedding-service:8000}
+      - AI_SERVICE_URL=${AI_SERVICE_URL:-http://ai-embedding-service:8000}
       - PORT=8081
       - SPRING_MAIL_HOST=${SPRING_MAIL_HOST}
       - SPRING_MAIL_PORT=${SPRING_MAIL_PORT}
