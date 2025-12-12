@@ -133,4 +133,20 @@ public interface InnovationRepository extends JpaRepository<Innovation, String>,
         List<Innovation> findByDepartmentIdsAndRoundIdAndStatusKhoaApproved(
                         @Param("departmentIds") List<String> departmentIds,
                         @Param("roundId") String roundId);
+
+        @Query("SELECT DISTINCT i FROM Innovation i " +
+                        "LEFT JOIN FETCH i.user " +
+                        "LEFT JOIN FETCH i.department " +
+                        "LEFT JOIN FETCH i.innovationRound " +
+                        "WHERE i.status NOT IN ('DRAFT', 'KHOA_REJECTED', 'TRUONG_REJECTED')")
+        List<Innovation> findAllWithDetails();
+
+        /**
+         * Lấy innovation theo ID với formDataList (cho similarity check)
+         */
+        @Query("SELECT i FROM Innovation i " +
+                        "LEFT JOIN FETCH i.formDataList fd " +
+                        "LEFT JOIN FETCH fd.formField " +
+                        "WHERE i.id = :innovationId")
+        Innovation findByIdWithFormData(@Param("innovationId") String innovationId);
 }
