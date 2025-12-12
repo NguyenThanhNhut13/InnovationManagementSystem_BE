@@ -261,8 +261,43 @@ public class InnovationEmbeddingService {
         try {
             logger.info("Bắt đầu generate embedding cho innovation: {}", innovationId);
 
-            Innovation innovation = innovationRepository.findById(innovationId)
-                    .orElseThrow(() -> new RuntimeException("Không tìm thấy innovation: " + innovationId));
+            // Retry logic: đợi transaction commit
+            Innovation innovation = null;
+            int maxRetries = 5;
+            int retryDelay = 200; // 200ms
+            
+            for (int i = 0; i < maxRetries; i++) {
+                try {
+                    innovation = innovationRepository.findById(innovationId).orElse(null);
+                    if (innovation != null) {
+                        logger.debug("Tìm thấy innovation ở lần thử {}/{}", i + 1, maxRetries);
+                        break;
+                    }
+                    if (i < maxRetries - 1) {
+                        Thread.sleep(retryDelay);
+                        logger.debug("Retry {}/{}: Đợi innovation được commit...", i + 1, maxRetries);
+                    }
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    logger.error("Thread bị interrupt khi đợi innovation commit");
+                    return;
+                } catch (Exception e) {
+                    logger.warn("Lỗi khi tìm innovation (retry {}/{}): {}", i + 1, maxRetries, e.getMessage());
+                    if (i < maxRetries - 1) {
+                        try {
+                            Thread.sleep(retryDelay);
+                        } catch (InterruptedException ie) {
+                            Thread.currentThread().interrupt();
+                            return;
+                        }
+                    }
+                }
+            }
+            
+            if (innovation == null) {
+                logger.error("Không tìm thấy innovation sau {} lần thử: {}", maxRetries, innovationId);
+                return;
+            }
 
             // Flatten text
             String text = flattenInnovationToText(innovation);

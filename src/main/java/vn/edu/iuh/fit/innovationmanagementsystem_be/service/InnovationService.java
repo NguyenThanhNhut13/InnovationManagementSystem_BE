@@ -590,26 +590,6 @@ public class InnovationService {
                 // Gọi sau khi tạo PDF để tránh file đính kèm bị xóa khi generate PDF
                 createAttachmentsFromFormData(savedInnovation.getId());
 
-                // Lưu embedding async khi SUBMITTED
-                logger.info("=== [EMBEDDING] Checking: request.getStatus() = {} ===", request.getStatus());
-                logger.info("=== [EMBEDDING] Innovation ID: {} ===",
-                                savedInnovation != null ? savedInnovation.getId() : "NULL");
-                if (request.getStatus() == InnovationStatusEnum.SUBMITTED) {
-                        logger.info("=== [EMBEDDING] Status is SUBMITTED, calling saveEmbeddingAsync ===");
-                        try {
-                                innovationEmbeddingService.saveEmbeddingAsync(savedInnovation.getId());
-                                logger.info("=== [EMBEDDING] Successfully called saveEmbeddingAsync ===");
-                                logger.info("Đã queue embedding generation cho innovation: {}",
-                                                savedInnovation.getId());
-                        } catch (Exception e) {
-                                logger.error("=== [EMBEDDING] ERROR: {} ===", e.getMessage(), e);
-                                logger.error("Lỗi khi queue embedding generation cho innovation {}: {}",
-                                                savedInnovation.getId(), e.getMessage(), e);
-                        }
-                } else {
-                        logger.info("=== [EMBEDDING] Status is NOT SUBMITTED: {}, skipping ===", request.getStatus());
-                }
-
                 // Gửi thông báo cho user khi nộp sáng kiến thành công (chỉ khi status là
                 // SUBMITTED)
                 if (request.getStatus() == InnovationStatusEnum.SUBMITTED) {
@@ -637,6 +617,17 @@ public class InnovationService {
                 response.setTemplateSignatures(
                                 innovationSignatureService.buildTemplateSignatureResponses(signatureResults));
                 response.setSubmissionTimeRemainingSeconds(timeRemainingSeconds);
+
+                // Lưu embedding async khi SUBMITTED (gọi cuối cùng để đảm bảo transaction đã commit)
+                if (request.getStatus() == InnovationStatusEnum.SUBMITTED) {
+                        try {
+                                logger.info("Đã queue embedding generation cho innovation: {}", savedInnovation.getId());
+                                innovationEmbeddingService.saveEmbeddingAsync(savedInnovation.getId());
+                        } catch (Exception e) {
+                                logger.error("Lỗi khi queue embedding generation cho innovation {}: {}", 
+                                        savedInnovation.getId(), e.getMessage(), e);
+                        }
+                }
 
                 return response;
         }
