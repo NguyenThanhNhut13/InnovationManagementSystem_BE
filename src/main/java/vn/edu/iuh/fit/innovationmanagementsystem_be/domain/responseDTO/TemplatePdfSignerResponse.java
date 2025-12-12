@@ -17,6 +17,6 @@ public class TemplatePdfSignerResponse {
     private String signerPersonnelId;
     private UserRoleEnum signedAsRole;
     private LocalDateTime signAt;
-    private boolean verified;
+    private boolean verified; // Chữ ký số có khớp với tài liệu gốc không (document integrity)
+    private boolean isCertificateValid; // Chứng thư số của người ký có còn hiệu lực không
 }
-

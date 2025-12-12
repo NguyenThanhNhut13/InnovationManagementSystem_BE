@@ -1,4 +1,4 @@
-package vn.edu.iuh.fit.innovationmanagementsystem_be.service;
+package vn.edu.iuh.fit.innovationmanagementsystem_be.service.ai;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -6,11 +6,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.AiAnalysisResponse;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -19,72 +20,98 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-@Service
-public class GeminiService {
+@Component
+public class OllamaProvider implements AiProvider {
 
-    private static final Logger logger = LoggerFactory.getLogger(GeminiService.class);
+    private static final Logger logger = LoggerFactory.getLogger(OllamaProvider.class);
 
     private final WebClient webClient;
     private final ObjectMapper objectMapper;
 
-    @Value("${gemini.api.key}")
-    private String apiKey;
-
-    @Value("${gemini.api.url}")
+    @Value("${ollama.api.url:http://ollama:11434/api/generate}")
     private String apiUrl;
 
-    public GeminiService(ObjectMapper objectMapper) {
+    @Value("${ollama.model:qwen2.5:3b}")
+    private String model;
+
+    public OllamaProvider(ObjectMapper objectMapper) {
         this.webClient = WebClient.builder()
                 .codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(10 * 1024 * 1024))
                 .build();
         this.objectMapper = objectMapper;
     }
 
+    @Override
+    public String getProviderName() {
+        return "ollama";
+    }
+
+    @Override
+    public boolean isAvailable() {
+        try {
+            String healthUrl = apiUrl.replace("/api/generate", "/api/tags");
+            webClient.get()
+                    .uri(healthUrl)
+                    .retrieve()
+                    .bodyToMono(String.class)
+                    .timeout(Duration.ofSeconds(5))
+                    .block();
+            return true;
+        } catch (Exception e) {
+            logger.warn("Ollama is not available: {}", e.getMessage());
+            return false;
+        }
+    }
+
+    @Override
     public String generateContent(String prompt) {
         try {
-            String fullUrl = apiUrl + "?key=" + apiKey;
-
             Map<String, Object> requestBody = new HashMap<>();
-            List<Map<String, Object>> contents = new ArrayList<>();
-            Map<String, Object> content = new HashMap<>();
-            List<Map<String, String>> parts = new ArrayList<>();
-            Map<String, String> part = new HashMap<>();
-            part.put("text", prompt);
-            parts.add(part);
-            content.put("parts", parts);
-            contents.add(content);
-            requestBody.put("contents", contents);
+            requestBody.put("model", model);
+            requestBody.put("prompt", prompt);
+            requestBody.put("stream", false);
+
+            Map<String, Object> options = new HashMap<>();
+            options.put("temperature", 0.5);
+            options.put("top_p", 0.8);
+            options.put("num_ctx", 2048);
+            options.put("num_thread", 7);
+            options.put("num_predict", 500);
+            requestBody.put("options", options);
+
+            logger.info("Calling Ollama API with model: {}", model);
+            long startTime = System.currentTimeMillis();
 
             String response = webClient.post()
-                    .uri(fullUrl)
+                    .uri(apiUrl)
                     .contentType(MediaType.APPLICATION_JSON)
                     .bodyValue(requestBody)
                     .retrieve()
                     .bodyToMono(String.class)
+                    .timeout(Duration.ofMinutes(3))
                     .block();
 
+            long duration = System.currentTimeMillis() - startTime;
+            logger.info("Ollama API responded in {} ms", duration);
+
             JsonNode jsonResponse = objectMapper.readTree(response);
-            JsonNode candidates = jsonResponse.get("candidates");
-            if (candidates != null && candidates.isArray() && candidates.size() > 0) {
-                JsonNode firstCandidate = candidates.get(0);
-                JsonNode contentNode = firstCandidate.get("content");
-                if (contentNode != null) {
-                    JsonNode partsNode = contentNode.get("parts");
-                    if (partsNode != null && partsNode.isArray() && partsNode.size() > 0) {
-                        return partsNode.get(0).get("text").asText();
-                    }
-                }
+            JsonNode responseNode = jsonResponse.get("response");
+            if (responseNode != null) {
+                return responseNode.asText();
             }
+
+            logger.warn("Ollama response missing 'response' field: {}", response);
             return null;
         } catch (WebClientResponseException e) {
-            logger.error("Gemini API error: {} - {}", e.getStatusCode(), e.getResponseBodyAsString());
-            throw new RuntimeException("Lỗi khi gọi Gemini API: " + e.getMessage());
+            logger.error("Ollama API error: {} - {}", e.getStatusCode(), e.getResponseBodyAsString());
+            throw new RuntimeException("Lỗi khi gọi Ollama API: " + e.getMessage());
         } catch (Exception e) {
-            logger.error("Error calling Gemini API", e);
-            throw new RuntimeException("Lỗi khi gọi Gemini API: " + e.getMessage());
+            logger.error("Error calling Ollama API", e);
+            throw new RuntimeException("Lỗi khi gọi Ollama API: " + e.getMessage());
         }
     }
 
+    @Override
     public AiAnalysisResponse analyze(String innovationId, String innovationName, String content) {
         String prompt = buildAnalysisPrompt(content);
         String response = generateContent(prompt);
@@ -101,12 +128,12 @@ public class GeminiService {
                 YÊU CẦU:
                 Tóm tắt và đánh giá sáng kiến, trả về kết quả theo định dạng JSON sau (KHÔNG thêm markdown code block):
                 {
-                    "summary": "Đoạn tóm tắt ngắn gọn khoảng 100-150 từ về nội dung và mục tiêu của sáng kiến",
+                    "summary": "Đoạn tóm tắt ngắn gọn khoảng 100 từ về nội dung và mục tiêu của sáng kiến",
                     "keyPoints": ["Điểm chính 1", "Điểm chính 2", "Điểm chính 3", "Điểm chính 4", "Điểm chính 5"],
                     "strengths": ["Điểm mạnh 1", "Điểm mạnh 2", "Điểm mạnh 3"],
                     "weaknesses": ["Điểm yếu 1", "Điểm yếu 2"],
                     "suggestions": ["Gợi ý cải thiện 1", "Gợi ý cải thiện 2", "Gợi ý cải thiện 3"],
-                    "analysis": "Phân tích chi tiết về sáng kiến khoảng 150-200 từ"
+                    "analysis": "Phân tích chi tiết về sáng kiến khoảng 100 từ"
                 }
 
                 Chỉ trả về JSON, không thêm bất kỳ text nào khác.
@@ -144,7 +171,7 @@ public class GeminiService {
                     .strengths(new ArrayList<>())
                     .weaknesses(new ArrayList<>())
                     .suggestions(new ArrayList<>())
-                    .analysis(response)
+                    .analysis(response != null ? response : "Không thể phân tích sáng kiến")
                     .generatedAt(LocalDateTime.now())
                     .build();
         }

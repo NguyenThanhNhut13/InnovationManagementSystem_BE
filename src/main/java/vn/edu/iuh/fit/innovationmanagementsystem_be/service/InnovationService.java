@@ -755,10 +755,20 @@ public class InnovationService {
                                         return role == UserRoleEnum.TV_HOI_DONG_KHOA
                                                         || role == UserRoleEnum.TV_HOI_DONG_TRUONG;
                                 });
+                
+                // Kiểm tra các role trường
+                boolean hasSchoolLevelRole = currentUser.getUserRoles().stream()
+                                .anyMatch(userRole -> {
+                                        UserRoleEnum role = userRole.getRole().getRoleName();
+                                        return role == UserRoleEnum.QUAN_TRI_VIEN_QLKH_HTQT
+                                                        || role == UserRoleEnum.QUAN_TRI_VIEN_HE_THONG
+                                                        || role == UserRoleEnum.TV_HOI_DONG_TRUONG
+                                                        || role == UserRoleEnum.CHU_TICH_HD_TRUONG;
+                                });
 
-                if (!hasQuanTriVienKhoaRole && !hasTruongKhoaRole && !hasCouncilMemberRole) {
+                if (!hasQuanTriVienKhoaRole && !hasTruongKhoaRole && !hasCouncilMemberRole && !hasSchoolLevelRole) {
                         throw new IdInvalidException(
-                                        "Chỉ QUAN_TRI_VIEN_KHOA, TRUONG_KHOA hoặc thành viên hội đồng mới có quyền xem");
+                                        "Chỉ QUAN_TRI_VIEN_KHOA, TRUONG_KHOA, thành viên hội đồng hoặc các role trường mới có quyền xem");
                 }
 
                 // Lấy innovation
@@ -767,7 +777,7 @@ public class InnovationService {
 
                 // Kiểm tra department matching - chỉ áp dụng cho QUAN_TRI_VIEN_KHOA và
                 // TRUONG_KHOA
-                // Thành viên hội đồng có thể xem sáng kiến của mọi khoa
+                // Thành viên hội đồng và các role trường có thể xem sáng kiến của mọi khoa
                 if (hasQuanTriVienKhoaRole || hasTruongKhoaRole) {
                         if (innovation.getDepartment() == null || currentUser.getDepartment() == null) {
                                 throw new IdInvalidException(
@@ -959,7 +969,9 @@ public class InnovationService {
 
                 // Add scoring criteria
                 response.setScoringCriteria(scoringCriteria);
-                response.setMaxTotalScore(100);
+                // Tính maxTotalScore từ scoring criteria
+                int maxTotalScore = calculateMaxTotalScore(scoringCriteria);
+                response.setMaxTotalScore(maxTotalScore);
 
                 // Note: Scoring period information đã được di chuyển sang CouncilResponse
                 // Frontend nên lấy từ getCurrentCouncil() thay vì từ innovation detail response
@@ -1684,6 +1696,29 @@ public class InnovationService {
          * @return Số giây đã trễ (dương nếu đã quá deadline, 0 nếu chưa quá deadline,
          *         null nếu deadlineDate null)
          */
+        // Helper: Tính maxTotalScore từ scoring criteria
+        private int calculateMaxTotalScore(JsonNode scoringCriteria) {
+            if (scoringCriteria == null || !scoringCriteria.isArray()) {
+                return 100; // Default fallback
+            }
+            
+            int maxTotal = 0;
+            for (JsonNode criterion : scoringCriteria) {
+                JsonNode subCriteria = criterion.get("subCriteria");
+                if (subCriteria != null && subCriteria.isArray()) {
+                    int maxScoreForCriterion = 0;
+                    for (JsonNode subCriterion : subCriteria) {
+                        if (subCriterion.has("maxScore")) {
+                            maxScoreForCriterion = Math.max(maxScoreForCriterion, 
+                                subCriterion.get("maxScore").asInt());
+                        }
+                    }
+                    maxTotal += maxScoreForCriterion;
+                }
+            }
+            return maxTotal > 0 ? maxTotal : 100; // Default fallback
+        }
+
         private Long calculateTimeRemainingSeconds(LocalDate deadlineDate) {
                 if (deadlineDate == null) {
                         return null;

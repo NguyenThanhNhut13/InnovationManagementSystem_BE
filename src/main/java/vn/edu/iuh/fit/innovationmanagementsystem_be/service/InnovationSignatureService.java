@@ -5,6 +5,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Optional;
+
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.Attachment;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.FormData;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.FormField;
@@ -110,7 +112,8 @@ public class InnovationSignatureService {
                                 + " đang trống.");
             }
 
-            generateAndStoreTemplatePdf(innovation, formTemplate, htmlContent);
+            // Tạo PDF và lấy pdfBytes để hash
+            byte[] pdfBytes = generateAndStoreTemplatePdf(innovation, formTemplate, htmlContent);
 
             if (templateType != TemplateTypeEnum.DON_DE_NGHI
                     && templateType != TemplateTypeEnum.BAO_CAO_MO_TA) {
@@ -121,8 +124,8 @@ public class InnovationSignatureService {
                 continue;
             }
 
-            String documentHash = digitalSignatureService
-                    .generateDocumentHash(htmlContent.getBytes(StandardCharsets.UTF_8));
+            // Hash PDF bytes thay vì HTML content để đảm bảo tính toàn vẹn của file PDF
+            String documentHash = digitalSignatureService.generateDocumentHash(pdfBytes);
             String signatureHash = digitalSignatureService.generateSignatureForDocument(documentHash);
 
             DigitalSignatureRequest signatureRequest = new DigitalSignatureRequest();
@@ -149,19 +152,38 @@ public class InnovationSignatureService {
         return signatureResults;
     }
 
-    private void generateAndStoreTemplatePdf(
+    private byte[] generateAndStoreTemplatePdf(
             Innovation innovation,
             FormTemplate formTemplate,
             String htmlContent) {
 
         try {
+            // Kiểm tra xem attachment đã tồn tại chưa
+            Optional<Attachment> existingAttachmentOpt = attachmentRepository
+                    .findTopByInnovationIdAndTemplateIdOrderByCreatedAtDesc(
+                            innovation.getId(),
+                            formTemplate.getId());
+
+            // Nếu đã có attachment, download PDF và return (không tạo lại để tránh hash
+            // khác)
+            if (existingAttachmentOpt.isPresent()) {
+                Attachment existingAttachment = existingAttachmentOpt.get();
+                try {
+                    byte[] existingPdfBytes = fileService.downloadFile(existingAttachment.getPathUrl())
+                            .readAllBytes();
+                    return existingPdfBytes;
+                } catch (Exception e) {
+                    // Nếu không download được PDF cũ, xóa attachment cũ và tạo mới
+                    attachmentRepository.deleteByInnovationIdAndTemplateId(
+                            innovation.getId(),
+                            formTemplate.getId());
+                }
+            }
+
+            // Tạo PDF mới (chỉ khi chưa có attachment hoặc không download được PDF cũ)
             byte[] pdfBytes = pdfGeneratorService.convertHtmlToPdf(htmlContent);
             String fileName = buildTemplatePdfFileName(innovation.getId(), formTemplate.getId());
             String objectName = fileService.uploadBytes(pdfBytes, fileName, "application/pdf");
-
-            attachmentRepository.deleteByInnovationIdAndTemplateId(
-                    innovation.getId(),
-                    formTemplate.getId());
 
             Attachment attachment = new Attachment();
             attachment.setInnovation(innovation);
@@ -172,6 +194,9 @@ public class InnovationSignatureService {
             attachment.setPathUrl(objectName);
 
             attachmentRepository.save(attachment);
+
+            // Return pdfBytes để có thể hash PDF thay vì HTML
+            return pdfBytes;
         } catch (IdInvalidException e) {
             throw e;
         } catch (Exception e) {
@@ -375,19 +400,19 @@ public class InnovationSignatureService {
             if (fieldValueNode != null && fieldValueNode.isObject() && fieldValueNode.has("fieldKey")) {
                 // This is a child signature field in section/table
                 fieldKey = fieldValueNode.get("fieldKey").asText();
-                com.fasterxml.jackson.databind.JsonNode valueNode = fieldValueNode.has("value") 
-                    ? fieldValueNode.get("value") 
-                    : null;
-                signatureUrl = (valueNode != null && valueNode.isTextual()) 
-                    ? valueNode.asText() 
-                    : null;
+                com.fasterxml.jackson.databind.JsonNode valueNode = fieldValueNode.has("value")
+                        ? fieldValueNode.get("value")
+                        : null;
+                signatureUrl = (valueNode != null && valueNode.isTextual())
+                        ? valueNode.asText()
+                        : null;
             } else {
                 // This is a regular signature field (root level)
                 fieldKey = formDataResponse.getFormFieldKey();
                 com.fasterxml.jackson.databind.JsonNode valueNode = extractEffectiveFieldValue(formDataResponse);
-                signatureUrl = (valueNode != null && valueNode.isTextual()) 
-                    ? valueNode.asText() 
-                    : null;
+                signatureUrl = (valueNode != null && valueNode.isTextual())
+                        ? valueNode.asText()
+                        : null;
             }
 
             if (fieldKey == null || fieldKey.isBlank() || signatureUrl == null || signatureUrl.isBlank()) {
@@ -441,8 +466,10 @@ public class InnovationSignatureService {
     }
 
     /**
-     * Build template form data responses with tableConfig for viewing innovation detail.
-     * This method is specifically for DepartmentInnovationDetailResponse to include tableConfig
+     * Build template form data responses with tableConfig for viewing innovation
+     * detail.
+     * This method is specifically for DepartmentInnovationDetailResponse to include
+     * tableConfig
      * for rendering table headers in the frontend.
      * Only returns templates with type DON_DE_NGHI and BAO_CAO_MO_TA.
      */
@@ -473,7 +500,7 @@ public class InnovationSignatureService {
 
             // Filter: chỉ lấy DON_DE_NGHI và BAO_CAO_MO_TA
             TemplateTypeEnum templateType = formTemplate.getTemplateType();
-            if (templateType != TemplateTypeEnum.DON_DE_NGHI 
+            if (templateType != TemplateTypeEnum.DON_DE_NGHI
                     && templateType != TemplateTypeEnum.BAO_CAO_MO_TA) {
                 continue;
             }
@@ -488,7 +515,7 @@ public class InnovationSignatureService {
                     : "TEXT";
 
             com.fasterxml.jackson.databind.JsonNode valueNode = extractEffectiveFieldValueFromFormData(formData);
-            
+
             // Get tableConfig if fieldType is TABLE
             com.fasterxml.jackson.databind.JsonNode tableConfig = null;
             if (formField.getFieldType() == FieldTypeEnum.TABLE) {
@@ -504,7 +531,8 @@ public class InnovationSignatureService {
 
         return templateMap.entrySet()
                 .stream()
-                .map(entry -> new TemplateFormDataResponse(entry.getKey(), entry.getValue().getTemplateType(), entry.getValue().getFields()))
+                .map(entry -> new TemplateFormDataResponse(entry.getKey(), entry.getValue().getTemplateType(),
+                        entry.getValue().getFields()))
                 .collect(Collectors.toList());
     }
 

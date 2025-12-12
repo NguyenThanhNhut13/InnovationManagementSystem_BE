@@ -102,7 +102,7 @@ public class ReviewScoreService {
             }
 
             validateScoringDetails(innovation, request.getScoringDetails());
-            validateTotalScore(request.getScoringDetails(), request.getTotalScore());
+            validateTotalScore(innovation, request.getScoringDetails(), request.getTotalScore());
         } else {
             // Sáng kiến KHÔNG chấm điểm
             // Không cần scoring details và total score
@@ -136,10 +136,16 @@ public class ReviewScoreService {
             reviewScore.setScoringDetails(objectMapper.valueToTree(request.getScoringDetails()));
             reviewScore.setTotalScore(request.getTotalScore());
 
-            // Tự động thông qua nếu >= 70 điểm
-            if (request.getTotalScore() >= 70) {
+            // Tự động thông qua nếu >= 70% điểm tối đa
+            InnovationDecision decision = innovation.getInnovationRound().getInnovationDecision();
+            JsonNode scoringCriteria = decision != null ? decision.getScoringCriteria() : null;
+            int maxTotalScore = calculateMaxTotalScore(scoringCriteria);
+            double passingThreshold = maxTotalScore * 0.7; // 70%
+
+            if (request.getTotalScore() >= passingThreshold) {
                 reviewScore.setIsApproved(true);
-                logger.info("Auto-approved innovation {} with score {} >= 70", innovationId, request.getTotalScore());
+                logger.info("Auto-approved innovation {} with score {} >= {} (70% of {})", 
+                    innovationId, request.getTotalScore(), passingThreshold, maxTotalScore);
             } else {
                 // Null check để an toàn
                 if (request.getIsApproved() == null) {
@@ -245,6 +251,29 @@ public class ReviewScoreService {
         logger.info("User {} is a valid council member for innovation {}", user.getId(), innovation.getId());
     }
 
+    // Helper: Tính maxTotalScore từ scoring criteria
+    private int calculateMaxTotalScore(JsonNode scoringCriteria) {
+        if (scoringCriteria == null || !scoringCriteria.isArray()) {
+            return 100; // Default fallback
+        }
+        
+        int maxTotal = 0;
+        for (JsonNode criterion : scoringCriteria) {
+            JsonNode subCriteria = criterion.get("subCriteria");
+            if (subCriteria != null && subCriteria.isArray()) {
+                int maxScoreForCriterion = 0;
+                for (JsonNode subCriterion : subCriteria) {
+                    if (subCriterion.has("maxScore")) {
+                        maxScoreForCriterion = Math.max(maxScoreForCriterion, 
+                            subCriterion.get("maxScore").asInt());
+                    }
+                }
+                maxTotal += maxScoreForCriterion;
+            }
+        }
+        return maxTotal > 0 ? maxTotal : 100; // Default fallback
+    }
+
     // Helper: Validate scoring details match với scoring criteria
     private void validateScoringDetails(Innovation innovation, List<ScoreCriteriaDetail> scoringDetails) {
         InnovationDecision decision = innovation.getInnovationRound().getInnovationDecision();
@@ -321,7 +350,7 @@ public class ReviewScoreService {
     }
 
     // Helper: Validate total score
-    private void validateTotalScore(List<ScoreCriteriaDetail> scoringDetails, Integer totalScore) {
+    private void validateTotalScore(Innovation innovation, List<ScoreCriteriaDetail> scoringDetails, Integer totalScore) {
         int calculatedTotal = scoringDetails.stream()
                 .mapToInt(ScoreCriteriaDetail::getScore)
                 .sum();
@@ -332,8 +361,15 @@ public class ReviewScoreService {
                             + ", tổng điểm tính toán: " + calculatedTotal);
         }
 
-        if (totalScore < 0 || totalScore > 100) {
-            throw new IdInvalidException("Tổng điểm phải từ 0 đến 100");
+        // Tính maxTotalScore từ scoring criteria
+        InnovationDecision decision = innovation.getInnovationRound() != null 
+            ? innovation.getInnovationRound().getInnovationDecision() : null;
+        JsonNode scoringCriteria = decision != null ? decision.getScoringCriteria() : null;
+        int maxTotalScore = calculateMaxTotalScore(scoringCriteria);
+
+        if (totalScore < 0 || totalScore > maxTotalScore) {
+            throw new IdInvalidException(
+                    String.format("Tổng điểm phải từ 0 đến %d", maxTotalScore));
         }
     }
 

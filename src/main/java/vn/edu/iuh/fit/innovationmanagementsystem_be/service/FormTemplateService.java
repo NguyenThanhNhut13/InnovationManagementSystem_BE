@@ -71,7 +71,6 @@ import java.util.stream.Collectors;
 import java.util.ArrayList;
 
 @Service
-@Transactional
 @Slf4j
 public class FormTemplateService {
 

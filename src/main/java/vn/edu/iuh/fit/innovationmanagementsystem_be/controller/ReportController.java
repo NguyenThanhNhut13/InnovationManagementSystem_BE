@@ -32,7 +32,7 @@ public class ReportController {
      * Lấy trạng thái của tất cả reports (Mẫu 3, 4, 5) cho department hiện tại
      */
     @GetMapping("/status")
-    @PreAuthorize("hasAnyRole('TRUONG_KHOA', 'TV_HOI_DONG_TRUONG', 'TV_HOI_DONG_KHOA')")
+    @PreAuthorize("hasAnyRole('TRUONG_KHOA', 'TV_HOI_DONG_TRUONG', 'TV_HOI_DONG_KHOA', 'CHU_TICH_HD_TRUONG')")
     @ApiMessage("Lấy trạng thái reports thành công")
     @Operation(summary = "Get department reports status", description = "Lấy trạng thái của tất cả reports (Mẫu 3, 4, 5) cho department hiện tại")
     @ApiResponses(value = {

@@ -163,15 +163,15 @@ public class InnovationController {
         // ResponseEntity.ok(innovationService.getDepartmentInnovationWithFormDataById(id));
         // }
 
-        // 7. Lấy chi tiết sáng kiến của phòng ban cho QUAN_TRI_VIEN_KHOA và TRUONG_KHOA
+        // 7. Lấy chi tiết sáng kiến của phòng ban cho QUAN_TRI_VIEN_KHOA, TRUONG_KHOA và các role trường
         @GetMapping("/innovations/department/{id}/detail")
-        @PreAuthorize("hasAnyRole('TRUONG_KHOA', 'QUAN_TRI_VIEN_KHOA')")
+        @PreAuthorize("hasAnyRole('TRUONG_KHOA', 'QUAN_TRI_VIEN_KHOA', 'QUAN_TRI_VIEN_QLKH_HTQT', 'QUAN_TRI_VIEN_HE_THONG', 'TV_HOI_DONG_TRUONG', 'CHU_TICH_HD_TRUONG')")
         @ApiMessage("Lấy chi tiết sáng kiến của phòng ban bằng id thành công")
-        @Operation(summary = "Get Department Innovation Detail by ID", description = "Get innovation detail information including overview, co-authors, and attachment count by innovation ID (only for department innovations)")
+        @Operation(summary = "Get Department Innovation Detail by ID", description = "Get innovation detail information including overview, co-authors, and attachment count by innovation ID (for department and school level roles)")
         @ApiResponses(value = {
                         @ApiResponse(responseCode = "200", description = "Innovation detail retrieved successfully", content = @Content(schema = @Schema(implementation = DepartmentInnovationDetailResponse.class))),
                         @ApiResponse(responseCode = "404", description = "Innovation not found"),
-                        @ApiResponse(responseCode = "403", description = "Forbidden - You can only view innovations of your department"),
+                        @ApiResponse(responseCode = "403", description = "Forbidden - You can only view innovations of your department or all innovations for school level roles"),
                         @ApiResponse(responseCode = "401", description = "Unauthorized")
         })
         public ResponseEntity<DepartmentInnovationDetailResponse> getDepartmentInnovationDetail(

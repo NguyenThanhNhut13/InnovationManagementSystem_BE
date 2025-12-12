@@ -105,15 +105,15 @@ public class UserService {
         return userMapper.toUserResponse(user);
     }
 
-    // 6. Gán Role To User
-    public UserRoleResponse assignRoleToUser(@NonNull String userId, @NonNull String roleId) {
-
+    // 6. Gán Role To User bằng roleName
+    public UserRoleResponse assignRoleToUserByRoleName(@NonNull String userId, @NonNull UserRoleEnum roleName) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IdInvalidException("Người dùng không tồn tại với ID: " + userId));
-        Role role = roleRepository.findById(roleId)
-                .orElseThrow(() -> new IdInvalidException("Vai trò không tồn tại với ID: " + roleId));
+        
+        Role role = roleRepository.findByRoleName(roleName)
+                .orElseThrow(() -> new IdInvalidException("Vai trò không tồn tại: " + roleName));
 
-        if (this.userRoleRepository.existsByUserIdAndRoleId(userId, roleId)) {
+        if (this.userRoleRepository.existsByUserIdAndRoleId(userId, role.getId())) {
             throw new IdInvalidException("User đã có role này");
         }
 
@@ -133,22 +133,20 @@ public class UserService {
         return userMapper.toUserRoleResponse(userRole);
     }
 
-    // 7. Xóa Role From User
-    public void removeRoleFromUser(@NonNull String userId, @NonNull String roleId) {
-
+    // 7. Xóa Role From User bằng roleName
+    public void removeRoleFromUserByRoleName(@NonNull String userId, @NonNull UserRoleEnum roleName) {
         if (!userRepository.existsById(userId)) {
             throw new IdInvalidException("User không tồn tại với ID: " + userId);
         }
 
-        if (!roleRepository.existsById(roleId)) {
-            throw new IdInvalidException("Role không tồn tại với ID: " + roleId);
-        }
+        Role role = roleRepository.findByRoleName(roleName)
+                .orElseThrow(() -> new IdInvalidException("Vai trò không tồn tại: " + roleName));
 
-        if (!userRoleRepository.existsByUserIdAndRoleId(userId, roleId)) {
+        if (!userRoleRepository.existsByUserIdAndRoleId(userId, role.getId())) {
             throw new IdInvalidException("User không có role này nên không thể xóa");
         }
-        userRoleRepository.deleteByUserIdAndRoleId(userId, roleId);
-
+        
+        userRoleRepository.deleteByUserIdAndRoleId(userId, role.getId());
     }
 
     // 11. Lấy Current User từ JWT Token
@@ -354,6 +352,22 @@ public class UserService {
         }
 
         Page<User> userPage = userRepository.searchUsersByFullNameOrPersonnelId(searchTerm.trim(), pageable);
+        Page<UserResponse> userResponsePage = userPage.map(userMapper::toUserResponse);
+        return Utils.toResultPaginationDTO(userResponsePage, pageable);
+    }
+
+    // 19. Lấy danh sách tất cả Users (chỉ cho admin hệ thống)
+    public ResultPaginationDTO getAllUsers(Pageable pageable, String searchTerm) {
+        Page<User> userPage;
+        
+        if (searchTerm != null && !searchTerm.trim().isEmpty()) {
+            // Nếu có search term, dùng search method
+            userPage = userRepository.searchUsersByFullNameOrPersonnelId(searchTerm.trim(), pageable);
+        } else {
+            // Nếu không có search term, lấy tất cả
+            userPage = userRepository.findAll(pageable);
+        }
+        
         Page<UserResponse> userResponsePage = userPage.map(userMapper::toUserResponse);
         return Utils.toResultPaginationDTO(userResponsePage, pageable);
     }

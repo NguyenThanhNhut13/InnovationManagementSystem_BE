@@ -77,21 +77,26 @@ public class UserController {
                 return ResponseEntity.ok(userService.updateCurrentUserProfile(updateProfileRequest));
         }
 
-        // 3. Gán Role To User
-        @PostMapping("/users/{userId}/roles/{roleId}")
+        // 3. Gán Role To User bằng roleName
+        @PostMapping("/users/{userId}/roles/by-name/{roleName}")
         @PreAuthorize("hasAnyRole('QUAN_TRI_VIEN_QLKH_HTQT', 'QUAN_TRI_VIEN_HE_THONG', 'TRUONG_KHOA', 'QUAN_TRI_VIEN_KHOA')")
         @ApiMessage("Gán vai trò cho người dùng thành công")
-        public ResponseEntity<UserRoleResponse> assignRoleToUser(@PathVariable String userId,
-                        @PathVariable String roleId) {
-                return ResponseEntity.ok(userService.assignRoleToUser(userId, roleId));
+        @Operation(summary = "Assign Role to User by Role Name", description = "Assign a role to a user using role name instead of role ID")
+        public ResponseEntity<UserRoleResponse> assignRoleToUserByRoleName(
+                        @PathVariable String userId,
+                        @PathVariable UserRoleEnum roleName) {
+                return ResponseEntity.ok(userService.assignRoleToUserByRoleName(userId, roleName));
         }
 
-        // 4. Xóa Role From User
-        @DeleteMapping("/users/{userId}/roles/{roleId}")
+        // 4. Xóa Role From User bằng roleName
+        @DeleteMapping("/users/{userId}/roles/by-name/{roleName}")
         @PreAuthorize("hasAnyRole('QUAN_TRI_VIEN_QLKH_HTQT', 'QUAN_TRI_VIEN_HE_THONG', 'TRUONG_KHOA', 'QUAN_TRI_VIEN_KHOA')")
         @ApiMessage("Xóa vai trò khỏi người dùng thành công")
-        public ResponseEntity<Void> removeRoleFromUser(@PathVariable String userId, @PathVariable String roleId) {
-                userService.removeRoleFromUser(userId, roleId);
+        @Operation(summary = "Remove Role from User by Role Name", description = "Remove a role from a user using role name instead of role ID")
+        public ResponseEntity<Void> removeRoleFromUserByRoleName(
+                        @PathVariable String userId,
+                        @PathVariable UserRoleEnum roleName) {
+                userService.removeRoleFromUserByRoleName(userId, roleName);
                 return ResponseEntity.ok().build();
         }
 
@@ -147,6 +152,23 @@ public class UserController {
                         @Parameter(description = "Excel file (.xlsx) with user data") @RequestParam("file") MultipartFile file) {
                 UserImportResponse response = userService.importUsersFromExcel(file);
                 return ResponseEntity.ok(response);
+        }
+
+        // 9. Lấy danh sách tất cả Users (chỉ cho admin hệ thống)
+        @GetMapping("/users")
+        @PreAuthorize("hasRole('QUAN_TRI_VIEN_HE_THONG')")
+        @ApiMessage("Lấy danh sách người dùng thành công")
+        @Operation(summary = "Get All Users", description = "Get paginated list of all users. Only accessible by system administrators. Supports optional search by full name or personnel ID.")
+        @ApiResponses(value = {
+                        @ApiResponse(responseCode = "200", description = "Users retrieved successfully", content = @Content(schema = @Schema(implementation = ResultPaginationDTO.class))),
+                        @ApiResponse(responseCode = "401", description = "Unauthorized"),
+                        @ApiResponse(responseCode = "403", description = "Forbidden - Only system administrators can access")
+        })
+        public ResponseEntity<ResultPaginationDTO> getAllUsers(
+                        @Parameter(description = "Search term (optional) - search by full name or personnel ID") @RequestParam(required = false) String searchTerm,
+                        Pageable pageable) {
+                ResultPaginationDTO result = userService.getAllUsers(pageable, searchTerm);
+                return ResponseEntity.ok(result);
         }
 
 }
