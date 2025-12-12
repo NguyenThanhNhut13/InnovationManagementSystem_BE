@@ -10,6 +10,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.Innovation;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationStatusEnum;
@@ -137,6 +138,7 @@ public interface InnovationRepository extends JpaRepository<Innovation, String>,
 
         // Embedding methods for semantic search
         @Modifying
+        @Transactional
         @Query(value = "UPDATE innovations SET embedding = CAST(:embedding AS vector) WHERE id = :id", nativeQuery = true)
         void updateEmbedding(@Param("id") String id, @Param("embedding") String embedding);
 
