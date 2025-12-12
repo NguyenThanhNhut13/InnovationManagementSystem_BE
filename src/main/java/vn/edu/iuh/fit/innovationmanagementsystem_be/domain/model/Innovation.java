@@ -42,7 +42,7 @@ public class Innovation extends Auditable {
     @Column(name = "submitted_at")
     private LocalDateTime submittedAt;
 
-    @Column(name = "embedding", columnDefinition = "vector(384)")
+    @Column(name = "embedding", columnDefinition = "vector(384)", insertable = false, updatable = false)
     @JdbcTypeCode(SqlTypes.OTHER)
     private String embedding;
 
