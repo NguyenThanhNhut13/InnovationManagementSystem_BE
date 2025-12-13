@@ -419,9 +419,9 @@ public class InnovationEmbeddingService {
      * Xác định risk level dựa trên similarity score
      */
     private String determineRiskLevel(Double similarity) {
-        if (similarity > 0.90) {
+        if (similarity > 0.85) {
             return "HIGH";
-        } else if (similarity >= 0.85) {
+        } else if (similarity >= 0.75) {
             return "MEDIUM";
         } else {
             return "LOW";
