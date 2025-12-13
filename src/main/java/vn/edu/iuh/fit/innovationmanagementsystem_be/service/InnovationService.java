@@ -43,6 +43,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.UpcomingD
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationDetailResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.DepartmentInnovationDetailResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationScoringDetailResponse;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.SimilarInnovationDetailResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.AttachmentInfo;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.CoAuthorResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.SimilarInnovationWarning;
@@ -1007,6 +1008,51 @@ public class InnovationService {
 
                 // Note: Scoring period information đã được di chuyển sang CouncilResponse
                 // Frontend nên lấy từ getCurrentCouncil() thay vì từ innovation detail response
+
+                return response;
+        }
+
+        // 9.1. Lấy chi tiết sáng kiến tương tự (cho modal xem chi tiết)
+        public SimilarInnovationDetailResponse getSimilarInnovationDetail(
+                        String currentInnovationId, String similarInnovationId) {
+                // 1. Lấy chi tiết sáng kiến tương tự (reuse existing logic)
+                DepartmentInnovationDetailResponse baseDetail = getDepartmentInnovationDetailById(similarInnovationId);
+
+                // 2. Tính similarity score và risk level từ warnings của sáng kiến hiện tại
+                List<SimilarInnovationWarning> warnings = innovationEmbeddingService
+                                .findSimilarInnovations(currentInnovationId);
+
+                SimilarInnovationWarning matchingWarning = warnings.stream()
+                                .filter(w -> w.getInnovationId().equals(similarInnovationId))
+                                .findFirst()
+                                .orElse(null);
+
+                // 3. Build response - copy tất cả fields từ baseDetail
+                SimilarInnovationDetailResponse response = new SimilarInnovationDetailResponse();
+                response.setInnovationId(baseDetail.getInnovationId());
+                response.setInnovationName(baseDetail.getInnovationName());
+                response.setAuthorName(baseDetail.getAuthorName());
+                response.setAuthorEmail(baseDetail.getAuthorEmail());
+                response.setDepartmentName(baseDetail.getDepartmentName());
+                response.setAcademicYear(baseDetail.getAcademicYear());
+                response.setRoundName(baseDetail.getRoundName());
+                response.setIsScore(baseDetail.getIsScore());
+                response.setStatus(baseDetail.getStatus());
+                response.setSubmittedAt(baseDetail.getSubmittedAt());
+                response.setCoAuthors(baseDetail.getCoAuthors());
+                response.setAttachments(baseDetail.getAttachments());
+                response.setFormData(baseDetail.getFormData());
+
+                // 4. Thêm similarity info
+                if (matchingWarning != null) {
+                        response.setSimilarityScore(matchingWarning.getSimilarityScore());
+                        response.setRiskLevel(matchingWarning.getRiskLevel());
+                } else {
+                        // Nếu không tìm thấy trong warnings, set null
+                        // (có thể do threshold thay đổi hoặc logic khác)
+                        response.setSimilarityScore(null);
+                        response.setRiskLevel(null);
+                }
 
                 return response;
         }

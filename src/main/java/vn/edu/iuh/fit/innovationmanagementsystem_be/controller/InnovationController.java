@@ -23,6 +23,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.Innovatio
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.MyInnovationFormDataResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationScoreResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.DepartmentInnovationDetailResponse;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.SimilarInnovationDetailResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationStatisticsDTO;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationAcademicYearStatisticsDTO;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationDetailForGiangVienResponse;
@@ -317,6 +318,24 @@ public class InnovationController {
         public ResponseEntity<vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationScoringDetailResponse> getInnovationScoringDetail(
                         @Parameter(description = "Innovation ID", required = true) @PathVariable String id) {
                 return ResponseEntity.ok(innovationService.getInnovationScoringDetailById(id));
+        }
+
+        // 11.1. Lấy chi tiết sáng kiến tương tự (cho modal xem chi tiết)
+        @GetMapping("/innovations/{id}/similar-innovations/{similarId}")
+        @PreAuthorize("hasAnyRole('TV_HOI_DONG_KHOA', 'TV_HOI_DONG_TRUONG')")
+        @ApiMessage("Lấy chi tiết sáng kiến tương tự thành công")
+        @Operation(summary = "Get Similar Innovation Detail", 
+                   description = "Get detailed information of a similar innovation (for approval review) with similarity score and risk level. Returns same structure as department innovation detail but includes similarity metrics.")
+        @ApiResponses(value = {
+                        @ApiResponse(responseCode = "200", description = "Similar innovation detail retrieved successfully", content = @Content(schema = @Schema(implementation = SimilarInnovationDetailResponse.class))),
+                        @ApiResponse(responseCode = "404", description = "Innovation not found"),
+                        @ApiResponse(responseCode = "403", description = "Forbidden"),
+                        @ApiResponse(responseCode = "401", description = "Unauthorized")
+        })
+        public ResponseEntity<SimilarInnovationDetailResponse> getSimilarInnovationDetail(
+                        @Parameter(description = "Current innovation ID (the one being evaluated)", required = true) @PathVariable String id,
+                        @Parameter(description = "Similar innovation ID (the one to view detail)", required = true) @PathVariable String similarId) {
+                return ResponseEntity.ok(innovationService.getSimilarInnovationDetail(id, similarId));
         }
 
         // 13. Lấy đánh giá đã chấm của user hiện tại
