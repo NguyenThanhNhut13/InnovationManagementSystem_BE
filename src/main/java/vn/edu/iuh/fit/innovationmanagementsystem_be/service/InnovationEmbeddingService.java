@@ -1,6 +1,7 @@
 package vn.edu.iuh.fit.innovationmanagementsystem_be.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import org.jsoup.Jsoup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -98,13 +99,17 @@ public class InnovationEmbeddingService {
                     // Lấy text trực tiếp
                     String textValue = fieldValue.asText();
                     if (textValue != null && !textValue.trim().isEmpty()) {
-                        // ✅ Thêm label của field + dấu ":" để có ngữ cảnh
-                        String fieldLabel = field.getLabel();
-                        if (fieldLabel != null && !fieldLabel.trim().isEmpty()) {
-                            text.append(fieldLabel.trim()).append(": ");
+                        // ✅ Strip HTML tags trước khi append
+                        String cleanText = stripHtml(textValue.trim());
+                        if (!cleanText.isEmpty()) {
+                            // ✅ Thêm label của field + dấu ":" để có ngữ cảnh
+                            String fieldLabel = field.getLabel();
+                            if (fieldLabel != null && !fieldLabel.trim().isEmpty()) {
+                                text.append(fieldLabel.trim()).append(": ");
+                            }
+                            // ✅ Dùng ". " (dấu chấm + cách) để ngắt câu
+                            text.append(cleanText).append(". ");
                         }
-                        // ✅ Dùng ". " (dấu chấm + cách) để ngắt câu
-                        text.append(textValue.trim()).append(". ");
                     }
                     break;
 
@@ -252,6 +257,23 @@ public class InnovationEmbeddingService {
         // Nếu tỷ lệ USER_DATA columns >= threshold thì coi là metadata table
         double ratio = (double) userDataColumns / totalColumns;
         return ratio >= metadataTableThreshold;
+    }
+
+    /**
+     * Strip HTML tags từ text để chỉ lấy nội dung thuần túy
+     * Sử dụng Jsoup để parse và extract text
+     */
+    private String stripHtml(String html) {
+        if (html == null || html.isEmpty()) {
+            return html;
+        }
+        try {
+            return Jsoup.parse(html).text();
+        } catch (Exception e) {
+            logger.warn("Lỗi khi strip HTML: {}", e.getMessage());
+            // Nếu lỗi, trả về text gốc (có thể chứa HTML tags)
+            return html;
+        }
     }
 
     /**
