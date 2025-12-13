@@ -120,9 +120,9 @@ public class InnovationEmbeddingService {
                                 JsonNode tableConfig = field.getTableConfig();
                                 JsonNode columns = (tableConfig != null) ? tableConfig.get("columns") : null;
 
-                                row.fields().forEachRemaining(entry -> {
-                                    String columnKey = entry.getKey();
-                                    String value = entry.getValue().asText();
+                                row.fieldNames().forEachRemaining(fieldName -> {
+                                    String columnKey = fieldName;
+                                    String value = row.get(columnKey).asText();
 
                                     // Logic kiểm tra trùng lặp Innovation Data
                                     boolean isDuplicate = false;
@@ -336,18 +336,18 @@ public class InnovationEmbeddingService {
     @Transactional(readOnly = true)
     public List<SimilarInnovationWarning> findSimilarInnovations(String innovationId, double threshold) {
         try {
-            Innovation innovation = innovationRepository.findById(innovationId)
-                    .orElseThrow(() -> new RuntimeException("Không tìm thấy innovation: " + innovationId));
-
+            // Lấy embedding bằng native query để tránh lỗi conversion
+            String embedding = innovationRepository.getEmbeddingAsText(innovationId);
+            
             // Kiểm tra innovation có embedding chưa
-            if (innovation.getEmbedding() == null || innovation.getEmbedding().trim().isEmpty()) {
+            if (embedding == null || embedding.trim().isEmpty()) {
                 logger.warn("Innovation {} chưa có embedding", innovationId);
                 return new ArrayList<>();
             }
 
             // Query similar innovations
             List<Object[]> results = innovationRepository.findSimilarInnovationsByEmbedding(
-                    innovation.getEmbedding(),
+                    embedding,
                     innovationId,
                     threshold,
                     10 // Limit 10 results

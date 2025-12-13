@@ -142,6 +142,12 @@ public interface InnovationRepository extends JpaRepository<Innovation, String>,
         @Query(value = "UPDATE innovations SET embedding = CAST(:embedding AS vector) WHERE id = :id", nativeQuery = true)
         void updateEmbedding(@Param("id") String id, @Param("embedding") String embedding);
 
+        /**
+         * Lấy embedding dưới dạng text (để tránh lỗi conversion khi load entity)
+         */
+        @Query(value = "SELECT embedding::text FROM innovations WHERE id = :id", nativeQuery = true)
+        String getEmbeddingAsText(@Param("id") String id);
+
         @Query(value = "SELECT i.*, 1 - (i.embedding <=> CAST(:queryEmbedding AS vector)) as similarity " +
                 "FROM innovations i " +
                 "WHERE i.id != :excludeId " +
@@ -154,6 +160,7 @@ public interface InnovationRepository extends JpaRepository<Innovation, String>,
                 @Param("excludeId") String excludeId,
                 @Param("threshold") double threshold,
                 @Param("limit") int limit);
+                
         @Query("SELECT DISTINCT i FROM Innovation i " +
                         "LEFT JOIN FETCH i.user " +
                         "LEFT JOIN FETCH i.department " +

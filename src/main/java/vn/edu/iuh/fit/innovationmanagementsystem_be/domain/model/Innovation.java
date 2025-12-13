@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.ArrayList;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 @Entity
 @Table(name = "innovations")
@@ -44,6 +45,8 @@ public class Innovation extends Auditable {
 
     @Column(name = "embedding", columnDefinition = "vector(384)", insertable = false, updatable = false)
     @JdbcTypeCode(SqlTypes.OTHER)
+    @Basic(fetch = FetchType.LAZY)
+    @JsonIgnore
     private String embedding;
 
     // Relationships
