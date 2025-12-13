@@ -98,23 +98,21 @@ public interface InnovationRepository extends JpaRepository<Innovation, String>,
          * Lấy danh sách sáng kiến SUBMITTED của department đã được GIANG_VIEN ký mẫu 2
          * (bao gồm cả đã được TRUONG_KHOA ký và chưa được TRUONG_KHOA ký)
          * (cho API list của TRUONG_KHOA để filter theo trạng thái ký)
+         * Chỉ lấy sáng kiến đã nộp (status = SUBMITTED và submitted_at IS NOT NULL)
          */
         @Query("SELECT DISTINCT i FROM Innovation i " +
                         "LEFT JOIN FETCH i.user " +
                         "LEFT JOIN FETCH i.department " +
                         "LEFT JOIN FETCH i.innovationRound " +
                         "WHERE i.department.id = :departmentId " +
-                        "AND i.status = vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationStatusEnum.SUBMITTED "
-                        +
+                        "AND i.status = vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationStatusEnum.SUBMITTED " +
+                        "AND i.submittedAt IS NOT NULL " +
                         "AND EXISTS (" +
                         "    SELECT 1 FROM DigitalSignature ds " +
                         "    WHERE ds.innovation = i " +
-                        "    AND ds.documentType = vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.DocumentTypeEnum.FORM_2 "
-                        +
-                        "    AND ds.signedAsRole = vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.UserRoleEnum.GIANG_VIEN "
-                        +
-                        "    AND ds.status = vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.SignatureStatusEnum.SIGNED"
-                        +
+                        "    AND ds.documentType = vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.DocumentTypeEnum.FORM_2 " +
+                        "    AND ds.signedAsRole = vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.UserRoleEnum.GIANG_VIEN " +
+                        "    AND ds.status = vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.SignatureStatusEnum.SIGNED" +
                         ")")
         List<Innovation> findInnovationsPendingDepartmentHeadSignature(@Param("departmentId") String departmentId);
 
