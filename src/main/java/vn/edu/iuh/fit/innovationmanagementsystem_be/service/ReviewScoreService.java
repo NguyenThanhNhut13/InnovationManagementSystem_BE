@@ -89,11 +89,14 @@ public class ReviewScoreService {
         // chấm điểm)
         validateScoringPeriod(innovation);
 
-        // 6. Check loại sáng kiến
+        // 6. Check vi phạm TRƯỚC (nếu có vi phạm thì skip validation scoring)
+        Boolean hasViolation = request.getHasViolation() != null && request.getHasViolation();
+        
+        // 7. Check loại sáng kiến và validate scoring (CHỈ khi KHÔNG có vi phạm)
         Boolean isScore = innovation.getIsScore();
 
-        if (isScore != null && isScore) {
-            // Sáng kiến CÓ chấm điểm
+        if (!hasViolation && isScore != null && isScore) {
+            // Sáng kiến CÓ chấm điểm VÀ KHÔNG có vi phạm
             // Validate scoring details và total score
             if (request.getScoringDetails() == null || request.getScoringDetails().isEmpty()) {
                 throw new IdInvalidException("Danh sách điểm không được để trống cho sáng kiến có chấm điểm");
@@ -104,16 +107,17 @@ public class ReviewScoreService {
 
             validateScoringDetails(innovation, request.getScoringDetails());
             validateTotalScore(innovation, request.getScoringDetails(), request.getTotalScore());
-        } else {
-            // Sáng kiến KHÔNG chấm điểm
+        } else if (!hasViolation) {
+            // Sáng kiến KHÔNG chấm điểm VÀ KHÔNG có vi phạm
             // Không cần scoring details và total score
             if (request.getScoringDetails() != null && !request.getScoringDetails().isEmpty()) {
                 throw new IdInvalidException(
                         "Sáng kiến này không cần chấm điểm. Vui lòng chỉ đánh giá thông qua/không thông qua");
             }
         }
+        // Nếu có vi phạm, skip tất cả validation scoring (sẽ xử lý ở dưới)
 
-        // 7. Check if user đã chấm điểm chưa
+        // 8. Check if user đã chấm điểm chưa
         Optional<ReviewScore> existingScore = reviewScoreRepository
                 .findByInnovationIdAndReviewerId(innovationId, reviewer.getId());
 
@@ -131,8 +135,7 @@ public class ReviewScoreService {
             reviewScore.setInnovationDecision(innovation.getInnovationRound().getInnovationDecision());
         }
 
-        // 8. Xử lý vi phạm (nếu có)
-        Boolean hasViolation = request.getHasViolation() != null && request.getHasViolation();
+        // 9. Xử lý vi phạm (nếu có)
         if (hasViolation) {
             // Validate violation fields
             if (request.getViolationType() == null || request.getViolationType().trim().isEmpty()) {
@@ -167,32 +170,34 @@ public class ReviewScoreService {
             reviewScore.setViolationReason(null);
         }
 
-        // 9. Set scoring data dựa trên loại sáng kiến
-        if (isScore != null && isScore) {
-            // Sáng kiến CÓ chấm điểm
+        // 9. Set scoring data dựa trên loại sáng kiến (CHỈ khi KHÔNG có vi phạm)
+        if (!hasViolation && isScore != null && isScore) {
+            // Sáng kiến CÓ chấm điểm VÀ KHÔNG có vi phạm
             reviewScore.setScoringDetails(objectMapper.valueToTree(request.getScoringDetails()));
             reviewScore.setTotalScore(request.getTotalScore());
 
-            // Chỉ tự động thông qua nếu KHÔNG có vi phạm và >= 70% điểm tối đa
-            if (!hasViolation) {
-                InnovationDecision decision = innovation.getInnovationRound().getInnovationDecision();
-                JsonNode scoringCriteria = decision != null ? decision.getScoringCriteria() : null;
-                int maxTotalScore = calculateMaxTotalScore(scoringCriteria);
-                double passingThreshold = maxTotalScore * 0.7; // 70%
+            // Tự động thông qua nếu >= 70% điểm tối đa
+            InnovationDecision decision = innovation.getInnovationRound().getInnovationDecision();
+            JsonNode scoringCriteria = decision != null ? decision.getScoringCriteria() : null;
+            int maxTotalScore = calculateMaxTotalScore(scoringCriteria);
+            double passingThreshold = maxTotalScore * 0.7; // 70%
 
-                if (request.getTotalScore() >= passingThreshold) {
-                    reviewScore.setIsApproved(true);
-                    logger.info("Auto-approved innovation {} with score {} >= {} (70% of {})", 
-                        innovationId, request.getTotalScore(), passingThreshold, maxTotalScore);
-                } else {
-                    // Null check để an toàn
-                    if (request.getIsApproved() == null) {
-                        throw new IdInvalidException("Quyết định đánh giá không được để trống");
-                    }
-                    reviewScore.setIsApproved(request.getIsApproved());
+            if (request.getTotalScore() >= passingThreshold) {
+                reviewScore.setIsApproved(true);
+                logger.info("Auto-approved innovation {} with score {} >= {} (70% of {})", 
+                    innovationId, request.getTotalScore(), passingThreshold, maxTotalScore);
+            } else {
+                // Null check để an toàn
+                if (request.getIsApproved() == null) {
+                    throw new IdInvalidException("Quyết định đánh giá không được để trống");
                 }
+                reviewScore.setIsApproved(request.getIsApproved());
             }
-            // Nếu hasViolation = true, isApproved đã được set = false ở trên
+        } else if (hasViolation && isScore != null && isScore) {
+            // Sáng kiến CÓ chấm điểm NHƯNG có vi phạm → không set scoring data
+            reviewScore.setScoringDetails(null);
+            reviewScore.setTotalScore(null);
+            // isApproved đã được set = false ở trên (dòng 163)
         } else {
             // Sáng kiến KHÔNG chấm điểm
             reviewScore.setScoringDetails(null);
