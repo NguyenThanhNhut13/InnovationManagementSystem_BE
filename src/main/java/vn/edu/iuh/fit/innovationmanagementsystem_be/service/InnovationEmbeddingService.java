@@ -364,6 +364,13 @@ public class InnovationEmbeddingService {
     @Transactional(readOnly = true)
     public List<SimilarInnovationWarning> findSimilarInnovations(String innovationId, double threshold) {
         try {
+            // Lấy innovation để lấy submittedAt
+            Innovation innovation = innovationRepository.findById(innovationId).orElse(null);
+            if (innovation == null) {
+                logger.warn("Innovation {} không tồn tại", innovationId);
+                return new ArrayList<>();
+            }
+            
             // Lấy embedding bằng native query để tránh lỗi conversion
             String embedding = innovationRepository.getEmbeddingAsText(innovationId);
             
@@ -373,10 +380,11 @@ public class InnovationEmbeddingService {
                 return new ArrayList<>();
             }
 
-            // Query similar innovations
+            // Query similar innovations - chỉ lấy các sáng kiến nộp trước (submitted_at < currentSubmittedAt)
             List<SimilarInnovationProjection> results = innovationRepository.findSimilarInnovationsByEmbedding(
                     embedding,
                     innovationId,
+                    innovation.getSubmittedAt(), // Chỉ so sánh với sáng kiến nộp trước
                     threshold,
                     10 // Limit 10 results
             );

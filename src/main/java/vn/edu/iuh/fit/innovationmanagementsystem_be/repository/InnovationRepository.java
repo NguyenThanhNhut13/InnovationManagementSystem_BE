@@ -161,12 +161,14 @@ public interface InnovationRepository extends JpaRepository<Innovation, String>,
                 "LEFT JOIN departments d ON i.department_id = d.id " +
                 "WHERE i.id != :excludeId " +
                 "AND i.embedding IS NOT NULL " +
+                "AND (:currentSubmittedAt IS NULL OR i.submitted_at < :currentSubmittedAt) " +
                 "AND 1 - (i.embedding <=> CAST(:queryEmbedding AS vector)) > :threshold " +
                 "ORDER BY similarity DESC " +
                 "LIMIT :limit", nativeQuery = true)
         List<SimilarInnovationProjection> findSimilarInnovationsByEmbedding(
                 @Param("queryEmbedding") String queryEmbedding,
                 @Param("excludeId") String excludeId,
+                @Param("currentSubmittedAt") java.time.LocalDateTime currentSubmittedAt,
                 @Param("threshold") double threshold,
                 @Param("limit") int limit);
                 
