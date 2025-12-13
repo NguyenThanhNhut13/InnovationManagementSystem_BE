@@ -65,6 +65,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.Utils;
 import lombok.extern.slf4j.Slf4j;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
 import java.util.ArrayList;
@@ -846,7 +847,8 @@ public class CouncilService {
                             departmentName,
                             innovation.getStatus(),
                             innovation.getIsScore(),
-                            myIsApproved
+                            myIsApproved,
+                            innovation.getSubmittedAt()  // Thêm submittedAt để sort
                     );
                 })
                 .collect(Collectors.toList());
@@ -865,14 +867,24 @@ public class CouncilService {
         }
         
         // 8. Sort: Chưa đánh giá trước, đã đánh giá sau
+        // Trong cùng trạng thái, sort theo thời gian nộp (nộp trước lên trước)
         responses.sort((a, b) -> {
             boolean aHasScored = a.getMyIsApproved() != null;
             boolean bHasScored = b.getMyIsApproved() != null;
             if (aHasScored != bHasScored) {
-                return aHasScored ? 1 : -1;
+                return aHasScored ? 1 : -1;  // Chưa đánh giá (-1) lên trước, đã đánh giá (1) xuống sau
             }
-            // Nếu cùng trạng thái, sort theo tên
-            return a.getInnovationName().compareTo(b.getInnovationName());
+            // Nếu cùng trạng thái, sort theo thời gian nộp (nộp trước lên trước)
+            LocalDateTime aSubmittedAt = a.getSubmittedAt();
+            LocalDateTime bSubmittedAt = b.getSubmittedAt();
+            if (aSubmittedAt != null && bSubmittedAt != null) {
+                return aSubmittedAt.compareTo(bSubmittedAt);  // Nộp trước (nhỏ hơn) lên trước
+            }
+            // Nếu một trong hai null, null xuống sau
+            if (aSubmittedAt == null && bSubmittedAt == null) {
+                return 0;  // Cùng null, giữ nguyên thứ tự
+            }
+            return aSubmittedAt == null ? 1 : -1;  // a null thì a xuống sau
         });
         
         // 9. Pagination
