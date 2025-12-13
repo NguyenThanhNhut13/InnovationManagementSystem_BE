@@ -14,7 +14,6 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.FormField;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.FormTemplate;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.Innovation;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.FieldTypeEnum;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationStatusEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.TemplateTypeEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.EmbeddingResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.SimilarInnovationWarning;
@@ -372,15 +371,9 @@ public class InnovationEmbeddingService {
                 return new ArrayList<>();
             }
             
-            // Kiểm tra innovation đã nộp chưa (phải có submittedAt và status = SUBMITTED)
+            // Kiểm tra innovation đã nộp chưa (phải có submittedAt)
             if (innovation.getSubmittedAt() == null) {
                 logger.warn("Innovation {} chưa nộp (chưa có submittedAt), không thể check similarity", innovationId);
-                return new ArrayList<>();
-            }
-            
-            if (innovation.getStatus() != InnovationStatusEnum.SUBMITTED) {
-                logger.warn("Innovation {} chưa nộp (status = {}), không thể check similarity", 
-                        innovationId, innovation.getStatus());
                 return new ArrayList<>();
             }
             

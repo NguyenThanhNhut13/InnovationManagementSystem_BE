@@ -162,6 +162,7 @@ public interface InnovationRepository extends JpaRepository<Innovation, String>,
                 "WHERE i.id != :excludeId " +
                 "AND i.embedding IS NOT NULL " +
                 "AND i.status = 'SUBMITTED' " +
+                "AND i.submitted_at IS NOT NULL " +
                 "AND i.submitted_at < CAST(:currentSubmittedAt AS TIMESTAMP) " +
                 "AND 1 - (i.embedding <=> CAST(:queryEmbedding AS vector)) > :threshold " +
                 "ORDER BY similarity DESC " +
