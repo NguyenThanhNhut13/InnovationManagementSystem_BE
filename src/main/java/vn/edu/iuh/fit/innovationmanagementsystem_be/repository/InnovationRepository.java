@@ -161,7 +161,8 @@ public interface InnovationRepository extends JpaRepository<Innovation, String>,
                 "LEFT JOIN departments d ON i.department_id = d.id " +
                 "WHERE i.id != :excludeId " +
                 "AND i.embedding IS NOT NULL " +
-                "AND (:currentSubmittedAt IS NULL OR i.submitted_at < :currentSubmittedAt) " +
+                "AND i.status = 'SUBMITTED' " +
+                "AND i.submitted_at < CAST(:currentSubmittedAt AS TIMESTAMP) " +
                 "AND 1 - (i.embedding <=> CAST(:queryEmbedding AS vector)) > :threshold " +
                 "ORDER BY similarity DESC " +
                 "LIMIT :limit", nativeQuery = true)
@@ -171,6 +172,7 @@ public interface InnovationRepository extends JpaRepository<Innovation, String>,
                 @Param("currentSubmittedAt") java.time.LocalDateTime currentSubmittedAt,
                 @Param("threshold") double threshold,
                 @Param("limit") int limit);
+
                 
         @Query("SELECT DISTINCT i FROM Innovation i " +
                         "LEFT JOIN FETCH i.user " +
