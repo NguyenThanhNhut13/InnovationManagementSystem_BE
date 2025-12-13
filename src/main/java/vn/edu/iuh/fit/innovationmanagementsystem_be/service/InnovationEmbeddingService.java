@@ -308,6 +308,11 @@ public class InnovationEmbeddingService {
             }
 
             logger.debug("Flattened text length: {}", text.length());
+            // Log text content (truncate nếu quá dài)
+            String textPreview = text.length() > 500 ? text.substring(0, 500) + "..." : text;
+            logger.info("=== [EMBEDDING] Text được gửi xuống Python service (length: {}) ===", text.length());
+            logger.info("=== [EMBEDDING] Text content (preview): {} ===", textPreview);
+            logger.debug("=== [EMBEDDING] Full text content: {} ===", text);
 
             // Generate embedding
             EmbeddingResponse embeddingResponse = embeddingService.generateEmbedding(text);

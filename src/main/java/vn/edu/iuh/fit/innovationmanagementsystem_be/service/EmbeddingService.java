@@ -68,6 +68,10 @@ public class EmbeddingService {
             }
 
             logger.info("Generating embedding for text (length: {})", text.length());
+            // Log text content (truncate nếu quá dài để tránh log quá lớn)
+            String textPreview = text.length() > 500 ? text.substring(0, 500) + "..." : text;
+            logger.info("Text content sent to Python service (preview): {}", textPreview);
+            logger.debug("Full text content: {}", text);
             long startTime = System.currentTimeMillis();
 
             EmbeddingRequest request = new EmbeddingRequest(text);
@@ -114,6 +118,13 @@ public class EmbeddingService {
             }
 
             logger.info("Generating embeddings for {} texts", texts.size());
+            // Log preview của texts (chỉ log text đầu tiên và tổng số)
+            if (!texts.isEmpty()) {
+                String firstTextPreview = texts.get(0).length() > 200 ? 
+                    texts.get(0).substring(0, 200) + "..." : texts.get(0);
+                logger.info("First text preview (length: {}): {}", texts.get(0).length(), firstTextPreview);
+            }
+            logger.debug("All texts content sent to Python service (batch): {}", texts);
             long startTime = System.currentTimeMillis();
 
             EmbeddingBatchRequest request = new EmbeddingBatchRequest(texts);
