@@ -18,6 +18,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.Embedding
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.SimilarInnovationWarning;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.FormDataRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.InnovationRepository;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.projection.SimilarInnovationProjection;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -346,7 +347,7 @@ public class InnovationEmbeddingService {
             }
 
             // Query similar innovations
-            List<Object[]> results = innovationRepository.findSimilarInnovationsByEmbedding(
+            List<SimilarInnovationProjection> results = innovationRepository.findSimilarInnovationsByEmbedding(
                     embedding,
                     innovationId,
                     threshold,
@@ -354,28 +355,21 @@ public class InnovationEmbeddingService {
             );
 
             // Map results to SimilarInnovationWarning
-            List<SimilarInnovationWarning> warnings = new ArrayList<>();
-            for (Object[] result : results) {
-                Innovation similarInnovation = (Innovation) result[0];
-                Double similarity = ((Number) result[1]).doubleValue();
-
-                String riskLevel = determineRiskLevel(similarity);
-
-                SimilarInnovationWarning warning = SimilarInnovationWarning.builder()
-                        .innovationId(similarInnovation.getId())
-                        .innovationName(similarInnovation.getInnovationName())
-                        .authorName(similarInnovation.getUser() != null ? 
-                                similarInnovation.getUser().getFullName() : "")
-                        .departmentName(similarInnovation.getDepartment() != null ? 
-                                similarInnovation.getDepartment().getDepartmentName() : "")
-                        .status(similarInnovation.getStatus() != null ? 
-                                similarInnovation.getStatus().name() : "")
-                        .similarityScore(similarity)
-                        .riskLevel(riskLevel)
-                        .build();
-
-                warnings.add(warning);
-            }
+            List<SimilarInnovationWarning> warnings = results.stream()
+                    .map(projection -> {
+                        String riskLevel = determineRiskLevel(projection.getSimilarity());
+                        
+                        return SimilarInnovationWarning.builder()
+                                .innovationId(projection.getId())
+                                .innovationName(projection.getInnovationName())
+                                .authorName(projection.getAuthorName())
+                                .departmentName(projection.getDepartmentName())
+                                .status(projection.getStatus())
+                                .similarityScore(projection.getSimilarity())
+                                .riskLevel(riskLevel)
+                                .build();
+                    })
+                    .collect(Collectors.toList());
 
             logger.info("Tìm thấy {} innovation tương tự cho innovation {}", warnings.size(), innovationId);
             return warnings;

@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.Innovation;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationStatusEnum;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.projection.SimilarInnovationProjection;
 
 @Repository
 public interface InnovationRepository extends JpaRepository<Innovation, String>, JpaSpecificationExecutor<Innovation> {
@@ -148,14 +149,22 @@ public interface InnovationRepository extends JpaRepository<Innovation, String>,
         @Query(value = "SELECT embedding::text FROM innovations WHERE id = :id", nativeQuery = true)
         String getEmbeddingAsText(@Param("id") String id);
 
-        @Query(value = "SELECT i.*, 1 - (i.embedding <=> CAST(:queryEmbedding AS vector)) as similarity " +
+        @Query(value = "SELECT " +
+                "i.id as id, " +
+                "i.innovation_name as innovationName, " +
+                "i.status as status, " +
+                "COALESCE(u.full_name, '') as authorName, " +
+                "COALESCE(d.department_name, '') as departmentName, " +
+                "1 - (i.embedding <=> CAST(:queryEmbedding AS vector)) as similarity " +
                 "FROM innovations i " +
+                "LEFT JOIN users u ON i.user_id = u.id " +
+                "LEFT JOIN departments d ON i.department_id = d.id " +
                 "WHERE i.id != :excludeId " +
                 "AND i.embedding IS NOT NULL " +
                 "AND 1 - (i.embedding <=> CAST(:queryEmbedding AS vector)) > :threshold " +
                 "ORDER BY similarity DESC " +
                 "LIMIT :limit", nativeQuery = true)
-        List<Object[]> findSimilarInnovationsByEmbedding(
+        List<SimilarInnovationProjection> findSimilarInnovationsByEmbedding(
                 @Param("queryEmbedding") String queryEmbedding,
                 @Param("excludeId") String excludeId,
                 @Param("threshold") double threshold,
