@@ -190,7 +190,7 @@ public class CouncilController {
 
     // 10. Lấy danh sách innovations có vi phạm cần Chủ tịch xem xét
     @GetMapping("/councils/{id}/violations")
-    @PreAuthorize("hasAnyRole('CHU_TICH_HD_TRUONG', 'CHU_TICH')")
+    @PreAuthorize("hasAnyRole('CHU_TICH_HD_TRUONG', 'TRUONG_KHOA')")
     @ApiMessage("Lấy danh sách vi phạm cần xem xét thành công")
     @Operation(summary = "Get Innovations With Violations", description = "Get list of innovations in a council that have violations reported by members. Only accessible by the council chairman.")
     @ApiResponses(value = {
@@ -207,7 +207,7 @@ public class CouncilController {
 
     // 11. Chủ tịch quyết định vi phạm (bỏ qua cảnh báo hoặc từ chối sáng kiến)
     @PostMapping("/councils/{id}/innovations/{innovationId}/resolve-violation")
-    @PreAuthorize("hasAnyRole('CHU_TICH_HD_TRUONG', 'CHU_TICH')")
+    @PreAuthorize("hasAnyRole('CHU_TICH_HD_TRUONG', 'TRUONG_KHOA')")
     @ApiMessage("Quyết định vi phạm thành công")
     @Operation(summary = "Resolve Violation", description = "Chairman resolves a violation: dismiss the warning (recalculate results) or reject the innovation. Only accessible by the council chairman.")
     @ApiResponses(value = {
