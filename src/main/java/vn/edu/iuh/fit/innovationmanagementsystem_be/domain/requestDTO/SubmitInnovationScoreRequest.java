@@ -30,4 +30,12 @@ public class SubmitInnovationScoreRequest {
     // Optional - có thể để trống
     @Size(max = 5000, message = "Nhận xét không được vượt quá 5000 ký tự")
     private String detailedComments;
+
+    // Violation reporting fields
+    private Boolean hasViolation; // true = Báo cáo vi phạm
+
+    private String violationType; // Loại vi phạm: DUPLICATE, FEASIBILITY, QUALITY
+
+    @Size(max = 2000, message = "Lý do vi phạm không được vượt quá 2000 ký tự")
+    private String violationReason; // Lý do vi phạm chi tiết
 }

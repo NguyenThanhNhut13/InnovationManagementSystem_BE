@@ -18,5 +18,9 @@ public class MemberEvaluationDetail {
     private String comments;
     private LocalDateTime reviewedAt; // null nếu chưa chấm
     private Boolean hasScored; // true nếu đã chấm điểm
+    // Violation fields
+    private Boolean hasViolation; // true nếu thành viên này báo vi phạm
+    private String violationType; // Loại vi phạm: DUPLICATE, FEASIBILITY, QUALITY
+    private String violationReason; // Lý do vi phạm
 }
 

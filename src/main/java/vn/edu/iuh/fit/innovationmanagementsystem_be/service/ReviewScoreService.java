@@ -16,6 +16,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.Innovatio
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationPhaseTypeEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.PhaseStatusEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.ReviewLevelEnum;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.ViolationTypeEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.CouncilMemberRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.DepartmentPhaseRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.InnovationPhaseRepository;
@@ -130,38 +131,81 @@ public class ReviewScoreService {
             reviewScore.setInnovationDecision(innovation.getInnovationRound().getInnovationDecision());
         }
 
-        // 8. Set scoring data dựa trên loại sáng kiến
+        // 8. Xử lý vi phạm (nếu có)
+        Boolean hasViolation = request.getHasViolation() != null && request.getHasViolation();
+        if (hasViolation) {
+            // Validate violation fields
+            if (request.getViolationType() == null || request.getViolationType().trim().isEmpty()) {
+                throw new IdInvalidException("Loại vi phạm không được để trống khi báo cáo vi phạm");
+            }
+            if (request.getViolationReason() == null || request.getViolationReason().trim().isEmpty()) {
+                throw new IdInvalidException("Lý do vi phạm không được để trống khi báo cáo vi phạm");
+            }
+
+            // Validate violation type
+            ViolationTypeEnum violationType;
+            try {
+                violationType = ViolationTypeEnum.valueOf(request.getViolationType().toUpperCase());
+            } catch (IllegalArgumentException e) {
+                throw new IdInvalidException("Loại vi phạm không hợp lệ: " + request.getViolationType() + 
+                    ". Các loại hợp lệ: DUPLICATE, FEASIBILITY, POLICY_VIOLATION, OTHER");
+            }
+
+            // Set violation fields
+            reviewScore.setHasViolation(true);
+            reviewScore.setViolationType(violationType);
+            reviewScore.setViolationReason(request.getViolationReason().trim());
+
+            // Nếu báo vi phạm, tự động set isApproved = false (không thông qua)
+            reviewScore.setIsApproved(false);
+            logger.info("Violation reported for innovation {}: type={}, reason={}", 
+                innovationId, violationType, request.getViolationReason());
+        } else {
+            // Không có vi phạm
+            reviewScore.setHasViolation(false);
+            reviewScore.setViolationType(null);
+            reviewScore.setViolationReason(null);
+        }
+
+        // 9. Set scoring data dựa trên loại sáng kiến
         if (isScore != null && isScore) {
             // Sáng kiến CÓ chấm điểm
             reviewScore.setScoringDetails(objectMapper.valueToTree(request.getScoringDetails()));
             reviewScore.setTotalScore(request.getTotalScore());
 
-            // Tự động thông qua nếu >= 70% điểm tối đa
-            InnovationDecision decision = innovation.getInnovationRound().getInnovationDecision();
-            JsonNode scoringCriteria = decision != null ? decision.getScoringCriteria() : null;
-            int maxTotalScore = calculateMaxTotalScore(scoringCriteria);
-            double passingThreshold = maxTotalScore * 0.7; // 70%
+            // Chỉ tự động thông qua nếu KHÔNG có vi phạm và >= 70% điểm tối đa
+            if (!hasViolation) {
+                InnovationDecision decision = innovation.getInnovationRound().getInnovationDecision();
+                JsonNode scoringCriteria = decision != null ? decision.getScoringCriteria() : null;
+                int maxTotalScore = calculateMaxTotalScore(scoringCriteria);
+                double passingThreshold = maxTotalScore * 0.7; // 70%
 
-            if (request.getTotalScore() >= passingThreshold) {
-                reviewScore.setIsApproved(true);
-                logger.info("Auto-approved innovation {} with score {} >= {} (70% of {})", 
-                    innovationId, request.getTotalScore(), passingThreshold, maxTotalScore);
-            } else {
+                if (request.getTotalScore() >= passingThreshold) {
+                    reviewScore.setIsApproved(true);
+                    logger.info("Auto-approved innovation {} with score {} >= {} (70% of {})", 
+                        innovationId, request.getTotalScore(), passingThreshold, maxTotalScore);
+                } else {
+                    // Null check để an toàn
+                    if (request.getIsApproved() == null) {
+                        throw new IdInvalidException("Quyết định đánh giá không được để trống");
+                    }
+                    reviewScore.setIsApproved(request.getIsApproved());
+                }
+            }
+            // Nếu hasViolation = true, isApproved đã được set = false ở trên
+        } else {
+            // Sáng kiến KHÔNG chấm điểm
+            reviewScore.setScoringDetails(null);
+            reviewScore.setTotalScore(null);
+            
+            // Chỉ set isApproved nếu không có vi phạm (nếu có vi phạm thì đã set = false ở trên)
+            if (!hasViolation) {
                 // Null check để an toàn
                 if (request.getIsApproved() == null) {
                     throw new IdInvalidException("Quyết định đánh giá không được để trống");
                 }
                 reviewScore.setIsApproved(request.getIsApproved());
             }
-        } else {
-            // Sáng kiến KHÔNG chấm điểm
-            reviewScore.setScoringDetails(null);
-            reviewScore.setTotalScore(null);
-            // Null check để an toàn
-            if (request.getIsApproved() == null) {
-                throw new IdInvalidException("Quyết định đánh giá không được để trống");
-            }
-            reviewScore.setIsApproved(request.getIsApproved());
         }
 
         reviewScore.setRequiresSupplementaryDocuments(

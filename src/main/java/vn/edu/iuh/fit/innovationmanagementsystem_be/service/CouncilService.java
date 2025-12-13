@@ -55,6 +55,8 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.ScoringPr
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.CouncilResultsResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationResultDetail;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.MemberEvaluationDetail;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.ViolationDetail;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationViolationResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.InnovationPhaseRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.DepartmentPhaseRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.DigitalSignatureRepository;
@@ -1479,11 +1481,14 @@ public class CouncilService {
             int totalMembers, Council council) {
         // Lấy danh sách đánh giá của từng thành viên
         List<MemberEvaluationDetail> memberEvaluations = new ArrayList<>();
+        List<ViolationDetail> violations = new ArrayList<>();
         int scoredMembers = 0;
         int approvedCount = 0;
         int rejectedCount = 0;
         double totalScore = 0.0;
         int scoreCount = 0;
+        boolean hasViolation = false;
+        boolean chairmanHasViolation = false; // Track xem Chủ tịch có báo vi phạm không
 
         // Lấy thông tin Chủ tịch để dùng cho tie-breaking
         Boolean chairmanDecision = null;
@@ -1524,6 +1529,34 @@ public class CouncilService {
                 evaluation.setComments(reviewScore.get().getDetailedComments());
                 evaluation.setReviewedAt(reviewScore.get().getReviewedAt());
 
+                // Check vi phạm
+                ReviewScore score = reviewScore.get();
+                if (score.getHasViolation() != null && score.getHasViolation()) {
+                    hasViolation = true;
+                    evaluation.setHasViolation(true);
+                    evaluation.setViolationType(score.getViolationType() != null ? score.getViolationType().name() : null);
+                    evaluation.setViolationReason(score.getViolationReason());
+                    
+                    // Check xem có phải Chủ tịch báo vi phạm không
+                    if (memberRoleEnum == CouncilMemberRoleEnum.CHU_TICH) {
+                        chairmanHasViolation = true;
+                    }
+                    
+                    // Thêm vào danh sách violations
+                    ViolationDetail violation = new ViolationDetail();
+                    violation.setMemberId(memberUserId);
+                    violation.setMemberName(member.getFullName());
+                    violation.setMemberRole(memberRole);
+                    violation.setViolationType(score.getViolationType() != null ? score.getViolationType().name() : null);
+                    violation.setViolationReason(score.getViolationReason());
+                    violation.setReportedAt(score.getReviewedAt());
+                    violations.add(violation);
+                } else {
+                    evaluation.setHasViolation(false);
+                    evaluation.setViolationType(null);
+                    evaluation.setViolationReason(null);
+                }
+
                 if (reviewScore.get().getIsApproved()) {
                     approvedCount++;
                 } else {
@@ -1549,6 +1582,9 @@ public class CouncilService {
                 evaluation.setTotalScore(null);
                 evaluation.setComments(null);
                 evaluation.setReviewedAt(null);
+                evaluation.setHasViolation(false);
+                evaluation.setViolationType(null);
+                evaluation.setViolationReason(null);
             }
 
             memberEvaluations.add(evaluation);
@@ -1557,28 +1593,48 @@ public class CouncilService {
         // Tính điểm trung bình
         Double averageScore = scoreCount > 0 ? totalScore / scoreCount : null;
 
-        // Tính finalDecision với logic tie-breaking
-        Boolean finalDecision = calculateFinalDecision(
-                innovation,
-                innovation.getIsScore(),
-                approvedCount,
-                rejectedCount,
-                scoredMembers,
-                totalMembers,
-                averageScore,
-                chairmanDecision,
-                chairmanScore);
+        // Tính finalDecision với logic tie-breaking (check vi phạm trước)
+        Boolean finalDecision = null;
+        if (hasViolation) {
+            if (chairmanHasViolation) {
+                // Nếu Chủ tịch báo vi phạm → rớt ngay lập tức, bất kể các thành viên khác
+                finalDecision = false;
+            } else {
+                // Nếu chỉ thành viên khác báo vi phạm (không phải Chủ tịch) → cần Chủ tịch xem xét
+                finalDecision = null;
+            }
+        } else {
+            finalDecision = calculateFinalDecision(
+                    innovation,
+                    innovation.getIsScore(),
+                    approvedCount,
+                    rejectedCount,
+                    scoredMembers,
+                    totalMembers,
+                    averageScore,
+                    chairmanDecision,
+                    chairmanScore);
+        }
 
         // Tạo decision reason
-        String decisionReason = generateDecisionReason(
-                innovation,
-                innovation.getIsScore(),
-                approvedCount,
-                rejectedCount,
-                scoredMembers,
-                totalMembers,
-                averageScore,
-                chairmanDecision);
+        String decisionReason;
+        if (hasViolation) {
+            if (chairmanHasViolation) {
+                decisionReason = String.format("Chủ tịch báo vi phạm - Sáng kiến bị từ chối");
+            } else {
+                decisionReason = String.format("Có %d vi phạm được báo cáo - Cần Chủ tịch xem xét", violations.size());
+            }
+        } else {
+            decisionReason = generateDecisionReason(
+                    innovation,
+                    innovation.getIsScore(),
+                    approvedCount,
+                    rejectedCount,
+                    scoredMembers,
+                    totalMembers,
+                    averageScore,
+                    chairmanDecision);
+        }
 
         // Tạo result
         InnovationResultDetail result = new InnovationResultDetail();
@@ -1597,6 +1653,8 @@ public class CouncilService {
         result.setFinalDecision(finalDecision);
         result.setDecisionReason(decisionReason);
         result.setMemberEvaluations(memberEvaluations);
+        result.setHasViolation(hasViolation);
+        result.setViolations(violations);
 
         return result;
     }
@@ -1742,6 +1800,146 @@ public class CouncilService {
         
         log.info("Hoàn thành cập nhật trạng thái sáng kiến cho council '{}'. Đã cập nhật {} innovation", 
                 council.getName(), updatedCount);
+    }
+
+    // 9. Lấy danh sách innovations có vi phạm cần Chủ tịch xem xét
+    @Transactional(readOnly = true)
+    public List<InnovationViolationResponse> getInnovationsWithViolations(String councilId) {
+        // Validate council và quyền truy cập
+        Council council = findAndValidateCouncil(councilId);
+        
+        // Validate user là Chủ tịch của council này
+        User currentUser = userService.getCurrentUser();
+        List<CouncilMember> members = councilMemberRepository.findByCouncilId(councilId);
+        boolean isChairman = members.stream()
+                .anyMatch(m -> m.getUser().getId().equals(currentUser.getId()) 
+                        && m.getRole() == CouncilMemberRoleEnum.CHU_TICH);
+        
+        if (!isChairman) {
+            throw new IdInvalidException("Chỉ Chủ tịch hội đồng mới có quyền xem danh sách vi phạm");
+        }
+
+        // Lấy danh sách innovations của council
+        List<Innovation> innovations = council.getInnovations();
+        List<InnovationViolationResponse> responses = new ArrayList<>();
+
+        for (Innovation innovation : innovations) {
+            // Lấy tất cả review scores của innovation này
+            List<ReviewScore> reviewScores = reviewScoreRepository.findByInnovationId(innovation.getId());
+            
+            // Filter các review scores có vi phạm
+            List<ViolationDetail> violations = new ArrayList<>();
+            for (ReviewScore reviewScore : reviewScores) {
+                if (reviewScore.getHasViolation() != null && reviewScore.getHasViolation()) {
+                    // Lấy thông tin thành viên
+                    User reviewer = reviewScore.getReviewer();
+                    CouncilMember member = members.stream()
+                            .filter(m -> m.getUser().getId().equals(reviewer.getId()))
+                            .findFirst()
+                            .orElse(null);
+                    
+                    String memberRole = member != null ? member.getRole().name() : "THANH_VIEN";
+                    
+                    ViolationDetail violation = new ViolationDetail();
+                    violation.setMemberId(reviewer.getId());
+                    violation.setMemberName(reviewer.getFullName());
+                    violation.setMemberRole(memberRole);
+                    violation.setViolationType(reviewScore.getViolationType() != null ? reviewScore.getViolationType().name() : null);
+                    violation.setViolationReason(reviewScore.getViolationReason());
+                    violation.setReportedAt(reviewScore.getReviewedAt());
+                    violations.add(violation);
+                }
+            }
+
+            // Chỉ thêm vào response nếu có vi phạm
+            if (!violations.isEmpty()) {
+                InnovationViolationResponse response = new InnovationViolationResponse();
+                response.setInnovationId(innovation.getId());
+                response.setInnovationName(innovation.getInnovationName());
+                response.setAuthorName(innovation.getUser() != null ? innovation.getUser().getFullName() : "N/A");
+                response.setDepartmentName(innovation.getDepartment() != null ? innovation.getDepartment().getDepartmentName() : null);
+                response.setIsScore(innovation.getIsScore());
+                response.setViolations(violations);
+                response.setViolationCount(violations.size());
+                response.setNeedsChairmanReview(true); // Chưa được xử lý
+                responses.add(response);
+            }
+        }
+
+        return responses;
+    }
+
+    // 10. Chủ tịch quyết định vi phạm (bỏ qua cảnh báo hoặc từ chối sáng kiến)
+    @Transactional
+    public void resolveViolation(String councilId, String innovationId, Boolean dismissViolation) {
+        // Validate council và quyền truy cập
+        Council council = findAndValidateCouncil(councilId);
+        
+        // Validate innovation thuộc council này
+        Innovation innovation = innovationRepository.findById(innovationId)
+                .orElseThrow(() -> new IdInvalidException("Không tìm thấy sáng kiến với ID: " + innovationId));
+        
+        if (!innovation.getCouncils().stream().anyMatch(c -> c.getId().equals(councilId))) {
+            throw new IdInvalidException("Sáng kiến không thuộc hội đồng này");
+        }
+
+        // Validate user là Chủ tịch của council này
+        User currentUser = userService.getCurrentUser();
+        List<CouncilMember> members = councilMemberRepository.findByCouncilId(councilId);
+        boolean isChairman = members.stream()
+                .anyMatch(m -> m.getUser().getId().equals(currentUser.getId()) 
+                        && m.getRole() == CouncilMemberRoleEnum.CHU_TICH);
+        
+        if (!isChairman) {
+            throw new IdInvalidException("Chỉ Chủ tịch hội đồng mới có quyền quyết định vi phạm");
+        }
+
+        // Lấy danh sách member user IDs có quyền chấm điểm
+        List<String> memberUserIds = getScoringMemberUserIds(council);
+        int totalMembers = memberUserIds.size();
+
+        // Tính lại kết quả (sẽ không có vi phạm nữa nếu dismissViolation = true)
+        InnovationResultDetail result = calculateInnovationResult(innovation, memberUserIds, totalMembers, council);
+
+        if (dismissViolation) {
+            // Bỏ qua cảnh báo: Xóa flag vi phạm từ tất cả review scores
+            List<ReviewScore> reviewScores = reviewScoreRepository.findByInnovationId(innovationId);
+            for (ReviewScore reviewScore : reviewScores) {
+                if (reviewScore.getHasViolation() != null && reviewScore.getHasViolation()) {
+                    reviewScore.setHasViolation(false);
+                    reviewScore.setViolationType(null);
+                    reviewScore.setViolationReason(null);
+                    reviewScoreRepository.save(reviewScore);
+                }
+            }
+            
+            // Tính lại kết quả sau khi bỏ qua vi phạm
+            result = calculateInnovationResult(innovation, memberUserIds, totalMembers, council);
+            
+            // Cập nhật trạng thái nếu có kết quả cuối cùng
+            if (result.getFinalDecision() != null) {
+                updateInnovationStatusAfterScoring(innovation, result.getFinalDecision(), council);
+            }
+            
+            log.info("Chủ tịch đã bỏ qua cảnh báo vi phạm cho innovation: {}", innovationId);
+        } else {
+            // Từ chối: Cập nhật trạng thái sáng kiến thành REJECTED
+            ReviewLevelEnum councilLevel = council.getReviewCouncilLevel();
+            InnovationStatusEnum newStatus = null;
+            
+            if (councilLevel == ReviewLevelEnum.KHOA) {
+                newStatus = InnovationStatusEnum.KHOA_REJECTED;
+            } else if (councilLevel == ReviewLevelEnum.TRUONG) {
+                newStatus = InnovationStatusEnum.TRUONG_REJECTED;
+            }
+            
+            if (newStatus != null) {
+                innovation.setStatus(newStatus);
+                innovationRepository.save(innovation);
+            }
+            
+            log.info("Chủ tịch đã từ chối sáng kiến do vi phạm: {}", innovationId);
+        }
     }
 
     // Helper method: Cập nhật trạng thái sáng kiến sau khi hết thời gian chấm điểm

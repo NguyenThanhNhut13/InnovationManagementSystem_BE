@@ -9,6 +9,7 @@ import lombok.NoArgsConstructor;
 
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.ViolationTypeEnum;
 
 import java.time.LocalDateTime;
 
@@ -46,6 +47,17 @@ public class ReviewScore extends Auditable {
 
     @Column(name = "reviewed_at")
     private LocalDateTime reviewedAt;
+
+    // Violation reporting fields
+    @Column(name = "has_violation", columnDefinition = "BOOLEAN")
+    private Boolean hasViolation; // true = Báo cáo vi phạm
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "violation_type", columnDefinition = "VARCHAR(50)")
+    private ViolationTypeEnum violationType; // Loại vi phạm: DUPLICATE, FEASIBILITY, QUALITY
+
+    @Column(name = "violation_reason", columnDefinition = "TEXT")
+    private String violationReason; // Lý do vi phạm chi tiết
 
     // Relationships
     @ManyToOne(fetch = FetchType.LAZY, optional = false)

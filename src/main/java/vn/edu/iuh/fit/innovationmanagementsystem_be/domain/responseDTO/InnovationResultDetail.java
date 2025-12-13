@@ -21,8 +21,11 @@ public class InnovationResultDetail {
     private Integer rejectedCount; // Số thành viên không thông qua
     private Integer pendingCount; // Số thành viên chưa chấm
     private Double averageScore; // Điểm trung bình (null nếu không chấm điểm hoặc chưa có điểm)
-    private Boolean finalDecision; // true = Thông qua, false = Không thông qua, null nếu chưa quyết định được
-    private String decisionReason; // Lý do quyết định (ví dụ: "Đa số thông qua", "Đa số không thông qua", "Bằng nhau - dựa vào điểm trung bình", "Bằng nhau - quyết định của Chủ tịch")
+    private Boolean finalDecision; // true = Thông qua, false = Không thông qua, null nếu chưa quyết định được hoặc có vi phạm cần Chủ tịch xem xét
+    private String decisionReason; // Lý do quyết định (ví dụ: "Đa số thông qua", "Đa số không thông qua", "Bằng nhau - dựa vào điểm trung bình", "Bằng nhau - quyết định của Chủ tịch", "Có vi phạm - cần Chủ tịch xem xét")
     private List<MemberEvaluationDetail> memberEvaluations; // Chi tiết đánh giá của từng thành viên
+    // Violation fields
+    private Boolean hasViolation; // true nếu có bất kỳ thành viên nào báo vi phạm
+    private List<ViolationDetail> violations; // Danh sách các vi phạm được báo cáo
 }
 

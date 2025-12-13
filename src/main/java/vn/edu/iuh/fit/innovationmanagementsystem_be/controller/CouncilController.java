@@ -20,9 +20,11 @@ import java.util.List;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.Council;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.CreateCouncilRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.UpdateCouncilMembersRequest;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.ResolveViolationRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.CouncilResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.CouncilResultsResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.CouncilListResponse;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.InnovationViolationResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.ScoringStatusEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.service.CouncilService;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.ResultPaginationDTO;
@@ -184,6 +186,43 @@ public class CouncilController {
     public ResponseEntity<List<CouncilListResponse>> getCouncilsWhereUserIsSecretary() {
         List<CouncilListResponse> response = councilService.getCouncilsWhereUserIsSecretary();
         return ResponseEntity.ok(response);
+    }
+
+    // 10. Lấy danh sách innovations có vi phạm cần Chủ tịch xem xét
+    @GetMapping("/councils/{id}/violations")
+    @PreAuthorize("hasAnyRole('CHU_TICH_HD_TRUONG', 'CHU_TICH')")
+    @ApiMessage("Lấy danh sách vi phạm cần xem xét thành công")
+    @Operation(summary = "Get Innovations With Violations", description = "Get list of innovations in a council that have violations reported by members. Only accessible by the council chairman.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Violations retrieved successfully", content = @Content(schema = @Schema(implementation = List.class))),
+            @ApiResponse(responseCode = "403", description = "User is not the chairman of this council"),
+            @ApiResponse(responseCode = "404", description = "Council not found"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized")
+    })
+    public ResponseEntity<List<InnovationViolationResponse>> getInnovationsWithViolations(
+            @Parameter(description = "Council ID", required = true) @PathVariable String id) {
+        List<InnovationViolationResponse> response = councilService.getInnovationsWithViolations(id);
+        return ResponseEntity.ok(response);
+    }
+
+    // 11. Chủ tịch quyết định vi phạm (bỏ qua cảnh báo hoặc từ chối sáng kiến)
+    @PostMapping("/councils/{id}/innovations/{innovationId}/resolve-violation")
+    @PreAuthorize("hasAnyRole('CHU_TICH_HD_TRUONG', 'CHU_TICH')")
+    @ApiMessage("Quyết định vi phạm thành công")
+    @Operation(summary = "Resolve Violation", description = "Chairman resolves a violation: dismiss the warning (recalculate results) or reject the innovation. Only accessible by the council chairman.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Violation resolved successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid request data"),
+            @ApiResponse(responseCode = "403", description = "User is not the chairman of this council"),
+            @ApiResponse(responseCode = "404", description = "Council or Innovation not found"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized")
+    })
+    public ResponseEntity<Void> resolveViolation(
+            @Parameter(description = "Council ID", required = true) @PathVariable String id,
+            @Parameter(description = "Innovation ID", required = true) @PathVariable String innovationId,
+            @Parameter(description = "Resolve violation request", required = true) @Valid @RequestBody ResolveViolationRequest request) {
+        councilService.resolveViolation(id, innovationId, request.getDismissViolation());
+        return ResponseEntity.ok().build();
     }
 
 }
