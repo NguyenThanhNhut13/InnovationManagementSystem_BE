@@ -16,6 +16,7 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.Innovatio
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationPhaseTypeEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.PhaseStatusEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.ReviewLevelEnum;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.ViolationTypeEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.CouncilMemberRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.DepartmentPhaseRepository;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.InnovationPhaseRepository;
@@ -88,11 +89,14 @@ public class ReviewScoreService {
         // chấm điểm)
         validateScoringPeriod(innovation);
 
-        // 6. Check loại sáng kiến
+        // 6. Check vi phạm TRƯỚC (nếu có vi phạm thì skip validation scoring)
+        Boolean hasViolation = request.getHasViolation() != null && request.getHasViolation();
+        
+        // 7. Check loại sáng kiến và validate scoring (CHỈ khi KHÔNG có vi phạm)
         Boolean isScore = innovation.getIsScore();
 
-        if (isScore != null && isScore) {
-            // Sáng kiến CÓ chấm điểm
+        if (!hasViolation && isScore != null && isScore) {
+            // Sáng kiến CÓ chấm điểm VÀ KHÔNG có vi phạm
             // Validate scoring details và total score
             if (request.getScoringDetails() == null || request.getScoringDetails().isEmpty()) {
                 throw new IdInvalidException("Danh sách điểm không được để trống cho sáng kiến có chấm điểm");
@@ -103,16 +107,17 @@ public class ReviewScoreService {
 
             validateScoringDetails(innovation, request.getScoringDetails());
             validateTotalScore(innovation, request.getScoringDetails(), request.getTotalScore());
-        } else {
-            // Sáng kiến KHÔNG chấm điểm
+        } else if (!hasViolation) {
+            // Sáng kiến KHÔNG chấm điểm VÀ KHÔNG có vi phạm
             // Không cần scoring details và total score
             if (request.getScoringDetails() != null && !request.getScoringDetails().isEmpty()) {
                 throw new IdInvalidException(
                         "Sáng kiến này không cần chấm điểm. Vui lòng chỉ đánh giá thông qua/không thông qua");
             }
         }
+        // Nếu có vi phạm, skip tất cả validation scoring (sẽ xử lý ở dưới)
 
-        // 7. Check if user đã chấm điểm chưa
+        // 8. Check if user đã chấm điểm chưa
         Optional<ReviewScore> existingScore = reviewScoreRepository
                 .findByInnovationIdAndReviewerId(innovationId, reviewer.getId());
 
@@ -130,9 +135,44 @@ public class ReviewScoreService {
             reviewScore.setInnovationDecision(innovation.getInnovationRound().getInnovationDecision());
         }
 
-        // 8. Set scoring data dựa trên loại sáng kiến
-        if (isScore != null && isScore) {
-            // Sáng kiến CÓ chấm điểm
+        // 9. Xử lý vi phạm (nếu có)
+        if (hasViolation) {
+            // Validate violation fields
+            if (request.getViolationType() == null || request.getViolationType().trim().isEmpty()) {
+                throw new IdInvalidException("Loại vi phạm không được để trống khi báo cáo vi phạm");
+            }
+            if (request.getViolationReason() == null || request.getViolationReason().trim().isEmpty()) {
+                throw new IdInvalidException("Lý do vi phạm không được để trống khi báo cáo vi phạm");
+            }
+
+            // Validate violation type
+            ViolationTypeEnum violationType;
+            try {
+                violationType = ViolationTypeEnum.valueOf(request.getViolationType().toUpperCase());
+            } catch (IllegalArgumentException e) {
+                throw new IdInvalidException("Loại vi phạm không hợp lệ: " + request.getViolationType() + 
+                    ". Các loại hợp lệ: DUPLICATE, FEASIBILITY, POLICY_VIOLATION, OTHER");
+            }
+
+            // Set violation fields
+            reviewScore.setHasViolation(true);
+            reviewScore.setViolationType(violationType);
+            reviewScore.setViolationReason(request.getViolationReason().trim());
+
+            // Nếu báo vi phạm, tự động set isApproved = false (không thông qua)
+            reviewScore.setIsApproved(false);
+            logger.info("Violation reported for innovation {}: type={}, reason={}", 
+                innovationId, violationType, request.getViolationReason());
+        } else {
+            // Không có vi phạm
+            reviewScore.setHasViolation(false);
+            reviewScore.setViolationType(null);
+            reviewScore.setViolationReason(null);
+        }
+
+        // 9. Set scoring data dựa trên loại sáng kiến (CHỈ khi KHÔNG có vi phạm)
+        if (!hasViolation && isScore != null && isScore) {
+            // Sáng kiến CÓ chấm điểm VÀ KHÔNG có vi phạm
             reviewScore.setScoringDetails(objectMapper.valueToTree(request.getScoringDetails()));
             reviewScore.setTotalScore(request.getTotalScore());
 
@@ -153,15 +193,24 @@ public class ReviewScoreService {
                 }
                 reviewScore.setIsApproved(request.getIsApproved());
             }
+        } else if (hasViolation && isScore != null && isScore) {
+            // Sáng kiến CÓ chấm điểm NHƯNG có vi phạm → không set scoring data
+            reviewScore.setScoringDetails(null);
+            reviewScore.setTotalScore(null);
+            // isApproved đã được set = false ở trên (dòng 163)
         } else {
             // Sáng kiến KHÔNG chấm điểm
             reviewScore.setScoringDetails(null);
             reviewScore.setTotalScore(null);
-            // Null check để an toàn
-            if (request.getIsApproved() == null) {
-                throw new IdInvalidException("Quyết định đánh giá không được để trống");
+            
+            // Chỉ set isApproved nếu không có vi phạm (nếu có vi phạm thì đã set = false ở trên)
+            if (!hasViolation) {
+                // Null check để an toàn
+                if (request.getIsApproved() == null) {
+                    throw new IdInvalidException("Quyết định đánh giá không được để trống");
+                }
+                reviewScore.setIsApproved(request.getIsApproved());
             }
-            reviewScore.setIsApproved(request.getIsApproved());
         }
 
         reviewScore.setRequiresSupplementaryDocuments(

@@ -78,14 +78,15 @@ if [ ! -f src/main/resources/keys/public_key.pem ] || [ ! -f src/main/resources/
 fi
 print_success "RSA keys found"
 
-# Step 4: Create network if not exists
+# Step 4: Clean up old network if exists
 print_info "Checking Docker network..."
-if ! docker network inspect innovation-network >/dev/null 2>&1; then
-    docker network create innovation-network
-    print_success "Created innovation-network"
-else
-    print_success "Network innovation-network already exists"
+if docker network inspect innovation-network >/dev/null 2>&1; then
+    print_info "Removing old network..."
+    docker compose down || true
+    docker stop $(docker ps -q) 2>/dev/null || true
+    docker network rm innovation-network 2>/dev/null || true
 fi
+print_success "Network will be created by docker-compose"
 
 # Step 5: Stop old containers
 print_info "Stopping old containers..."
@@ -145,6 +146,13 @@ if curl -f http://localhost:8080 >/dev/null 2>&1; then
     print_success "Jenkins is running"
 else
     print_error "Jenkins is not responding yet (may need more time)"
+fi
+
+# Check Python AI Embedding Service (internal service - check via docker exec)
+if docker exec innovation-ai-embedding-service curl -f http://localhost:8000/health >/dev/null 2>&1; then
+    print_success "Python AI Embedding Service is healthy"
+else
+    print_error "Python AI Embedding Service is not responding yet (may need more time - model download on first start)"
 fi
 
 # Step 10: Display status

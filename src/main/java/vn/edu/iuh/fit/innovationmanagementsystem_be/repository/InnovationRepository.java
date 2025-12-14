@@ -6,12 +6,15 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Modifying; 
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.Innovation;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationStatusEnum;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.repository.projection.SimilarInnovationProjection;
 
 @Repository
 public interface InnovationRepository extends JpaRepository<Innovation, String>, JpaSpecificationExecutor<Innovation> {
@@ -95,23 +98,21 @@ public interface InnovationRepository extends JpaRepository<Innovation, String>,
          * Lấy danh sách sáng kiến SUBMITTED của department đã được GIANG_VIEN ký mẫu 2
          * (bao gồm cả đã được TRUONG_KHOA ký và chưa được TRUONG_KHOA ký)
          * (cho API list của TRUONG_KHOA để filter theo trạng thái ký)
+         * Chỉ lấy sáng kiến đã nộp (status = SUBMITTED và submitted_at IS NOT NULL)
          */
         @Query("SELECT DISTINCT i FROM Innovation i " +
                         "LEFT JOIN FETCH i.user " +
                         "LEFT JOIN FETCH i.department " +
                         "LEFT JOIN FETCH i.innovationRound " +
                         "WHERE i.department.id = :departmentId " +
-                        "AND i.status = vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationStatusEnum.SUBMITTED "
-                        +
+                        "AND i.status = vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationStatusEnum.SUBMITTED " +
+                        "AND i.submittedAt IS NOT NULL " +
                         "AND EXISTS (" +
                         "    SELECT 1 FROM DigitalSignature ds " +
                         "    WHERE ds.innovation = i " +
-                        "    AND ds.documentType = vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.DocumentTypeEnum.FORM_2 "
-                        +
-                        "    AND ds.signedAsRole = vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.UserRoleEnum.GIANG_VIEN "
-                        +
-                        "    AND ds.status = vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.SignatureStatusEnum.SIGNED"
-                        +
+                        "    AND ds.documentType = vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.DocumentTypeEnum.FORM_2 " +
+                        "    AND ds.signedAsRole = vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.UserRoleEnum.GIANG_VIEN " +
+                        "    AND ds.status = vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.SignatureStatusEnum.SIGNED" +
                         ")")
         List<Innovation> findInnovationsPendingDepartmentHeadSignature(@Param("departmentId") String departmentId);
 
@@ -133,4 +134,58 @@ public interface InnovationRepository extends JpaRepository<Innovation, String>,
         List<Innovation> findByDepartmentIdsAndRoundIdAndStatusKhoaApproved(
                         @Param("departmentIds") List<String> departmentIds,
                         @Param("roundId") String roundId);
+
+        // Embedding methods for semantic search
+        @Modifying
+        @Transactional
+        @Query(value = "UPDATE innovations SET embedding = CAST(:embedding AS vector) WHERE id = :id", nativeQuery = true)
+        void updateEmbedding(@Param("id") String id, @Param("embedding") String embedding);
+
+        /**
+         * Lấy embedding dưới dạng text (để tránh lỗi conversion khi load entity)
+         */
+        @Query(value = "SELECT embedding::text FROM innovations WHERE id = :id", nativeQuery = true)
+        String getEmbeddingAsText(@Param("id") String id);
+
+        @Query(value = "SELECT " +
+                "i.id as id, " +
+                "i.innovation_name as innovationName, " +
+                "i.status as status, " +
+                "COALESCE(u.full_name, '') as authorName, " +
+                "COALESCE(d.department_name, '') as departmentName, " +
+                "1 - (i.embedding <=> CAST(:queryEmbedding AS vector)) as similarity " +
+                "FROM innovations i " +
+                "LEFT JOIN users u ON i.user_id = u.id " +
+                "LEFT JOIN departments d ON i.department_id = d.id " +
+                "WHERE i.id != :excludeId " +
+                "AND i.embedding IS NOT NULL " +
+                "AND i.status = 'SUBMITTED' " +
+                "AND i.submitted_at IS NOT NULL " +
+                "AND i.submitted_at < CAST(:currentSubmittedAt AS TIMESTAMP) " +
+                "AND 1 - (i.embedding <=> CAST(:queryEmbedding AS vector)) > :threshold " +
+                "ORDER BY similarity DESC " +
+                "LIMIT :limit", nativeQuery = true)
+        List<SimilarInnovationProjection> findSimilarInnovationsByEmbedding(
+                @Param("queryEmbedding") String queryEmbedding,
+                @Param("excludeId") String excludeId,
+                @Param("currentSubmittedAt") java.time.LocalDateTime currentSubmittedAt,
+                @Param("threshold") double threshold,
+                @Param("limit") int limit);
+
+                
+        @Query("SELECT DISTINCT i FROM Innovation i " +
+                        "LEFT JOIN FETCH i.user " +
+                        "LEFT JOIN FETCH i.department " +
+                        "LEFT JOIN FETCH i.innovationRound " +
+                        "WHERE i.status NOT IN ('DRAFT', 'KHOA_REJECTED', 'TRUONG_REJECTED')")
+        List<Innovation> findAllWithDetails();
+
+        /**
+         * Lấy innovation theo ID với formDataList (cho similarity check)
+         */
+        @Query("SELECT i FROM Innovation i " +
+                        "LEFT JOIN FETCH i.formDataList fd " +
+                        "LEFT JOIN FETCH fd.formField " +
+                        "WHERE i.id = :innovationId")
+        Innovation findByIdWithFormData(@Param("innovationId") String innovationId);
 }

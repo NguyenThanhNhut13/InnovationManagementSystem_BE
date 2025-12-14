@@ -6,6 +6,9 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Data
 @EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor
@@ -14,6 +17,8 @@ public class InnovationScoringDetailResponse extends DepartmentInnovationDetailR
     
     private JsonNode scoringCriteria;  // Bảng điểm từ InnovationDecision
     private Integer maxTotalScore;      // Tổng điểm tối đa (thường = 100)
+    private List<SimilarInnovationWarning> similarityWarnings = new ArrayList<>();
+    private Boolean hasSimilarityWarning = false;
     
     // Note: Scoring period information (scoringStartDate, scoringEndDate, canScore, canView, scoringPeriodStatus)
     // đã được di chuyển sang CouncilResponse để tránh lặp lại cho mỗi innovation
