@@ -37,11 +37,7 @@ src/main/resources/keys/*
 
 # Env file
 .env
-
-.cursor/
-.kiro-rules.yml
 md/
-postman/
 daigram/
 
 ### Python (AI Embedding Service) ###

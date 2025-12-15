@@ -2,8 +2,6 @@ package vn.edu.iuh.fit.innovationmanagementsystem_be.service.ai;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
@@ -22,8 +20,6 @@ import java.util.regex.Pattern;
 
 @Component
 public class OllamaProvider implements AiProvider {
-
-    private static final Logger logger = LoggerFactory.getLogger(OllamaProvider.class);
 
     private final WebClient webClient;
     private final ObjectMapper objectMapper;
@@ -58,7 +54,6 @@ public class OllamaProvider implements AiProvider {
                     .block();
             return true;
         } catch (Exception e) {
-            logger.warn("Ollama is not available: {}", e.getMessage());
             return false;
         }
     }
@@ -79,9 +74,6 @@ public class OllamaProvider implements AiProvider {
             options.put("num_predict", 500);
             requestBody.put("options", options);
 
-            logger.info("Calling Ollama API with model: {}", model);
-            long startTime = System.currentTimeMillis();
-
             String response = webClient.post()
                     .uri(apiUrl)
                     .contentType(MediaType.APPLICATION_JSON)
@@ -91,22 +83,16 @@ public class OllamaProvider implements AiProvider {
                     .timeout(Duration.ofMinutes(3))
                     .block();
 
-            long duration = System.currentTimeMillis() - startTime;
-            logger.info("Ollama API responded in {} ms", duration);
-
             JsonNode jsonResponse = objectMapper.readTree(response);
             JsonNode responseNode = jsonResponse.get("response");
             if (responseNode != null) {
                 return responseNode.asText();
             }
 
-            logger.warn("Ollama response missing 'response' field: {}", response);
             return null;
         } catch (WebClientResponseException e) {
-            logger.error("Ollama API error: {} - {}", e.getStatusCode(), e.getResponseBodyAsString());
             throw new RuntimeException("Lỗi khi gọi Ollama API: " + e.getMessage());
         } catch (Exception e) {
-            logger.error("Error calling Ollama API", e);
             throw new RuntimeException("Lỗi khi gọi Ollama API: " + e.getMessage());
         }
     }
@@ -120,7 +106,7 @@ public class OllamaProvider implements AiProvider {
 
     private String buildAnalysisPrompt(String content) {
         return """
-                Bạn là một chuyên gia đánh giá sáng kiến khoa học. Hãy tóm tắt và phân tích sáng kiến sau đây.
+                Bạn là một chuyên gia đánh giá sáng kiến khoa học. Hãy tóm tắt và phân tích sáng kiến sau đây. Bạn phải luôn trả lời bằng tiếng Việt.
 
                 NỘI DUNG SÁNG KIẾN:
                 %s
@@ -137,7 +123,8 @@ public class OllamaProvider implements AiProvider {
                 }
 
                 Chỉ trả về JSON, không thêm bất kỳ text nào khác.
-                """.formatted(content);
+                """
+                .formatted(content);
     }
 
     private AiAnalysisResponse parseAnalysisResponse(String innovationId, String innovationName, String response) {
@@ -162,7 +149,6 @@ public class OllamaProvider implements AiProvider {
                     .generatedAt(LocalDateTime.now())
                     .build();
         } catch (Exception e) {
-            logger.error("Error parsing analysis response: {}", response, e);
             return AiAnalysisResponse.builder()
                     .innovationId(innovationId)
                     .innovationName(innovationName)

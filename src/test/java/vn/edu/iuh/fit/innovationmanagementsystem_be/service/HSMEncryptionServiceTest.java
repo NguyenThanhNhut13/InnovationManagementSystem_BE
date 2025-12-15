@@ -4,7 +4,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;
-import vn.edu.iuh.fit.innovationmanagementsystem_be.exception.IdInvalidException;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -12,8 +11,6 @@ import static org.junit.jupiter.api.Assertions.*;
 class HSMEncryptionServiceTest {
 
     private HSMEncryptionService hsmEncryptionService;
-
-    private static final String VALID_MASTER_KEY = "dGhpcyBpcyBhIDMyIGJ5dGUga2V5IQ=="; // 32 bytes base64
 
     @BeforeEach
     void setUp() {
