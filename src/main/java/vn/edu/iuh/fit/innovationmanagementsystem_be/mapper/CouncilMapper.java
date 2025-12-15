@@ -18,7 +18,12 @@ public interface CouncilMapper {
     @Mapping(target = "innovationCount", source = "innovations", qualifiedByName = "countInnovations")
     @Mapping(target = "departmentName", source = "department", qualifiedByName = "getDepartmentName")
     @Mapping(target = "roundName", source = "innovations", qualifiedByName = "getRoundName")
-    @Mapping(target = "scoringProgress", ignore = true) // Sẽ được set thủ công trong service
+    @Mapping(target = "scoringProgress", ignore = true)
+    @Mapping(target = "canScore", ignore = true)
+    @Mapping(target = "canView", ignore = true)
+    @Mapping(target = "scoringStartDate", ignore = true)
+    @Mapping(target = "scoringEndDate", ignore = true)
+    @Mapping(target = "scoringPeriodStatus", ignore = true)
     CouncilResponse toCouncilResponse(Council council);
 
     @Mapping(target = "memberCount", source = "councilMembers", qualifiedByName = "countMembers")

@@ -12,5 +12,7 @@ public interface AuthenticationMapper {
     @Mapping(target = "roles", source = "userRoles", qualifiedByName = "mapUserRolesToStringsWithDefault")
     @Mapping(target = "accessToken", ignore = true)
     @Mapping(target = "refreshToken", ignore = true)
+    @Mapping(target = "isChairman", ignore = true)
+    @Mapping(target = "isSecretary", ignore = true)
     LoginResponse toLoginResponse(User user);
 }

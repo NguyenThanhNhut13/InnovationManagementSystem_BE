@@ -13,6 +13,8 @@ public interface UserMapper {
 
     @Mapping(target = "department", source = "department.departmentName")
     @Mapping(target = "roles", source = "userRoles", qualifiedByName = "mapUserRolesToStrings")
+    @Mapping(target = "isChairman", ignore = true)
+    @Mapping(target = "isSecretary", ignore = true)
     UserResponse toUserResponse(User user);
 
     @Mapping(target = "id", ignore = true)
