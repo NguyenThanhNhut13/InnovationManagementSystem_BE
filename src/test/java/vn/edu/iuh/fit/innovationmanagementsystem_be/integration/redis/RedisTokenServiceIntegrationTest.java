@@ -18,6 +18,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @Testcontainers
 @DisplayName("RedisTokenService Integration Tests")
+@SuppressWarnings("resource")
 class RedisTokenServiceIntegrationTest {
 
     @Container

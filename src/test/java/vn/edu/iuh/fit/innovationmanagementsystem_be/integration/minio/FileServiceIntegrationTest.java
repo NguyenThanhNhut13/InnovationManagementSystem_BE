@@ -18,6 +18,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @Testcontainers
 @DisplayName("FileService Integration Tests")
+@SuppressWarnings("resource")
 class FileServiceIntegrationTest {
 
     @Container

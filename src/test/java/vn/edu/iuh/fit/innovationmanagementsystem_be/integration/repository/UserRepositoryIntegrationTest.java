@@ -28,6 +28,7 @@ import static org.junit.jupiter.api.Assertions.*;
 @Testcontainers
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @DisplayName("UserRepository Integration Tests")
+@SuppressWarnings("resource")
 class UserRepositoryIntegrationTest {
 
     @Container

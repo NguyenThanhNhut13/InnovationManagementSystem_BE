@@ -43,7 +43,6 @@ import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.BatchSign
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.InnovationStatusEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.utils.Utils;
 
-import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -593,11 +592,6 @@ public class DigitalSignatureService {
         return user.getUserRoles().stream()
                 .anyMatch(userRole -> userRole.getRole().getRoleName() == UserRoleEnum.TRUONG_KHOA
                         && user.getDepartment().getId().equals(departmentId));
-    }
-
-    // Helper method cũ (giữ lại để backward compatibility)
-    private TemplatePdfSignerResponse toTemplatePdfSignerResponse(DigitalSignature signature) {
-        return toTemplatePdfSignerResponse(signature, null);
     }
 
     // Helper method mới với actualPdfHash để verify PDF integrity
