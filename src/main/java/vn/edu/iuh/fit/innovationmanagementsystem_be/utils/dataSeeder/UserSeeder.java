@@ -92,7 +92,7 @@ public class UserSeeder implements DatabaseSeeder {
 
         User user = new User();
         user.setPersonnelId(String.format("%08d", 10000000 + index));
-        user.setFullName("User " + roleEnum.name().replace('_', ' '));
+        user.setFullName(getFullNameByRole(roleEnum, index));
         user.setEmail(roleEnum.name().toLowerCase() + "@iuh.edu.vn");
         user.setPassword(passwordEncoder.encode("password123"));
         user.setDepartment(department);
@@ -145,17 +145,31 @@ public class UserSeeder implements DatabaseSeeder {
         }
     }
 
+    // Lấy tên đầy đủ dựa trên role
+    private String getFullNameByRole(UserRoleEnum roleEnum, int index) {
+        return switch (roleEnum) {
+            case QUAN_TRI_VIEN_HE_THONG -> "Nguyễn Văn An " + index;
+            case TRUONG_KHOA -> "Trần Minh Tuấn " + index;
+            case QUAN_TRI_VIEN_KHOA -> "Lê Thị Hương " + index;
+            case GIANG_VIEN -> "Phạm Đức Thành " + index;
+            case TV_HOI_DONG_KHOA -> "Hoàng Văn Hải " + index;
+            case QUAN_TRI_VIEN_QLKH_HTQT -> "Võ Thị Mai " + index;
+            case TV_HOI_DONG_TRUONG -> "Đặng Quốc Việt " + index;
+            case CHU_TICH_HD_TRUONG -> "Bùi Thanh Long " + index;
+        };
+    }
+
     // Lấy trình độ học vấn dựa trên role
     private String getQualificationByRole(UserRoleEnum roleEnum) {
         return switch (roleEnum) {
-            case QUAN_TRI_VIEN_HE_THONG -> "Thạc sĩ Quản trị Hệ thống";
-            case TRUONG_KHOA -> "Tiến sĩ Quản lý Giáo dục";
-            case QUAN_TRI_VIEN_KHOA -> "Thạc sĩ Quản lý Khoa";
-            case GIANG_VIEN -> "Thạc sĩ Công nghệ Thông tin";
-            case TV_HOI_DONG_KHOA -> "Thạc sĩ Chuyên ngành";
-            case QUAN_TRI_VIEN_QLKH_HTQT -> "Thạc sĩ Quản lý Khoa học";
-            case TV_HOI_DONG_TRUONG -> "Thạc sĩ Chuyên ngành";
-            case CHU_TICH_HD_TRUONG -> "Tiến sĩ Chuyên ngành";
+            case QUAN_TRI_VIEN_HE_THONG -> "Thạc Sĩ";
+            case TRUONG_KHOA -> "Tiến Sĩ";
+            case QUAN_TRI_VIEN_KHOA -> "Thạc Sĩ";
+            case GIANG_VIEN -> "Thạc Sĩ";
+            case TV_HOI_DONG_KHOA -> "Thạc Sĩ";
+            case QUAN_TRI_VIEN_QLKH_HTQT -> "Thạc Sĩ";
+            case TV_HOI_DONG_TRUONG -> "PGS";
+            case CHU_TICH_HD_TRUONG -> "GS";
         };
     }
 
