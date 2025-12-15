@@ -1,9 +1,12 @@
 package vn.edu.iuh.fit.innovationmanagementsystem_be.mapper;
 
+import org.mapstruct.AfterMapping;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
+import org.mapstruct.MappingTarget;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.User;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.UserRole;
+import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.model.enums.CouncilMemberRoleEnum;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.requestDTO.UserRequest;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.UserResponse;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.domain.responseDTO.UserRoleResponse;
@@ -16,6 +19,19 @@ public interface UserMapper {
     @Mapping(target = "isChairman", ignore = true)
     @Mapping(target = "isSecretary", ignore = true)
     UserResponse toUserResponse(User user);
+
+    @AfterMapping
+    default void setCouncilRoles(@MappingTarget UserResponse response, User user) {
+        if (user.getCouncilMembers() != null) {
+            response.setIsChairman(user.getCouncilMembers().stream()
+                    .anyMatch(cm -> cm.getRole() == CouncilMemberRoleEnum.CHU_TICH));
+            response.setIsSecretary(user.getCouncilMembers().stream()
+                    .anyMatch(cm -> cm.getRole() == CouncilMemberRoleEnum.THU_KY));
+        } else {
+            response.setIsChairman(false);
+            response.setIsSecretary(false);
+        }
+    }
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "personnelId", source = "personnelId")
