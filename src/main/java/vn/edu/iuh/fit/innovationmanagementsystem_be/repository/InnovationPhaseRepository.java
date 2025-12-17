@@ -14,62 +14,72 @@ import java.util.Optional;
 
 @Repository
 public interface InnovationPhaseRepository
-        extends JpaRepository<InnovationPhase, String>, JpaSpecificationExecutor<InnovationPhase> {
+                extends JpaRepository<InnovationPhase, String>, JpaSpecificationExecutor<InnovationPhase> {
 
-    List<InnovationPhase> findByInnovationRoundIdOrderByPhaseOrder(String innovationRoundId);
+        List<InnovationPhase> findByInnovationRoundIdOrderByPhaseOrder(String innovationRoundId);
 
-    Optional<InnovationPhase> findById(String id);
+        Optional<InnovationPhase> findById(String id);
 
-    List<InnovationPhase> findByPhaseStatus(PhaseStatusEnum phaseStatus);
+        List<InnovationPhase> findByPhaseStatus(PhaseStatusEnum phaseStatus);
 
-    List<InnovationPhase> findByInnovationRoundIdAndPhaseStatus(String innovationRoundId,
-            PhaseStatusEnum phaseStatus);
+        List<InnovationPhase> findByInnovationRoundIdAndPhaseStatus(String innovationRoundId,
+                        PhaseStatusEnum phaseStatus);
 
-    Optional<InnovationPhase> findByInnovationRoundIdAndPhaseOrder(String innovationRoundId, Integer phaseOrder);
+        @Query("SELECT ip FROM InnovationPhase ip " +
+                        "WHERE ip.innovationRound.id = :innovationRoundId " +
+                        "AND ip.phaseOrder = :phaseOrder LIMIT 1")
+        Optional<InnovationPhase> findByInnovationRoundIdAndPhaseOrder(
+                        @Param("innovationRoundId") String innovationRoundId,
+                        @Param("phaseOrder") Integer phaseOrder);
 
-    Optional<InnovationPhase> findByInnovationRoundIdAndPhaseType(String innovationRoundId,
-            InnovationPhaseTypeEnum phaseType);
+        @Query("SELECT ip FROM InnovationPhase ip " +
+                        "WHERE ip.innovationRound.id = :innovationRoundId " +
+                        "AND ip.phaseType = :phaseType LIMIT 1")
+        Optional<InnovationPhase> findByInnovationRoundIdAndPhaseType(
+                        @Param("innovationRoundId") String innovationRoundId,
+                        @Param("phaseType") InnovationPhaseTypeEnum phaseType);
 
-    @Query("SELECT ip FROM InnovationPhase ip " +
-            "JOIN ip.innovationRound ir " +
-            "WHERE ir.status = 'OPEN' AND ip.phaseType = :phaseType " +
-            "ORDER BY ip.phaseOrder ASC")
-    Optional<InnovationPhase> findSubmissionPhaseByOpenRound(@Param("phaseType") InnovationPhaseTypeEnum phaseType);
+        @Query("SELECT ip FROM InnovationPhase ip " +
+                        "JOIN ip.innovationRound ir " +
+                        "WHERE ir.status = 'OPEN' AND ip.phaseType = :phaseType " +
+                        "ORDER BY ip.phaseOrder ASC LIMIT 1")
+        Optional<InnovationPhase> findSubmissionPhaseByOpenRound(@Param("phaseType") InnovationPhaseTypeEnum phaseType);
 
-    /**
-     * Tìm phase có isDeadline = true trong một round (bất kỳ phaseType nào)
-     * Dùng để check deadline constraint khi tạo/cập nhật DepartmentPhase
-     */
-    @Query("SELECT ip FROM InnovationPhase ip " +
-            "WHERE ip.innovationRound.id = :roundId " +
-            "AND ip.isDeadline = true")
-    Optional<InnovationPhase> findPhaseWithDeadlineByRoundId(@Param("roundId") String roundId);
+        /**
+         * Tìm phase có isDeadline = true trong một round (bất kỳ phaseType nào)
+         * Dùng để check deadline constraint khi tạo/cập nhật DepartmentPhase
+         */
+        @Query("SELECT ip FROM InnovationPhase ip " +
+                        "WHERE ip.innovationRound.id = :roundId " +
+                        "AND ip.isDeadline = true LIMIT 1")
+        Optional<InnovationPhase> findPhaseWithDeadlineByRoundId(@Param("roundId") String roundId);
 
-    /**
-     * Tìm các phase có trạng thái SCHEDULED và đã đến ngày bắt đầu
-     */
-    @Query("SELECT ip FROM InnovationPhase ip " +
-            "WHERE ip.phaseStatus = 'SCHEDULED' " +
-            "AND ip.phaseStartDate <= :currentDate")
-    List<InnovationPhase> findScheduledPhasesReadyToStart(@Param("currentDate") java.time.LocalDate currentDate);
+        /**
+         * Tìm các phase có trạng thái SCHEDULED và đã đến ngày bắt đầu
+         */
+        @Query("SELECT ip FROM InnovationPhase ip " +
+                        "WHERE ip.phaseStatus = 'SCHEDULED' " +
+                        "AND ip.phaseStartDate <= :currentDate")
+        List<InnovationPhase> findScheduledPhasesReadyToStart(@Param("currentDate") java.time.LocalDate currentDate);
 
-    /**
-     * Tìm các phase có trạng thái ACTIVE và đã qua ngày kết thúc
-     */
-    @Query("SELECT ip FROM InnovationPhase ip " +
-            "WHERE ip.phaseStatus = 'ACTIVE' " +
-            "AND ip.phaseEndDate < :currentDate")
-    List<InnovationPhase> findActivePhasesReadyToComplete(@Param("currentDate") java.time.LocalDate currentDate);
+        /**
+         * Tìm các phase có trạng thái ACTIVE và đã qua ngày kết thúc
+         */
+        @Query("SELECT ip FROM InnovationPhase ip " +
+                        "WHERE ip.phaseStatus = 'ACTIVE' " +
+                        "AND ip.phaseEndDate < :currentDate")
+        List<InnovationPhase> findActivePhasesReadyToComplete(@Param("currentDate") java.time.LocalDate currentDate);
 
-    /**
-     * Tìm các innovation phase SCORING cấp Trường đã kết thúc (endDate < currentDate)
-     * (để tự động cập nhật trạng thái innovation sau khi hết thời gian chấm điểm)
-     * 
-     * @param currentDate Ngày hiện tại
-     */
-    @Query("SELECT ip FROM InnovationPhase ip " +
-            "WHERE ip.phaseType = 'SCORING' " +
-            "AND ip.level = 'SCHOOL' " +
-            "AND ip.phaseEndDate < :currentDate")
-    List<InnovationPhase> findSchoolScoringPhasesEnded(@Param("currentDate") java.time.LocalDate currentDate);
+        /**
+         * Tìm các innovation phase SCORING cấp Trường đã kết thúc (endDate <
+         * currentDate)
+         * (để tự động cập nhật trạng thái innovation sau khi hết thời gian chấm điểm)
+         * 
+         * @param currentDate Ngày hiện tại
+         */
+        @Query("SELECT ip FROM InnovationPhase ip " +
+                        "WHERE ip.phaseType = 'SCORING' " +
+                        "AND ip.level = 'SCHOOL' " +
+                        "AND ip.phaseEndDate < :currentDate")
+        List<InnovationPhase> findSchoolScoringPhasesEnded(@Param("currentDate") java.time.LocalDate currentDate);
 }
