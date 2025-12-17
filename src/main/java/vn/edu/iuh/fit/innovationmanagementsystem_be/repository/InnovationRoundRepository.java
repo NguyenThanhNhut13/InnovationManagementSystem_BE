@@ -21,15 +21,15 @@ public interface InnovationRoundRepository
         List<InnovationRound> findByAcademicYearAndNameIgnoreCase(String academicYear, String name);
 
         @Query("SELECT r FROM InnovationRound r WHERE r.status = :status " +
-                        "ORDER BY r.createdAt DESC")
+                        "ORDER BY r.createdAt DESC LIMIT 1")
         Optional<InnovationRound> findCurrentActiveRound(@Param("currentDate") LocalDate currentDate,
                         @Param("status") InnovationRoundStatusEnum status);
 
-        @Query("SELECT r FROM InnovationRound r WHERE r.status = :status " +
-                        "ORDER BY r.createdAt DESC")
+        @Query(value = "SELECT r FROM InnovationRound r WHERE r.status = :status " +
+                        "ORDER BY r.createdAt DESC LIMIT 1")
         Optional<InnovationRound> findByStatusOrderByCreatedAtDesc(@Param("status") InnovationRoundStatusEnum status);
 
-        @Query("SELECT r FROM InnovationRound r ORDER BY r.createdAt DESC")
+        @Query("SELECT r FROM InnovationRound r ORDER BY r.createdAt DESC LIMIT 1")
         Optional<InnovationRound> findLatestRound();
 
 }
