@@ -92,7 +92,8 @@ public class DepartmentPhaseService {
         private DepartmentPhaseResponse createSingleDepartmentPhase(DepartmentPhaseRequest request,
                         InnovationRound innovationRound, Department department) {
                 InnovationPhase innovationPhase = innovationPhaseRepository
-                                .findFirstByInnovationRoundIdAndPhaseType(innovationRound.getId(), request.getPhaseType())
+                                .findFirstByInnovationRoundIdAndPhaseType(innovationRound.getId(),
+                                                request.getPhaseType())
                                 .orElseThrow(() -> new IdInvalidException(
                                                 "Không tìm thấy giai đoạn trường với loại: " + request.getPhaseType()));
 
@@ -386,11 +387,18 @@ public class DepartmentPhaseService {
                 }
 
                 // Cập nhật status và phaseStatus cho tất cả departmentPhase
+                LocalDate today = LocalDate.now();
                 for (DepartmentPhase phase : departmentPhases) {
                         phase.setStatus(InnovationRoundStatusEnum.OPEN);
-                        // Khi publish, chuyển phaseStatus từ DRAFT sang SCHEDULED
+                        // Khi publish, kiểm tra phaseType và ngày bắt đầu
                         if (phase.getPhaseStatus() == PhaseStatusEnum.DRAFT) {
-                                phase.setPhaseStatus(PhaseStatusEnum.SCHEDULED);
+                                // Nếu là SUBMISSION và ngày bắt đầu <= ngày hiện tại thì chuyển sang ACTIVE
+                                if (InnovationPhaseTypeEnum.SUBMISSION.equals(phase.getPhaseType())
+                                                && !phase.getPhaseStartDate().isAfter(today)) {
+                                        phase.setPhaseStatus(PhaseStatusEnum.ACTIVE);
+                                } else {
+                                        phase.setPhaseStatus(PhaseStatusEnum.SCHEDULED);
+                                }
                         }
                 }
 
