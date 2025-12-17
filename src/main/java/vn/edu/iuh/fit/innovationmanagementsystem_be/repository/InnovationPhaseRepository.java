@@ -25,34 +25,32 @@ public interface InnovationPhaseRepository
         List<InnovationPhase> findByInnovationRoundIdAndPhaseStatus(String innovationRoundId,
                         PhaseStatusEnum phaseStatus);
 
-        @Query("SELECT ip FROM InnovationPhase ip " +
-                        "WHERE ip.innovationRound.id = :innovationRoundId " +
-                        "AND ip.phaseOrder = :phaseOrder LIMIT 1")
-        Optional<InnovationPhase> findByInnovationRoundIdAndPhaseOrder(
-                        @Param("innovationRoundId") String innovationRoundId,
-                        @Param("phaseOrder") Integer phaseOrder);
+        Optional<InnovationPhase> findFirstByInnovationRoundIdAndPhaseOrder(String innovationRoundId,
+                        Integer phaseOrder);
 
-        @Query("SELECT ip FROM InnovationPhase ip " +
-                        "WHERE ip.innovationRound.id = :innovationRoundId " +
-                        "AND ip.phaseType = :phaseType LIMIT 1")
-        Optional<InnovationPhase> findByInnovationRoundIdAndPhaseType(
-                        @Param("innovationRoundId") String innovationRoundId,
-                        @Param("phaseType") InnovationPhaseTypeEnum phaseType);
+        Optional<InnovationPhase> findFirstByInnovationRoundIdAndPhaseType(String innovationRoundId,
+                        InnovationPhaseTypeEnum phaseType);
 
         @Query("SELECT ip FROM InnovationPhase ip " +
                         "JOIN ip.innovationRound ir " +
                         "WHERE ir.status = 'OPEN' AND ip.phaseType = :phaseType " +
-                        "ORDER BY ip.phaseOrder ASC LIMIT 1")
-        Optional<InnovationPhase> findSubmissionPhaseByOpenRound(@Param("phaseType") InnovationPhaseTypeEnum phaseType);
+                        "ORDER BY ip.phaseOrder ASC")
+        List<InnovationPhase> findSubmissionPhasesByOpenRound(@Param("phaseType") InnovationPhaseTypeEnum phaseType);
+
+        default Optional<InnovationPhase> findSubmissionPhaseByOpenRound(InnovationPhaseTypeEnum phaseType) {
+                List<InnovationPhase> phases = findSubmissionPhasesByOpenRound(phaseType);
+                return phases.isEmpty() ? Optional.empty() : Optional.of(phases.get(0));
+        }
 
         /**
          * Tìm phase có isDeadline = true trong một round (bất kỳ phaseType nào)
          * Dùng để check deadline constraint khi tạo/cập nhật DepartmentPhase
          */
-        @Query("SELECT ip FROM InnovationPhase ip " +
-                        "WHERE ip.innovationRound.id = :roundId " +
-                        "AND ip.isDeadline = true LIMIT 1")
-        Optional<InnovationPhase> findPhaseWithDeadlineByRoundId(@Param("roundId") String roundId);
+        Optional<InnovationPhase> findFirstByInnovationRoundIdAndIsDeadlineTrue(String innovationRoundId);
+
+        default Optional<InnovationPhase> findPhaseWithDeadlineByRoundId(String roundId) {
+                return findFirstByInnovationRoundIdAndIsDeadlineTrue(roundId);
+        }
 
         /**
          * Tìm các phase có trạng thái SCHEDULED và đã đến ngày bắt đầu

@@ -401,7 +401,7 @@ public class CouncilService {
         } else {
             // Cấp Trường: Lấy SCORING phase từ InnovationPhase (level = SCHOOL)
             Optional<InnovationPhase> scoringPhase = innovationPhaseRepository
-                    .findByInnovationRoundIdAndPhaseType(round.getId(), InnovationPhaseTypeEnum.SCORING);
+                    .findFirstByInnovationRoundIdAndPhaseType(round.getId(), InnovationPhaseTypeEnum.SCORING);
 
             if (scoringPhase.isEmpty()) {
                 throw new IllegalArgumentException(
@@ -1369,7 +1369,7 @@ public class CouncilService {
             return scoringPhase.map(DepartmentPhase::getPhaseEndDate).orElse(null);
         } else {
             Optional<InnovationPhase> scoringPhase = innovationPhaseRepository
-                    .findByInnovationRoundIdAndPhaseType(round.getId(), InnovationPhaseTypeEnum.SCORING);
+                    .findFirstByInnovationRoundIdAndPhaseType(round.getId(), InnovationPhaseTypeEnum.SCORING);
 
             if (scoringPhase.isPresent() && scoringPhase.get().getLevel() == InnovationPhaseLevelEnum.SCHOOL) {
                 return scoringPhase.get().getPhaseEndDate();
@@ -1408,7 +1408,7 @@ public class CouncilService {
             endDate = scoringPhase.getPhaseEndDate();
         } else {
             Optional<InnovationPhase> scoringPhaseOpt = innovationPhaseRepository
-                    .findByInnovationRoundIdAndPhaseType(round.getId(), InnovationPhaseTypeEnum.SCORING);
+                    .findFirstByInnovationRoundIdAndPhaseType(round.getId(), InnovationPhaseTypeEnum.SCORING);
 
             if (scoringPhaseOpt.isEmpty()) {
                 return new ScoringPeriodInfo(null, null, false, false, ScoringPeriodStatusEnum.NOT_STARTED);

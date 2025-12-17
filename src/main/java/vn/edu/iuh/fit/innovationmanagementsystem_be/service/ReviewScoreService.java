@@ -487,7 +487,7 @@ public class ReviewScoreService {
             endDate = scoringPhase.getPhaseEndDate();
         } else {
             InnovationPhase scoringPhase = innovationPhaseRepository
-                    .findByInnovationRoundIdAndPhaseType(round.getId(), InnovationPhaseTypeEnum.SCORING)
+                    .findFirstByInnovationRoundIdAndPhaseType(round.getId(), InnovationPhaseTypeEnum.SCORING)
                     .orElseThrow(() -> new IdInvalidException(
                             "Không tìm thấy giai đoạn chấm điểm cấp trường cho đợt sáng kiến này"));
 
@@ -541,7 +541,7 @@ public class ReviewScoreService {
             return phaseOpt.isPresent() && phaseOpt.get().getPhaseStatus() == PhaseStatusEnum.ACTIVE;
         } else {
             Optional<InnovationPhase> phaseOpt = innovationPhaseRepository
-                    .findByInnovationRoundIdAndPhaseType(round.getId(), InnovationPhaseTypeEnum.SCORING);
+                    .findFirstByInnovationRoundIdAndPhaseType(round.getId(), InnovationPhaseTypeEnum.SCORING);
             if (phaseOpt.isEmpty()) {
                 return false;
             }

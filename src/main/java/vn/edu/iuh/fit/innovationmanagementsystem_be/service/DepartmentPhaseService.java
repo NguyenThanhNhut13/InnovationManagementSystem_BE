@@ -92,7 +92,7 @@ public class DepartmentPhaseService {
         private DepartmentPhaseResponse createSingleDepartmentPhase(DepartmentPhaseRequest request,
                         InnovationRound innovationRound, Department department) {
                 InnovationPhase innovationPhase = innovationPhaseRepository
-                                .findByInnovationRoundIdAndPhaseType(innovationRound.getId(), request.getPhaseType())
+                                .findFirstByInnovationRoundIdAndPhaseType(innovationRound.getId(), request.getPhaseType())
                                 .orElseThrow(() -> new IdInvalidException(
                                                 "Không tìm thấy giai đoạn trường với loại: " + request.getPhaseType()));
 
@@ -203,7 +203,7 @@ public class DepartmentPhaseService {
 
                 if (!departmentPhase.getPhaseType().equals(newPhaseType)) {
                         InnovationPhase newInnovationPhase = innovationPhaseRepository
-                                        .findByInnovationRoundIdAndPhaseType(innovationRound.getId(), newPhaseType)
+                                        .findFirstByInnovationRoundIdAndPhaseType(innovationRound.getId(), newPhaseType)
                                         .orElseThrow(() -> new IdInvalidException(
                                                         "Không tìm thấy giai đoạn trường với loại: " + newPhaseType));
 
