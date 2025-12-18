@@ -30,6 +30,21 @@ public class OllamaProvider implements AiProvider {
     @Value("${ollama.model:qwen2.5:3b}")
     private String model;
 
+    @Value("${ollama.options.temperature:0.3}")
+    private double temperature;
+
+    @Value("${ollama.options.top_p:0.7}")
+    private double topP;
+
+    @Value("${ollama.options.num_ctx:1024}")
+    private int numCtx;
+
+    @Value("${ollama.options.num_thread:7}")
+    private int numThread;
+
+    @Value("${ollama.options.num_predict:350}")
+    private int numPredict;
+
     public OllamaProvider(ObjectMapper objectMapper) {
         this.webClient = WebClient.builder()
                 .codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(10 * 1024 * 1024))
@@ -67,11 +82,11 @@ public class OllamaProvider implements AiProvider {
             requestBody.put("stream", false);
 
             Map<String, Object> options = new HashMap<>();
-            options.put("temperature", 0.5);
-            options.put("top_p", 0.8);
-            options.put("num_ctx", 2048);
-            options.put("num_thread", 7);
-            options.put("num_predict", 500);
+            options.put("temperature", temperature);
+            options.put("top_p", topP);
+            options.put("num_ctx", numCtx);
+            options.put("num_thread", numThread);
+            options.put("num_predict", numPredict);
             requestBody.put("options", options);
 
             String response = webClient.post()
