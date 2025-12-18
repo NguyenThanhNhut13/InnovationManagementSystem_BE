@@ -2,6 +2,8 @@ package vn.edu.iuh.fit.innovationmanagementsystem_be.service.ai;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
@@ -20,6 +22,8 @@ import java.util.regex.Pattern;
 
 @Component
 public class OllamaProvider implements AiProvider {
+
+    private static final Logger logger = LoggerFactory.getLogger(OllamaProvider.class);
 
     private final WebClient webClient;
     private final ObjectMapper objectMapper;
@@ -144,26 +148,37 @@ public class OllamaProvider implements AiProvider {
 
     private AiAnalysisResponse parseAnalysisResponse(String innovationId, String innovationName, String response) {
         try {
+            logger.info("Parsing AI response for innovation: {}", innovationId);
             String cleanJson = cleanJsonResponse(response);
+            logger.debug("Cleaned JSON: {}", cleanJson);
+
             JsonNode jsonNode = objectMapper.readTree(cleanJson);
 
+            String summary = getTextValue(jsonNode, "summary", "");
+            String analysis = getTextValue(jsonNode, "analysis", "");
             List<String> keyPoints = parseStringList(jsonNode.get("keyPoints"));
             List<String> strengths = parseStringList(jsonNode.get("strengths"));
             List<String> weaknesses = parseStringList(jsonNode.get("weaknesses"));
             List<String> suggestions = parseStringList(jsonNode.get("suggestions"));
 
+            logger.info(
+                    "Parsed successfully - summary length: {}, keyPoints: {}, strengths: {}, weaknesses: {}, suggestions: {}",
+                    summary.length(), keyPoints.size(), strengths.size(), weaknesses.size(), suggestions.size());
+
             return AiAnalysisResponse.builder()
                     .innovationId(innovationId)
                     .innovationName(innovationName)
-                    .summary(jsonNode.get("summary").asText())
+                    .summary(summary)
                     .keyPoints(keyPoints)
                     .strengths(strengths)
                     .weaknesses(weaknesses)
                     .suggestions(suggestions)
-                    .analysis(jsonNode.get("analysis").asText())
+                    .analysis(analysis)
                     .generatedAt(LocalDateTime.now())
                     .build();
         } catch (Exception e) {
+            logger.error("Lỗi khi parse JSON response: {} - Response: {}", e.getMessage(),
+                    response != null ? response.substring(0, Math.min(500, response.length())) : "null");
             return AiAnalysisResponse.builder()
                     .innovationId(innovationId)
                     .innovationName(innovationName)
@@ -176,6 +191,14 @@ public class OllamaProvider implements AiProvider {
                     .generatedAt(LocalDateTime.now())
                     .build();
         }
+    }
+
+    private String getTextValue(JsonNode node, String fieldName, String defaultValue) {
+        JsonNode field = node.get(fieldName);
+        if (field != null && !field.isNull()) {
+            return field.asText();
+        }
+        return defaultValue;
     }
 
     private String cleanJsonResponse(String response) {

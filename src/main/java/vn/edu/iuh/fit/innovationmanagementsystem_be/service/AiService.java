@@ -133,16 +133,14 @@ public class AiService {
     private void saveToDatabase(String innovationId, String innovationName, String contentHash,
             AiAnalysisResponse response) {
         try {
+            // Serialize toàn bộ response thành JSON
+            String analysisJson = objectMapper.writeValueAsString(response);
+
             AiAnalysisResult result = AiAnalysisResult.builder()
                     .innovationId(innovationId)
                     .innovationName(innovationName)
                     .contentHash(contentHash)
-                    .summary(response.getSummary())
-                    .keyPoints(objectMapper.writeValueAsString(response.getKeyPoints()))
-                    .strengths(objectMapper.writeValueAsString(response.getStrengths()))
-                    .weaknesses(objectMapper.writeValueAsString(response.getWeaknesses()))
-                    .suggestions(objectMapper.writeValueAsString(response.getSuggestions()))
-                    .analysis(response.getAnalysis())
+                    .analysisJson(analysisJson)
                     .generatedAt(response.getGeneratedAt() != null ? response.getGeneratedAt() : LocalDateTime.now())
                     .build();
 
@@ -155,15 +153,55 @@ public class AiService {
 
     private AiAnalysisResponse convertToResponse(AiAnalysisResult result) {
         try {
+            String analysisJson = result.getAnalysisJson();
+
+            // Parse từ analysisJson
+            if (analysisJson != null && !analysisJson.isEmpty()) {
+                // Fix JSON bị cắt (thiếu dấu } cuối)
+                String fixedJson = fixTruncatedJson(analysisJson);
+                AiAnalysisResponse response = objectMapper.readValue(fixedJson, AiAnalysisResponse.class);
+
+                // Nếu các field rỗng nhưng analysis có JSON, parse lại từ analysis
+                if ((response.getSummary() == null || response.getSummary().isEmpty())
+                        && response.getAnalysis() != null
+                        && response.getAnalysis().trim().startsWith("{")) {
+                    logger.info("Các field rỗng, đang parse lại từ analysis field");
+                    String innerJson = fixTruncatedJson(response.getAnalysis());
+                    JsonNode jsonNode = objectMapper.readTree(innerJson);
+
+                    String summary = getTextFromJson(jsonNode, "summary", "");
+                    String analysis = getTextFromJson(jsonNode, "analysis", "");
+                    List<String> keyPoints = parseJsonArray(jsonNode.get("keyPoints"));
+                    List<String> strengths = parseJsonArray(jsonNode.get("strengths"));
+                    List<String> weaknesses = parseJsonArray(jsonNode.get("weaknesses"));
+                    List<String> suggestions = parseJsonArray(jsonNode.get("suggestions"));
+
+                    return AiAnalysisResponse.builder()
+                            .innovationId(response.getInnovationId())
+                            .innovationName(response.getInnovationName())
+                            .summary(summary)
+                            .keyPoints(keyPoints)
+                            .strengths(strengths)
+                            .weaknesses(weaknesses)
+                            .suggestions(suggestions)
+                            .analysis(analysis)
+                            .generatedAt(response.getGeneratedAt())
+                            .build();
+                }
+
+                return response;
+            }
+
+            // Fallback nếu không có dữ liệu
             return AiAnalysisResponse.builder()
                     .innovationId(result.getInnovationId())
                     .innovationName(result.getInnovationName())
-                    .summary(result.getSummary())
-                    .keyPoints(parseJsonList(result.getKeyPoints()))
-                    .strengths(parseJsonList(result.getStrengths()))
-                    .weaknesses(parseJsonList(result.getWeaknesses()))
-                    .suggestions(parseJsonList(result.getSuggestions()))
-                    .analysis(result.getAnalysis())
+                    .summary("")
+                    .keyPoints(new ArrayList<>())
+                    .strengths(new ArrayList<>())
+                    .weaknesses(new ArrayList<>())
+                    .suggestions(new ArrayList<>())
+                    .analysis("")
                     .generatedAt(result.getGeneratedAt())
                     .build();
         } catch (Exception e) {
@@ -171,28 +209,68 @@ public class AiService {
             return AiAnalysisResponse.builder()
                     .innovationId(result.getInnovationId())
                     .innovationName(result.getInnovationName())
-                    .summary(result.getSummary())
+                    .summary("")
                     .keyPoints(new ArrayList<>())
                     .strengths(new ArrayList<>())
                     .weaknesses(new ArrayList<>())
                     .suggestions(new ArrayList<>())
-                    .analysis(result.getAnalysis())
+                    .analysis(result.getAnalysisJson())
                     .generatedAt(result.getGeneratedAt())
                     .build();
         }
     }
 
-    private List<String> parseJsonList(String json) {
+    private String getTextFromJson(JsonNode node, String fieldName, String defaultValue) {
+        JsonNode field = node.get(fieldName);
+        if (field != null && !field.isNull()) {
+            return field.asText();
+        }
+        return defaultValue;
+    }
+
+    private List<String> parseJsonArray(JsonNode node) {
+        List<String> list = new ArrayList<>();
+        if (node != null && node.isArray()) {
+            for (JsonNode item : node) {
+                list.add(item.asText());
+            }
+        }
+        return list;
+    }
+
+    private String fixTruncatedJson(String json) {
         if (json == null || json.isEmpty()) {
-            return new ArrayList<>();
+            return "{}";
         }
-        try {
-            return objectMapper.readValue(json, new TypeReference<List<String>>() {
-            });
-        } catch (JsonProcessingException e) {
-            logger.warn("Lỗi khi parse JSON list: {}", e.getMessage());
-            return new ArrayList<>();
+        String trimmed = json.trim();
+
+        // Đếm số dấu { và }
+        int openBraces = 0;
+        int closeBraces = 0;
+        for (char c : trimmed.toCharArray()) {
+            if (c == '{')
+                openBraces++;
+            if (c == '}')
+                closeBraces++;
         }
+
+        // Thêm dấu } nếu thiếu
+        StringBuilder fixed = new StringBuilder(trimmed);
+        while (closeBraces < openBraces) {
+            // Kiểm tra xem có cần thêm dấu " để đóng string không
+            if (trimmed.endsWith("\"")) {
+                // String đã đóng, chỉ cần thêm }
+            } else {
+                // Có thể string đang mở, thêm " trước
+                fixed.append("\"");
+            }
+            fixed.append("}");
+            closeBraces++;
+        }
+
+        logger.info("Fixed truncated JSON: added {} closing braces",
+                openBraces - (closeBraces - (openBraces - closeBraces)));
+        return fixed.toString();
     }
 
     private Innovation findInnovationById(String innovationId) {
