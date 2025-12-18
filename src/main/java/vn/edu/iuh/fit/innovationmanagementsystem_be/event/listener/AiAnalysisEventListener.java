@@ -2,9 +2,10 @@ package vn.edu.iuh.fit.innovationmanagementsystem_be.event.listener;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.event.TransactionPhase;
+import org.springframework.transaction.event.TransactionalEventListener;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.event.InnovationSubmittedEvent;
 import vn.edu.iuh.fit.innovationmanagementsystem_be.service.AiService;
 
@@ -16,7 +17,7 @@ public class AiAnalysisEventListener {
     private final AiService aiService;
 
     @Async
-    @EventListener
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleInnovationSubmitted(InnovationSubmittedEvent event) {
         log.info("Pre-computing AI analysis cho innovation: {} (ID: {})",
                 event.getInnovationName(), event.getInnovationId());
