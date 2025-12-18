@@ -21,10 +21,13 @@ public class AiService {
 
     private final AiProvider aiProvider;
     private final InnovationRepository innovationRepository;
+    private final AiAnalysisCacheService cacheService;
 
-    public AiService(AiProvider aiProvider, InnovationRepository innovationRepository) {
+    public AiService(AiProvider aiProvider, InnovationRepository innovationRepository,
+            AiAnalysisCacheService cacheService) {
         this.aiProvider = aiProvider;
         this.innovationRepository = innovationRepository;
+        this.cacheService = cacheService;
         logger.info("AiService initialized with provider: {}", aiProvider.getProviderName());
     }
 
@@ -36,9 +39,45 @@ public class AiService {
             throw new IdInvalidException("Sáng kiến không có nội dung để phân tích");
         }
 
+        String contentHash = cacheService.generateContentHash(content);
+        AiAnalysisResponse cachedResponse = cacheService.getCachedAnalysis(innovationId, contentHash);
+        if (cachedResponse != null) {
+            logger.info("Trả về kết quả từ cache cho innovation: {}", innovationId);
+            return cachedResponse;
+        }
+
         logger.info("Analyzing innovation: {} using provider: {}", innovation.getInnovationName(),
                 aiProvider.getProviderName());
-        return aiProvider.analyze(innovationId, innovation.getInnovationName(), content);
+        AiAnalysisResponse response = aiProvider.analyze(innovationId, innovation.getInnovationName(), content);
+
+        cacheService.cacheAnalysis(innovationId, contentHash, response);
+
+        return response;
+    }
+
+    public void preComputeAnalysis(String innovationId) {
+        try {
+            Innovation innovation = findInnovationById(innovationId);
+            String content = extractInnovationContent(innovation);
+
+            if (content == null || content.trim().isEmpty()) {
+                logger.warn("Innovation {} không có nội dung để pre-compute analysis", innovationId);
+                return;
+            }
+
+            String contentHash = cacheService.generateContentHash(content);
+            if (cacheService.getCachedAnalysis(innovationId, contentHash) != null) {
+                logger.info("Đã có cache cho innovation: {}, bỏ qua pre-compute", innovationId);
+                return;
+            }
+
+            logger.info("Pre-computing analysis cho innovation: {}", innovationId);
+            AiAnalysisResponse response = aiProvider.analyze(innovationId, innovation.getInnovationName(), content);
+            cacheService.cacheAnalysis(innovationId, contentHash, response);
+            logger.info("Pre-compute analysis hoàn thành cho innovation: {}", innovationId);
+        } catch (Exception e) {
+            logger.error("Lỗi khi pre-compute analysis cho innovation: {} - {}", innovationId, e.getMessage());
+        }
     }
 
     private Innovation findInnovationById(String innovationId) {

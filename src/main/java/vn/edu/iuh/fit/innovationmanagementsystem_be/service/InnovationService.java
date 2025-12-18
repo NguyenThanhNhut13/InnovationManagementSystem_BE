@@ -128,6 +128,7 @@ public class InnovationService {
         private final DigitalSignatureService digitalSignatureService;
         private final FormTemplateMapper formTemplateMapper;
         private final InnovationEmbeddingService innovationEmbeddingService;
+        private final org.springframework.context.ApplicationEventPublisher eventPublisher;
 
         public InnovationService(InnovationRepository innovationRepository,
                         InnovationPhaseRepository innovationPhaseRepository,
@@ -155,7 +156,8 @@ public class InnovationService {
                         InnovationSignatureService innovationSignatureService,
                         DigitalSignatureService digitalSignatureService,
                         FormTemplateMapper formTemplateMapper,
-                        InnovationEmbeddingService innovationEmbeddingService) {
+                        InnovationEmbeddingService innovationEmbeddingService,
+                        org.springframework.context.ApplicationEventPublisher eventPublisher) {
                 this.innovationRepository = innovationRepository;
                 this.innovationPhaseRepository = innovationPhaseRepository;
                 this.formDataService = formDataService;
@@ -183,6 +185,7 @@ public class InnovationService {
                 this.digitalSignatureService = digitalSignatureService;
                 this.formTemplateMapper = formTemplateMapper;
                 this.innovationEmbeddingService = innovationEmbeddingService;
+                this.eventPublisher = eventPublisher;
         }
 
         // 1. Lấy tất cả sáng kiến của user hiện tại với filter chi tiết
@@ -619,14 +622,29 @@ public class InnovationService {
                                 innovationSignatureService.buildTemplateSignatureResponses(signatureResults));
                 response.setSubmissionTimeRemainingSeconds(timeRemainingSeconds);
 
-                // Lưu embedding async khi SUBMITTED (gọi cuối cùng để đảm bảo transaction đã commit)
+                // Lưu embedding async khi SUBMITTED (gọi cuối cùng để đảm bảo transaction đã
+                // commit)
                 if (request.getStatus() == InnovationStatusEnum.SUBMITTED) {
                         try {
-                                logger.info("Đã queue embedding generation cho innovation: {}", savedInnovation.getId());
+                                logger.info("Đã queue embedding generation cho innovation: {}",
+                                                savedInnovation.getId());
                                 innovationEmbeddingService.saveEmbeddingAsync(savedInnovation.getId());
                         } catch (Exception e) {
-                                logger.error("Lỗi khi queue embedding generation cho innovation {}: {}", 
-                                        savedInnovation.getId(), e.getMessage(), e);
+                                logger.error("Lỗi khi queue embedding generation cho innovation {}: {}",
+                                                savedInnovation.getId(), e.getMessage(), e);
+                        }
+
+                        // Publish event để trigger pre-compute AI analysis
+                        try {
+                                eventPublisher.publishEvent(
+                                                new vn.edu.iuh.fit.innovationmanagementsystem_be.event.InnovationSubmittedEvent(
+                                                                this, savedInnovation.getId(),
+                                                                savedInnovation.getInnovationName()));
+                                logger.info("Đã publish InnovationSubmittedEvent cho innovation: {}",
+                                                savedInnovation.getId());
+                        } catch (Exception e) {
+                                logger.error("Lỗi khi publish InnovationSubmittedEvent cho innovation {}: {}",
+                                                savedInnovation.getId(), e.getMessage());
                         }
                 }
 
