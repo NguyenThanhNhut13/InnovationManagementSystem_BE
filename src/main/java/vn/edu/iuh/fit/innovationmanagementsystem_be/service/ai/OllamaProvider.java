@@ -31,7 +31,7 @@ public class OllamaProvider implements AiProvider {
     @Value("${ollama.api.url:http://ollama:11434/api/generate}")
     private String apiUrl;
 
-    @Value("${ollama.model:qwen2.5:3b}")
+    @Value("${ollama.model:llama3.2:3b}")
     private String model;
 
     @Value("${ollama.options.temperature:0.3}")
